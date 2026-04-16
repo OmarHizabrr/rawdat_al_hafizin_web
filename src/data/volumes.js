@@ -8,7 +8,7 @@ export const VOLUMES = [
   { id: 'muf-muslim', label: 'مفردات مسلم', pages: 214 },
   { id: 'z-abidawud-1', label: 'زوائد أبي داود (١)', pages: 271 },
   { id: 'z-abidawud-2', label: 'زوائد أبي داود (٢)', pages: 276 },
-  { id: 'z-tirmidhi', label: 'زوائد الترمذي', pages: 224 },
+  { id: 'z-tirmidhi', label: 'الترمذي', pages: 224 },
   { id: 'z-nasaai', label: 'زوائد النسائي وابن ماجه والدارمي', pages: 142 },
   { id: 'masanid', label: 'المسانيد', pages: 319 },
   { id: 'sihah', label: 'الصحاح والمعاجم', pages: 138 },
