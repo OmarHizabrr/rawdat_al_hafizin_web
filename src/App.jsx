@@ -1,17 +1,39 @@
-import { BrowserRouter, Route, Routes } from 'react-router-dom'
+import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
+import { AuthProvider } from './context/AuthProvider.jsx'
+import { GuestOnly } from './routes/GuestOnly.jsx'
+import { ProtectedRoute } from './routes/ProtectedRoute.jsx'
+import { MainLayout } from './layouts/MainLayout.jsx'
 import { ToastProvider } from './ui/ToastProvider.jsx'
+import AppHomePage from './pages/AppHomePage.jsx'
 import FoundationPage from './pages/FoundationPage.jsx'
 import LandingPage from './pages/LandingPage.jsx'
+import LoginPage from './pages/LoginPage.jsx'
+import SettingsPage from './pages/SettingsPage.jsx'
+import WelcomePage from './pages/WelcomePage.jsx'
 
 export default function App() {
   return (
     <ToastProvider>
-      <BrowserRouter>
-        <Routes>
-          <Route path="/" element={<LandingPage />} />
-          <Route path="/foundation" element={<FoundationPage />} />
-        </Routes>
-      </BrowserRouter>
+      <AuthProvider>
+        <BrowserRouter>
+          <Routes>
+            <Route element={<GuestOnly />}>
+              <Route path="/" element={<LandingPage />} />
+            </Route>
+            <Route path="/login" element={<LoginPage />} />
+            <Route path="/foundation" element={<FoundationPage />} />
+            <Route element={<ProtectedRoute />}>
+              <Route path="/app" element={<MainLayout />}>
+                <Route index element={<AppHomePage />} />
+                <Route path="welcome" element={<WelcomePage />} />
+                <Route path="foundation" element={<FoundationPage />} />
+                <Route path="settings" element={<SettingsPage />} />
+              </Route>
+            </Route>
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </Routes>
+        </BrowserRouter>
+      </AuthProvider>
     </ToastProvider>
   )
 }

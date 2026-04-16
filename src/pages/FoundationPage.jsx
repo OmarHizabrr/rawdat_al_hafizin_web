@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
+import { useAuth } from '../context/useAuth.js'
 import { SITE_NAME, SITE_TITLE } from '../config/site.js'
 import { Button, SearchableSelect, TextAreaField, TextField, useToast } from '../ui/index.js'
 
@@ -13,7 +14,9 @@ const STAGE_OPTIONS = [
 ]
 
 export default function FoundationPage() {
+  const { user } = useAuth()
   const toast = useToast()
+  const homeHref = user ? '/app' : '/'
   const [name, setName] = useState('')
   const [note, setNote] = useState('')
   const [stage, setStage] = useState('')
@@ -143,7 +146,7 @@ export default function FoundationPage() {
 
       <footer className="footer">
         <p>
-          <Link to="/">الرئيسية</Link>
+          <Link to={homeHref}>الرئيسية</Link>
         </p>
       </footer>
     </div>
