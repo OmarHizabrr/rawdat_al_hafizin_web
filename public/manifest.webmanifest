@@ -1,0 +1,19 @@
+{
+  "name": "روضة الحافظين",
+  "short_name": "روضة الحافظين",
+  "description": "برنامج تحفيظ السنة النبوية",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#f4f7f5",
+  "theme_color": "#1b4332",
+  "lang": "ar",
+  "dir": "rtl",
+  "icons": [
+    {
+      "src": "/logo.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

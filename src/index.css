@@ -1,0 +1,204 @@
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+Arabic:wght@400;500;600;700&display=swap');
+
+:root {
+  --bg: #f4f7f5;
+  --surface: #ffffff;
+  --primary: #1b4332;
+  --primary-hover: #2d6a4f;
+  --on-primary: #f8fff9;
+  --text: #1a1c1a;
+  --muted: #5c625e;
+  --border: #d8e0db;
+  --radius: 16px;
+  --shadow: 0 4px 24px rgba(27, 67, 50, 0.08);
+  --font: 'Noto Sans Arabic', system-ui, sans-serif;
+  --max: 720px;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  font-family: var(--font);
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.75;
+  -webkit-font-smoothing: antialiased;
+}
+
+.page {
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+}
+
+.hero {
+  background: linear-gradient(160deg, #1b4332 0%, #2d6a4f 45%, #40916c 100%);
+  color: var(--on-primary);
+  padding: clamp(1.5rem, 5vw, 3rem) 1.25rem 2.5rem;
+}
+
+.hero-inner {
+  max-width: var(--max);
+  margin: 0 auto;
+  text-align: center;
+}
+
+.logo {
+  width: clamp(72px, 22vw, 120px);
+  height: auto;
+  border-radius: 20px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+  margin-bottom: 1rem;
+}
+
+.eyebrow {
+  font-size: 0.9rem;
+  opacity: 0.92;
+  margin-bottom: 0.35rem;
+}
+
+.hero h1 {
+  font-size: clamp(1.75rem, 6vw, 2.35rem);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  margin-bottom: 0.5rem;
+}
+
+.subtitle {
+  font-size: 1rem;
+  opacity: 0.95;
+  max-width: 36ch;
+  margin: 0 auto 1.5rem;
+}
+
+.cta {
+  font-family: inherit;
+  font-size: 1.05rem;
+  font-weight: 600;
+  padding: 0.9rem 1.75rem;
+  border: none;
+  border-radius: 999px;
+  background: var(--on-primary);
+  color: var(--primary);
+  cursor: pointer;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+  transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+}
+
+.cta:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.2);
+  background: #ffffff;
+}
+
+.cta:focus-visible {
+  outline: 3px solid #95d5b2;
+  outline-offset: 3px;
+}
+
+.content {
+  flex: 1;
+  max-width: calc(var(--max) + 3rem);
+  width: 100%;
+  margin: -1.5rem auto 0;
+  padding: 0 1.25rem 2.5rem;
+}
+
+.card {
+  background: var(--surface);
+  border-radius: var(--radius);
+  padding: 1.35rem 1.35rem 1.5rem;
+  margin-bottom: 1rem;
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow);
+}
+
+.card h2 {
+  font-size: 1.15rem;
+  font-weight: 700;
+  margin-bottom: 0.85rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.card-icon {
+  font-size: 1.25rem;
+  line-height: 1;
+}
+
+.card p {
+  color: var(--text);
+  margin-bottom: 0.65rem;
+}
+
+.card p:last-child {
+  margin-bottom: 0;
+}
+
+.lead {
+  font-size: 1.02rem;
+  color: var(--muted);
+}
+
+.lead.emphasis {
+  color: var(--primary);
+  font-weight: 600;
+}
+
+.card ul {
+  list-style: none;
+  padding: 0;
+}
+
+.card li {
+  position: relative;
+  padding-inline-start: 1.15rem;
+  margin-bottom: 0.45rem;
+  color: var(--muted);
+}
+
+.card li::before {
+  content: '';
+  position: absolute;
+  inset-inline-start: 0;
+  top: 0.65em;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--primary);
+  opacity: 0.7;
+}
+
+.cta-panel {
+  border-color: #95d5b2;
+  background: linear-gradient(180deg, #f8fff9 0%, var(--surface) 100%);
+}
+
+.footer {
+  text-align: center;
+  padding: 1.25rem;
+  font-size: 0.85rem;
+  color: var(--muted);
+  border-top: 1px solid var(--border);
+  background: var(--surface);
+}
+
+@media (min-width: 600px) {
+  .content {
+    padding-inline: 1.5rem;
+  }
+
+  .card {
+    padding: 1.5rem 1.75rem;
+  }
+}
