@@ -3,6 +3,7 @@ import {
   BookOpen,
   ChevronsLeft,
   ChevronsRight,
+  ClipboardList,
   Home,
   Menu,
   Puzzle,
@@ -18,6 +19,7 @@ const STORAGE_KEY = 'rh.sidebarCollapsed'
 const nav = [
   { to: '/app', end: true, label: 'الرئيسية', Icon: Home },
   { to: '/app/welcome', label: 'البداية', Icon: BookOpen },
+  { to: '/app/plans', label: 'الخطط', Icon: ClipboardList },
   { to: '/app/settings', label: 'الإعدادات', Icon: Settings },
   { to: '/app/foundation', label: 'أساس الواجهة', Icon: Puzzle },
 ]
