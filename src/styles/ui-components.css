@@ -58,7 +58,8 @@
 .ui-btn--secondary {
   background: var(--rh-surface);
   color: var(--rh-primary);
-  border-color: var(--rh-border-strong);
+  border-color: var(--rh-border);
+  box-shadow: var(--rh-shadow-sm);
 }
 
 .ui-btn--secondary:hover:not(:disabled) {
@@ -120,12 +121,13 @@
   font-size: var(--rh-text-base);
   color: var(--rh-text);
   width: 100%;
-  border-radius: var(--rh-radius-md);
+  border-radius: var(--rh-radius-control);
   border: 1px solid var(--rh-border);
-  background: var(--rh-surface);
+  background: var(--rh-surface-tint);
   transition:
     border-color 0.2s ease,
-    box-shadow 0.2s ease;
+    box-shadow 0.2s ease,
+    background 0.2s ease;
 }
 
 .ui-input::placeholder,
@@ -153,7 +155,8 @@
 .ui-input:focus,
 .ui-textarea:focus {
   outline: none;
-  border-color: var(--rh-forest-600);
+  border-color: var(--rh-primary);
+  background: var(--rh-surface);
   box-shadow: var(--rh-focus-ring);
 }
 
@@ -161,7 +164,7 @@
 .ui-field--error .ui-textarea,
 .ui-field--error .ui-select__trigger {
   border-color: var(--rh-danger);
-  background: #fffbfb;
+  background: color-mix(in srgb, var(--rh-danger-bg) 55%, var(--rh-surface));
 }
 
 .ui-field--error .ui-input:focus,
@@ -181,9 +184,9 @@
   width: 100%;
   min-height: var(--rh-control-height);
   padding: 0 var(--rh-control-padding-x);
-  border-radius: var(--rh-radius-md);
+  border-radius: var(--rh-radius-control);
   border: 1px solid var(--rh-border);
-  background: var(--rh-surface);
+  background: var(--rh-surface-tint);
   color: var(--rh-text);
   cursor: pointer;
   display: flex;
@@ -202,7 +205,8 @@
 
 .ui-select__trigger:focus-visible {
   outline: none;
-  border-color: var(--rh-forest-600);
+  border-color: var(--rh-primary);
+  background: var(--rh-surface);
   box-shadow: var(--rh-focus-ring);
 }
 
@@ -241,7 +245,7 @@
   top: calc(100% + var(--rh-space-2));
   background: var(--rh-surface-elevated);
   border: 1px solid var(--rh-border);
-  border-radius: var(--rh-radius-md);
+  border-radius: var(--rh-radius-lg);
   box-shadow: var(--rh-shadow-popover);
   overflow: hidden;
   max-height: min(18rem, 60vh);
@@ -261,14 +265,15 @@
   width: 100%;
   min-height: 2.35rem;
   padding: 0 var(--rh-space-3);
-  border-radius: var(--rh-radius-sm);
+  border-radius: var(--rh-radius-pill);
   border: 1px solid var(--rh-border);
-  background: var(--rh-surface);
+  background: var(--rh-surface-tint);
 }
 
 .ui-select__search input:focus {
   outline: none;
-  border-color: var(--rh-forest-600);
+  border-color: var(--rh-primary);
+  background: var(--rh-surface);
   box-shadow: var(--rh-focus-ring);
 }
 
@@ -287,7 +292,7 @@
   text-align: start;
   padding: var(--rh-space-3) var(--rh-space-3);
   border: none;
-  border-radius: var(--rh-radius-sm);
+  border-radius: var(--rh-radius-md);
   background: transparent;
   color: var(--rh-text);
   cursor: pointer;

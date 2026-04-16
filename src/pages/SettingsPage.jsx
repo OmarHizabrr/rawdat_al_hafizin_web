@@ -1,6 +1,7 @@
 import { useEffect } from 'react'
 import { SITE_TITLE } from '../config/site.js'
 import { useAuth } from '../context/useAuth.js'
+import { ThemeModePicker } from '../components/ThemeModePicker.jsx'
 
 export default function SettingsPage() {
   const { user } = useAuth()
@@ -9,19 +10,41 @@ export default function SettingsPage() {
     document.title = `الإعدادات — ${SITE_TITLE}`
   }, [])
 
+  const name = user?.displayName?.trim() || '—'
+  const email = user?.email || '—'
+  const photo = user?.photoURL
+
   return (
     <div className="rh-settings">
-      <section className="card">
-        <h2>الإعدادات</h2>
-        <p className="lead">هذه الصفحة مخصصة لخيارات الحساب والمنصة — سيتم إكمالها لاحقاً.</p>
-        <ul className="rh-settings-list">
-          <li>
-            <strong>الاسم:</strong> {user?.displayName || '—'}
-          </li>
-          <li>
-            <strong>البريد:</strong> {user?.email || '—'}
-          </li>
-        </ul>
+      <header className="rh-settings-header">
+        <h1 className="rh-settings-title">الإعدادات</h1>
+        <p className="rh-settings-desc">إدارة مظهر المنصة وحسابك المرتبط بـ Google.</p>
+      </header>
+
+      <section className="rh-settings-card">
+        <div className="rh-settings-card__head">
+          <h2 className="rh-settings-card__title">المظهر</h2>
+          <p className="rh-settings-card__subtitle">اختر وضع الألوان المناسب لك أو اتركه يتبع النظام.</p>
+        </div>
+        <ThemeModePicker />
+      </section>
+
+      <section className="rh-settings-card">
+        <div className="rh-settings-card__head">
+          <h2 className="rh-settings-card__title">الحساب</h2>
+          <p className="rh-settings-card__subtitle">بيانات تسجيل الدخول الحالية عبر Google.</p>
+        </div>
+        <div className="rh-profile-card">
+          <div className="rh-profile-card__avatar" aria-hidden={!photo}>
+            {photo ? <img src={photo} alt="" width={56} height={56} /> : <span>{name !== '—' ? name.charAt(0) : '؟'}</span>}
+          </div>
+          <div className="rh-profile-card__body">
+            <span className="rh-profile-card__name">{name}</span>
+            <span className="rh-profile-card__email">{email}</span>
+            <span className="rh-profile-card__badge">Google</span>
+          </div>
+        </div>
+        <p className="rh-settings-footnote">لتغيير الاسم أو الصورة، حدّث ملفك في حساب Google ثم أعد فتح المنصة.</p>
       </section>
     </div>
   )

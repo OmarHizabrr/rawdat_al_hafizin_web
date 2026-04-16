@@ -1,4 +1,4 @@
-/* هوية روضة الحافظين — رموز التصميم (ألوان، مسافات، ظلال، تركيز) */
+/* هوية روضة الحافظين — رموز التصميم (إلهام بأسلوب Google / Material: حواف ناعمة، أسطح هادئة) */
 
 :root {
   /* ألوان العلامة */
@@ -8,24 +8,25 @@
   --rh-forest-600: #40916c;
   --rh-forest-400: #74c69d;
   --rh-forest-200: #b7e4c7;
-  --rh-forest-50: #f4f7f5;
+  --rh-forest-50: #e8f5e9;
 
   --rh-gold-600: #b8860b;
   --rh-gold-400: #d4a84b;
 
-  /* دلالية الواجهة */
-  --rh-bg: var(--rh-forest-50);
+  /* وضع فاتح — خلفية مثل تطبيقات Google */
+  --rh-bg: #f8f9fa;
   --rh-surface: #ffffff;
   --rh-surface-elevated: #ffffff;
-  --rh-border: #d8e0db;
-  --rh-border-strong: #b8c4bc;
-  --rh-text: #1a1c1a;
-  --rh-text-muted: #5c625e;
-  --rh-text-placeholder: #8a928c;
+  --rh-surface-tint: #f1f3f4;
+  --rh-border: #e8eaed;
+  --rh-border-strong: #dadce0;
+  --rh-text: #202124;
+  --rh-text-muted: #5f6368;
+  --rh-text-placeholder: #80868b;
 
   --rh-primary: var(--rh-forest-900);
   --rh-primary-hover: var(--rh-forest-800);
-  --rh-primary-muted: rgba(27, 67, 50, 0.12);
+  --rh-primary-muted: rgba(27, 67, 50, 0.1);
   --rh-on-primary: #f8fff9;
 
   --rh-accent: var(--rh-gold-600);
@@ -36,15 +37,13 @@
   --rh-warning: #b45309;
   --rh-warning-bg: #fff7e6;
   --rh-danger: #b42318;
-  --rh-danger-bg: #fde8e6;
-  --rh-info: #1d6fb8;
-  --rh-info-bg: #e8f1fb;
+  --rh-danger-bg: #fce8e6;
+  --rh-info: #1a73e8;
+  --rh-info-bg: #e8f0fe;
 
-  /* تركيز وإتاحة */
-  --rh-focus-ring: 0 0 0 3px rgba(64, 145, 108, 0.45);
+  --rh-focus-ring: 0 0 0 2px var(--rh-surface), 0 0 0 4px rgba(64, 145, 108, 0.45);
   --rh-focus-ring-inset: inset 0 0 0 2px var(--rh-forest-600);
 
-  /* مسافات */
   --rh-space-1: 0.25rem;
   --rh-space-2: 0.5rem;
   --rh-space-3: 0.75rem;
@@ -53,21 +52,21 @@
   --rh-space-6: 1.5rem;
   --rh-space-8: 2rem;
 
-  /* زوايا */
-  --rh-radius-sm: 8px;
-  --rh-radius-md: 12px;
-  --rh-radius-lg: 16px;
-  --rh-radius-xl: 20px;
+  /* حواف أكثر استدارة — قريبة من Material 3 */
+  --rh-radius-sm: 12px;
+  --rh-radius-md: 16px;
+  --rh-radius-lg: 20px;
+  --rh-radius-xl: 24px;
+  --rh-radius-2xl: 28px;
   --rh-radius-pill: 9999px;
+  --rh-radius-control: 20px;
 
-  /* ظلال */
-  --rh-shadow-sm: 0 1px 2px rgba(27, 67, 50, 0.06);
-  --rh-shadow-md: 0 4px 24px rgba(27, 67, 50, 0.08);
-  --rh-shadow-lg: 0 12px 40px rgba(27, 67, 50, 0.12);
-  --rh-shadow-popover: 0 8px 32px rgba(0, 0, 0, 0.12);
+  --rh-shadow-sm: 0 1px 2px rgba(60, 64, 67, 0.08), 0 1px 3px rgba(60, 64, 67, 0.06);
+  --rh-shadow-md: 0 2px 8px rgba(60, 64, 67, 0.1), 0 2px 4px rgba(60, 64, 67, 0.06);
+  --rh-shadow-lg: 0 4px 16px rgba(60, 64, 67, 0.12), 0 8px 24px rgba(60, 64, 67, 0.08);
+  --rh-shadow-popover: 0 8px 28px rgba(0, 0, 0, 0.12), 0 2px 8px rgba(0, 0, 0, 0.08);
 
-  /* خط */
-  --rh-font: 'Noto Sans Arabic', system-ui, sans-serif;
+  --rh-font: 'Noto Sans Arabic', 'Google Sans', system-ui, sans-serif;
   --rh-text-xs: 0.75rem;
   --rh-text-sm: 0.875rem;
   --rh-text-base: 1rem;
@@ -75,11 +74,9 @@
   --rh-leading-tight: 1.35;
   --rh-leading-normal: 1.75;
 
-  /* أبعاد حقول */
-  --rh-control-height: 2.75rem;
-  --rh-control-padding-x: 0.875rem;
+  --rh-control-height: 3rem;
+  --rh-control-padding-x: 1rem;
 
-  /* توافق مع الأنماط الحالية للصفحة */
   --bg: var(--rh-bg);
   --surface: var(--rh-surface);
   --primary: var(--rh-primary);
@@ -92,4 +89,37 @@
   --shadow: var(--rh-shadow-md);
   --font: var(--rh-font);
   --max: 720px;
+}
+
+html[data-theme='dark'] {
+  --rh-bg: #131314;
+  --rh-surface: #1e1f20;
+  --rh-surface-elevated: #282a2c;
+  --rh-surface-tint: #2d2f31;
+  --rh-border: #3c4043;
+  --rh-border-strong: #5f6368;
+  --rh-text: #e8eaed;
+  --rh-text-muted: #bdc1c6;
+  --rh-text-placeholder: #9aa0a6;
+
+  --rh-primary: #81c995;
+  --rh-primary-hover: #a5d6a7;
+  --rh-primary-muted: rgba(129, 201, 149, 0.16);
+  --rh-on-primary: #0d1f17;
+
+  --rh-success: #81c995;
+  --rh-success-bg: #1e3a2e;
+  --rh-warning: #fdd663;
+  --rh-warning-bg: #3e2e00;
+  --rh-danger: #f28b82;
+  --rh-danger-bg: #3c1f1e;
+  --rh-info: #8ab4f8;
+  --rh-info-bg: #1a2c4e;
+
+  --rh-focus-ring: 0 0 0 2px var(--rh-surface), 0 0 0 4px rgba(129, 201, 149, 0.45);
+
+  --rh-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.25);
+  --rh-shadow-md: 0 2px 8px rgba(0, 0, 0, 0.32);
+  --rh-shadow-lg: 0 4px 20px rgba(0, 0, 0, 0.4);
+  --rh-shadow-popover: 0 8px 28px rgba(0, 0, 0, 0.45);
 }

@@ -1,10 +1,19 @@
 <!doctype html>
 <html lang="ar" dir="rtl">
   <head>
+    <script>
+      (function () {
+        try {
+          var p = localStorage.getItem('rh.theme') || 'system'
+          var dark = p === 'dark' || (p === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches)
+          document.documentElement.setAttribute('data-theme', dark ? 'dark' : 'light')
+        } catch (e) {}
+      })()
+    </script>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/png" href="/logo.png" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0" />
-    <meta name="theme-color" content="#1b4332" />
+    <meta name="theme-color" content="#f8f9fa" />
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />

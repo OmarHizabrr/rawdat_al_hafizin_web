@@ -8,6 +8,7 @@ const STORAGE_KEY = 'rh.sidebarCollapsed'
 const nav = [
   { to: '/app', end: true, label: 'الرئيسية', icon: '🏠' },
   { to: '/app/welcome', label: 'البداية', icon: '📖' },
+  { to: '/app/settings', label: 'الإعدادات', icon: '⚙' },
   { to: '/app/foundation', label: 'أساس الواجهة', icon: '🧩' },
 ]
 
