@@ -1,15 +1,25 @@
 import { useCallback, useEffect, useState } from 'react'
+import {
+  BookOpen,
+  ChevronsLeft,
+  ChevronsRight,
+  Home,
+  Menu,
+  Puzzle,
+  Settings,
+} from 'lucide-react'
 import { NavLink, Outlet } from 'react-router-dom'
 import { UserMenu } from '../components/UserMenu.jsx'
 import { useAuth } from '../context/useAuth.js'
+import { RhIcon, RH_ICON_STROKE } from '../ui/RhIcon.jsx'
 
 const STORAGE_KEY = 'rh.sidebarCollapsed'
 
 const nav = [
-  { to: '/app', end: true, label: 'الرئيسية', icon: '🏠' },
-  { to: '/app/welcome', label: 'البداية', icon: '📖' },
-  { to: '/app/settings', label: 'الإعدادات', icon: '⚙' },
-  { to: '/app/foundation', label: 'أساس الواجهة', icon: '🧩' },
+  { to: '/app', end: true, label: 'الرئيسية', Icon: Home },
+  { to: '/app/welcome', label: 'البداية', Icon: BookOpen },
+  { to: '/app/settings', label: 'الإعدادات', Icon: Settings },
+  { to: '/app/foundation', label: 'أساس الواجهة', Icon: Puzzle },
 ]
 
 export function MainLayout() {
@@ -42,6 +52,8 @@ export function MainLayout() {
     return () => window.removeEventListener('resize', onResize)
   }, [mobileOpen])
 
+  const CollapseIcon = collapsed ? ChevronsLeft : ChevronsRight
+
   return (
     <div className={['rh-app', collapsed ? 'rh-app--collapsed' : '', mobileOpen ? 'rh-app--mobile-nav' : '']
       .filter(Boolean)
@@ -63,7 +75,7 @@ export function MainLayout() {
               onClick={closeMobile}
             >
               <span className="rh-nav-link__icon" aria-hidden>
-                {item.icon}
+                <RhIcon as={item.Icon} size={20} strokeWidth={RH_ICON_STROKE} />
               </span>
               <span className="rh-nav-link__label">{item.label}</span>
             </NavLink>
@@ -79,7 +91,7 @@ export function MainLayout() {
             title={collapsed ? 'توسيع القائمة' : 'طي القائمة'}
           >
             <span className="rh-sidebar__collapse-icon" aria-hidden>
-              {collapsed ? '»' : '«'}
+              <RhIcon as={CollapseIcon} size={20} strokeWidth={RH_ICON_STROKE} />
             </span>
             {!collapsed && <span>طي القائمة</span>}
           </button>
@@ -98,7 +110,7 @@ export function MainLayout() {
             aria-label="فتح القائمة"
             onClick={() => setMobileOpen(true)}
           >
-            ☰
+            <RhIcon as={Menu} size={22} strokeWidth={RH_ICON_STROKE} />
           </button>
           <h1 className="rh-topbar__heading">منصة روضة الحافظين</h1>
           <div className="rh-topbar__spacer" />

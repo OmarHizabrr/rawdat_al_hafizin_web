@@ -228,9 +228,10 @@
 
 .ui-select__chevron {
   flex-shrink: 0;
-  width: 1.25rem;
-  height: 1.25rem;
-  opacity: 0.65;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--rh-text-muted);
   transition: transform 0.2s ease;
 }
 
@@ -355,9 +356,11 @@
 }
 
 .ui-toast__icon {
-  font-size: 1.15rem;
-  line-height: 1;
   flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--rh-text-muted);
 }
 
 .ui-toast__body {
@@ -387,6 +390,9 @@
   padding: var(--rh-space-1);
   border-radius: var(--rh-radius-sm);
   line-height: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .ui-toast__close:hover {
@@ -394,9 +400,17 @@
   color: var(--rh-text);
 }
 
+.ui-toast--success .ui-toast__icon {
+  color: var(--rh-success);
+}
+
 .ui-toast--success {
   border-color: rgba(30, 111, 78, 0.35);
   background: linear-gradient(180deg, var(--rh-success-bg) 0%, var(--rh-surface) 100%);
+}
+
+.ui-toast--warning .ui-toast__icon {
+  color: var(--rh-warning);
 }
 
 .ui-toast--warning {
@@ -404,9 +418,17 @@
   background: linear-gradient(180deg, var(--rh-warning-bg) 0%, var(--rh-surface) 100%);
 }
 
+.ui-toast--danger .ui-toast__icon {
+  color: var(--rh-danger);
+}
+
 .ui-toast--danger {
   border-color: rgba(180, 35, 24, 0.35);
   background: linear-gradient(180deg, var(--rh-danger-bg) 0%, var(--rh-surface) 100%);
+}
+
+.ui-toast--info .ui-toast__icon {
+  color: var(--rh-info);
 }
 
 .ui-toast--info {

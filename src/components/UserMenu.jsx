@@ -1,7 +1,9 @@
+import { ChevronDown } from 'lucide-react'
 import { useCallback, useEffect, useId, useRef, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { signOut } from '../services/authService.js'
 import { useOnClickOutside } from '../ui/hooks/useOnClickOutside.js'
+import { RhIcon, RH_ICON_STROKE } from '../ui/RhIcon.jsx'
 
 export function UserMenu({ user }) {
   const menuId = useId()
@@ -48,8 +50,8 @@ export function UserMenu({ user }) {
           <span className="rh-user-trigger__name">{name}</span>
           {email && <span className="rh-user-trigger__email">{email}</span>}
         </span>
-        <span className="rh-user-trigger__chev" aria-hidden>
-          ▾
+        <span className={['rh-user-trigger__chev', open ? 'rh-user-trigger__chev--open' : ''].filter(Boolean).join(' ')} aria-hidden>
+          <RhIcon as={ChevronDown} size={18} strokeWidth={RH_ICON_STROKE} />
         </span>
       </button>
 

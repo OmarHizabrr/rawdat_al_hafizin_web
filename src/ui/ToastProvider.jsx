@@ -1,26 +1,28 @@
+import { AlertTriangle, Check, Info, X, XCircle } from 'lucide-react'
 import { useCallback, useMemo, useState } from 'react'
 import { ToastContext } from './toastContext.js'
+import { RhIcon, RH_ICON_STROKE } from './RhIcon.jsx'
 
-const ICON = {
-  success: '✓',
-  warning: '!',
-  danger: '✕',
-  info: 'i',
+const TOAST_ICON = {
+  success: Check,
+  warning: AlertTriangle,
+  danger: XCircle,
+  info: Info,
 }
 
 function ToastItem({ id, variant, title, message, onDismiss }) {
-  const icon = ICON[variant] ?? ICON.info
+  const Icon = TOAST_ICON[variant] ?? Info
   return (
     <div className={['ui-toast', variant ? `ui-toast--${variant}` : ''].filter(Boolean).join(' ')} role="status">
       <span className="ui-toast__icon" aria-hidden>
-        {icon}
+        <RhIcon as={Icon} size={20} strokeWidth={RH_ICON_STROKE} />
       </span>
       <div className="ui-toast__body">
         {title && <div className="ui-toast__title">{title}</div>}
         {message && <div className="ui-toast__message">{message}</div>}
       </div>
       <button type="button" className="ui-toast__close" onClick={() => onDismiss(id)} aria-label="إغلاق">
-        ×
+        <RhIcon as={X} size={18} strokeWidth={RH_ICON_STROKE} />
       </button>
     </div>
   )

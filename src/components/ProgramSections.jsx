@@ -1,7 +1,27 @@
+import {
+  BookOpenText,
+  Compass,
+  LibraryBig,
+  Sparkles,
+  Sprout,
+  Target,
+  Users,
+} from 'lucide-react'
+import { RhIcon, RH_ICON_STROKE } from '../ui/RhIcon.jsx'
+
+const SECTION_ICONS = {
+  intro: BookOpenText,
+  goals: Target,
+  approach: Compass,
+  content: LibraryBig,
+  features: Sparkles,
+  audience: Users,
+  message: Sprout,
+}
+
 const sections = [
   {
     id: 'intro',
-    icon: '📘',
     title: 'التعريف بالبرنامج',
     body: (
       <>
@@ -16,13 +36,11 @@ const sections = [
   },
   {
     id: 'goals',
-    icon: '🎯',
     title: 'أهداف البرنامج',
     list: ['العناية بالسنة النبوية', 'تمكين الطالب من حفظ أكبر قدر من الأحاديث الصحيحة'],
   },
   {
     id: 'approach',
-    icon: '🧭',
     title: 'منهج البرنامج',
     paragraphs: [
       'يقوم البرنامج على: التدرّج العلمي من الأصح إلى ما دونه، وجمع الأحاديث دون تكرار قدر الإمكان، والتركيز على دواوين السنة المعتمدة.',
@@ -31,7 +49,6 @@ const sections = [
   },
   {
     id: 'content',
-    icon: '📚',
     title: 'محتوى البرنامج',
     list: [
       'الجمع بين الصحيحين (أربع مجلدات)',
@@ -46,7 +63,6 @@ const sections = [
   },
   {
     id: 'features',
-    icon: '🌟',
     title: 'مميزات البرنامج',
     list: [
       'الاعتماد على أصح مصادر السنة',
@@ -56,13 +72,11 @@ const sections = [
   },
   {
     id: 'audience',
-    icon: '👥',
     title: 'الفئة المستهدفة',
     list: ['طلاب وطالبات العلم الشرعي', 'الراغبون في حفظ السنة النبوية'],
   },
   {
     id: 'message',
-    icon: '🌱',
     title: 'رسالة البرنامج',
     body: <p className="lead emphasis">الإسهام في تخريج جيلٍ مرتبطٍ بسنة النبي ﷺ.</p>,
   },
@@ -71,27 +85,30 @@ const sections = [
 export function ProgramSections({ className = '' }) {
   return (
     <div className={className}>
-      {sections.map((s) => (
-        <section key={s.id} id={s.id} className="card">
-          <h2>
-            <span className="card-icon" aria-hidden>
-              {s.icon}
-            </span>
-            {s.title}
-          </h2>
-          {s.body}
-          {s.paragraphs?.map((p, i) => (
-            <p key={i}>{p}</p>
-          ))}
-          {s.list && (
-            <ul>
-              {s.list.map((item) => (
-                <li key={item}>{item}</li>
-              ))}
-            </ul>
-          )}
-        </section>
-      ))}
+      {sections.map((s) => {
+        const Icon = SECTION_ICONS[s.id]
+        return (
+          <section key={s.id} id={s.id} className="card">
+            <h2>
+              <span className="card-icon" aria-hidden>
+                {Icon ? <RhIcon as={Icon} size={22} strokeWidth={RH_ICON_STROKE} /> : null}
+              </span>
+              {s.title}
+            </h2>
+            {s.body}
+            {s.paragraphs?.map((p, i) => (
+              <p key={i}>{p}</p>
+            ))}
+            {s.list && (
+              <ul>
+                {s.list.map((item) => (
+                  <li key={item}>{item}</li>
+                ))}
+              </ul>
+            )}
+          </section>
+        )
+      })}
     </div>
   )
 }

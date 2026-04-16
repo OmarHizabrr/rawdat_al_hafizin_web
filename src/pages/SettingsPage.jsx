@@ -1,7 +1,9 @@
+import { UserRound } from 'lucide-react'
 import { useEffect } from 'react'
+import { ThemeModePicker } from '../components/ThemeModePicker.jsx'
 import { SITE_TITLE } from '../config/site.js'
 import { useAuth } from '../context/useAuth.js'
-import { ThemeModePicker } from '../components/ThemeModePicker.jsx'
+import { RhIcon, RH_ICON_STROKE } from '../ui/RhIcon.jsx'
 
 export default function SettingsPage() {
   const { user } = useAuth()
@@ -36,7 +38,13 @@ export default function SettingsPage() {
         </div>
         <div className="rh-profile-card">
           <div className="rh-profile-card__avatar" aria-hidden={!photo}>
-            {photo ? <img src={photo} alt="" width={56} height={56} /> : <span>{name !== '—' ? name.charAt(0) : '؟'}</span>}
+            {photo ? (
+              <img src={photo} alt="" width={56} height={56} />
+            ) : name !== '—' ? (
+              <span>{name.charAt(0)}</span>
+            ) : (
+              <RhIcon as={UserRound} size={26} strokeWidth={RH_ICON_STROKE} />
+            )}
           </div>
           <div className="rh-profile-card__body">
             <span className="rh-profile-card__name">{name}</span>

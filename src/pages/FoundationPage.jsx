@@ -1,8 +1,10 @@
+import { ArrowRight } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../context/useAuth.js'
 import { SITE_NAME, SITE_TITLE } from '../config/site.js'
 import { Button, SearchableSelect, TextAreaField, TextField, useToast } from '../ui/index.js'
+import { RhIcon, RH_ICON_STROKE } from '../ui/RhIcon.jsx'
 
 const STAGE_OPTIONS = [
   { value: 'sahihain', label: 'الجمع بين الصحيحين' },
@@ -51,8 +53,11 @@ export default function FoundationPage() {
     <div className="page foundation-page">
       <header className="foundation-header">
         <div className="foundation-header-inner">
-          <Link to="/" className="foundation-back">
-            ← العودة للرئيسية
+          <Link to={homeHref} className="foundation-back">
+            <span className="foundation-back__icon" aria-hidden>
+              <RhIcon as={ArrowRight} size={18} strokeWidth={RH_ICON_STROKE} />
+            </span>
+            العودة للرئيسية
           </Link>
           <h1>أساس الواجهة</h1>
           <p className="foundation-lead">

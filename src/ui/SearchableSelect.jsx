@@ -1,5 +1,7 @@
+import { ChevronDown } from 'lucide-react'
 import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react'
 import { useOnClickOutside } from './hooks/useOnClickOutside.js'
+import { RhIcon, RH_ICON_STROKE } from './RhIcon.jsx'
 
 export function SearchableSelect({
   label,
@@ -146,9 +148,9 @@ export function SearchableSelect({
         >
           {selected ? selected.label : placeholder}
         </span>
-        <svg className="ui-select__chevron" viewBox="0 0 24 24" aria-hidden width="20" height="20">
-          <path fill="currentColor" d="M7 10l5 5 5-5H7z" />
-        </svg>
+        <span className="ui-select__chevron" aria-hidden>
+          <RhIcon as={ChevronDown} size={20} strokeWidth={RH_ICON_STROKE} />
+        </span>
       </button>
 
       {open && (
