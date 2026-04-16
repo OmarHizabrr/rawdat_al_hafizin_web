@@ -4,7 +4,7 @@ import { VOLUMES, VOLUME_BY_ID } from '../data/volumes.js'
 import { SITE_TITLE } from '../config/site.js'
 import { countDaysInRange, sessionsNeeded } from '../utils/planSchedule.js'
 import { loadPlans, savePlans } from '../utils/plansStorage.js'
-import { Button, TextField, useToast } from '../ui/index.js'
+import { Button, DateField, NumberStepField, SearchableMultiSelect, TextField, TimeField, useToast } from '../ui/index.js'
 import { RhIcon, RH_ICON_STROKE } from '../ui/RhIcon.jsx'
 
 const PLAN_TYPES = [
@@ -29,6 +29,16 @@ function newId() {
     : `plan-${Date.now()}-${Math.random().toString(16).slice(2)}`
 }
 
+/** @param {string | null | undefined} hhmm قيمة input type="time" */
+function formatReminderAr(hhmm) {
+  if (!hhmm || typeof hhmm !== 'string') return null
+  const m = /^(\d{1,2}):(\d{2})$/.exec(hhmm.trim())
+  if (!m) return hhmm
+  const d = new Date()
+  d.setHours(Number(m[1]), Number(m[2]), 0, 0)
+  return d.toLocaleTimeString('ar-SA', { hour: 'numeric', minute: '2-digit' })
+}
+
 export default function PlansPage() {
   const toast = useToast()
   const [savedPlans, setSavedPlans] = useState(() => loadPlans())
@@ -39,11 +49,22 @@ export default function PlansPage() {
     Object.fromEntries(VOLUMES.map((v) => [v.id, { selected: false, pages: v.pages }])),
   )
   const [dailyPages, setDailyPages] = useState(5)
+  const [reminderTime, setReminderTime] = useState('')
   const [useDateRange, setUseDateRange] = useState(false)
   const [dateStart, setDateStart] = useState('')
   const [dateEnd, setDateEnd] = useState('')
   const [useWeekdayFilter, setUseWeekdayFilter] = useState(false)
   const [weekdays, setWeekdays] = useState(() => new Set())
+
+  const volumeOptions = useMemo(
+    () => VOLUMES.map((v) => ({ value: v.id, label: v.label, secondary: `حتى ${v.pages} صفحة` })),
+    [],
+  )
+
+  const selectedVolumeIds = useMemo(
+    () => VOLUMES.filter((v) => volumeState[v.id]?.selected).map((v) => v.id),
+    [volumeState],
+  )
 
   useEffect(() => {
     document.title = `الخطط — ${SITE_TITLE}`
@@ -81,24 +102,29 @@ export default function PlansPage() {
     return null
   }, [useDateRange, availableDaysInRange, neededSessions])
 
-  const toggleVolume = (id) => {
+  const handleVolumesChange = (ids) => {
+    const idSet = new Set(ids)
     setVolumeState((prev) => {
-      const cur = prev[id]
-      const v = VOLUME_BY_ID[id]
-      return {
-        ...prev,
-        [id]: {
-          ...cur,
-          selected: !cur.selected,
-          pages: cur.selected ? v.pages : cur.pages || v.pages,
-        },
+      const next = { ...prev }
+      for (const v of VOLUMES) {
+        const sel = idSet.has(v.id)
+        next[v.id] = {
+          selected: sel,
+          pages: sel
+            ? Math.min(Math.max(1, prev[v.id]?.pages ?? v.pages), v.pages)
+            : v.pages,
+        }
       }
+      return next
     })
   }
 
   const setVolumePages = (id, pages) => {
     const v = VOLUME_BY_ID[id]
-    const n = Number.parseInt(String(pages), 10)
+    const n =
+      typeof pages === 'number' && Number.isFinite(pages)
+        ? Math.trunc(pages)
+        : Number.parseInt(String(pages), 10)
     const clamped = Number.isFinite(n) ? Math.min(Math.max(1, n), v.pages) : v.pages
     setVolumeState((prev) => ({
       ...prev,
@@ -128,6 +154,7 @@ export default function PlansPage() {
     setPlanType('hifz')
     setVolumeState(Object.fromEntries(VOLUMES.map((v) => [v.id, { selected: false, pages: v.pages }])))
     setDailyPages(5)
+    setReminderTime('')
     setUseDateRange(false)
     setDateStart('')
     setDateEnd('')
@@ -173,6 +200,7 @@ export default function PlansPage() {
       volumes: volumesSnapshot,
       totalTargetPages: volumesSnapshot.reduce((a, x) => a + x.pagesTarget, 0),
       dailyPages,
+      reminderTime: reminderTime.trim() || null,
       useDateRange,
       dateStart: useDateRange ? dateStart : null,
       dateEnd: useDateRange ? dateEnd : null,
@@ -202,9 +230,12 @@ export default function PlansPage() {
 
   const typeLabel = (v) => PLAN_TYPES.find((t) => t.value === v)?.label ?? v
 
+  const volumeSummary = (n) =>
+    n === 0 ? 'اختر المجلدات…' : n === 1 ? 'مجلد واحد مختار' : `${n} مجلدات مختارة`
+
   return (
     <div className="rh-plans">
-      <header className="rh-plans__header">
+      <header className="rh-plans__hero">
         <h1 className="rh-plans__title">الخطط</h1>
         <p className="rh-plans__desc">
           أنشئ خطة حفظ أو مراجعة أو قراءة، اختر المجلدات وعدد الصفحات من كل مجلد، ثم حدّد الورد اليومي ونمط الجدولة (مفتوح،
@@ -218,7 +249,7 @@ export default function PlansPage() {
         </div>
         <TextField label="اسم الخطة (اختياري)" placeholder="مثال: خطة صيف ١٤٤٧" value={planName} onChange={(e) => setPlanName(e.target.value)} />
         <p className="rh-plans__field-label">نوع الخطة</p>
-        <div className="rh-segment">
+        <div className="rh-segment rh-segment--plans">
           {PLAN_TYPES.map((opt) => (
             <button
               key={opt.value}
@@ -238,37 +269,46 @@ export default function PlansPage() {
       <section className="rh-settings-card rh-plans__section">
         <div className="rh-settings-card__head">
           <h2 className="rh-settings-card__title">المجلدات وعدد الصفحات</h2>
-          <p className="rh-settings-card__subtitle">يمكنك اختيار عدة مجلدات. لكل مجلد حدّد عدد الصفحات المستهدفة (حتى حدّ المجلد).</p>
+          <p className="rh-settings-card__subtitle">
+            قائمة قابلة للبحث مع اختيار متعدد. لكل مجلد محدّد يمكنك ضبط عدد الصفحات المستهدفة حتى حدّ المجلد.
+          </p>
         </div>
-        <ul className="rh-plans__volume-list">
-          {VOLUMES.map((v) => {
-            const st = volumeState[v.id]
+        <SearchableMultiSelect
+          label="المجلدات"
+          hint="ابحث بالاسم أو مرّ على القائمة وحدّد ما يناسبك."
+          options={volumeOptions}
+          value={selectedVolumeIds}
+          onChange={handleVolumesChange}
+          placeholder="لم يُختر أي مجلد"
+          searchPlaceholder="ابحث عن مجلد…"
+          emptyText="لا يوجد مجلد يطابق البحث"
+          summaryLabel={volumeSummary}
+          itemAddon={(opt) => {
+            const v = VOLUME_BY_ID[opt.value]
+            const st = volumeState[opt.value]
             return (
-              <li key={v.id} className={['rh-plans__volume-row', st.selected ? 'rh-plans__volume-row--on' : ''].filter(Boolean).join(' ')}>
-                <label className="rh-plans__volume-check">
-                  <input type="checkbox" checked={st.selected} onChange={() => toggleVolume(v.id)} />
-                  <span className="rh-plans__volume-info">
-                    <span className="rh-plans__volume-name">{v.label}</span>
-                    <span className="rh-plans__volume-max">الحد الأقصى: {v.pages} صفحة</span>
-                  </span>
-                </label>
-                {st.selected && (
-                  <label className="rh-plans__volume-pages">
-                    <span className="rh-plans__volume-pages-label">صفحات مستهدفة</span>
-                    <input
-                      type="number"
-                      min={1}
-                      max={v.pages}
-                      className="rh-plans__volume-input"
-                      value={st.pages}
-                      onChange={(e) => setVolumePages(v.id, e.target.value)}
-                    />
-                  </label>
-                )}
-              </li>
+              <div
+                className="ui-multi__addon"
+                role="group"
+                aria-label={`صفحات ${opt.label}`}
+                onPointerDown={(e) => e.stopPropagation()}
+                onClick={(e) => e.stopPropagation()}
+              >
+                <span className="ui-multi__addon-label">الهدف</span>
+                <NumberStepField
+                  className="ui-multi__addon-step"
+                  value={st.pages}
+                  onChange={(num) => setVolumePages(opt.value, num)}
+                  min={1}
+                  max={v.pages}
+                  step={1}
+                  size="sm"
+                />
+                <span className="ui-multi__addon-max">من {v.pages}</span>
+              </div>
             )
-          })}
-        </ul>
+          }}
+        />
       </section>
 
       <section className="rh-settings-card rh-plans__section">
@@ -277,31 +317,56 @@ export default function PlansPage() {
           <p className="rh-settings-card__subtitle">عدد الصفحات في كل جلسة/يوم، ثم اختيار فترة زمنية و/أو أيام محددة من الأسبوع.</p>
         </div>
 
-        <label className="rh-plans__daily">
-          <span className="rh-plans__daily-label">الورد اليومي (صفحات)</span>
-          <input
-            type="number"
-            min={1}
-            className="rh-plans__volume-input rh-plans__daily-input"
-            value={dailyPages}
-            onChange={(e) => setDailyPages(Math.max(1, Number.parseInt(e.target.value, 10) || 1))}
-          />
-        </label>
+        <div className="rh-plans__daily-row">
+          <div className="rh-plans__daily-field">
+            <NumberStepField
+              label="الورد اليومي (صفحات)"
+              hint="عدد الصفحات في كل جلسة."
+              value={dailyPages}
+              onChange={setDailyPages}
+              min={1}
+              max={999}
+              step={1}
+            />
+          </div>
+          <div className="rh-plans__daily-field">
+            <TimeField
+              label="وقت التذكير بالورد (اختياري)"
+              hint="يُحفظ مع الخطة. يُذكَّرك التطبيق في هذا الوقت، ويمكن تفعيل إشعار المتصفح أدناه."
+              value={reminderTime}
+              onChange={(e) => setReminderTime(e.target.value)}
+            />
+          </div>
+        </div>
+
+        {typeof Notification !== 'undefined' && reminderTime.trim() && Notification.permission === 'default' && (
+          <div className="rh-plans__notif-prompt">
+            <Button
+              type="button"
+              variant="secondary"
+              size="sm"
+              onClick={async () => {
+                const r = await Notification.requestPermission()
+                if (r === 'granted') {
+                  toast.success('سيُعرض إشعار المتصفح عند وقت التذكير طالما التطبيق مفتوح.', 'تم')
+                } else if (r === 'denied') {
+                  toast.info('لن يُعرض إشعار خارج التطبيق. سيظل التذكير داخل المنصة.', '')
+                }
+              }}
+            >
+              السماح بإشعارات المتصفح عند وقت التذكير
+            </Button>
+          </div>
+        )}
 
         <label className="rh-plans__toggle">
           <input type="checkbox" checked={useDateRange} onChange={(e) => setUseDateRange(e.target.checked)} />
           <span>تحديد فترة زمنية (من — إلى)</span>
         </label>
         {useDateRange && (
-          <div className="rh-plans__dates">
-            <label>
-              <span className="rh-plans__mini-label">من</span>
-              <input type="date" className="rh-plans__date-input" value={dateStart} onChange={(e) => setDateStart(e.target.value)} />
-            </label>
-            <label>
-              <span className="rh-plans__mini-label">إلى</span>
-              <input type="date" className="rh-plans__date-input" value={dateEnd} onChange={(e) => setDateEnd(e.target.value)} />
-            </label>
+          <div className="rh-plans__dates-grid">
+            <DateField label="من" value={dateStart} onChange={(e) => setDateStart(e.target.value)} />
+            <DateField label="إلى" value={dateEnd} onChange={(e) => setDateEnd(e.target.value)} min={dateStart || undefined} />
           </div>
         )}
 
@@ -349,6 +414,11 @@ export default function PlansPage() {
               {availableDaysInRange ?? '—'}
             </li>
           )}
+          {reminderTime.trim() && (
+            <li>
+              <strong>وقت التذكير:</strong> {formatReminderAr(reminderTime.trim())}
+            </li>
+          )}
         </ul>
         {rangeWarning && <p className="rh-plans__warn">{rangeWarning}</p>}
         <div className="rh-plans__actions">
@@ -376,6 +446,7 @@ export default function PlansPage() {
                 </div>
                 <p className="rh-plans__saved-meta">
                   {p.totalTargetPages} صفحة — ورد {p.dailyPages} ص/يوم
+                  {p.reminderTime && ` — تذكير ${formatReminderAr(p.reminderTime)}`}
                   {p.useDateRange && p.dateStart && p.dateEnd && ` — ${p.dateStart} → ${p.dateEnd}`}
                   {p.weekdayLabels && ` — ${p.weekdayLabels}`}
                 </p>

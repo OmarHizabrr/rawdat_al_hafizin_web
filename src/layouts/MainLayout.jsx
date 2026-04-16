@@ -12,6 +12,7 @@ import {
 import { NavLink, Outlet } from 'react-router-dom'
 import { UserMenu } from '../components/UserMenu.jsx'
 import { useAuth } from '../context/useAuth.js'
+import { usePlanReminders } from '../hooks/usePlanReminders.js'
 import { RhIcon, RH_ICON_STROKE } from '../ui/RhIcon.jsx'
 
 const STORAGE_KEY = 'rh.sidebarCollapsed'
@@ -26,6 +27,7 @@ const nav = [
 
 export function MainLayout() {
   const { user } = useAuth()
+  usePlanReminders()
   const [collapsed, setCollapsed] = useState(() => {
     try {
       return localStorage.getItem(STORAGE_KEY) === '1'

@@ -1015,25 +1015,40 @@ body {
 
 /* صفحة الخطط */
 .rh-plans {
-  max-width: 640px;
+  width: 100%;
+  max-width: min(42rem, 100%);
   margin-inline: auto;
+  padding-inline: clamp(0.65rem, 3.5vw, 1.15rem);
+  padding-block-end: var(--rh-space-8);
+  box-sizing: border-box;
 }
 
-.rh-plans__header {
+.rh-plans__hero {
   margin-bottom: var(--rh-space-6);
+  padding: var(--rh-space-5) var(--rh-space-5);
+  border-radius: var(--rh-radius-xl);
+  background: linear-gradient(
+    145deg,
+    color-mix(in srgb, var(--rh-primary-muted) 58%, var(--rh-surface)) 0%,
+    var(--rh-surface) 72%
+  );
+  border: 1px solid var(--rh-border);
+  box-shadow: var(--rh-shadow-sm);
 }
 
 .rh-plans__title {
-  font-size: 1.75rem;
+  font-size: clamp(1.45rem, 4.5vw, 1.85rem);
   font-weight: 700;
   color: var(--rh-text);
-  margin-bottom: var(--rh-space-2);
+  margin: 0 0 var(--rh-space-2);
+  line-height: var(--rh-leading-tight);
 }
 
 .rh-plans__desc {
   font-size: var(--rh-text-sm);
   color: var(--rh-text-muted);
   line-height: var(--rh-leading-normal);
+  margin: 0;
 }
 
 .rh-plans__section {
@@ -1047,158 +1062,79 @@ body {
   margin: var(--rh-space-4) 0 var(--rh-space-2);
 }
 
-.rh-plans__volume-list {
-  list-style: none;
-  padding: 0;
-  margin: 0;
-  display: flex;
-  flex-direction: column;
-  gap: var(--rh-space-2);
-}
-
-.rh-plans__volume-row {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
+.rh-segment--plans {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 12.5rem), 1fr));
   gap: var(--rh-space-3);
-  padding: var(--rh-space-3) var(--rh-space-4);
-  border-radius: var(--rh-radius-lg);
-  border: 1px solid var(--rh-border);
-  background: var(--rh-surface-tint);
-  transition:
-    border-color 0.15s ease,
-    background 0.15s ease;
 }
 
-.rh-plans__volume-row--on {
-  border-color: color-mix(in srgb, var(--rh-primary) 35%, var(--rh-border));
-  background: color-mix(in srgb, var(--rh-primary-muted) 40%, var(--rh-surface));
+.rh-plans__daily-row {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--rh-space-4);
+  margin-bottom: var(--rh-space-2);
 }
 
-.rh-plans__volume-check {
-  display: flex;
-  align-items: flex-start;
-  gap: var(--rh-space-3);
-  cursor: pointer;
-  flex: 1;
-  min-width: 0;
+@media (min-width: 520px) {
+  .rh-plans__daily-row {
+    grid-template-columns: 1fr 1fr;
+    align-items: start;
+  }
 }
 
-.rh-plans__volume-check input {
-  width: 1.15rem;
-  height: 1.15rem;
-  margin-top: 0.2rem;
-  flex-shrink: 0;
-  accent-color: var(--rh-primary);
+.rh-plans__daily-field {
+  max-width: 11rem;
 }
 
-.rh-plans__volume-info {
-  display: flex;
-  flex-direction: column;
-  gap: var(--rh-space-1);
+@media (max-width: 519px) {
+  .rh-plans__daily-field {
+    max-width: none;
+  }
 }
 
-.rh-plans__volume-name {
-  font-weight: 600;
-  font-size: var(--rh-text-sm);
-  color: var(--rh-text);
+.rh-plans__daily-row .ui-field {
+  margin-bottom: 0;
 }
 
-.rh-plans__volume-max {
-  font-size: var(--rh-text-xs);
-  color: var(--rh-text-muted);
-}
-
-.rh-plans__volume-pages {
-  display: flex;
-  flex-direction: column;
-  gap: var(--rh-space-1);
-  align-items: flex-end;
-}
-
-.rh-plans__volume-pages-label {
-  font-size: var(--rh-text-xs);
-  color: var(--rh-text-muted);
-}
-
-.rh-plans__volume-input {
-  font-family: inherit;
-  font-size: var(--rh-text-sm);
-  width: 5rem;
-  min-height: 2.5rem;
-  padding: 0 var(--rh-space-2);
-  text-align: center;
-  border-radius: var(--rh-radius-md);
-  border: 1px solid var(--rh-border);
-  background: var(--rh-surface);
-  color: var(--rh-text);
-}
-
-.rh-plans__volume-input:focus {
-  outline: none;
-  border-color: var(--rh-primary);
-  box-shadow: var(--rh-focus-ring);
-}
-
-.rh-plans__daily {
-  display: flex;
-  flex-direction: column;
-  gap: var(--rh-space-2);
+.rh-plans__notif-prompt {
+  margin-top: var(--rh-space-1);
   margin-bottom: var(--rh-space-4);
-}
-
-.rh-plans__daily-label {
-  font-size: var(--rh-text-sm);
-  font-weight: 600;
-  color: var(--rh-text);
-}
-
-.rh-plans__daily-input {
-  width: 6rem;
-  text-align: center;
 }
 
 .rh-plans__toggle {
   display: flex;
-  align-items: center;
-  gap: var(--rh-space-2);
+  align-items: flex-start;
+  gap: var(--rh-space-3);
   font-size: var(--rh-text-sm);
   color: var(--rh-text);
   margin-bottom: var(--rh-space-3);
   cursor: pointer;
+  line-height: var(--rh-leading-normal);
 }
 
 .rh-plans__toggle input {
+  flex-shrink: 0;
+  width: 1.15rem;
+  height: 1.15rem;
+  margin-top: 0.2rem;
   accent-color: var(--rh-primary);
 }
 
-.rh-plans__dates {
-  display: flex;
-  flex-wrap: wrap;
+.rh-plans__dates-grid {
+  display: grid;
+  grid-template-columns: 1fr;
   gap: var(--rh-space-4);
   margin-bottom: var(--rh-space-4);
 }
 
-.rh-plans__dates label {
-  display: flex;
-  flex-direction: column;
-  gap: var(--rh-space-1);
+.rh-plans__dates-grid .ui-field {
+  margin-bottom: 0;
 }
 
-.rh-plans__mini-label {
-  font-size: var(--rh-text-xs);
-  color: var(--rh-text-muted);
-}
-
-.rh-plans__date-input {
-  font-family: inherit;
-  font-size: var(--rh-text-sm);
-  padding: var(--rh-space-2) var(--rh-space-3);
-  border-radius: var(--rh-radius-md);
-  border: 1px solid var(--rh-border);
-  background: var(--rh-surface);
-  color: var(--rh-text);
+@media (min-width: 480px) {
+  .rh-plans__dates-grid {
+    grid-template-columns: 1fr 1fr;
+  }
 }
 
 .rh-plans__weekdays {
@@ -1212,7 +1148,8 @@ body {
   font-family: inherit;
   font-size: var(--rh-text-xs);
   font-weight: 600;
-  padding: var(--rh-space-2) var(--rh-space-3);
+  min-height: 2.75rem;
+  padding: var(--rh-space-2) var(--rh-space-4);
   border-radius: var(--rh-radius-pill);
   border: 1px solid var(--rh-border);
   background: var(--rh-surface);
@@ -1284,6 +1221,18 @@ body {
   display: flex;
   flex-wrap: wrap;
   gap: var(--rh-space-3);
+}
+
+@media (max-width: 520px) {
+  .rh-plans__actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .rh-plans__actions .ui-btn {
+    width: 100%;
+    justify-content: center;
+  }
 }
 
 .rh-plans__saved-title {
