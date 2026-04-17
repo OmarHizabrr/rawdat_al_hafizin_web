@@ -1,0 +1,167 @@
+/**
+ * قيم افتراضية (من tokens.css) لكل متغير — للوضع الفاتح والداكن.
+ * تُستخدم لملء المنتقي، والمجموعة «الأصلية»، وزر استعادة الافتراضي.
+ */
+export const THEME_VAR_DEFAULTS = {
+  '--rh-primary': { light: '#1b4332', dark: '#81c995' },
+  '--rh-primary-hover': { light: '#2d6a4f', dark: '#a5d6a7' },
+  '--rh-primary-muted': { light: 'rgba(27, 67, 50, 0.1)', dark: 'rgba(129, 201, 149, 0.16)' },
+  '--rh-on-primary': { light: '#f8fff9', dark: '#0d1f17' },
+  '--rh-accent': { light: '#b8860b', dark: '#d4a84b' },
+  '--rh-bg': { light: '#f8f9fa', dark: '#131314' },
+  '--rh-surface': { light: '#ffffff', dark: '#1e1f20' },
+  '--rh-surface-elevated': { light: '#ffffff', dark: '#282a2c' },
+  '--rh-surface-tint': { light: '#f1f3f4', dark: '#2d2f31' },
+  '--rh-border': { light: '#e8eaed', dark: '#3c4043' },
+  '--rh-border-strong': { light: '#dadce0', dark: '#5f6368' },
+  '--rh-text': { light: '#202124', dark: '#e8eaed' },
+  '--rh-text-muted': { light: '#5f6368', dark: '#bdc1c6' },
+  '--rh-text-placeholder': { light: '#80868b', dark: '#9aa0a6' },
+  '--rh-forest-900': { light: '#1b4332', dark: '#1b4332' },
+  '--rh-forest-800': { light: '#2d6a4f', dark: '#2d6a4f' },
+  '--rh-forest-600': { light: '#40916c', dark: '#40916c' },
+  '--rh-success': { light: '#1e6f4e', dark: '#81c995' },
+  '--rh-success-bg': { light: '#e6f4ef', dark: '#1e3a2e' },
+  '--rh-warning': { light: '#b45309', dark: '#fdd663' },
+  '--rh-warning-bg': { light: '#fff7e6', dark: '#3e2e00' },
+  '--rh-danger': { light: '#b42318', dark: '#f28b82' },
+  '--rh-danger-bg': { light: '#fce8e6', dark: '#3c1f1e' },
+  '--rh-info': { light: '#1a73e8', dark: '#8ab4f8' },
+  '--rh-info-bg': { light: '#e8f0fe', dark: '#1a2c4e' },
+}
+
+/** يبني خريطة كاملة لأحد الوضعين من THEME_VAR_DEFAULTS */
+export function buildDefaultThemeMap(mode) {
+  const out = {}
+  for (const [k, v] of Object.entries(THEME_VAR_DEFAULTS)) {
+    out[k] = mode === 'dark' ? v.dark : v.light
+  }
+  return out
+}
+
+/**
+ * مجموعات ألوان جاهزة (تُطبَّق على الوضع الفاتح أو الداكن حسب اختيارك).
+ * كل عنصر: { id, name, light, dark } — القيم نفس مفاتيح THEME_VAR_DEFAULTS.
+ */
+export const BRANDING_COLOR_PRESETS = [
+  {
+    id: 'original',
+    name: 'الهوية الخضراء (كالتصميم الأصلي)',
+    light: buildDefaultThemeMap('light'),
+    dark: buildDefaultThemeMap('dark'),
+  },
+  {
+    id: 'ocean',
+    name: 'أزرق محيطي',
+    light: {
+      ...buildDefaultThemeMap('light'),
+      '--rh-primary': '#0d47a1',
+      '--rh-primary-hover': '#1565c0',
+      '--rh-primary-muted': 'rgba(13, 71, 161, 0.12)',
+      '--rh-on-primary': '#ffffff',
+      '--rh-accent': '#00838f',
+      '--rh-bg': '#f0f7ff',
+      '--rh-surface': '#ffffff',
+      '--rh-surface-elevated': '#fafdff',
+      '--rh-surface-tint': '#e3f2fd',
+      '--rh-border': '#bbdefb',
+      '--rh-border-strong': '#90caf9',
+      '--rh-forest-900': '#0d47a1',
+      '--rh-forest-800': '#1565c0',
+      '--rh-forest-600': '#1976d2',
+      '--rh-info': '#0277bd',
+      '--rh-info-bg': '#e1f5fe',
+    },
+    dark: {
+      ...buildDefaultThemeMap('dark'),
+      '--rh-primary': '#90caf9',
+      '--rh-primary-hover': '#bbdefb',
+      '--rh-primary-muted': 'rgba(144, 202, 249, 0.18)',
+      '--rh-on-primary': '#0d1b2a',
+      '--rh-accent': '#4dd0e1',
+      '--rh-bg': '#0d1117',
+      '--rh-surface': '#161b22',
+      '--rh-surface-elevated': '#1c2128',
+      '--rh-surface-tint': '#21262d',
+      '--rh-border': '#30363d',
+      '--rh-border-strong': '#484f58',
+      '--rh-forest-900': '#0d47a1',
+      '--rh-forest-800': '#1565c0',
+      '--rh-forest-600': '#1976d2',
+    },
+  },
+  {
+    id: 'plum',
+    name: 'بنفسجي هادئ',
+    light: {
+      ...buildDefaultThemeMap('light'),
+      '--rh-primary': '#4a148c',
+      '--rh-primary-hover': '#6a1b9a',
+      '--rh-primary-muted': 'rgba(74, 20, 140, 0.1)',
+      '--rh-on-primary': '#faf5ff',
+      '--rh-accent': '#c62828',
+      '--rh-bg': '#faf7fc',
+      '--rh-surface': '#ffffff',
+      '--rh-surface-tint': '#f3e5f5',
+      '--rh-border': '#e1bee7',
+      '--rh-border-strong': '#ce93d8',
+      '--rh-forest-900': '#311b92',
+      '--rh-forest-800': '#4527a0',
+      '--rh-forest-600': '#5e35b1',
+    },
+    dark: {
+      ...buildDefaultThemeMap('dark'),
+      '--rh-primary': '#ce93d8',
+      '--rh-primary-hover': '#e1bee7',
+      '--rh-primary-muted': 'rgba(206, 147, 216, 0.2)',
+      '--rh-on-primary': '#1a0d1f',
+      '--rh-accent': '#ef9a9a',
+      '--rh-bg': '#121018',
+      '--rh-surface': '#1c1624',
+      '--rh-surface-elevated': '#241d2e',
+      '--rh-surface-tint': '#2a2235',
+      '--rh-border': '#3d3448',
+      '--rh-border-strong': '#55486a',
+      '--rh-forest-900': '#311b92',
+      '--rh-forest-800': '#4527a0',
+      '--rh-forest-600': '#5e35b1',
+    },
+  },
+  {
+    id: 'warm',
+    name: 'دافئ (ترابي)',
+    light: {
+      ...buildDefaultThemeMap('light'),
+      '--rh-primary': '#5d4037',
+      '--rh-primary-hover': '#6d4c41',
+      '--rh-primary-muted': 'rgba(93, 64, 55, 0.1)',
+      '--rh-on-primary': '#fff8f1',
+      '--rh-accent': '#bf360c',
+      '--rh-bg': '#faf6f1',
+      '--rh-surface': '#ffffff',
+      '--rh-surface-tint': '#f5ebe0',
+      '--rh-border': '#e0d4c5',
+      '--rh-border-strong': '#d7ccc8',
+      '--rh-forest-900': '#4e342e',
+      '--rh-forest-800': '#5d4037',
+      '--rh-forest-600': '#6d4c41',
+    },
+    dark: {
+      ...buildDefaultThemeMap('dark'),
+      '--rh-primary': '#bcaaa4',
+      '--rh-primary-hover': '#d7ccc8',
+      '--rh-primary-muted': 'rgba(188, 170, 164, 0.18)',
+      '--rh-on-primary': '#1c1008',
+      '--rh-accent': '#ffab91',
+      '--rh-bg': '#141210',
+      '--rh-surface': '#1e1a17',
+      '--rh-surface-elevated': '#26211d',
+      '--rh-surface-tint': '#2d2722',
+      '--rh-border': '#3e3832',
+      '--rh-border-strong': '#554a42',
+      '--rh-forest-900': '#4e342e',
+      '--rh-forest-800': '#5d4037',
+      '--rh-forest-600': '#6d4c41',
+    },
+  },
+]

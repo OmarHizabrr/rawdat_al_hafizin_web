@@ -1,19 +1,21 @@
 import { ArrowLeft } from 'lucide-react'
-import { useCallback, useEffect, useState } from 'react'
+import { startTransition, useCallback, useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
+import { BrandingColorRow } from '../components/BrandingColorRow.jsx'
+import { SITE_DESCRIPTION, SITE_NAME, SITE_OG_IMAGE_PATH, SITE_TITLE } from '../config/site.js'
+import { BRANDING_COLOR_PRESETS } from '../data/brandingPresets.js'
 import { BRANDING_THEME_GROUPS } from '../data/brandingThemeFields.js'
 import { useAuth } from '../context/useAuth.js'
 import { useSiteContent } from '../context/useSiteContent.js'
 import { saveBranding } from '../services/siteConfigService.js'
 import { sanitizeImageUrl } from '../utils/brandingAssets.js'
 import { CrossNav } from '../components/CrossNav.jsx'
-import { Button, TextAreaField, TextField, useToast } from '../ui/index.js'
+import { Button, Modal, TextAreaField, TextField, useToast } from '../ui/index.js'
 import { RhIcon, RH_ICON_STROKE } from '../ui/RhIcon.jsx'
 
 function cloneThemeMap(map) {
   if (!map || typeof map !== 'object') return {}
-  const out = { ...map }
-  return out
+  return { ...map }
 }
 
 export default function AdminBrandingPage() {
@@ -27,22 +29,29 @@ export default function AdminBrandingPage() {
   const [logoUrl, setLogoUrl] = useState(branding.logoUrl)
   const [themeLight, setThemeLight] = useState(() => cloneThemeMap(branding.themeLight))
   const [themeDark, setThemeDark] = useState(() => cloneThemeMap(branding.themeDark))
+  const [resetAllOpen, setResetAllOpen] = useState(false)
+  const [lightSelectKey, setLightSelectKey] = useState(0)
+  const [darkSelectKey, setDarkSelectKey] = useState(0)
 
   useEffect(() => {
     document.title = `هوية الموقع — ${branding.siteTitle}`
   }, [branding.siteTitle])
 
   useEffect(() => {
-    setSiteName(branding.siteName)
-    setSiteTitle(branding.siteTitle)
-    setSiteDescription(branding.siteDescription)
-    setOgImagePath(branding.ogImagePath)
-    setLogoUrl(branding.logoUrl)
+    startTransition(() => {
+      setSiteName(branding.siteName)
+      setSiteTitle(branding.siteTitle)
+      setSiteDescription(branding.siteDescription)
+      setOgImagePath(branding.ogImagePath)
+      setLogoUrl(branding.logoUrl)
+    })
   }, [branding.siteName, branding.siteTitle, branding.siteDescription, branding.ogImagePath, branding.logoUrl])
 
   useEffect(() => {
-    setThemeLight(cloneThemeMap(branding.themeLight))
-    setThemeDark(cloneThemeMap(branding.themeDark))
+    startTransition(() => {
+      setThemeLight(cloneThemeMap(branding.themeLight))
+      setThemeDark(cloneThemeMap(branding.themeDark))
+    })
   }, [branding.themeLight, branding.themeDark])
 
   const setLightVar = useCallback((name, value) => {
@@ -62,6 +71,38 @@ export default function AdminBrandingPage() {
       return next
     })
   }, [])
+
+  const applyLightPreset = useCallback((id) => {
+    if (!id) return
+    const p = BRANDING_COLOR_PRESETS.find((x) => x.id === id)
+    if (p) {
+      setThemeLight({ ...p.light })
+      setLightSelectKey((k) => k + 1)
+    }
+  }, [])
+
+  const applyDarkPreset = useCallback((id) => {
+    if (!id) return
+    const p = BRANDING_COLOR_PRESETS.find((x) => x.id === id)
+    if (p) {
+      setThemeDark({ ...p.dark })
+      setDarkSelectKey((k) => k + 1)
+    }
+  }, [])
+
+  const resetEntireFormToProgramDefaults = useCallback(() => {
+    setSiteName(SITE_NAME)
+    setSiteTitle(SITE_TITLE)
+    setSiteDescription(SITE_DESCRIPTION)
+    setOgImagePath(SITE_OG_IMAGE_PATH)
+    setLogoUrl('')
+    setThemeLight({})
+    setThemeDark({})
+    setLightSelectKey((k) => k + 1)
+    setDarkSelectKey((k) => k + 1)
+    setResetAllOpen(false)
+    toast.info('تمت إعادة النموذج للقيم الافتراضية. اضغط «حفظ التغييرات» لإرسالها إلى السحابة.', '')
+  }, [toast])
 
   const onSave = async () => {
     if (!user) return
@@ -86,30 +127,50 @@ export default function AdminBrandingPage() {
     { to: '/app', label: 'الرئيسية' },
   ]
 
-  const renderThemePanel = (label, map, setVar) => (
-    <div className="rh-admin-branding__theme-panel card">
-      <h3 className="rh-admin-branding__theme-panel-title">{label}</h3>
-      <p className="rh-admin-branding__theme-hint">
-        اترك الحقل فارغاً للعودة إلى القيمة الافتراضية في التصميم. استخدم صيغة <code className="rh-admin-dashboard__code">#RRGGBB</code> أو{' '}
-        <code className="rh-admin-dashboard__code">rgb()</code> / <code className="rh-admin-dashboard__code">rgba()</code>.
-      </p>
+  const renderThemePanel = (title, description, map, setVar, mode, onPreset, selectKey) => (
+    <section className="rh-admin-branding__theme-panel card">
+      <h2 className="rh-admin-branding__step-title">{title}</h2>
+      <p className="rh-admin-branding__step-desc">{description}</p>
+
+      <div className="rh-admin-branding__preset-block">
+        <label className="rh-admin-branding__preset-label" htmlFor={`preset-${mode}`}>
+          تعبئة سريعة بمجموعة ألوان جاهزة
+        </label>
+        <select
+          key={selectKey}
+          id={`preset-${mode}`}
+          className="rh-admin-branding__preset-select"
+          defaultValue=""
+          onChange={(e) => onPreset(e.target.value)}
+        >
+          <option value="">— اختر مجموعة —</option>
+          {BRANDING_COLOR_PRESETS.map((p) => (
+            <option key={p.id} value={p.id}>
+              {p.name}
+            </option>
+          ))}
+        </select>
+      </div>
+
       {BRANDING_THEME_GROUPS.map((group) => (
-        <div key={group.id} className="rh-admin-branding__theme-group">
-          <h4 className="rh-admin-branding__theme-group-title">{group.label}</h4>
-          <div className="rh-admin-branding__theme-grid">
-            {group.vars.map(({ name, label: vlabel }) => (
-              <TextField
+        <details key={group.id} className="rh-admin-branding__details" open={group.id === 'core'}>
+          <summary className="rh-admin-branding__details-summary">{group.label}</summary>
+          <div className="rh-admin-branding__color-fields">
+            {group.vars.map(({ name, label: vlabel, useColorPicker }) => (
+              <BrandingColorRow
                 key={name}
-                label={`${vlabel} (${name})`}
+                label={vlabel}
+                name={name}
                 value={map[name] || ''}
-                onChange={(e) => setVar(name, e.target.value)}
-                placeholder="—"
+                onChange={setVar}
+                mode={mode}
+                useColorPicker={useColorPicker !== false}
               />
             ))}
           </div>
-        </div>
+        </details>
       ))}
-    </div>
+    </section>
   )
 
   return (
@@ -122,55 +183,98 @@ export default function AdminBrandingPage() {
         </div>
         <h1 className="rh-admin-branding__title">هوية الموقع</h1>
         <p className="rh-admin-branding__desc">
-          النصوص والعناوين، شعار الموقع (رابط أو مسار)، صورة المشاركة، وتجاوزات ألوان CSS للوضعين الفاتح والداكن — تُطبَّق
-          فوراً على الواجهة بعد الحفظ. النصوص التي تستخدم <code className="rh-admin-dashboard__code">{'{siteName}'}</code> في
-          «النصوص الثابتة» تتبع اسم الموقع هنا.
+          خطوات بسيطة: النصوص والشعار أولاً، ثم ألوان الوضع الفاتح والداكن عبر قائمة جاهزة أو منتقي الألوان. لا حاجة لفهم أسماء
+          المتغيرات التقنية — استخدم القوائم والألوان. احفظ في النهاية، أو استعد الافتراضي ثم احفظ.
         </p>
       </header>
 
       <CrossNav items={crossItems} className="rh-admin-dashboard__cross" />
 
+      <div className="rh-admin-branding__toolbar card">
+        <Button type="button" variant="primary" onClick={onSave}>
+          حفظ التغييرات في السحابة
+        </Button>
+        <Button type="button" variant="secondary" onClick={() => setResetAllOpen(true)}>
+          إعادة الوضع الافتراضي (النموذج)
+        </Button>
+      </div>
+
       <section className="rh-admin-branding__form card">
-        <TextField label="اسم الموقع القصير" value={siteName} onChange={(e) => setSiteName(e.target.value)} />
-        <TextField label="العنوان الكامل (يظهر مع أسماء الصفحات)" value={siteTitle} onChange={(e) => setSiteTitle(e.target.value)} />
+        <h2 className="rh-admin-branding__step-title">١ — اسم الموقع والشعار</h2>
+        <p className="rh-admin-branding__step-desc">يظهر الاسم والعنوان في التبويبات والواجهة؛ الشعار يظهر في القائمة الجانبية وصفحة الدخول والصفحة العامة.</p>
+        <TextField label="اسم الموقع القصير" hint="مثال: روضة الحافظين" value={siteName} onChange={(e) => setSiteName(e.target.value)} />
+        <TextField
+          label="عنوان الموقع في المتصفح"
+          hint="يُضاف بعد اسم كل صفحة، مثل: «الرئيسية — …»"
+          value={siteTitle}
+          onChange={(e) => setSiteTitle(e.target.value)}
+        />
         <TextAreaField label="وصف الموقع" value={siteDescription} onChange={(e) => setSiteDescription(e.target.value)} rows={4} />
         <TextField
-          label="رابط أو مسار الشعار"
-          hint="مثال: https://…/logo.png أو /logo.png — يُعرض في الشريط الجانبي، تسجيل الدخول، والصفحة العامة."
+          label="رابط صورة الشعار"
+          hint="الصق رابطاً يبدأ بـ https، أو اكتب مساراً يبدأ بـ / مثل /logo.png"
           value={logoUrl}
           onChange={(e) => setLogoUrl(e.target.value)}
         />
         {sanitizeImageUrl(logoUrl) ? (
           <div className="rh-admin-branding__preview">
-            <span className="rh-admin-branding__preview-label">معاينة</span>
-            <img src={sanitizeImageUrl(logoUrl)} alt="" className="rh-admin-branding__preview-img" width={72} height={72} />
+            <span className="rh-admin-branding__preview-label">معاينة الشعار</span>
+            <img src={sanitizeImageUrl(logoUrl)} alt="" className="rh-admin-branding__preview-img" width={80} height={80} />
           </div>
-        ) : null}
+        ) : (
+          <p className="rh-admin-branding__preview-fallback">بدون رابط: سيُستخدم الشعار الافتراضي /logo.png</p>
+        )}
         <TextField
-          label="صورة المشاركة (OG) — رابط أو مسار"
-          hint="رابط https كامل، أو مسار من جذر الموقع مثل /logo.png"
+          label="صورة المشاركة (عند نشر الرابط)"
+          hint="رابط https كامل أو مسار من موقعك مثل /logo.png"
           value={ogImagePath}
           onChange={(e) => setOgImagePath(e.target.value)}
         />
-        <div className="rh-admin-users__modal-actions">
-          <Button type="button" variant="primary" onClick={onSave}>
-            حفظ
-          </Button>
-        </div>
       </section>
 
-      {renderThemePanel('ألوان الوضع الفاتح', themeLight, setLightVar)}
+      {renderThemePanel(
+        '٢ — ألوان الوضع الفاتح',
+        'اختر مجموعة جاهزة من القائمة، أو افتح كل مجموعة وعدّل اللون بالمربّع أو بالكود. «مسح» يعيد اللون للتصميم الافتراضي.',
+        themeLight,
+        setLightVar,
+        'light',
+        applyLightPreset,
+        lightSelectKey,
+      )}
 
-      {renderThemePanel('ألوان الوضع الداكن', themeDark, setDarkVar)}
+      {renderThemePanel(
+        '٣ — ألوان الوضع الداكن',
+        'نفس الفكرة للوضع الداكن (عندما يختار المستخدم الوضع الداكن من الإعدادات).',
+        themeDark,
+        setDarkVar,
+        'dark',
+        applyDarkPreset,
+        darkSelectKey,
+      )}
 
-      <div className="rh-admin-branding__theme-actions card">
+      <section className="rh-admin-branding__theme-actions card">
         <Button type="button" variant="secondary" onClick={() => setThemeLight({})}>
-          مسح تجاوزات الألوان (فاتح)
+          مسح كل ألوان الوضع الفاتح
         </Button>
         <Button type="button" variant="secondary" onClick={() => setThemeDark({})}>
-          مسح تجاوزات الألوان (داكن)
+          مسح كل ألوان الوضع الداكن
         </Button>
-      </div>
+      </section>
+
+      <Modal open={resetAllOpen} title="إعادة الوضع الافتراضي؟" onClose={() => setResetAllOpen(false)} size="sm">
+        <p className="rh-admin-users__warn">
+          سيتم ملء هذا النموذج بالقيم البرمجية الافتراضية (الاسم، العنوان، الوصف، بدون شعار مخصّص، بدون ألوان مخصّصة). لن تُحفظ
+          التغييرات في Firebase حتى تضغط «حفظ التغييرات في السحابة».
+        </p>
+        <div className="rh-admin-users__modal-actions">
+          <Button type="button" variant="danger" onClick={resetEntireFormToProgramDefaults}>
+            نعم، صفّر النموذج
+          </Button>
+          <Button type="button" variant="ghost" onClick={() => setResetAllOpen(false)}>
+            إلغاء
+          </Button>
+        </div>
+      </Modal>
     </div>
   )
 }

@@ -9,7 +9,7 @@ export const BRANDING_THEME_GROUPS = [
     vars: [
       { name: '--rh-primary', label: 'لون أساسي' },
       { name: '--rh-primary-hover', label: 'أساسي عند المرور' },
-      { name: '--rh-primary-muted', label: 'أساسي خافت (خلفيات شارات)' },
+      { name: '--rh-primary-muted', label: 'أساسي خافت (شفافية فوق الخلفية)', useColorPicker: false },
       { name: '--rh-on-primary', label: 'نص فوق الأساسي' },
       { name: '--rh-accent', label: 'تمييز / ذهبي' },
     ],
