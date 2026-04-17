@@ -44,3 +44,14 @@ export async function ensureUserProfile(firebaseUser) {
 
   return { ...existing, ...authPayload }
 }
+
+/** الخطة المعروضة في الصفحة الرئيسية (معرّف مستند خطة). */
+export async function setUserDefaultPlanId(firebaseUser, planId) {
+  if (!firebaseUser?.uid) return
+  const docRef = firestoreApi.getUserDoc(firebaseUser.uid)
+  await firestoreApi.updateData({
+    docRef,
+    data: { defaultPlanId: planId || null },
+    userData: firebaseUser,
+  })
+}

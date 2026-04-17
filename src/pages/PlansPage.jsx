@@ -1,9 +1,10 @@
-import { Pencil, Plus, Trash2 } from 'lucide-react'
+import { Pencil, Plus, Star, Trash2 } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 import { VOLUMES, VOLUME_BY_ID } from '../data/volumes.js'
 import { SITE_TITLE } from '../config/site.js'
 import { useAuth } from '../context/useAuth.js'
 import { firestoreApi } from '../services/firestoreApi.js'
+import { setUserDefaultPlanId } from '../services/userService.js'
 import { countDaysInRange, sessionsNeeded } from '../utils/planSchedule.js'
 import { loadPlans, savePlans, subscribePlans } from '../utils/plansStorage.js'
 import {
@@ -294,8 +295,17 @@ export default function PlansPage() {
   const deletePlan = async (id) => {
     const next = savedPlans.filter((p) => p.id !== id)
     await savePlans(user?.uid, next, user ?? {})
+    if (user?.defaultPlanId === id) {
+      await setUserDefaultPlanId(user, null)
+    }
     toast.info('حُذفت الخطة.', '')
     setDeletingPlan(null)
+  }
+
+  const setAsHomeDefault = async (planId) => {
+    if (!user) return
+    await setUserDefaultPlanId(user, planId)
+    toast.success('أصبحت هذه الخطة هي المعروضة في الصفحة الرئيسية.', 'تم')
   }
 
   const typeLabel = (v) => PLAN_TYPES.find((t) => t.value === v)?.label ?? v
@@ -329,7 +339,12 @@ export default function PlansPage() {
               <li key={p.id} className="rh-plans__saved-card">
                 <div className="rh-plans__saved-head">
                   <strong>{p.name}</strong>
-                  <span className="rh-plans__saved-badge">{typeLabel(p.planType)}</span>
+                  <span className="rh-plans__saved-badges">
+                    <span className="rh-plans__saved-badge">{typeLabel(p.planType)}</span>
+                    {user?.defaultPlanId === p.id && (
+                      <span className="rh-plans__saved-badge rh-plans__saved-badge--home">الرئيسية</span>
+                    )}
+                  </span>
                 </div>
                 <p className="rh-plans__saved-meta">
                   {p.totalTargetPages} صفحة — ورد {p.dailyPages} ص/يوم
@@ -345,6 +360,17 @@ export default function PlansPage() {
                   ))}
                 </ul>
                 <div className="rh-plans__card-actions">
+                  <Button
+                    type="button"
+                    variant={user?.defaultPlanId === p.id ? 'primary' : 'secondary'}
+                    size="sm"
+                    className="rh-plans__default-btn"
+                    onClick={() => setAsHomeDefault(p.id)}
+                    title="تظهر هذه الخطة في الصفحة الرئيسية مع نسبة الإنجاز"
+                  >
+                    <RhIcon as={Star} size={16} strokeWidth={RH_ICON_STROKE} />
+                    {user?.defaultPlanId === p.id ? 'افتراضية للرئيسية' : 'للرئيسية'}
+                  </Button>
                   <Button type="button" variant="secondary" size="sm" onClick={() => openEditModal(p)}>
                     <RhIcon as={Pencil} size={16} strokeWidth={RH_ICON_STROKE} />
                     تعديل

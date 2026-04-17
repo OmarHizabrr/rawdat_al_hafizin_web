@@ -1,9 +1,11 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Plus } from 'lucide-react'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { SITE_TITLE } from '../config/site.js'
 import { useAuth } from '../context/useAuth.js'
 import { loadPlans, subscribePlans } from '../utils/plansStorage.js'
 import { addWird, deleteWird, subscribeAwrad, updateWird } from '../utils/awradStorage.js'
+import { clampProgressPercent, computePlanProgress } from '../utils/planProgress.js'
 import { Button, Modal, NumberStepField, ScrollArea, TextField, useToast } from '../ui/index.js'
 import { RhIcon, RH_ICON_STROKE } from '../ui/RhIcon.jsx'
 
@@ -12,16 +14,15 @@ function asDate(v) {
   return Number.isNaN(d.getTime()) ? '' : d.toLocaleDateString('ar-SA')
 }
 
-function pct(done, total) {
-  if (!total || total <= 0) return 0
-  return Math.min(100, (done / total) * 100)
-}
-
 const WEEKDAY_AR = ['الأحد', 'الإثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت']
 
 export default function AwradPage() {
   const { user } = useAuth()
   const toast = useToast()
+  const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
+  const planFromUrl = searchParams.get('plan')
+  const clearedDeepLinkRef = useRef(false)
 
   const [plans, setPlans] = useState([])
   const [awrad, setAwrad] = useState([])
@@ -50,6 +51,25 @@ export default function AwradPage() {
   useEffect(() => {
     document.title = `الأوراد — ${SITE_TITLE}`
   }, [])
+
+  useEffect(() => {
+    clearedDeepLinkRef.current = false
+  }, [planFromUrl])
+
+  useEffect(() => {
+    if (!planFromUrl || !plans.length) return
+    if (!plans.some((p) => p.id === planFromUrl)) return
+    const id = planFromUrl
+    const t = window.setTimeout(() => {
+      setSelectedPlanId(id)
+      applyPlanDefaults(id, plans, awrad)
+      if (!clearedDeepLinkRef.current) {
+        clearedDeepLinkRef.current = true
+        navigate('/app/awrad', { replace: true })
+      }
+    }, 0)
+    return () => window.clearTimeout(t)
+  }, [planFromUrl, plans, awrad, applyPlanDefaults, navigate])
 
   useEffect(() => {
     if (!user?.uid) return
@@ -87,36 +107,20 @@ export default function AwradPage() {
     [awrad, selectedPlanId],
   )
 
-  const planAwradAsc = useMemo(
-    () => [...planAwrad].sort((a, b) => Date.parse(a.recordedAt || 0) - Date.parse(b.recordedAt || 0)),
-    [planAwrad],
+  const progress = useMemo(
+    () => computePlanProgress(selectedPlan, awrad),
+    [selectedPlan, awrad],
   )
 
-  const achievedPages = useMemo(
-    () => planAwrad.reduce((sum, w) => sum + (Number(w.pagesCount) || 0), 0),
-    [planAwrad],
-  )
+  const achievedPages = progress?.achievedPages ?? 0
+  const reachedPage = progress?.reachedPage ?? 0
+  const targetPages = progress?.targetPages ?? 0
+  const progressPercent = progress?.progressPercent ?? 0
+  const remainingPages = progress?.remainingPages ?? 0
+  const nextFromPage = progress?.nextFromPage ?? 1
+  const minDaily = progress?.minDaily ?? 1
 
-  const reachedPage = useMemo(() => {
-    let cursor = 0
-    for (const w of planAwradAsc) {
-      const pages = Math.max(0, Number(w.pagesCount) || 0)
-      if (w.fromPage && w.toPage) {
-        cursor = Math.max(cursor, Number(w.toPage) || 0)
-      } else {
-        cursor += pages
-      }
-    }
-    return cursor
-  }, [planAwradAsc])
-
-  const targetPages = selectedPlan?.totalTargetPages || 0
-  const progressPercent = pct(achievedPages, targetPages)
-  const remainingPages = Math.max(0, targetPages - achievedPages)
-
-  const minDaily = Math.max(1, Number(selectedPlan?.dailyPages) || 1)
   const computedPages = mode === 'count' ? pagesCount : Math.max(0, toPage - fromPage + 1)
-  const nextFromPage = reachedPage + 1
   const todayIdx = new Date().getDay()
   const todayLabel = WEEKDAY_AR[todayIdx]
   const requiredDaysLabel =
@@ -162,7 +166,7 @@ export default function AwradPage() {
     }
 
     const nextAchieved = achievedPages + computedPages
-    const nextPercent = pct(nextAchieved, targetPages)
+    const nextPercent = clampProgressPercent(nextAchieved, targetPages)
     toast.success(
       `تم تسجيل ${computedPages} صفحات. وصلت إلى ${nextAchieved}/${targetPages || '—'} (${nextPercent.toFixed(1)}%).`,
       'تم تسجيل الورد',
