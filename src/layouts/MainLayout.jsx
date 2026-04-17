@@ -52,7 +52,7 @@ export function MainLayout() {
     }
   }, [collapsed])
 
-  const closeMobile = useCallback(() => setMobileOpen(false), [])
+  const closeMobile = useCallback(() => setMobileOpen(false), [setMobileOpen])
 
   useEffect(() => {
     if (!mobileOpen) return
