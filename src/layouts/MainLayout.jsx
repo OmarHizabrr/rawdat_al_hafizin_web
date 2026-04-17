@@ -11,11 +11,12 @@ import {
   Settings,
   Users,
 } from 'lucide-react'
-import { NavLink, Outlet } from 'react-router-dom'
+import { NavLink, Outlet, useLocation } from 'react-router-dom'
 import { UserMenu } from '../components/UserMenu.jsx'
 import { isAdmin } from '../config/roles.js'
 import { useAuth } from '../context/useAuth.js'
 import { usePlanReminders } from '../hooks/usePlanReminders.js'
+import { getImpersonateUid, withImpersonationQuery } from '../utils/impersonation.js'
 import { RhIcon, RH_ICON_STROKE } from '../ui/RhIcon.jsx'
 
 const STORAGE_KEY = 'rh.sidebarCollapsed'
@@ -33,8 +34,10 @@ const adminNavItem = { to: '/app/admin/users', label: 'المستخدمون', Ic
 
 export function MainLayout() {
   const { user } = useAuth()
+  const { search } = useLocation()
+  const impersonateUid = getImpersonateUid(user, search)
   const nav = isAdmin(user) ? [...baseNav.slice(0, 4), adminNavItem, ...baseNav.slice(4)] : baseNav
-  usePlanReminders(user)
+  usePlanReminders(impersonateUid ? null : user)
   const [collapsed, setCollapsed] = useState(() => {
     try {
       return localStorage.getItem(STORAGE_KEY) === '1'
@@ -79,7 +82,7 @@ export function MainLayout() {
           {nav.map((item) => (
             <NavLink
               key={item.to}
-              to={item.to}
+              to={withImpersonationQuery(item.to, impersonateUid)}
               end={item.end}
               aria-label={item.label}
               className={({ isActive }) => ['rh-nav-link', isActive ? 'rh-nav-link--active' : ''].join(' ')}

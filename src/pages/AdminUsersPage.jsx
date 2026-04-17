@@ -1,3 +1,5 @@
+import { Home } from 'lucide-react'
+import { Link } from 'react-router-dom'
 import { useEffect, useMemo, useState } from 'react'
 import { SITE_TITLE } from '../config/site.js'
 import { USER_ROLES, isAdmin, normalizeRole } from '../config/roles.js'
@@ -11,6 +13,7 @@ import {
 import { CrossNav } from '../components/CrossNav.jsx'
 import { PeekButton } from '../components/PeekButton.jsx'
 import { Button, Modal, SearchField, useToast } from '../ui/index.js'
+import { RhIcon, RH_ICON_STROKE } from '../ui/RhIcon.jsx'
 
 export default function AdminUsersPage() {
   const { user: actor } = useAuth()
@@ -114,8 +117,8 @@ export default function AdminUsersPage() {
         <p className="rh-admin-users__desc">
           عرض الحسابات، تغيير الدور (طالب / معلم / ادمن)، إيقاف الحساب، أو حذف بياناته من Firestore. لإسناد أول
           حساب أدمن يدوياً، عدّل الحقل <code className="rh-admin-users__code">role</code> في مستند المستخدم إلى{' '}
-          <code className="rh-admin-users__code">admin</code> من وحدة تحكم Firebase. استخدم أيقونة العين للانتقال
-          إلى صفحة خطط المستخدم ثم إلى أوراده من هناك.
+          <code className="rh-admin-users__code">admin</code> من وحدة تحكم Firebase. أيقونة المنزل تفتح رئيسيته
+          (مع التعديل نيابة عنه)، وأيقونة العين صفحة خططه.
         </p>
         <CrossNav items={adminCrossItems} className="rh-admin-users__cross" />
       </header>
@@ -148,11 +151,21 @@ export default function AdminUsersPage() {
                   <strong className="rh-admin-users__name">{name}</strong>
                   <span className="rh-admin-users__email">{u.email || u.uid}</span>
                 </div>
-                <PeekButton
-                  className="rh-admin-users__peek-user"
-                  title="فتح صفحة خطط المستخدم"
-                  to={`/app/plans?uid=${encodeURIComponent(u.uid)}`}
-                />
+                <div className="rh-admin-users__peek-row">
+                  <Link
+                    className="rh-peek-btn"
+                    title="الصفحة الرئيسية كهذا المستخدم (تعديل نيابة)"
+                    aria-label="الصفحة الرئيسية كهذا المستخدم"
+                    to={`/app?uid=${encodeURIComponent(u.uid)}`}
+                  >
+                    <RhIcon as={Home} size={18} strokeWidth={RH_ICON_STROKE} />
+                  </Link>
+                  <PeekButton
+                    className="rh-admin-users__peek-user"
+                    title="فتح صفحة خطط المستخدم"
+                    to={`/app/plans?uid=${encodeURIComponent(u.uid)}`}
+                  />
+                </div>
               </div>
 
               <div className="rh-admin-users__row">

@@ -1,4 +1,4 @@
-import { normalizeRole } from '../config/roles.js'
+import { isAdmin, normalizeRole } from '../config/roles.js'
 import { firestoreApi } from './firestoreApi.js'
 
 function toAuthUserPayload(u) {
@@ -49,10 +49,16 @@ export async function ensureUserProfile(firebaseUser) {
   return merged
 }
 
-/** الخطة المعروضة في الصفحة الرئيسية (معرّف مستند خطة). */
-export async function setUserDefaultPlanId(firebaseUser, planId) {
+/**
+ * الخطة المعروضة في الصفحة الرئيسية (معرّف مستند خطة).
+ * للمشرف: يمكن تمرير `options.targetUid` لتحديث افتراضي مستخدم آخر.
+ */
+export async function setUserDefaultPlanId(firebaseUser, planId, options = {}) {
   if (!firebaseUser?.uid) return
-  const docRef = firestoreApi.getUserDoc(firebaseUser.uid)
+  const requested = typeof options.targetUid === 'string' ? options.targetUid.trim() : ''
+  const targetUid =
+    requested && isAdmin(firebaseUser) && requested !== firebaseUser.uid ? requested : firebaseUser.uid
+  const docRef = firestoreApi.getUserDoc(targetUid)
   await firestoreApi.updateData({
     docRef,
     data: { defaultPlanId: planId || null },

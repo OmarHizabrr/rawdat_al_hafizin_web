@@ -2142,8 +2142,15 @@ a.rh-peek-btn {
   word-break: break-word;
 }
 
-.rh-admin-users__peek-user {
+.rh-admin-users__peek-row {
+  display: flex;
+  align-items: center;
+  gap: var(--rh-space-1);
   margin-inline-start: auto;
+}
+
+.rh-admin-users__peek-user {
+  margin-inline-start: 0;
 }
 
 .rh-admin-users__row {

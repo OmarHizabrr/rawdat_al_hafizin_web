@@ -1,15 +1,17 @@
 import { BookOpen, ChevronDown, ListOrdered, NotebookPen, Sparkles } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useLocation, useSearchParams } from 'react-router-dom'
 import { SITE_NAME, SITE_TITLE } from '../config/site.js'
 import { CrossNav } from '../components/CrossNav.jsx'
 import { isAdmin } from '../config/roles.js'
 import { useAuth } from '../context/useAuth.js'
+import { firestoreApi } from '../services/firestoreApi.js'
 import { setUserDefaultPlanId } from '../services/userService.js'
 import { useOnClickOutside } from '../ui/hooks/useOnClickOutside.js'
 import { loadPlans, subscribePlans } from '../utils/plansStorage.js'
 import { subscribeAwrad } from '../utils/awradStorage.js'
 import { computePlanProgress } from '../utils/planProgress.js'
+import { getImpersonateUid, withImpersonationQuery } from '../utils/impersonation.js'
 
 const PLAN_TYPES = [
   { value: 'hifz', label: 'حفظ' },
@@ -23,33 +25,66 @@ function typeLabel(v) {
 
 export default function AppHomePage() {
   const { user } = useAuth()
+  const { search } = useLocation()
+  const [searchParams] = useSearchParams()
+  const uidParam = searchParams.get('uid')?.trim() || ''
+
+  const contextUserId = useMemo(() => {
+    if (!user?.uid) return ''
+    if (uidParam && isAdmin(user)) return uidParam
+    return user.uid
+  }, [user, uidParam])
+
+  const actingAsUser = Boolean(user?.uid && contextUserId && contextUserId !== user.uid)
+  const impersonateUid = getImpersonateUid(user, search)
+
+  const appPath = useCallback(
+    (path) => withImpersonationQuery(path, impersonateUid),
+    [impersonateUid],
+  )
+
   const [plans, setPlans] = useState([])
   const [awrad, setAwrad] = useState([])
+  const [subjectProfile, setSubjectProfile] = useState(null)
   const [planMenuOpen, setPlanMenuOpen] = useState(false)
   const planMenuRef = useRef(null)
 
   useOnClickOutside(planMenuRef, () => setPlanMenuOpen(false), planMenuOpen)
 
   useEffect(() => {
-    document.title = `الرئيسية — ${SITE_TITLE}`
-  }, [])
+    document.title = actingAsUser ? `الرئيسية (نيابة) — ${SITE_TITLE}` : `الرئيسية — ${SITE_TITLE}`
+  }, [actingAsUser])
 
   useEffect(() => {
-    if (!user?.uid) return
-    loadPlans(user.uid).then(setPlans)
-    const unsubP = subscribePlans(user.uid, setPlans)
-    const unsubA = subscribeAwrad(user.uid, setAwrad)
+    if (!actingAsUser || !contextUserId) {
+      setSubjectProfile(null)
+      return undefined
+    }
+    let cancelled = false
+    firestoreApi.getData(firestoreApi.getUserDoc(contextUserId)).then((d) => {
+      if (!cancelled) setSubjectProfile(d ? { ...d } : {})
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [actingAsUser, contextUserId])
+
+  useEffect(() => {
+    if (!contextUserId) return undefined
+    loadPlans(contextUserId).then(setPlans)
+    const unsubP = subscribePlans(contextUserId, setPlans)
+    const unsubA = subscribeAwrad(contextUserId, setAwrad)
     return () => {
       unsubP()
       unsubA()
     }
-  }, [user?.uid])
+  }, [contextUserId])
 
   const activePlanId = useMemo(() => {
-    const def = user?.defaultPlanId
+    const def = actingAsUser ? subjectProfile?.defaultPlanId : user?.defaultPlanId
     if (def && plans.some((p) => p.id === def)) return def
     return plans[0]?.id ?? ''
-  }, [user?.defaultPlanId, plans])
+  }, [actingAsUser, subjectProfile?.defaultPlanId, user?.defaultPlanId, plans])
 
   const activePlan = useMemo(
     () => plans.find((p) => p.id === activePlanId) ?? null,
@@ -64,13 +99,18 @@ export default function AppHomePage() {
   const selectPlan = useCallback(
     async (planId) => {
       if (!user || !planId) return
-      await setUserDefaultPlanId(user, planId)
+      await setUserDefaultPlanId(user, planId, { targetUid: actingAsUser ? contextUserId : undefined })
+      if (actingAsUser) {
+        setSubjectProfile((p) => ({ ...(p || {}), defaultPlanId: planId }))
+      }
       setPlanMenuOpen(false)
     },
-    [user],
+    [user, actingAsUser, contextUserId],
   )
 
-  const name = user?.displayName?.trim() || 'ضيفنا الكريم'
+  const name = actingAsUser
+    ? subjectProfile?.displayName?.trim() || 'مستخدم'
+    : user?.displayName?.trim() || 'ضيفنا الكريم'
   const pct = progress?.progressPercent ?? 0
 
   const homeCrossItems = useMemo(() => {
@@ -94,15 +134,28 @@ export default function AppHomePage() {
           </span>
         </div>
         <p className="lead rh-app-home__lead">
-          {SITE_NAME} معك خطوة بخطوة — تابع خطتك اليوم، وسجّل وردك بضغطة واحدة.
+          {actingAsUser
+            ? `${SITE_NAME} — تعرض هذه الصفحة تقدّم المستخدم المحدد؛ التعديلات تُحفظ لحسابه وأنت ما زلت مسجّلاً كمشرف.`
+            : `${SITE_NAME} معك خطوة بخطوة — تابع خطتك اليوم، وسجّل وردك بضغطة واحدة.`}
         </p>
+        {actingAsUser && (
+          <p className="rh-plans__admin-banner rh-app-home__impersonation">
+            <Link to="/app/admin/users">← المستخدمون</Link>
+            {' · '}
+            <Link to={`/app/plans?uid=${encodeURIComponent(contextUserId)}`}>خططه</Link>
+            {' · '}
+            <Link to={`/app/awrad?uid=${encodeURIComponent(contextUserId)}`}>أوراده</Link>
+            {' · '}
+            <Link to="/app">حسابي</Link>
+          </p>
+        )}
         <CrossNav items={homeCrossItems} className="rh-app-home__cross" />
       </section>
 
       {activePlan && progress ? (
         <section className="rh-home-focus card">
           <div className="rh-home-focus__head">
-            <p className="rh-home-focus__eyebrow">خطتك الآن</p>
+            <p className="rh-home-focus__eyebrow">{actingAsUser ? 'خطته الآن' : 'خطتك الآن'}</p>
             <div className="rh-home-focus__picker-wrap" ref={planMenuRef}>
               <button
                 type="button"
@@ -143,7 +196,7 @@ export default function AppHomePage() {
                         </button>
                         <Link
                           className="rh-home-focus__menu-peek"
-                          to={`/app/awrad?plan=${encodeURIComponent(p.id)}`}
+                          to={appPath(`/app/awrad?plan=${encodeURIComponent(p.id)}`)}
                           onClick={() => setPlanMenuOpen(false)}
                         >
                           أوراد
@@ -191,25 +244,25 @@ export default function AppHomePage() {
             <div className="rh-home-focus__quick-btns">
               <Link
                 className="rh-home-quick-icon"
-                to={`/app/awrad?plan=${encodeURIComponent(activePlan.id)}`}
+                to={appPath(`/app/awrad?plan=${encodeURIComponent(activePlan.id)}`)}
                 title="تسجيل الورد"
               >
                 <NotebookPen size={22} strokeWidth={1.75} />
                 <span>ورد</span>
               </Link>
-              <Link className="rh-home-quick-icon" to="/app/plans" title="إدارة الخطط">
+              <Link className="rh-home-quick-icon" to={appPath('/app/plans')} title="إدارة الخطط">
                 <ListOrdered size={22} strokeWidth={1.75} />
                 <span>الخطط</span>
               </Link>
-              <Link className="rh-home-quick-icon" to="/app/welcome" title="صفحة البداية داخل المنصة">
+              <Link className="rh-home-quick-icon" to={appPath('/app/welcome')} title="صفحة البداية داخل المنصة">
                 <BookOpen size={22} strokeWidth={1.75} />
                 <span>البداية</span>
               </Link>
             </div>
             <p className="rh-app-home__quick-extra">
-              <Link to="/app/awrad">عرض صفحة الأوراد كاملة</Link>
+              <Link to={appPath('/app/awrad')}>عرض صفحة الأوراد كاملة</Link>
               {' · '}
-              <Link to="/app/plans">تعديل الخطط وتعيين الافتراضية</Link>
+              <Link to={appPath('/app/plans')}>تعديل الخطط وتعيين الافتراضية</Link>
             </p>
           </div>
         </section>
@@ -221,10 +274,10 @@ export default function AppHomePage() {
             الخطط.
           </p>
           <div className="rh-home-empty-focus__links">
-            <Link className="rh-home-empty-focus__link" to="/app/plans">
+            <Link className="rh-home-empty-focus__link" to={appPath('/app/plans')}>
               الانتقال إلى الخطط
             </Link>
-            <Link className="rh-home-empty-focus__link" to="/app/welcome">
+            <Link className="rh-home-empty-focus__link" to={appPath('/app/welcome')}>
               صفحة البداية
             </Link>
           </div>

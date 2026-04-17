@@ -33,7 +33,8 @@ export default function AwradPage() {
     return user.uid
   }, [user, uidFromUrl])
 
-  const viewOnly = Boolean(user?.uid && contextUserId && contextUserId !== user.uid)
+  const actingAsUser = Boolean(user?.uid && contextUserId && contextUserId !== user.uid)
+  const viewOnly = Boolean(actingAsUser && !isAdmin(user))
 
   const awradCrossItems = useMemo(() => {
     const base = [
@@ -71,8 +72,10 @@ export default function AwradPage() {
   }, [awrad])
 
   useEffect(() => {
-    document.title = viewOnly ? `أوراد المستخدم — ${SITE_TITLE}` : `الأوراد — ${SITE_TITLE}`
-  }, [viewOnly])
+    if (viewOnly) document.title = `أوراد المستخدم — ${SITE_TITLE}`
+    else if (actingAsUser) document.title = `الأوراد (نيابة) — ${SITE_TITLE}`
+    else document.title = `الأوراد — ${SITE_TITLE}`
+  }, [viewOnly, actingAsUser])
 
   useEffect(() => {
     const t = window.setTimeout(() => {
@@ -238,12 +241,27 @@ export default function AwradPage() {
   return (
     <div className="rh-awrad">
       <header className="rh-awrad__hero card">
-        <h1 className="rh-awrad__title">{viewOnly ? 'أوراد المستخدم (عرض)' : 'الأوراد حسب الخطط'}</h1>
+        <h1 className="rh-awrad__title">
+          {viewOnly ? 'أوراد المستخدم (عرض)' : actingAsUser ? 'الأوراد' : 'الأوراد حسب الخطط'}
+        </h1>
         <p className="rh-awrad__desc">
           {viewOnly
             ? 'تعرض بيانات المستخدم المحدد للمشرف. التسجيل والتعديل يتم من حسابه.'
-            : 'سجّل وِردك يوميًا وفق خطتك: بعدد صفحات مباشر أو من صفحة إلى صفحة، مع تتبع نسبة الإنجاز وما تحقق.'}
+            : actingAsUser
+              ? 'تسجيل وتعديل وحذف الأوراد يُحفَظ على حساب هذا المستخدم (أنت مسجّل كمشرف).'
+              : 'سجّل وِردك يوميًا وفق خطتك: بعدد صفحات مباشر أو من صفحة إلى صفحة، مع تتبع نسبة الإنجاز وما تحقق.'}
         </p>
+        {actingAsUser && isAdmin(user) && (
+          <p className="rh-plans__admin-banner">
+            <Link to="/app/admin/users">← المستخدمون</Link>
+            {' · '}
+            <Link to={`/app?uid=${encodeURIComponent(contextUserId)}`}>رئيسيته</Link>
+            {' · '}
+            <Link to={`/app/plans?uid=${encodeURIComponent(contextUserId)}`}>خططه</Link>
+            {' · '}
+            <Link to="/app/awrad">أورادي</Link>
+          </p>
+        )}
         {viewOnly ? (
           <p className="rh-awrad__view-links">
             <Link to="/app/admin/users">← المستخدمون</Link>
@@ -263,7 +281,9 @@ export default function AwradPage() {
           <p className="rh-settings-card__subtitle">
             {viewOnly
               ? 'عرض التقدّم والسجل فقط.'
-              : 'يمكنك الزيادة على الورد المحدد في الخطة، مع حفظ التسلسل تلقائيًا.'}
+              : actingAsUser
+                ? 'إضافة وتعديل وحذف الأوراد لهذا المستخدم من حساب المشرف.'
+                : 'يمكنك الزيادة على الورد المحدد في الخطة، مع حفظ التسلسل تلقائيًا.'}
           </p>
         </div>
         {!viewOnly && (

@@ -70,7 +70,8 @@ export default function PlansPage() {
     return user.uid
   }, [user, uidParam])
 
-  const readOnly = Boolean(user?.uid && viewUserId && viewUserId !== user.uid)
+  const actingAsUser = Boolean(user?.uid && viewUserId && viewUserId !== user.uid)
+  const readOnly = Boolean(actingAsUser && !isAdmin(user))
   const [viewedDefaultPlanId, setViewedDefaultPlanId] = useState(null)
 
   const [savedPlans, setSavedPlans] = useState([])
@@ -100,17 +101,19 @@ export default function PlansPage() {
   )
 
   useEffect(() => {
-    document.title = readOnly ? `خطط المستخدم — ${SITE_TITLE}` : `الخطط — ${SITE_TITLE}`
-  }, [readOnly])
+    if (readOnly) document.title = `خطط المستخدم — ${SITE_TITLE}`
+    else if (actingAsUser) document.title = `الخطط (نيابة) — ${SITE_TITLE}`
+    else document.title = `الخطط — ${SITE_TITLE}`
+  }, [readOnly, actingAsUser])
 
   useEffect(() => {
-    if (readOnly && viewUserId) return undefined
+    if (actingAsUser && viewUserId) return undefined
     const t = window.setTimeout(() => setViewedDefaultPlanId(null), 0)
     return () => window.clearTimeout(t)
-  }, [readOnly, viewUserId])
+  }, [actingAsUser, viewUserId])
 
   useEffect(() => {
-    if (!readOnly || !viewUserId) return undefined
+    if (!actingAsUser || !viewUserId) return undefined
     let cancelled = false
     firestoreApi.getData(firestoreApi.getUserDoc(viewUserId)).then((d) => {
       if (!cancelled) setViewedDefaultPlanId(d?.defaultPlanId ?? null)
@@ -118,7 +121,7 @@ export default function PlansPage() {
     return () => {
       cancelled = true
     }
-  }, [readOnly, viewUserId])
+  }, [actingAsUser, viewUserId])
 
   useEffect(() => {
     if (!viewUserId) {
@@ -335,8 +338,10 @@ export default function PlansPage() {
     if (readOnly) return
     const next = savedPlans.filter((p) => p.id !== id)
     await savePlans(viewUserId, next, user ?? {})
-    if (user?.defaultPlanId === id) {
-      await setUserDefaultPlanId(user, null)
+    const prevHomeDefault = actingAsUser ? viewedDefaultPlanId : user?.defaultPlanId
+    if (prevHomeDefault === id) {
+      await setUserDefaultPlanId(user, null, { targetUid: actingAsUser ? viewUserId : undefined })
+      if (actingAsUser) setViewedDefaultPlanId(null)
     }
     toast.info('حُذفت الخطة.', '')
     setDeletingPlan(null)
@@ -344,7 +349,8 @@ export default function PlansPage() {
 
   const setAsHomeDefault = async (planId) => {
     if (!user || readOnly) return
-    await setUserDefaultPlanId(user, planId)
+    await setUserDefaultPlanId(user, planId, { targetUid: actingAsUser ? viewUserId : undefined })
+    if (actingAsUser) setViewedDefaultPlanId(planId)
     toast.success('أصبحت هذه الخطة هي المعروضة في الصفحة الرئيسية.', 'تم')
   }
 
@@ -353,12 +359,12 @@ export default function PlansPage() {
   const volumeSummary = (n) =>
     n === 0 ? 'اختر المجلدات…' : n === 1 ? 'مجلد واحد مختار' : `${n} مجلدات مختارة`
   const displayedPlans = viewUserId ? savedPlans : []
-  const homeDefaultId = readOnly ? viewedDefaultPlanId : user?.defaultPlanId
+  const homeDefaultId = actingAsUser ? viewedDefaultPlanId : user?.defaultPlanId
 
   const awradPeekTo = (planId) => {
     const q = new URLSearchParams()
     q.set('plan', planId)
-    if (readOnly) q.set('uid', viewUserId)
+    if (actingAsUser) q.set('uid', viewUserId)
     return `/app/awrad?${q.toString()}`
   }
 
@@ -382,8 +388,23 @@ export default function PlansPage() {
             <p className="rh-plans__desc">
               {readOnly
                 ? 'عرض للقراءة فقط. انتقل إلى الأوراد من أيقونة العين بجانب كل خطة.'
-                : 'أنشئ خطة حفظ أو مراجعة أو قراءة، وحدد المجلدات والورد اليومي والجدولة، ثم أدر خططك بالتعديل والحذف بسهولة.'}
+                : actingAsUser
+                  ? 'أنت تعمل نيابة عن هذا المستخدم: الإضافة والتعديل والحذف تُحفظ على حسابه (تسجيل الدخول ما زال بحساب المشرف).'
+                  : 'أنشئ خطة حفظ أو مراجعة أو قراءة، وحدد المجلدات والورد اليومي والجدولة، ثم أدر خططك بالتعديل والحذف بسهولة.'}
             </p>
+            {actingAsUser && isAdmin(user) && (
+              <p className="rh-plans__admin-banner">
+                <Link to="/app/admin/users">← المستخدمون</Link>
+                {' · '}
+                <Link to={`/app?uid=${encodeURIComponent(viewUserId)}`}>رئيسيته</Link>
+                {' · '}
+                <Link to={`/app/awrad?uid=${encodeURIComponent(viewUserId)}`}>أوراده</Link>
+                {' · '}
+                <Link to="/app/plans">خططي</Link>
+                {' · '}
+                <Link to="/app">حسابي</Link>
+              </p>
+            )}
             {readOnly && (
               <p className="rh-plans__admin-banner">
                 <Link to="/app/admin/users">← العودة إلى إدارة المستخدمين</Link>
@@ -404,7 +425,9 @@ export default function PlansPage() {
 
       {displayedPlans.length > 0 ? (
         <section className="rh-plans__saved">
-          <h2 className="rh-plans__saved-title">{readOnly ? 'الخطط المحفوظة' : 'خططك المحفوظة'}</h2>
+          <h2 className="rh-plans__saved-title">
+            {readOnly ? 'الخطط المحفوظة' : actingAsUser ? 'خطط المستخدم المحفوظة' : 'خططك المحفوظة'}
+          </h2>
           <ul className="rh-plans__saved-list">
             {displayedPlans.map((p) => (
               <li key={p.id} className="rh-plans__saved-card">
@@ -421,7 +444,7 @@ export default function PlansPage() {
                   <PeekButton
                     to={awradPeekTo(p.id)}
                     title={
-                      readOnly
+                      actingAsUser
                         ? 'الانتقال إلى صفحة الأوراد لهذه الخطة (حساب المستخدم)'
                         : 'الانتقال إلى صفحة الأوراد لهذه الخطة'
                     }
@@ -444,14 +467,14 @@ export default function PlansPage() {
                   <div className="rh-plans__card-actions">
                     <Button
                       type="button"
-                      variant={user?.defaultPlanId === p.id ? 'primary' : 'secondary'}
+                      variant={homeDefaultId === p.id ? 'primary' : 'secondary'}
                       size="sm"
                       className="rh-plans__default-btn"
                       onClick={() => setAsHomeDefault(p.id)}
                       title="تظهر هذه الخطة في الصفحة الرئيسية مع نسبة الإنجاز"
                     >
                       <RhIcon as={Star} size={16} strokeWidth={RH_ICON_STROKE} />
-                      {user?.defaultPlanId === p.id ? 'افتراضية للرئيسية' : 'للرئيسية'}
+                      {homeDefaultId === p.id ? 'افتراضية للرئيسية' : 'للرئيسية'}
                     </Button>
                     <Button type="button" variant="secondary" size="sm" onClick={() => openEditModal(p)}>
                       <RhIcon as={Pencil} size={16} strokeWidth={RH_ICON_STROKE} />
