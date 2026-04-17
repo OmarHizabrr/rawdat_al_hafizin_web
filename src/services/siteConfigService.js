@@ -1,6 +1,7 @@
 import { orderBy, query } from 'firebase/firestore'
 import { DEFAULT_PLAN_TYPES } from '../data/defaultPlanTypes.js'
 import { SITE_DESCRIPTION, SITE_NAME, SITE_OG_IMAGE_PATH, SITE_TITLE } from '../config/site.js'
+import { sanitizeCssColor, sanitizeImageUrl } from '../utils/brandingAssets.js'
 import { firestoreApi } from './firestoreApi.js'
 
 /** قيم افتراضية للهوية (تُدمج مع `site_config/main.branding`) */
@@ -9,6 +10,21 @@ export const DEFAULT_BRANDING = {
   siteTitle: SITE_TITLE,
   siteDescription: SITE_DESCRIPTION,
   ogImagePath: SITE_OG_IMAGE_PATH,
+  logoUrl: '',
+  themeLight: {},
+  themeDark: {},
+}
+
+/** تصفية خريطة ألوان من Firestore */
+export function normalizeBrandingThemeMap(input) {
+  if (!input || typeof input !== 'object') return {}
+  const out = {}
+  for (const [k, v] of Object.entries(input)) {
+    if (typeof k !== 'string' || !k.startsWith('--')) continue
+    const c = sanitizeCssColor(String(v))
+    if (c) out[k] = c
+  }
+  return out
 }
 
 function normalizePlanTypeDoc(id, data) {
@@ -128,6 +144,12 @@ export async function patchSiteStrings(actor, partial) {
 
 export async function saveBranding(actor, branding) {
   const ref = firestoreApi.getSiteConfigDoc()
+  const logoUrl = sanitizeImageUrl(branding.logoUrl)
+  const ogRaw = String(branding.ogImagePath || '').trim()
+  const ogSanitized = sanitizeImageUrl(ogRaw) || (ogRaw.startsWith('/') && !ogRaw.startsWith('//') ? ogRaw : '')
+  const ogImagePath = ogSanitized || DEFAULT_BRANDING.ogImagePath
+  const themeLight = normalizeBrandingThemeMap(branding.themeLight)
+  const themeDark = normalizeBrandingThemeMap(branding.themeDark)
   await firestoreApi.setData({
     docRef: ref,
     data: {
@@ -135,7 +157,10 @@ export async function saveBranding(actor, branding) {
         siteName: String(branding.siteName || '').trim(),
         siteTitle: String(branding.siteTitle || '').trim(),
         siteDescription: String(branding.siteDescription || '').trim(),
-        ogImagePath: String(branding.ogImagePath || '').trim() || DEFAULT_BRANDING.ogImagePath,
+        ogImagePath,
+        logoUrl: logoUrl || null,
+        themeLight: Object.keys(themeLight).length ? themeLight : null,
+        themeDark: Object.keys(themeDark).length ? themeDark : null,
       },
     },
     merge: true,

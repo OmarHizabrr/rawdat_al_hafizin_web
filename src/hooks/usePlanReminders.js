@@ -35,7 +35,8 @@ function fireKey(planId, day, hm) {
   return `${FIRED_PREFIX}.${planId}.${day}.${hm}`
 }
 
-export function usePlanReminders(user) {
+export function usePlanReminders(user, { iconSrc } = {}) {
+  const notificationIcon = iconSrc && String(iconSrc).trim() ? String(iconSrc).trim() : '/logo.png'
   const toast = useToast()
   const toastRef = useRef(toast)
   toastRef.current = toast
@@ -80,7 +81,7 @@ export function usePlanReminders(user) {
           try {
             new Notification(title, {
               body,
-              icon: '/logo.png',
+              icon: notificationIcon,
               tag: `${plan.id}-${day}-${hm}`,
             })
           } catch {
@@ -93,5 +94,5 @@ export function usePlanReminders(user) {
     tick()
     const id = window.setInterval(tick, TICK_MS)
     return () => window.clearInterval(id)
-  }, [user?.uid])
+  }, [user?.uid, notificationIcon])
 }

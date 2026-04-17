@@ -25,7 +25,7 @@ const STORAGE_KEY = 'rh.sidebarCollapsed'
 
 export function MainLayout() {
   const { user } = useAuth()
-  const { str } = useSiteContent()
+  const { str, branding } = useSiteContent()
   const { search } = useLocation()
   const impersonateUid = getImpersonateUid(user, search)
 
@@ -50,7 +50,7 @@ export function MainLayout() {
   )
 
   const nav = isAdmin(user) ? [...baseNav.slice(0, 4), ...adminNavItems, ...baseNav.slice(4)] : baseNav
-  usePlanReminders(impersonateUid ? null : user)
+  usePlanReminders(impersonateUid ? null : user, { iconSrc: branding.logoSrc })
   const [collapsed, setCollapsed] = useState(() => {
     try {
       return localStorage.getItem(STORAGE_KEY) === '1'
@@ -97,7 +97,7 @@ export function MainLayout() {
           onClick={closeMobile}
           aria-label={str('layout.sidebar_brand_aria')}
         >
-          <img src="/logo.png" alt="" className="rh-sidebar__logo" width={40} height={40} />
+          <img src={branding.logoSrc} alt="" className="rh-sidebar__logo" width={40} height={40} />
           {!collapsed && <span className="rh-sidebar__title">{str('layout.sidebar_title')}</span>}
         </NavLink>
 

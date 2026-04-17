@@ -15,7 +15,7 @@ export default function LandingPage() {
     <div className="page">
       <header className="hero">
         <div className="hero-inner">
-          <img className="logo" src="/logo.png" alt={str('landing.logo_alt')} width={120} height={120} />
+          <img className="logo" src={branding.logoSrc} alt={str('landing.logo_alt')} width={120} height={120} />
           <p className="eyebrow">{str('landing.eyebrow')}</p>
           <h1>{str('landing.hero_title')}</h1>
           <p className="subtitle">{str('landing.subtitle')}</p>

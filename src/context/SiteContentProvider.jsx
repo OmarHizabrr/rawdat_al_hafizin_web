@@ -1,9 +1,18 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { buildDefaultStringsMap } from '../data/siteStringRegistry.js'
-import { DEFAULT_BRANDING, resolvePlanTypes, subscribePlanTypes, subscribeSiteConfig } from '../services/siteConfigService.js'
+import {
+  DEFAULT_BRANDING,
+  normalizeBrandingThemeMap,
+  resolvePlanTypes,
+  subscribePlanTypes,
+  subscribeSiteConfig,
+} from '../services/siteConfigService.js'
+import { useTheme } from '../theme/useTheme.js'
+import { sanitizeCssColor, sanitizeImageUrl } from '../utils/brandingAssets.js'
 import { SiteContentContext } from './siteContentContext.js'
 
 const registryDefaults = buildDefaultStringsMap()
+const EMPTY_THEME_MAP = Object.freeze({})
 
 function interpolatePlaceholders(text, vars) {
   let out = String(text ?? '')
@@ -14,6 +23,7 @@ function interpolatePlaceholders(text, vars) {
 }
 
 export function SiteContentProvider({ children }) {
+  const { resolved: colorScheme } = useTheme()
   const [planTypeRows, setPlanTypeRows] = useState([])
   const [configData, setConfigData] = useState(null)
   const [loadError, setLoadError] = useState(null)
@@ -43,13 +53,39 @@ export function SiteContentProvider({ children }) {
 
   const branding = useMemo(() => {
     const b = configData?.branding || {}
+    const logoRemote = sanitizeImageUrl(b.logoUrl)
+    const logoSrc = logoRemote || '/logo.png'
+    const ogRaw = String(b.ogImagePath || '').trim()
+    const ogSanitized = sanitizeImageUrl(ogRaw) || (ogRaw.startsWith('/') && !ogRaw.startsWith('//') ? ogRaw : '')
+    const tl = normalizeBrandingThemeMap(b.themeLight)
+    const td = normalizeBrandingThemeMap(b.themeDark)
     return {
       siteName: String(b.siteName || '').trim() || DEFAULT_BRANDING.siteName,
       siteTitle: String(b.siteTitle || '').trim() || DEFAULT_BRANDING.siteTitle,
       siteDescription: String(b.siteDescription || '').trim() || DEFAULT_BRANDING.siteDescription,
-      ogImagePath: String(b.ogImagePath || '').trim() || DEFAULT_BRANDING.ogImagePath,
+      ogImagePath: ogSanitized || DEFAULT_BRANDING.ogImagePath,
+      logoUrl: String(b.logoUrl ?? '').trim(),
+      logoSrc,
+      themeLight: Object.keys(tl).length ? tl : EMPTY_THEME_MAP,
+      themeDark: Object.keys(td).length ? td : EMPTY_THEME_MAP,
     }
   }, [configData])
+
+  useEffect(() => {
+    const root = document.documentElement
+    const map = colorScheme === 'dark' ? branding.themeDark : branding.themeLight
+    const applied = []
+    for (const [k, v] of Object.entries(map)) {
+      if (!k.startsWith('--')) continue
+      const val = sanitizeCssColor(v)
+      if (!val) continue
+      root.style.setProperty(k, val)
+      applied.push(k)
+    }
+    return () => {
+      for (const k of applied) root.style.removeProperty(k)
+    }
+  }, [colorScheme, branding.themeLight, branding.themeDark])
 
   const mergedStrings = useMemo(() => {
     const overrides = configData?.strings && typeof configData.strings === 'object' ? configData.strings : {}

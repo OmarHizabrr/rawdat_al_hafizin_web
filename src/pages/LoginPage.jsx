@@ -54,7 +54,7 @@ export default function LoginPage() {
     return (
       <div className="rh-login-page">
         <div className="rh-login-card">
-          <img className="rh-login-logo" src="/logo.png" alt="" width={88} height={88} />
+          <img className="rh-login-logo" src={branding.logoSrc} alt="" width={88} height={88} />
           <h1 className="rh-login-title">الحساب موقوف</h1>
           <p className="rh-login-sub">
             تم إيقاف حسابك من قبل الإدارة. إذا كان ذلك خطأ، تواصل مع المشرف.
@@ -102,7 +102,7 @@ export default function LoginPage() {
   return (
     <div className="rh-login-page">
       <div className="rh-login-card">
-        <img className="rh-login-logo" src="/logo.png" alt="" width={88} height={88} />
+        <img className="rh-login-logo" src={branding.logoSrc} alt="" width={88} height={88} />
         <h1 className="rh-login-title">روضة الحافظين</h1>
         <p className="rh-login-sub">سجّل الدخول للمتابعة إلى المنصة</p>
 
