@@ -2,6 +2,8 @@ import { BookOpen, ChevronDown, ListOrdered, NotebookPen, Sparkles } from 'lucid
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { SITE_NAME, SITE_TITLE } from '../config/site.js'
+import { CrossNav } from '../components/CrossNav.jsx'
+import { isAdmin } from '../config/roles.js'
 import { useAuth } from '../context/useAuth.js'
 import { setUserDefaultPlanId } from '../services/userService.js'
 import { useOnClickOutside } from '../ui/hooks/useOnClickOutside.js'
@@ -71,6 +73,17 @@ export default function AppHomePage() {
   const name = user?.displayName?.trim() || 'ضيفنا الكريم'
   const pct = progress?.progressPercent ?? 0
 
+  const homeCrossItems = useMemo(() => {
+    const base = [
+      { to: '/app/plans', label: 'الخطط' },
+      { to: '/app/awrad', label: 'كل الأوراد' },
+      { to: '/app/welcome', label: 'البداية' },
+      { to: '/app/settings', label: 'الإعدادات' },
+    ]
+    if (isAdmin(user)) base.push({ to: '/app/admin/users', label: 'المستخدمون' })
+    return base
+  }, [user])
+
   return (
     <div className="rh-app-home">
       <section className="card rh-app-home__hero">
@@ -83,6 +96,7 @@ export default function AppHomePage() {
         <p className="lead rh-app-home__lead">
           {SITE_NAME} معك خطوة بخطوة — تابع خطتك اليوم، وسجّل وردك بضغطة واحدة.
         </p>
+        <CrossNav items={homeCrossItems} className="rh-app-home__cross" />
       </section>
 
       {activePlan && progress ? (
@@ -111,21 +125,30 @@ export default function AppHomePage() {
                 <ul className="rh-home-focus__menu" role="listbox">
                   {plans.map((p) => (
                     <li key={p.id} role="option" aria-selected={p.id === activePlanId}>
-                      <button
-                        type="button"
-                        className={[
-                          'rh-home-focus__menu-item',
-                          p.id === activePlanId ? 'rh-home-focus__menu-item--active' : '',
-                        ]
-                          .filter(Boolean)
-                          .join(' ')}
-                        onClick={() => selectPlan(p.id)}
-                      >
-                        <strong>{p.name}</strong>
-                        <span>
-                          {typeLabel(p.planType)} — {p.totalTargetPages} صفحة
-                        </span>
-                      </button>
+                      <div className="rh-home-focus__menu-row">
+                        <button
+                          type="button"
+                          className={[
+                            'rh-home-focus__menu-item',
+                            p.id === activePlanId ? 'rh-home-focus__menu-item--active' : '',
+                          ]
+                            .filter(Boolean)
+                            .join(' ')}
+                          onClick={() => selectPlan(p.id)}
+                        >
+                          <strong>{p.name}</strong>
+                          <span>
+                            {typeLabel(p.planType)} — {p.totalTargetPages} صفحة
+                          </span>
+                        </button>
+                        <Link
+                          className="rh-home-focus__menu-peek"
+                          to={`/app/awrad?plan=${encodeURIComponent(p.id)}`}
+                          onClick={() => setPlanMenuOpen(false)}
+                        >
+                          أوراد
+                        </Link>
+                      </div>
                     </li>
                   ))}
                 </ul>
@@ -178,11 +201,16 @@ export default function AppHomePage() {
                 <ListOrdered size={22} strokeWidth={1.75} />
                 <span>الخطط</span>
               </Link>
-              <Link className="rh-home-quick-icon" to="/app/foundation" title="عن البرنامج">
+              <Link className="rh-home-quick-icon" to="/app/welcome" title="صفحة البداية داخل المنصة">
                 <BookOpen size={22} strokeWidth={1.75} />
                 <span>البداية</span>
               </Link>
             </div>
+            <p className="rh-app-home__quick-extra">
+              <Link to="/app/awrad">عرض صفحة الأوراد كاملة</Link>
+              {' · '}
+              <Link to="/app/plans">تعديل الخطط وتعيين الافتراضية</Link>
+            </p>
           </div>
         </section>
       ) : (
@@ -192,9 +220,15 @@ export default function AppHomePage() {
             أنشئ خطة حفظ أو مراجعة لتظهر هنا نسبة الإنجاز والورد اليومي، ويمكنك تعيين خطة افتراضية من صفحة
             الخطط.
           </p>
-          <Link className="rh-home-empty-focus__link" to="/app/plans">
-            الانتقال إلى الخطط
-          </Link>
+          <div className="rh-home-empty-focus__links">
+            <Link className="rh-home-empty-focus__link" to="/app/plans">
+              الانتقال إلى الخطط
+            </Link>
+            <Link className="rh-home-empty-focus__link" to="/app/welcome">
+              صفحة البداية
+            </Link>
+          </div>
+          <CrossNav items={homeCrossItems} className="rh-app-home__cross rh-app-home__cross--empty" />
         </section>
       )}
 
@@ -202,7 +236,8 @@ export default function AppHomePage() {
         <h3 className="rh-app-home__hint-title">لماذا الصفحة الرئيسية؟</h3>
         <p className="lead rh-app-home__hint-text">
           لحظة سريعة تذكّرك بما أنجزت وتدفعك للمتابعة — غيّر الخطة المعروضة من القائمة فوق متى شئت؛ الخطة
-          الافتراضية تُحدَّد من صفحة «الخطط» بنجمة الرئيسية.
+          الافتراضية تُحدَّد من صفحة «الخطط» بنجمة الرئيسية. من قائمة الخطط أو أيقونة «أوراد» تنتقل مباشرة
+          لصفحة الأوراد لتلك الخطة دون فقدان الترابط بين الصفحات.
         </p>
       </section>
     </div>

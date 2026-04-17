@@ -21,6 +21,7 @@ import {
   useToast,
 } from '../ui/index.js'
 import { RhIcon, RH_ICON_STROKE } from '../ui/RhIcon.jsx'
+import { CrossNav } from '../components/CrossNav.jsx'
 import { PeekButton } from '../components/PeekButton.jsx'
 
 const PLAN_TYPES = [
@@ -361,6 +362,17 @@ export default function PlansPage() {
     return `/app/awrad?${q.toString()}`
   }
 
+  const plansCrossItems = useMemo(() => {
+    const base = [
+      { to: '/app', label: 'الرئيسية' },
+      { to: '/app/awrad', label: 'الأوراد' },
+      { to: '/app/welcome', label: 'البداية' },
+      { to: '/app/settings', label: 'الإعدادات' },
+    ]
+    if (isAdmin(user)) base.push({ to: '/app/admin/users', label: 'المستخدمون' })
+    return base
+  }, [user])
+
   return (
     <div className="rh-plans">
       <header className="rh-plans__hero">
@@ -379,6 +391,7 @@ export default function PlansPage() {
                 <Link to={`/app/awrad?uid=${encodeURIComponent(viewUserId)}`}>صفحة أوراد هذا المستخدم</Link>
               </p>
             )}
+            <CrossNav items={plansCrossItems} className="rh-plans__cross" />
           </div>
           {!readOnly && (
             <Button type="button" variant="primary" className="rh-plans__add-btn" onClick={openAddModal}>

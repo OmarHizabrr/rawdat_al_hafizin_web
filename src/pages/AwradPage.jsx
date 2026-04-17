@@ -7,6 +7,7 @@ import { useAuth } from '../context/useAuth.js'
 import { loadPlans, subscribePlans } from '../utils/plansStorage.js'
 import { addWird, deleteWird, subscribeAwrad, updateWird } from '../utils/awradStorage.js'
 import { clampProgressPercent, computePlanProgress } from '../utils/planProgress.js'
+import { CrossNav } from '../components/CrossNav.jsx'
 import { Button, Modal, NumberStepField, ScrollArea, TextField, useToast } from '../ui/index.js'
 import { RhIcon, RH_ICON_STROKE } from '../ui/RhIcon.jsx'
 
@@ -33,6 +34,17 @@ export default function AwradPage() {
   }, [user, uidFromUrl])
 
   const viewOnly = Boolean(user?.uid && contextUserId && contextUserId !== user.uid)
+
+  const awradCrossItems = useMemo(() => {
+    const base = [
+      { to: '/app', label: 'الرئيسية' },
+      { to: '/app/plans', label: 'الخطط' },
+      { to: '/app/welcome', label: 'البداية' },
+      { to: '/app/settings', label: 'الإعدادات' },
+    ]
+    if (isAdmin(user)) base.push({ to: '/app/admin/users', label: 'المستخدمون' })
+    return base
+  }, [user])
 
   const [plans, setPlans] = useState([])
   const [awrad, setAwrad] = useState([])
@@ -232,12 +244,16 @@ export default function AwradPage() {
             ? 'تعرض بيانات المستخدم المحدد للمشرف. التسجيل والتعديل يتم من حسابه.'
             : 'سجّل وِردك يوميًا وفق خطتك: بعدد صفحات مباشر أو من صفحة إلى صفحة، مع تتبع نسبة الإنجاز وما تحقق.'}
         </p>
-        {viewOnly && (
+        {viewOnly ? (
           <p className="rh-awrad__view-links">
             <Link to="/app/admin/users">← المستخدمون</Link>
             {' · '}
             <Link to={`/app/plans?uid=${encodeURIComponent(contextUserId)}`}>خطط هذا المستخدم</Link>
+            {' · '}
+            <Link to="/app/awrad">وردي (حسابي)</Link>
           </p>
+        ) : (
+          <CrossNav items={awradCrossItems} className="rh-awrad__cross" />
         )}
       </header>
 

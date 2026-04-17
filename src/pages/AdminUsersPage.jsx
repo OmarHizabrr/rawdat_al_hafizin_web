@@ -8,6 +8,7 @@ import {
   adminUpdateUserRole,
   subscribeAllUsers,
 } from '../services/adminUsersService.js'
+import { CrossNav } from '../components/CrossNav.jsx'
 import { PeekButton } from '../components/PeekButton.jsx'
 import { Button, Modal, SearchField, useToast } from '../ui/index.js'
 
@@ -31,6 +32,17 @@ export default function AdminUsersPage() {
     return () => unsub()
     // eslint-disable-next-line react-hooks/exhaustive-deps -- الاشتراك مرة عند فتح الصفحة كأدمن
   }, [actor?.uid])
+
+  const adminCrossItems = useMemo(
+    () => [
+      { to: '/app', label: 'الرئيسية' },
+      { to: '/app/plans', label: 'الخطط' },
+      { to: '/app/awrad', label: 'الأوراد' },
+      { to: '/app/welcome', label: 'البداية' },
+      { to: '/app/settings', label: 'الإعدادات' },
+    ],
+    [],
+  )
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase()
@@ -105,6 +117,7 @@ export default function AdminUsersPage() {
           <code className="rh-admin-users__code">admin</code> من وحدة تحكم Firebase. استخدم أيقونة العين للانتقال
           إلى صفحة خطط المستخدم ثم إلى أوراده من هناك.
         </p>
+        <CrossNav items={adminCrossItems} className="rh-admin-users__cross" />
       </header>
 
       <section className="rh-admin-users__toolbar card">
