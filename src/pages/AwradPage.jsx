@@ -15,6 +15,8 @@ function pct(done, total) {
   return Math.min(100, (done / total) * 100)
 }
 
+const WEEKDAY_AR = ['الأحد', 'الإثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت']
+
 export default function AwradPage() {
   const { user } = useAuth()
   const toast = useToast()
@@ -27,6 +29,14 @@ export default function AwradPage() {
   const [fromPage, setFromPage] = useState(1)
   const [toPage, setToPage] = useState(1)
 
+  const applyPlanDefaults = (planId, srcPlans) => {
+    const p = srcPlans.find((x) => x.id === planId)
+    const min = Math.max(1, Number(p?.dailyPages) || 1)
+    setPagesCount(min)
+    setFromPage(1)
+    setToPage(min)
+  }
+
   useEffect(() => {
     document.title = `الأوراد — ${SITE_TITLE}`
   }, [])
@@ -35,11 +45,20 @@ export default function AwradPage() {
     if (!user?.uid) return
     loadPlans(user.uid).then((v) => {
       setPlans(v)
-      if (v[0]?.id) setSelectedPlanId((x) => x || v[0].id)
+      if (v[0]?.id) {
+        setSelectedPlanId((x) => {
+          const next = x || v[0].id
+          if (!x) applyPlanDefaults(next, v)
+          return next
+        })
+      }
     })
     const unsubPlans = subscribePlans(user.uid, (v) => {
       setPlans(v)
-      if (!selectedPlanId && v[0]?.id) setSelectedPlanId(v[0].id)
+      if (!selectedPlanId && v[0]?.id) {
+        setSelectedPlanId(v[0].id)
+        applyPlanDefaults(v[0].id, v)
+      }
     })
     const unsubAwrad = subscribeAwrad(user.uid, setAwrad)
     return () => {
@@ -69,6 +88,12 @@ export default function AwradPage() {
 
   const minDaily = Math.max(1, Number(selectedPlan?.dailyPages) || 1)
   const computedPages = mode === 'count' ? pagesCount : Math.max(0, toPage - fromPage + 1)
+  const todayIdx = new Date().getDay()
+  const todayLabel = WEEKDAY_AR[todayIdx]
+  const requiredDaysLabel =
+    selectedPlan?.useWeekdayFilter && selectedPlan?.weekdayLabels
+      ? selectedPlan.weekdayLabels
+      : 'كل الأيام'
 
   const submitWird = async () => {
     if (!selectedPlan) {
@@ -126,7 +151,11 @@ export default function AwradPage() {
             id="wird-plan"
             className="ui-input"
             value={selectedPlanId}
-            onChange={(e) => setSelectedPlanId(e.target.value)}
+            onChange={(e) => {
+              const nextId = e.target.value
+              setSelectedPlanId(nextId)
+              applyPlanDefaults(nextId, plans)
+            }}
           >
             <option value="">اختر خطة...</option>
             {plans.map((p) => (
@@ -138,7 +167,9 @@ export default function AwradPage() {
         {selectedPlan && (
           <>
             <div className="rh-awrad__stats">
+              <div className="rh-awrad__stat"><strong>اليوم:</strong> {todayLabel}</div>
               <div className="rh-awrad__stat"><strong>الحد الأدنى اليومي:</strong> {minDaily} صفحات</div>
+              <div className="rh-awrad__stat"><strong>أيام الخطة:</strong> {requiredDaysLabel}</div>
               <div className="rh-awrad__stat"><strong>المنجز:</strong> {achievedPages} / {targetPages}</div>
               <div className="rh-awrad__stat"><strong>المتبقي:</strong> {remainingPages} صفحة</div>
             </div>
@@ -170,7 +201,7 @@ export default function AwradPage() {
                 label="عدد الصفحات"
                 value={pagesCount}
                 onChange={setPagesCount}
-                min={1}
+                min={minDaily}
                 max={999}
               />
             ) : (

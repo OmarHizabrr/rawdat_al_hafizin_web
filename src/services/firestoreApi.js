@@ -39,6 +39,11 @@ class FirestoreApi {
   // دوال مرجعية بسيطة
   // ==============================
 
+  /** الحصول على ID جديد */
+  getNewId(collectionName) {
+    return doc(collection(db, collectionName)).id;
+  }
+
   /** إرجاع مرجع لمجموعة */
   getCollection(collectionName) {
     return collection(db, collectionName);
