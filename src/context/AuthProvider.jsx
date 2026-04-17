@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { AuthContext } from './authContext.js'
 import { subscribeAuth } from '../services/authService.js'
+import { ensureUserProfile } from '../services/userService.js'
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null)
@@ -8,8 +9,19 @@ export function AuthProvider({ children }) {
 
   useEffect(() => {
     const unsub = subscribeAuth((u) => {
-      setUser(u)
-      setLoading(false)
+      if (!u) {
+        setUser(null)
+        setLoading(false)
+        return
+      }
+
+      ensureUserProfile(u)
+        .then((profile) => {
+          setUser(profile ? { ...u, ...profile } : u)
+        })
+        .finally(() => {
+          setLoading(false)
+        })
     })
     return () => unsub()
   }, [])

@@ -27,7 +27,7 @@ const nav = [
 
 export function MainLayout() {
   const { user } = useAuth()
-  usePlanReminders()
+  usePlanReminders(user)
   const [collapsed, setCollapsed] = useState(() => {
     try {
       return localStorage.getItem(STORAGE_KEY) === '1'

@@ -35,20 +35,22 @@ function fireKey(planId, day, hm) {
   return `${FIRED_PREFIX}.${planId}.${day}.${hm}`
 }
 
-export function usePlanReminders() {
+export function usePlanReminders(user) {
   const toast = useToast()
   const toastRef = useRef(toast)
   toastRef.current = toast
 
   useEffect(() => {
     if (typeof window === 'undefined') return
+    const userId = user?.uid
+    if (!userId) return
 
-    const tick = () => {
+    const tick = async () => {
       const hm = nowHm()
       const day = todayIso()
       let plans
       try {
-        plans = loadPlans()
+        plans = await loadPlans(userId)
       } catch {
         return
       }
@@ -91,5 +93,5 @@ export function usePlanReminders() {
     tick()
     const id = window.setInterval(tick, TICK_MS)
     return () => window.clearInterval(id)
-  }, [])
+  }, [user?.uid])
 }

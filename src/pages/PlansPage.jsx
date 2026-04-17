@@ -2,8 +2,9 @@ import { Pencil, Plus, Trash2 } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 import { VOLUMES, VOLUME_BY_ID } from '../data/volumes.js'
 import { SITE_TITLE } from '../config/site.js'
+import { useAuth } from '../context/useAuth.js'
 import { countDaysInRange, sessionsNeeded } from '../utils/planSchedule.js'
-import { loadPlans, savePlans } from '../utils/plansStorage.js'
+import { loadPlans, savePlans, subscribePlans } from '../utils/plansStorage.js'
 import {
   Button,
   DateField,
@@ -54,8 +55,9 @@ function formatReminderAr(hhmm) {
 }
 
 export default function PlansPage() {
+  const { user } = useAuth()
   const toast = useToast()
-  const [savedPlans, setSavedPlans] = useState(() => loadPlans())
+  const [savedPlans, setSavedPlans] = useState([])
   const [isEditorOpen, setIsEditorOpen] = useState(false)
   const [editingPlanId, setEditingPlanId] = useState(null)
   const [deletingPlan, setDeletingPlan] = useState(null)
@@ -84,6 +86,26 @@ export default function PlansPage() {
   useEffect(() => {
     document.title = `الخطط — ${SITE_TITLE}`
   }, [])
+
+  useEffect(() => {
+    if (!user?.uid) {
+      return
+    }
+
+    let mounted = true
+    loadPlans(user.uid).then((plans) => {
+      if (mounted) setSavedPlans(plans)
+    })
+
+    const unsub = subscribePlans(user.uid, (plans) => {
+      setSavedPlans(plans)
+    })
+
+    return () => {
+      mounted = false
+      unsub()
+    }
+  }, [user?.uid])
 
   const totalTargetPages = useMemo(() => {
     let s = 0
@@ -208,7 +230,7 @@ export default function PlansPage() {
     setIsEditorOpen(true)
   }
 
-  const handleSavePlan = () => {
+  const handleSavePlan = async () => {
     const selected = VOLUMES.filter((v) => volumeState[v.id]?.selected)
     if (selected.length === 0) {
       toast.warning('اختر مجلداً واحداً على الأقل.', 'تنبيه')
@@ -260,25 +282,19 @@ export default function PlansPage() {
         wdArr ? wdArr.map((d) => WEEKDAYS.find((w) => w.d === d).label).join('، ') : null,
     }
 
-    setSavedPlans((prev) => {
-      const next = editingPlanId
-        ? prev.map((p) => (p.id === editingPlanId ? plan : p))
-        : [plan, ...prev]
-      savePlans(next)
-      return next
-    })
+    const nextPlans = editingPlanId
+      ? savedPlans.map((p) => (p.id === editingPlanId ? plan : p))
+      : [plan, ...savedPlans]
+    await savePlans(user?.uid, nextPlans, user ?? {})
     toast.success(editingPlanId ? 'تم تحديث الخطة بنجاح.' : 'تم حفظ الخطة. يمكنك مراجعتها في القائمة أدناه.', 'تم')
     resetForm()
     setEditingPlanId(null)
     setIsEditorOpen(false)
   }
 
-  const deletePlan = (id) => {
-    setSavedPlans((prev) => {
-      const next = prev.filter((p) => p.id !== id)
-      savePlans(next)
-      return next
-    })
+  const deletePlan = async (id) => {
+    const next = savedPlans.filter((p) => p.id !== id)
+    await savePlans(user?.uid, next, user ?? {})
     toast.info('حُذفت الخطة.', '')
     setDeletingPlan(null)
   }
@@ -287,6 +303,7 @@ export default function PlansPage() {
 
   const volumeSummary = (n) =>
     n === 0 ? 'اختر المجلدات…' : n === 1 ? 'مجلد واحد مختار' : `${n} مجلدات مختارة`
+  const displayedPlans = user?.uid ? savedPlans : []
 
   return (
     <div className="rh-plans">
@@ -305,11 +322,11 @@ export default function PlansPage() {
         </div>
       </header>
 
-      {savedPlans.length > 0 ? (
+      {displayedPlans.length > 0 ? (
         <section className="rh-plans__saved">
           <h2 className="rh-plans__saved-title">خططك المحفوظة</h2>
           <ul className="rh-plans__saved-list">
-            {savedPlans.map((p) => (
+            {displayedPlans.map((p) => (
               <li key={p.id} className="rh-plans__saved-card">
                 <div className="rh-plans__saved-head">
                   <strong>{p.name}</strong>
