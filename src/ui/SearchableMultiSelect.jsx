@@ -64,7 +64,7 @@ export function SearchableMultiSelect({
 
   useEffect(() => {
     if (!open) return
-    setHighlight(0)
+    queueMicrotask(() => setHighlight(0))
   }, [open, query])
 
   useEffect(() => {

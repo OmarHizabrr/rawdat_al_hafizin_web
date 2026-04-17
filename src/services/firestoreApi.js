@@ -29,6 +29,12 @@ const db = getFirestore(app);
  * مسارات العضوية الثنائية (مدرسة أو منطقة = groupId):
  *   members/{groupId}/members/{userId}  ↔  Mygroup/{userId}/Mygroup/{groupId}
  * استخدم getGroupMembersCollection / getGroupMemberDoc و getUserMembershipMirror* فقط.
+ *
+ * الخطط (planId = معرف المستند الرئيسي):
+ *   plans/{planId} — بيانات الخطة
+ *   members/{planId}/members/{userId} — دور العضو على الخطة (owner | admin | member)
+ *   Myplans/{userId}/Myplans/{planId} — مرآة ظهور الخطة في قائمة المستخدم
+ * لجدول أعضاء الخطة استخدم getPlanMembersCollection / getPlanMemberDoc (نفس مسار members).
  */
 class FirestoreApi {
   static get Api() {
@@ -190,19 +196,46 @@ class FirestoreApi {
     return this.getDocument("plan_types", planTypeId);
   }
 
+  /** plans/{planId} — المستند الرئيسي للخطة */
+  getPlanCanonicalDoc(planId) {
+    return this.getDocument("plans", planId);
+  }
+
+  /** members/{planId}/members — أعضاء خطة (نفس هيكل members للمجموعات) */
+  getPlanMembersCollection(planId) {
+    return this.getGroupMembersCollection(planId);
+  }
+
+  /** members/{planId}/members/{userId} */
+  getPlanMemberDoc(planId, userId) {
+    return this.getGroupMemberDoc(planId, userId);
+  }
+
+  static USER_PLAN_MIRROR_COLL = "Myplans";
+  static USER_PLAN_MIRROR_SUB = "Myplans";
+
   /** site_config/main — هوية الموقع والنصوص الثابتة */
   getSiteConfigDoc() {
     return this.getDocument("site_config", "main");
   }
 
-  /** plans/{userId}/plans */
+  /** Myplans/{userId}/Myplans — مرايا الخطط في قائمة المستخدم */
   getUserPlansCollection(userId) {
-    return this.getUserScopedCollection("plans", userId);
+    return this.getSubCollection(
+      FirestoreApi.USER_PLAN_MIRROR_COLL,
+      userId,
+      FirestoreApi.USER_PLAN_MIRROR_SUB,
+    );
   }
 
-  /** plans/{userId}/plans/{planId} */
+  /** Myplans/{userId}/Myplans/{planId} */
   getUserPlanDoc(userId, planId) {
-    return this.getUserScopedDoc("plans", userId, planId);
+    return this.getSubDocument(
+      FirestoreApi.USER_PLAN_MIRROR_COLL,
+      userId,
+      FirestoreApi.USER_PLAN_MIRROR_SUB,
+      planId,
+    );
   }
 
   /** awrad/{userId}/awrad */

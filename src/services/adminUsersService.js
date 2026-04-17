@@ -1,4 +1,5 @@
 import { firestoreApi } from './firestoreApi.js'
+import { removePlanForUser } from '../utils/plansStorage.js'
 
 function mapUserDocs(docs) {
   return docs
@@ -47,10 +48,11 @@ export async function adminDeleteUserFirestore(actorUser, targetUid) {
     throw new Error('SELF_DELETE')
   }
 
-  const planCol = firestoreApi.getUserPlansCollection(targetUid)
-  const planDocs = await firestoreApi.getDocuments(planCol)
-  for (const d of planDocs) {
-    await firestoreApi.deleteData(d.ref)
+  const planMirrors = await firestoreApi.getDocuments(
+    firestoreApi.getUserPlansCollection(targetUid),
+  )
+  for (const d of planMirrors) {
+    await removePlanForUser(targetUid, d.id)
   }
 
   const awradCol = firestoreApi.getUserAwradCollection(targetUid)

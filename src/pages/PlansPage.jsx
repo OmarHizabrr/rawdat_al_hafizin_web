@@ -1,4 +1,4 @@
-import { Pencil, Plus, Star, Trash2 } from 'lucide-react'
+import { Pencil, Plus, Star, Trash2, UserPlus, Users } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { VOLUMES, VOLUME_BY_ID } from '../data/volumes.js'
@@ -8,7 +8,18 @@ import { useAuth } from '../context/useAuth.js'
 import { firestoreApi } from '../services/firestoreApi.js'
 import { setUserDefaultPlanId } from '../services/userService.js'
 import { countDaysInRange, sessionsNeeded } from '../utils/planSchedule.js'
-import { loadPlans, savePlans, subscribePlans } from '../utils/plansStorage.js'
+import {
+  PLAN_MEMBER_ROLES,
+  addUserToPlan,
+  joinPublicPlan,
+  loadPlanMembers,
+  loadPlans,
+  removePlanForUser,
+  removePlanMember,
+  savePlans,
+  setPlanMemberRole,
+  subscribePlans,
+} from '../utils/plansStorage.js'
 import {
   Button,
   DateField,
@@ -36,6 +47,21 @@ const WEEKDAYS = [
 
 function newId() {
   return firestoreApi.getNewId('plans')
+}
+
+function planCanEdit(plan) {
+  return plan?.planRole !== PLAN_MEMBER_ROLES.MEMBER
+}
+
+function planCanManageMembers(plan) {
+  const r = plan?.planRole
+  return r === PLAN_MEMBER_ROLES.OWNER || r === PLAN_MEMBER_ROLES.ADMIN
+}
+
+function planRoleLabel(role) {
+  if (role === PLAN_MEMBER_ROLES.OWNER) return 'مالك'
+  if (role === PLAN_MEMBER_ROLES.ADMIN) return 'مشرف'
+  return 'عضو'
 }
 
 function createInitialVolumeState() {
@@ -73,6 +99,12 @@ export default function PlansPage() {
   const [isEditorOpen, setIsEditorOpen] = useState(false)
   const [editingPlanId, setEditingPlanId] = useState(null)
   const [deletingPlan, setDeletingPlan] = useState(null)
+  const [planVisibility, setPlanVisibility] = useState('private')
+  const [membersModalPlan, setMembersModalPlan] = useState(null)
+  const [planMembersList, setPlanMembersList] = useState([])
+  const [membersLoading, setMembersLoading] = useState(false)
+  const [addMemberUid, setAddMemberUid] = useState('')
+  const [joinPlanId, setJoinPlanId] = useState('')
 
   const [planName, setPlanName] = useState('')
   /** اختيار المستخدم؛ قد يصير غير مطابق لقائمة الأنواع بعد تغيير الإعدادات */
@@ -135,7 +167,7 @@ export default function PlansPage() {
     })
 
     const unsub = subscribePlans(viewUserId, (plans) => {
-      setSavedPlans(plans)
+      if (mounted) setSavedPlans(plans)
     })
 
     return () => {
@@ -143,6 +175,26 @@ export default function PlansPage() {
       unsub()
     }
   }, [viewUserId])
+
+  useEffect(() => {
+    if (!membersModalPlan?.id || !user?.uid) {
+      return undefined
+    }
+    let cancelled = false
+    queueMicrotask(() => {
+      if (!cancelled) setMembersLoading(true)
+    })
+    loadPlanMembers(membersModalPlan.id)
+      .then((rows) => {
+        if (!cancelled) setPlanMembersList(rows)
+      })
+      .finally(() => {
+        if (!cancelled) setMembersLoading(false)
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [membersModalPlan?.id, user?.uid])
 
   const totalTargetPages = useMemo(() => {
     let s = 0
@@ -234,6 +286,7 @@ export default function PlansPage() {
     setDateEnd('')
     setUseWeekdayFilter(false)
     setWeekdays(new Set())
+    setPlanVisibility('private')
   }
 
   const openAddModal = () => {
@@ -245,6 +298,10 @@ export default function PlansPage() {
 
   const openEditModal = (plan) => {
     if (readOnly) return
+    if (!planCanEdit(plan)) {
+      toast.warning('أنت عضو في هذه الخطة فقط — لا يمكنك تعديل إعداداتها.', 'تنبيه')
+      return
+    }
     const nextVolumeState = createInitialVolumeState()
     for (const x of plan.volumes ?? []) {
       const v = VOLUME_BY_ID[x.id]
@@ -266,6 +323,7 @@ export default function PlansPage() {
     setDateEnd(plan.dateEnd ?? '')
     setUseWeekdayFilter(Boolean(plan.useWeekdayFilter))
     setWeekdays(new Set(Array.isArray(plan.weekdayFilter) ? plan.weekdayFilter : []))
+    setPlanVisibility(plan.planVisibility === 'public' ? 'public' : 'private')
     setIsEditorOpen(true)
   }
 
@@ -273,6 +331,13 @@ export default function PlansPage() {
     if (readOnly) {
       toast.warning('عرض فقط — لا يمكن الحفظ من حساب مستخدم آخر.', 'تنبيه')
       return
+    }
+    if (editingPlanId) {
+      const prev = savedPlans.find((p) => p.id === editingPlanId)
+      if (prev && !planCanEdit(prev)) {
+        toast.warning('لا يمكنك حفظ تعديلات خطة أنت عضو فيها فقط.', 'تنبيه')
+        return
+      }
     }
     const selected = VOLUMES.filter((v) => volumeState[v.id]?.selected)
     if (selected.length === 0) {
@@ -310,6 +375,7 @@ export default function PlansPage() {
         ? savedPlans.find((p) => p.id === editingPlanId)?.createdAt ?? nowIso
         : nowIso,
       updatedAt: nowIso,
+      planVisibility,
       name: planName.trim() || `خطة ${new Date().toLocaleDateString('ar-SA')}`,
       planType,
       volumes: volumesSnapshot,
@@ -337,15 +403,91 @@ export default function PlansPage() {
 
   const deletePlan = async (id) => {
     if (readOnly) return
-    const next = savedPlans.filter((p) => p.id !== id)
-    await savePlans(viewUserId, next, user ?? {})
+    const meta = savedPlans.find((p) => p.id === id)
+    try {
+      await removePlanForUser(viewUserId, id)
+    } catch {
+      toast.warning('تعذر تنفيذ العملية. حاول مرة أخرى.', 'تنبيه')
+      setDeletingPlan(null)
+      return
+    }
     const prevHomeDefault = actingAsUser ? viewedDefaultPlanId : user?.defaultPlanId
     if (prevHomeDefault === id) {
       await setUserDefaultPlanId(user, null, { targetUid: actingAsUser ? viewUserId : undefined })
       if (actingAsUser) setViewedDefaultPlanId(null)
     }
-    toast.info('حُذفت الخطة.', '')
+    toast.info(
+      meta?.planRole === PLAN_MEMBER_ROLES.MEMBER ? 'تمت مغادرة الخطة.' : 'حُذفت الخطة عن جميع الأعضاء.',
+      '',
+    )
     setDeletingPlan(null)
+  }
+
+  const refreshMembersList = () => {
+    if (!membersModalPlan?.id) return
+    setMembersLoading(true)
+    loadPlanMembers(membersModalPlan.id)
+      .then(setPlanMembersList)
+      .finally(() => setMembersLoading(false))
+  }
+
+  const handleAddMember = async () => {
+    const uid = addMemberUid.trim()
+    if (!uid || !user || !membersModalPlan?.id) return
+    try {
+      await addUserToPlan(user, membersModalPlan.id, uid, user)
+      setAddMemberUid('')
+      toast.success('تمت إضافة العضو.', 'تم')
+      refreshMembersList()
+    } catch (e) {
+      const m = e?.message
+      if (m === 'ALREADY_MEMBER') toast.info('المستخدم مضاف مسبقاً.', '')
+      else if (m === 'PLAN_FORBIDDEN') toast.warning('لا تملك صلاحية إضافة أعضاء لهذه الخطة.', '')
+      else toast.warning('تعذر الإضافة. تحقق من معرف المستخدم.', '')
+    }
+  }
+
+  const handleRemoveMemberRow = async (targetUid) => {
+    if (!user || !membersModalPlan?.id) return
+    try {
+      await removePlanMember(user, membersModalPlan.id, targetUid)
+      toast.info('تمت إزالة العضو.', '')
+      refreshMembersList()
+    } catch (e) {
+      const m = e?.message
+      if (m === 'CANNOT_REMOVE_OWNER') toast.warning('لا يمكن إزالة مالك الخطة.', '')
+      else toast.warning('تعذر الإزالة.', '')
+    }
+  }
+
+  const handleToggleAdminRow = async (targetUid, currentRole) => {
+    if (!user || !membersModalPlan?.id) return
+    const next = currentRole === PLAN_MEMBER_ROLES.ADMIN ? PLAN_MEMBER_ROLES.MEMBER : PLAN_MEMBER_ROLES.ADMIN
+    try {
+      await setPlanMemberRole(user, membersModalPlan.id, targetUid, next, user)
+      toast.success(next === PLAN_MEMBER_ROLES.ADMIN ? 'تمت الترقية إلى مشرف.' : 'أصبح عضواً عادياً.', 'تم')
+      refreshMembersList()
+    } catch (e) {
+      const m = e?.message
+      if (m === 'CANNOT_DEMOTE_OWNER') toast.warning('لا يمكن تغيير دور المالك.', '')
+      else toast.warning('تعذر تحديث الدور.', '')
+    }
+  }
+
+  const handleJoinPublic = async () => {
+    const id = joinPlanId.trim()
+    if (!id || !viewUserId || !user) return
+    try {
+      await joinPublicPlan(viewUserId, id, user)
+      setJoinPlanId('')
+      toast.success('تم الانضمام إلى الخطة.', 'تم')
+    } catch (e) {
+      const m = e?.message
+      if (m === 'PLAN_NOT_PUBLIC') toast.warning('هذه الخطة ليست عامة — تحتاج دعوة من المشرف.', '')
+      else if (m === 'ALREADY_MEMBER') toast.info('أنت مضاف لهذه الخطة مسبقاً.', '')
+      else if (m === 'PLAN_NOT_FOUND') toast.warning('لم يُعثر على خطة بهذا المعرف.', '')
+      else toast.warning('تعذر الانضمام.', '')
+    }
   }
 
   const setAsHomeDefault = async (planId) => {
@@ -416,14 +558,39 @@ export default function PlansPage() {
             )}
             <CrossNav items={plansCrossItems} className="rh-plans__cross" />
           </div>
-          {!readOnly && (
-            <Button type="button" variant="primary" className="rh-plans__add-btn" onClick={openAddModal}>
-              <RhIcon as={Plus} size={18} strokeWidth={RH_ICON_STROKE} />
-              إضافة خطة
-            </Button>
+            {!readOnly && (
+            <div className="rh-plans__hero-actions">
+              <Button type="button" variant="primary" className="rh-plans__add-btn" onClick={openAddModal}>
+                <RhIcon as={Plus} size={18} strokeWidth={RH_ICON_STROKE} />
+                إضافة خطة
+              </Button>
+            </div>
           )}
         </div>
       </header>
+
+      {!readOnly && (
+        <section className="rh-settings-card rh-plans__join-card">
+          <div className="rh-settings-card__head">
+            <h2 className="rh-settings-card__title">الانضمام لخطة عامة</h2>
+            <p className="rh-settings-card__subtitle">
+              أدخل معرف الخطة (يظهر على بطاقة الخطة) إذا كانت الخطة معيّنة كعامة.
+            </p>
+          </div>
+          <div className="rh-plans__join-row">
+            <TextField
+              label="معرف الخطة"
+              placeholder="مثال: abcXYZ..."
+              value={joinPlanId}
+              onChange={(e) => setJoinPlanId(e.target.value)}
+            />
+            <Button type="button" variant="secondary" className="rh-plans__join-btn" onClick={handleJoinPublic}>
+              <RhIcon as={UserPlus} size={18} strokeWidth={RH_ICON_STROKE} />
+              انضمام
+            </Button>
+          </div>
+        </section>
+      )}
 
       {displayedPlans.length > 0 ? (
         <section className="rh-plans__saved">
@@ -438,6 +605,10 @@ export default function PlansPage() {
                     <strong>{p.name}</strong>
                     <span className="rh-plans__saved-badges">
                       <span className="rh-plans__saved-badge">{typeLabel(p.planType)}</span>
+                      <span className="rh-plans__saved-badge">
+                        {p.planVisibility === 'public' ? 'عامة' : 'خاصة'}
+                      </span>
+                      <span className="rh-plans__saved-badge">{planRoleLabel(p.planRole)}</span>
                       {homeDefaultId === p.id && (
                         <span className="rh-plans__saved-badge rh-plans__saved-badge--home">الرئيسية</span>
                       )}
@@ -452,6 +623,9 @@ export default function PlansPage() {
                     }
                   />
                 </div>
+                <p className="rh-plans__saved-meta">
+                  معرف الخطة: <code className="rh-plans__plan-id">{p.id}</code>
+                </p>
                 <p className="rh-plans__saved-meta">
                   {p.totalTargetPages} صفحة — ورد {p.dailyPages} ص/يوم
                   {p.reminderTime && ` — تذكير ${formatReminderAr(p.reminderTime)}`}
@@ -478,10 +652,26 @@ export default function PlansPage() {
                       <RhIcon as={Star} size={16} strokeWidth={RH_ICON_STROKE} />
                       {homeDefaultId === p.id ? 'افتراضية للرئيسية' : 'للرئيسية'}
                     </Button>
-                    <Button type="button" variant="secondary" size="sm" onClick={() => openEditModal(p)}>
-                      <RhIcon as={Pencil} size={16} strokeWidth={RH_ICON_STROKE} />
-                      تعديل
-                    </Button>
+                    {planCanManageMembers(p) && (
+                      <Button
+                        type="button"
+                        variant="secondary"
+                        size="sm"
+                        onClick={() => {
+                          setMembersModalPlan(p)
+                          setAddMemberUid('')
+                        }}
+                      >
+                        <RhIcon as={Users} size={16} strokeWidth={RH_ICON_STROKE} />
+                        الأعضاء
+                      </Button>
+                    )}
+                    {planCanEdit(p) && (
+                      <Button type="button" variant="secondary" size="sm" onClick={() => openEditModal(p)}>
+                        <RhIcon as={Pencil} size={16} strokeWidth={RH_ICON_STROKE} />
+                        تعديل
+                      </Button>
+                    )}
                     <Button
                       type="button"
                       variant="ghost"
@@ -490,7 +680,7 @@ export default function PlansPage() {
                       onClick={() => setDeletingPlan(p)}
                     >
                       <RhIcon as={Trash2} size={16} strokeWidth={RH_ICON_STROKE} />
-                      حذف
+                      {p.planRole === PLAN_MEMBER_ROLES.MEMBER ? 'مغادرة' : 'حذف'}
                     </Button>
                   </div>
                 )}
@@ -541,6 +731,29 @@ export default function PlansPage() {
               <span className="rh-segment__hint">{opt.hint}</span>
             </button>
           ))}
+        </div>
+        <p className="rh-plans__field-label">ظهور الخطة</p>
+        <div className="rh-segment rh-segment--plans">
+          <button
+            type="button"
+            role="radio"
+            aria-checked={planVisibility === 'private'}
+            className={['rh-segment__btn', planVisibility === 'private' ? 'rh-segment__btn--active' : ''].filter(Boolean).join(' ')}
+            onClick={() => setPlanVisibility('private')}
+          >
+            <span className="rh-segment__label">خاصة</span>
+            <span className="rh-segment__hint">الانضمام بالدعوة فقط (معرف المستخدم)</span>
+          </button>
+          <button
+            type="button"
+            role="radio"
+            aria-checked={planVisibility === 'public'}
+            className={['rh-segment__btn', planVisibility === 'public' ? 'rh-segment__btn--active' : ''].filter(Boolean).join(' ')}
+            onClick={() => setPlanVisibility('public')}
+          >
+            <span className="rh-segment__label">عامة</span>
+            <span className="rh-segment__hint">أي مستخدم يستطيع الانضمام بمعرف الخطة</span>
+          </button>
         </div>
             </section>
 
@@ -722,18 +935,88 @@ export default function PlansPage() {
         </ScrollArea>
       </Modal>
 
-      <Modal open={Boolean(deletingPlan)} title="تأكيد الحذف" onClose={() => setDeletingPlan(null)} size="sm">
+      <Modal open={Boolean(deletingPlan)} title="تأكيد" onClose={() => setDeletingPlan(null)} size="sm">
             <p className="rh-plans__warn rh-plans__warn--confirm">
-              سيتم حذف خطة <strong>{deletingPlan?.name}</strong> نهائياً. هل أنت متأكد من المتابعة؟
+              {deletingPlan?.planRole === PLAN_MEMBER_ROLES.MEMBER ? (
+                <>
+                  سيتم إزالة خطة <strong>{deletingPlan?.name}</strong> من قائمتك فقط. بقية الأعضاء لا يتأثرون.
+                </>
+              ) : (
+                <>
+                  سيتم حذف خطة <strong>{deletingPlan?.name}</strong> نهائياً عن جميع الأعضاء. هل أنت متأكد؟
+                </>
+              )}
             </p>
             <div className="rh-plans__actions">
               <Button type="button" variant="danger" onClick={() => deletingPlan && deletePlan(deletingPlan.id)}>
-                نعم، حذف الخطة
+                {deletingPlan?.planRole === PLAN_MEMBER_ROLES.MEMBER ? 'نعم، مغادرة' : 'نعم، حذف للجميع'}
               </Button>
               <Button type="button" variant="ghost" onClick={() => setDeletingPlan(null)}>
                 إلغاء
               </Button>
             </div>
+      </Modal>
+
+      <Modal
+        open={Boolean(membersModalPlan)}
+        title={membersModalPlan ? `أعضاء الخطة: ${membersModalPlan.name || membersModalPlan.id}` : 'الأعضاء'}
+        onClose={() => {
+          setMembersModalPlan(null)
+          setAddMemberUid('')
+          setPlanMembersList([])
+        }}
+        size="md"
+      >
+        <div className="rh-plans__members-add">
+          <TextField
+            label="إضافة بالمعرف (uid)"
+            placeholder="معرف المستخدم في Firebase"
+            value={addMemberUid}
+            onChange={(e) => setAddMemberUid(e.target.value)}
+          />
+          <Button type="button" variant="primary" size="sm" onClick={handleAddMember}>
+            إضافة
+          </Button>
+        </div>
+        <p className="rh-plans__saved-meta">معرف الخطة: {membersModalPlan?.id}</p>
+        {membersLoading ? (
+          <p className="rh-plans__members-loading">جاري التحميل…</p>
+        ) : (
+          <ul className="rh-plans__members-list">
+            {planMembersList.map((row) => {
+              const isOwnerRow = row.role === PLAN_MEMBER_ROLES.OWNER
+              return (
+                <li key={row.userId} className="rh-plans__members-row">
+                  <div className="rh-plans__members-row-main">
+                    <code className="rh-plans__plan-id">{row.userId}</code>
+                    <span className="rh-plans__saved-badge">{planRoleLabel(row.role)}</span>
+                  </div>
+                  {!isOwnerRow && (
+                    <div className="rh-plans__members-row-actions">
+                      <Button
+                        type="button"
+                        variant="secondary"
+                        size="sm"
+                        onClick={() => handleToggleAdminRow(row.userId, row.role)}
+                      >
+                        {row.role === PLAN_MEMBER_ROLES.ADMIN ? 'إلغاء مشرف' : 'ترقية لمشرف'}
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        className="rh-plans__delete-btn"
+                        onClick={() => handleRemoveMemberRow(row.userId)}
+                      >
+                        إزالة
+                      </Button>
+                    </div>
+                  )}
+                </li>
+              )
+            })}
+          </ul>
+        )}
       </Modal>
     </div>
   )

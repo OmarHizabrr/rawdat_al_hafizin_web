@@ -39,7 +39,9 @@ export function usePlanReminders(user, { iconSrc } = {}) {
   const notificationIcon = iconSrc && String(iconSrc).trim() ? String(iconSrc).trim() : '/logo.png'
   const toast = useToast()
   const toastRef = useRef(toast)
-  toastRef.current = toast
+  useEffect(() => {
+    toastRef.current = toast
+  }, [toast])
 
   useEffect(() => {
     if (typeof window === 'undefined') return
