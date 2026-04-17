@@ -1,6 +1,7 @@
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
 import { AuthProvider } from './context/AuthProvider.jsx'
 import { ThemeProvider } from './theme/ThemeProvider.jsx'
+import { AdminRoute } from './routes/AdminRoute.jsx'
 import { GuestOnly } from './routes/GuestOnly.jsx'
 import { ProtectedRoute } from './routes/ProtectedRoute.jsx'
 import { MainLayout } from './layouts/MainLayout.jsx'
@@ -13,6 +14,7 @@ import AwradPage from './pages/AwradPage.jsx'
 import PlansPage from './pages/PlansPage.jsx'
 import SettingsPage from './pages/SettingsPage.jsx'
 import WelcomePage from './pages/WelcomePage.jsx'
+import AdminUsersPage from './pages/AdminUsersPage.jsx'
 
 export default function App() {
   return (
@@ -34,6 +36,9 @@ export default function App() {
                   <Route path="awrad" element={<AwradPage />} />
                   <Route path="foundation" element={<FoundationPage />} />
                   <Route path="settings" element={<SettingsPage />} />
+                  <Route element={<AdminRoute />}>
+                    <Route path="admin/users" element={<AdminUsersPage />} />
+                  </Route>
                 </Route>
               </Route>
               <Route path="*" element={<Navigate to="/" replace />} />

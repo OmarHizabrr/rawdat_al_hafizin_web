@@ -9,16 +9,18 @@ import {
   Menu,
   Puzzle,
   Settings,
+  Users,
 } from 'lucide-react'
 import { NavLink, Outlet } from 'react-router-dom'
 import { UserMenu } from '../components/UserMenu.jsx'
+import { isAdmin } from '../config/roles.js'
 import { useAuth } from '../context/useAuth.js'
 import { usePlanReminders } from '../hooks/usePlanReminders.js'
 import { RhIcon, RH_ICON_STROKE } from '../ui/RhIcon.jsx'
 
 const STORAGE_KEY = 'rh.sidebarCollapsed'
 
-const nav = [
+const baseNav = [
   { to: '/app', end: true, label: 'الرئيسية', Icon: Home },
   { to: '/app/welcome', label: 'البداية', Icon: BookOpen },
   { to: '/app/plans', label: 'الخطط', Icon: ClipboardList },
@@ -27,8 +29,11 @@ const nav = [
   { to: '/app/foundation', label: 'أساس الواجهة', Icon: Puzzle },
 ]
 
+const adminNavItem = { to: '/app/admin/users', label: 'المستخدمون', Icon: Users }
+
 export function MainLayout() {
   const { user } = useAuth()
+  const nav = isAdmin(user) ? [...baseNav.slice(0, 4), adminNavItem, ...baseNav.slice(4)] : baseNav
   usePlanReminders(user)
   const [collapsed, setCollapsed] = useState(() => {
     try {
@@ -124,7 +129,9 @@ export function MainLayout() {
         </header>
 
         <main className="rh-content">
-          <Outlet />
+          <div className="rh-mob-app-scaffold">
+            <Outlet />
+          </div>
         </main>
       </div>
     </div>

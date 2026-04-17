@@ -1,9 +1,9 @@
-import { Navigate, Outlet, useLocation } from 'react-router-dom'
+import { Navigate, Outlet } from 'react-router-dom'
+import { isAdmin } from '../config/roles.js'
 import { useAuth } from '../context/useAuth.js'
 
-export function ProtectedRoute() {
+export function AdminRoute() {
   const { user, loading } = useAuth()
-  const location = useLocation()
 
   if (loading) {
     return (
@@ -15,11 +15,11 @@ export function ProtectedRoute() {
   }
 
   if (!user) {
-    return <Navigate to="/login" replace state={{ from: location }} />
+    return <Navigate to="/login" replace />
   }
 
-  if (user.isActive === false) {
-    return <Navigate to="/login?suspended=1" replace />
+  if (!isAdmin(user)) {
+    return <Navigate to="/app" replace />
   }
 
   return <Outlet />

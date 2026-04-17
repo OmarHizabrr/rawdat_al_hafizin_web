@@ -1,3 +1,4 @@
+import { normalizeRole } from '../config/roles.js'
 import { firestoreApi } from './firestoreApi.js'
 
 function toAuthUserPayload(u) {
@@ -27,13 +28,13 @@ export async function ensureUserProfile(firebaseUser) {
       docRef,
       data: {
         ...authPayload,
-        role: 'user',
+        role: 'student',
         isActive: true,
       },
       merge: true,
       userData: firebaseUser,
     })
-    return authPayload
+    return { ...authPayload, role: 'student', isActive: true }
   }
 
   await firestoreApi.updateData({
@@ -42,7 +43,10 @@ export async function ensureUserProfile(firebaseUser) {
     userData: firebaseUser,
   })
 
-  return { ...existing, ...authPayload }
+  const merged = { ...existing, ...authPayload }
+  merged.role = normalizeRole(merged.role)
+  if (merged.isActive === undefined) merged.isActive = true
+  return merged
 }
 
 /** الخطة المعروضة في الصفحة الرئيسية (معرّف مستند خطة). */

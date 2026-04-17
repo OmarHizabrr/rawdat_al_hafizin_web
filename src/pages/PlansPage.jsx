@@ -19,6 +19,8 @@ import {
   useToast,
 } from '../ui/index.js'
 import { RhIcon, RH_ICON_STROKE } from '../ui/RhIcon.jsx'
+import { PeekButton } from '../components/PeekButton.jsx'
+import { PlanAwradModal } from '../components/PlanAwradModal.jsx'
 
 const PLAN_TYPES = [
   { value: 'hifz', label: 'حفظ', hint: 'حفظ متون الأحاديث وفق المجلدات المختارة' },
@@ -61,6 +63,7 @@ export default function PlansPage() {
   const [isEditorOpen, setIsEditorOpen] = useState(false)
   const [editingPlanId, setEditingPlanId] = useState(null)
   const [deletingPlan, setDeletingPlan] = useState(null)
+  const [peekPlan, setPeekPlan] = useState(null)
 
   const [planName, setPlanName] = useState('')
   const [planType, setPlanType] = useState('hifz')
@@ -338,13 +341,16 @@ export default function PlansPage() {
             {displayedPlans.map((p) => (
               <li key={p.id} className="rh-plans__saved-card">
                 <div className="rh-plans__saved-head">
-                  <strong>{p.name}</strong>
-                  <span className="rh-plans__saved-badges">
-                    <span className="rh-plans__saved-badge">{typeLabel(p.planType)}</span>
-                    {user?.defaultPlanId === p.id && (
-                      <span className="rh-plans__saved-badge rh-plans__saved-badge--home">الرئيسية</span>
-                    )}
-                  </span>
+                  <div className="rh-plans__saved-head-main">
+                    <strong>{p.name}</strong>
+                    <span className="rh-plans__saved-badges">
+                      <span className="rh-plans__saved-badge">{typeLabel(p.planType)}</span>
+                      {user?.defaultPlanId === p.id && (
+                        <span className="rh-plans__saved-badge rh-plans__saved-badge--home">الرئيسية</span>
+                      )}
+                    </span>
+                  </div>
+                  <PeekButton title="عرض الأوراد المرتبطة بهذه الخطة" onClick={() => setPeekPlan(p)} />
                 </div>
                 <p className="rh-plans__saved-meta">
                   {p.totalTargetPages} صفحة — ورد {p.dailyPages} ص/يوم
@@ -609,6 +615,13 @@ export default function PlansPage() {
             </section>
         </ScrollArea>
       </Modal>
+
+      <PlanAwradModal
+        open={Boolean(peekPlan)}
+        onClose={() => setPeekPlan(null)}
+        userId={user?.uid}
+        plan={peekPlan}
+      />
 
       <Modal open={Boolean(deletingPlan)} title="تأكيد الحذف" onClose={() => setDeletingPlan(null)} size="sm">
             <p className="rh-plans__warn rh-plans__warn--confirm">

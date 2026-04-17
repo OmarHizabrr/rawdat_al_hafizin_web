@@ -1,6 +1,7 @@
 import { ChevronDown } from 'lucide-react'
 import { useCallback, useEffect, useId, useRef, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
+import { isAdmin } from '../config/roles.js'
 import { signOut } from '../services/authService.js'
 import { useOnClickOutside } from '../ui/hooks/useOnClickOutside.js'
 import { RhIcon, RH_ICON_STROKE } from '../ui/RhIcon.jsx'
@@ -64,6 +65,11 @@ export function UserMenu({ user }) {
           <Link to="/app/settings" className="rh-user-dropdown__item" role="menuitem" onClick={() => setOpen(false)}>
             الإعدادات
           </Link>
+          {isAdmin(user) && (
+            <Link to="/app/admin/users" className="rh-user-dropdown__item" role="menuitem" onClick={() => setOpen(false)}>
+              إدارة المستخدمين
+            </Link>
+          )}
           <Link to="/app/plans" className="rh-user-dropdown__item" role="menuitem" onClick={() => setOpen(false)}>
             الخطط
           </Link>

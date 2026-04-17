@@ -446,6 +446,10 @@
   padding: var(--rh-space-3);
 }
 
+.ui-modal--raised {
+  z-index: 100;
+}
+
 .ui-modal__backdrop {
   position: absolute;
   inset: 0;

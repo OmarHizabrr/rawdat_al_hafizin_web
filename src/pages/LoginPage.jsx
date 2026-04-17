@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
-import { Link, Navigate, useNavigate } from 'react-router-dom'
+import { Link, Navigate, useNavigate, useSearchParams } from 'react-router-dom'
 import { useAuth } from '../context/useAuth.js'
-import { signInWithGoogle } from '../services/authService.js'
+import { signInWithGoogle, signOut } from '../services/authService.js'
 import { SITE_TITLE } from '../config/site.js'
 import { Button } from '../ui/Button.jsx'
 
@@ -33,6 +33,8 @@ export default function LoginPage() {
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
+  const suspendedNotice = searchParams.get('suspended') === '1'
 
   useEffect(() => {
     document.title = `تسجيل الدخول — ${SITE_TITLE}`
@@ -43,6 +45,33 @@ export default function LoginPage() {
       <div className="rh-auth-loading" role="status">
         <div className="rh-spinner" />
         <p>جاري التحميل…</p>
+      </div>
+    )
+  }
+
+  if (user && user.isActive === false) {
+    return (
+      <div className="rh-login-page">
+        <div className="rh-login-card">
+          <img className="rh-login-logo" src="/logo.png" alt="" width={88} height={88} />
+          <h1 className="rh-login-title">الحساب موقوف</h1>
+          <p className="rh-login-sub">
+            تم إيقاف حسابك من قبل الإدارة. إذا كان ذلك خطأ، تواصل مع المشرف.
+          </p>
+          <Button
+            type="button"
+            variant="primary"
+            disabled={busy}
+            onClick={async () => {
+              setBusy(true)
+              await signOut()
+              setBusy(false)
+              navigate('/login', { replace: true })
+            }}
+          >
+            تسجيل الخروج والعودة
+          </Button>
+        </div>
       </div>
     )
   }
@@ -75,6 +104,12 @@ export default function LoginPage() {
         <img className="rh-login-logo" src="/logo.png" alt="" width={88} height={88} />
         <h1 className="rh-login-title">روضة الحافظين</h1>
         <p className="rh-login-sub">سجّل الدخول للمتابعة إلى المنصة</p>
+
+        {suspendedNotice && (
+          <div className="rh-login-error" role="status">
+            تم تسجيل خروجك لأن الحساب أصبح غير نشط. إذا احتجت مساعدة فاتصل بالإدارة.
+          </div>
+        )}
 
         {error && (
           <div className="rh-login-error" role="alert">
