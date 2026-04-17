@@ -1,7 +1,7 @@
 import { BookOpen, ChevronDown, ListOrdered, NotebookPen, Sparkles } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useLocation, useSearchParams } from 'react-router-dom'
-import { SITE_NAME, SITE_TITLE } from '../config/site.js'
+import { useSiteContent } from '../context/useSiteContent.js'
 import { CrossNav } from '../components/CrossNav.jsx'
 import { isAdmin } from '../config/roles.js'
 import { useAuth } from '../context/useAuth.js'
@@ -13,18 +13,9 @@ import { subscribeAwrad } from '../utils/awradStorage.js'
 import { computePlanProgress } from '../utils/planProgress.js'
 import { getImpersonateUid, withImpersonationQuery } from '../utils/impersonation.js'
 
-const PLAN_TYPES = [
-  { value: 'hifz', label: 'حفظ' },
-  { value: 'murajaah', label: 'مراجعة' },
-  { value: 'qiraah', label: 'قراءة' },
-]
-
-function typeLabel(v) {
-  return PLAN_TYPES.find((t) => t.value === v)?.label ?? v
-}
-
 export default function AppHomePage() {
   const { user } = useAuth()
+  const { typeLabel, branding, str } = useSiteContent()
   const { search } = useLocation()
   const [searchParams] = useSearchParams()
   const uidParam = searchParams.get('uid')?.trim() || ''
@@ -52,8 +43,10 @@ export default function AppHomePage() {
   useOnClickOutside(planMenuRef, () => setPlanMenuOpen(false), planMenuOpen)
 
   useEffect(() => {
-    document.title = actingAsUser ? `الرئيسية (نيابة) — ${SITE_TITLE}` : `الرئيسية — ${SITE_TITLE}`
-  }, [actingAsUser])
+    document.title = actingAsUser
+      ? `الرئيسية (نيابة) — ${branding.siteTitle}`
+      : `الرئيسية — ${branding.siteTitle}`
+  }, [actingAsUser, branding.siteTitle])
 
   useEffect(() => {
     if (!actingAsUser || !contextUserId) {
@@ -109,20 +102,23 @@ export default function AppHomePage() {
   )
 
   const name = actingAsUser
-    ? subjectProfile?.displayName?.trim() || 'مستخدم'
-    : user?.displayName?.trim() || 'ضيفنا الكريم'
+    ? subjectProfile?.displayName?.trim() || str('app.home_greeting_user_fallback')
+    : user?.displayName?.trim() || str('app.home_greeting_fallback')
   const pct = progress?.progressPercent ?? 0
 
   const homeCrossItems = useMemo(() => {
     const base = [
-      { to: '/app/plans', label: 'الخطط' },
-      { to: '/app/awrad', label: 'كل الأوراد' },
-      { to: '/app/welcome', label: 'البداية' },
-      { to: '/app/settings', label: 'الإعدادات' },
+      { to: '/app/plans', label: str('app.home_cross_plans') },
+      { to: '/app/awrad', label: str('app.home_cross_awrad') },
+      { to: '/app/welcome', label: str('app.home_cross_welcome') },
+      { to: '/app/settings', label: str('app.home_cross_settings') },
     ]
-    if (isAdmin(user)) base.push({ to: '/app/admin/users', label: 'المستخدمون' })
+    if (isAdmin(user)) {
+      base.push({ to: '/app/admin', label: str('layout.nav_dashboard') })
+      base.push({ to: '/app/admin/users', label: str('app.home_cross_users') })
+    }
     return base
-  }, [user])
+  }, [user, str])
 
   return (
     <div className="rh-app-home">
@@ -134,19 +130,17 @@ export default function AppHomePage() {
           </span>
         </div>
         <p className="lead rh-app-home__lead">
-          {actingAsUser
-            ? `${SITE_NAME} — تعرض هذه الصفحة تقدّم المستخدم المحدد؛ التعديلات تُحفظ لحسابه وأنت ما زلت مسجّلاً كمشرف.`
-            : `${SITE_NAME} معك خطوة بخطوة — تابع خطتك اليوم، وسجّل وردك بضغطة واحدة.`}
+          {actingAsUser ? str('app.home_lead_impersonate') : str('app.home_lead_normal')}
         </p>
         {actingAsUser && (
           <p className="rh-plans__admin-banner rh-app-home__impersonation">
-            <Link to="/app/admin/users">← المستخدمون</Link>
+            <Link to="/app/admin/users">{str('app.home_impersonation_users')}</Link>
             {' · '}
-            <Link to={`/app/plans?uid=${encodeURIComponent(contextUserId)}`}>خططه</Link>
+            <Link to={`/app/plans?uid=${encodeURIComponent(contextUserId)}`}>{str('app.home_impersonation_plans')}</Link>
             {' · '}
-            <Link to={`/app/awrad?uid=${encodeURIComponent(contextUserId)}`}>أوراده</Link>
+            <Link to={`/app/awrad?uid=${encodeURIComponent(contextUserId)}`}>{str('app.home_impersonation_awrad')}</Link>
             {' · '}
-            <Link to="/app">حسابي</Link>
+            <Link to="/app">{str('app.home_impersonation_my_account')}</Link>
           </p>
         )}
         <CrossNav items={homeCrossItems} className="rh-app-home__cross" />
@@ -155,7 +149,7 @@ export default function AppHomePage() {
       {activePlan && progress ? (
         <section className="rh-home-focus card">
           <div className="rh-home-focus__head">
-            <p className="rh-home-focus__eyebrow">{actingAsUser ? 'خطته الآن' : 'خطتك الآن'}</p>
+            <p className="rh-home-focus__eyebrow">{actingAsUser ? str('app.home_plan_now_other') : str('app.home_plan_now_you')}</p>
             <div className="rh-home-focus__picker-wrap" ref={planMenuRef}>
               <button
                 type="button"
@@ -199,7 +193,7 @@ export default function AppHomePage() {
                           to={appPath(`/app/awrad?plan=${encodeURIComponent(p.id)}`)}
                           onClick={() => setPlanMenuOpen(false)}
                         >
-                          أوراد
+                          {str('app.home_menu_awrad_link')}
                         </Link>
                       </div>
                     </li>
@@ -212,7 +206,7 @@ export default function AppHomePage() {
           <div className="rh-home-focus__progress-block">
             <div className="rh-home-focus__progress-top">
               <span className="rh-home-focus__pct">{pct.toFixed(1)}%</span>
-              <span className="rh-home-focus__pct-label">إنجاز الخطة</span>
+              <span className="rh-home-focus__pct-label">{str('app.home_progress_label')}</span>
             </div>
             <div className="rh-home-focus__bar">
               <div className="rh-home-focus__bar-fill" style={{ width: `${pct}%` }} />

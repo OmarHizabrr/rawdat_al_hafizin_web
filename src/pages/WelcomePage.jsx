@@ -2,26 +2,30 @@ import { useEffect, useMemo } from 'react'
 import { CrossNav } from '../components/CrossNav.jsx'
 import { ProgramSections } from '../components/ProgramSections.jsx'
 import { isAdmin } from '../config/roles.js'
-import { SITE_TITLE } from '../config/site.js'
 import { useAuth } from '../context/useAuth.js'
+import { useSiteContent } from '../context/useSiteContent.js'
 
 export default function WelcomePage() {
   const { user } = useAuth()
+  const { branding, str } = useSiteContent()
 
   const welcomeCrossItems = useMemo(() => {
     const base = [
-      { to: '/app', label: 'الرئيسية' },
-      { to: '/app/plans', label: 'الخطط' },
-      { to: '/app/awrad', label: 'الأوراد' },
-      { to: '/app/settings', label: 'الإعدادات' },
+      { to: '/app', label: str('layout.nav_home') },
+      { to: '/app/plans', label: str('layout.nav_plans') },
+      { to: '/app/awrad', label: str('layout.nav_awrad') },
+      { to: '/app/settings', label: str('layout.nav_settings') },
     ]
-    if (isAdmin(user)) base.push({ to: '/app/admin/users', label: 'المستخدمون' })
+    if (isAdmin(user)) {
+      base.push({ to: '/app/admin', label: str('layout.nav_dashboard') })
+      base.push({ to: '/app/admin/users', label: str('layout.nav_users') })
+    }
     return base
-  }, [user])
+  }, [user, str])
 
   useEffect(() => {
-    document.title = `البداية — ${SITE_TITLE}`
-  }, [])
+    document.title = `البداية — ${branding.siteTitle}`
+  }, [branding.siteTitle])
 
   return (
     <div className="rh-app-welcome">

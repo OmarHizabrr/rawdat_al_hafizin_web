@@ -1,5 +1,6 @@
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
 import { AuthProvider } from './context/AuthProvider.jsx'
+import { SiteContentProvider } from './context/SiteContentProvider.jsx'
 import { ThemeProvider } from './theme/ThemeProvider.jsx'
 import { AdminRoute } from './routes/AdminRoute.jsx'
 import { GuestOnly } from './routes/GuestOnly.jsx'
@@ -15,36 +16,46 @@ import PlansPage from './pages/PlansPage.jsx'
 import SettingsPage from './pages/SettingsPage.jsx'
 import WelcomePage from './pages/WelcomePage.jsx'
 import AdminUsersPage from './pages/AdminUsersPage.jsx'
+import AdminDashboardPage from './pages/AdminDashboardPage.jsx'
+import AdminPlanTypesPage from './pages/AdminPlanTypesPage.jsx'
+import AdminSiteCopyPage from './pages/AdminSiteCopyPage.jsx'
+import AdminBrandingPage from './pages/AdminBrandingPage.jsx'
 
 export default function App() {
   return (
     <ThemeProvider>
       <ToastProvider>
-        <AuthProvider>
-          <BrowserRouter>
-            <Routes>
-              <Route element={<GuestOnly />}>
-                <Route path="/" element={<LandingPage />} />
-              </Route>
-              <Route path="/login" element={<LoginPage />} />
-              <Route path="/foundation" element={<FoundationPage />} />
-              <Route element={<ProtectedRoute />}>
-                <Route path="/app" element={<MainLayout />}>
-                  <Route index element={<AppHomePage />} />
-                  <Route path="welcome" element={<WelcomePage />} />
-                  <Route path="plans" element={<PlansPage />} />
-                  <Route path="awrad" element={<AwradPage />} />
-                  <Route path="foundation" element={<FoundationPage />} />
-                  <Route path="settings" element={<SettingsPage />} />
-                  <Route element={<AdminRoute />}>
-                    <Route path="admin/users" element={<AdminUsersPage />} />
+        <SiteContentProvider>
+          <AuthProvider>
+            <BrowserRouter>
+              <Routes>
+                <Route element={<GuestOnly />}>
+                  <Route path="/" element={<LandingPage />} />
+                </Route>
+                <Route path="/login" element={<LoginPage />} />
+                <Route path="/foundation" element={<FoundationPage />} />
+                <Route element={<ProtectedRoute />}>
+                  <Route path="/app" element={<MainLayout />}>
+                    <Route index element={<AppHomePage />} />
+                    <Route path="welcome" element={<WelcomePage />} />
+                    <Route path="plans" element={<PlansPage />} />
+                    <Route path="awrad" element={<AwradPage />} />
+                    <Route path="foundation" element={<FoundationPage />} />
+                    <Route path="settings" element={<SettingsPage />} />
+                    <Route element={<AdminRoute />}>
+                      <Route path="admin" element={<AdminDashboardPage />} />
+                      <Route path="admin/plan-types" element={<AdminPlanTypesPage />} />
+                      <Route path="admin/copy" element={<AdminSiteCopyPage />} />
+                      <Route path="admin/branding" element={<AdminBrandingPage />} />
+                      <Route path="admin/users" element={<AdminUsersPage />} />
+                    </Route>
                   </Route>
                 </Route>
-              </Route>
-              <Route path="*" element={<Navigate to="/" replace />} />
-            </Routes>
-          </BrowserRouter>
-        </AuthProvider>
+                <Route path="*" element={<Navigate to="/" replace />} />
+              </Routes>
+            </BrowserRouter>
+          </AuthProvider>
+        </SiteContentProvider>
       </ToastProvider>
     </ThemeProvider>
   )

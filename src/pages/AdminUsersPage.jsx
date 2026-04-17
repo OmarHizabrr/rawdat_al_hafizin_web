@@ -1,7 +1,7 @@
 import { Home } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { useEffect, useMemo, useState } from 'react'
-import { SITE_TITLE } from '../config/site.js'
+import { useSiteContent } from '../context/useSiteContent.js'
 import { USER_ROLES, isAdmin, normalizeRole } from '../config/roles.js'
 import { useAuth } from '../context/useAuth.js'
 import {
@@ -17,6 +17,7 @@ import { RhIcon, RH_ICON_STROKE } from '../ui/RhIcon.jsx'
 
 export default function AdminUsersPage() {
   const { user: actor } = useAuth()
+  const { branding, str } = useSiteContent()
   const toast = useToast()
   const [users, setUsers] = useState([])
   const [query, setQuery] = useState('')
@@ -24,8 +25,8 @@ export default function AdminUsersPage() {
   const [busyUid, setBusyUid] = useState(null)
 
   useEffect(() => {
-    document.title = `المستخدمون — ${SITE_TITLE}`
-  }, [])
+    document.title = `المستخدمون — ${branding.siteTitle}`
+  }, [branding.siteTitle])
 
   useEffect(() => {
     if (!isAdmin(actor)) return
@@ -38,13 +39,14 @@ export default function AdminUsersPage() {
 
   const adminCrossItems = useMemo(
     () => [
-      { to: '/app', label: 'الرئيسية' },
-      { to: '/app/plans', label: 'الخطط' },
-      { to: '/app/awrad', label: 'الأوراد' },
-      { to: '/app/welcome', label: 'البداية' },
-      { to: '/app/settings', label: 'الإعدادات' },
+      { to: '/app/admin', label: str('layout.nav_dashboard') },
+      { to: '/app', label: str('layout.nav_home') },
+      { to: '/app/plans', label: str('layout.nav_plans') },
+      { to: '/app/awrad', label: str('layout.nav_awrad') },
+      { to: '/app/welcome', label: str('layout.nav_welcome') },
+      { to: '/app/settings', label: str('layout.nav_settings') },
     ],
-    [],
+    [str],
   )
 
   const filtered = useMemo(() => {

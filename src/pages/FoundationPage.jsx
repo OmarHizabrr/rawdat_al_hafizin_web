@@ -2,7 +2,7 @@ import { ArrowRight } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../context/useAuth.js'
-import { SITE_NAME, SITE_TITLE } from '../config/site.js'
+import { useSiteContent } from '../context/useSiteContent.js'
 import { Button, SearchableSelect, TextAreaField, TextField, useToast } from '../ui/index.js'
 import { RhIcon, RH_ICON_STROKE } from '../ui/RhIcon.jsx'
 
@@ -17,6 +17,7 @@ const STAGE_OPTIONS = [
 
 export default function FoundationPage() {
   const { user } = useAuth()
+  const { branding } = useSiteContent()
   const toast = useToast()
   const homeHref = user ? '/app' : '/'
   const [name, setName] = useState('')
@@ -25,8 +26,8 @@ export default function FoundationPage() {
   const [showErrors, setShowErrors] = useState(false)
 
   useEffect(() => {
-    document.title = `أساس الواجهة — ${SITE_TITLE}`
-  }, [])
+    document.title = `أساس الواجهة — ${branding.siteTitle}`
+  }, [branding.siteTitle])
 
   const nameError = useMemo(() => {
     if (!showErrors) return ''
@@ -61,7 +62,8 @@ export default function FoundationPage() {
           </Link>
           <h1>أساس الواجهة</h1>
           <p className="foundation-lead">
-            حقول موحّدة، قائمة منسدلة قابلة للبحث، أزرار بأنماط متعددة، ورسائل للمستخدم — جاهزة للبناء عليها في {SITE_NAME}.
+            حقول موحّدة، قائمة منسدلة قابلة للبحث، أزرار بأنماط متعددة، ورسائل للمستخدم — جاهزة للبناء عليها في{' '}
+            {branding.siteName}.
           </p>
         </div>
       </header>

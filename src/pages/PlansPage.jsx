@@ -2,7 +2,7 @@ import { Pencil, Plus, Star, Trash2 } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { VOLUMES, VOLUME_BY_ID } from '../data/volumes.js'
-import { SITE_TITLE } from '../config/site.js'
+import { useSiteContent } from '../context/useSiteContent.js'
 import { isAdmin } from '../config/roles.js'
 import { useAuth } from '../context/useAuth.js'
 import { firestoreApi } from '../services/firestoreApi.js'
@@ -23,12 +23,6 @@ import {
 import { RhIcon, RH_ICON_STROKE } from '../ui/RhIcon.jsx'
 import { CrossNav } from '../components/CrossNav.jsx'
 import { PeekButton } from '../components/PeekButton.jsx'
-
-const PLAN_TYPES = [
-  { value: 'hifz', label: 'حفظ', hint: 'حفظ متون الأحاديث وفق المجلدات المختارة' },
-  { value: 'murajaah', label: 'مراجعة', hint: 'تثبيت ما سبق حفظه أو مراجعة سريعة' },
-  { value: 'qiraah', label: 'قراءة', hint: 'قراءة مطالعة دون اشتراط الحفظ' },
-]
 
 const WEEKDAYS = [
   { d: 0, label: 'الأحد' },
@@ -60,6 +54,7 @@ function formatReminderAr(hhmm) {
 
 export default function PlansPage() {
   const { user } = useAuth()
+  const { planTypes, typeLabel, branding, str } = useSiteContent()
   const toast = useToast()
   const [searchParams] = useSearchParams()
   const uidParam = searchParams.get('uid')?.trim() || ''
@@ -80,7 +75,13 @@ export default function PlansPage() {
   const [deletingPlan, setDeletingPlan] = useState(null)
 
   const [planName, setPlanName] = useState('')
-  const [planType, setPlanType] = useState('hifz')
+  /** اختيار المستخدم؛ قد يصير غير مطابق لقائمة الأنواع بعد تغيير الإعدادات */
+  const [selectedPlanType, setSelectedPlanType] = useState(() => planTypes[0]?.value ?? 'hifz')
+
+  const planType = useMemo(() => {
+    if (!planTypes.length) return selectedPlanType
+    return planTypes.some((t) => t.value === selectedPlanType) ? selectedPlanType : planTypes[0].value
+  }, [planTypes, selectedPlanType])
   const [volumeState, setVolumeState] = useState(() => createInitialVolumeState())
   const [dailyPages, setDailyPages] = useState(5)
   const [reminderTime, setReminderTime] = useState('')
@@ -101,10 +102,10 @@ export default function PlansPage() {
   )
 
   useEffect(() => {
-    if (readOnly) document.title = `خطط المستخدم — ${SITE_TITLE}`
-    else if (actingAsUser) document.title = `الخطط (نيابة) — ${SITE_TITLE}`
-    else document.title = `الخطط — ${SITE_TITLE}`
-  }, [readOnly, actingAsUser])
+    if (readOnly) document.title = `خطط المستخدم — ${branding.siteTitle}`
+    else if (actingAsUser) document.title = `الخطط (نيابة) — ${branding.siteTitle}`
+    else document.title = `الخطط — ${branding.siteTitle}`
+  }, [readOnly, actingAsUser, branding.siteTitle])
 
   useEffect(() => {
     if (actingAsUser && viewUserId) return undefined
@@ -224,7 +225,7 @@ export default function PlansPage() {
 
   const resetForm = () => {
     setPlanName('')
-    setPlanType('hifz')
+    setSelectedPlanType(planTypes[0]?.value ?? 'hifz')
     setVolumeState(createInitialVolumeState())
     setDailyPages(5)
     setReminderTime('')
@@ -256,7 +257,7 @@ export default function PlansPage() {
 
     setEditingPlanId(plan.id)
     setPlanName(plan.name ?? '')
-    setPlanType(plan.planType ?? 'hifz')
+    setSelectedPlanType(plan.planType ?? planTypes[0]?.value ?? 'hifz')
     setVolumeState(nextVolumeState)
     setDailyPages(Math.max(1, Number(plan.dailyPages) || 1))
     setReminderTime(plan.reminderTime ?? '')
@@ -354,8 +355,6 @@ export default function PlansPage() {
     toast.success('أصبحت هذه الخطة هي المعروضة في الصفحة الرئيسية.', 'تم')
   }
 
-  const typeLabel = (v) => PLAN_TYPES.find((t) => t.value === v)?.label ?? v
-
   const volumeSummary = (n) =>
     n === 0 ? 'اختر المجلدات…' : n === 1 ? 'مجلد واحد مختار' : `${n} مجلدات مختارة`
   const displayedPlans = viewUserId ? savedPlans : []
@@ -370,14 +369,17 @@ export default function PlansPage() {
 
   const plansCrossItems = useMemo(() => {
     const base = [
-      { to: '/app', label: 'الرئيسية' },
-      { to: '/app/awrad', label: 'الأوراد' },
-      { to: '/app/welcome', label: 'البداية' },
-      { to: '/app/settings', label: 'الإعدادات' },
+      { to: '/app', label: str('layout.nav_home') },
+      { to: '/app/awrad', label: str('layout.nav_awrad') },
+      { to: '/app/welcome', label: str('layout.nav_welcome') },
+      { to: '/app/settings', label: str('layout.nav_settings') },
     ]
-    if (isAdmin(user)) base.push({ to: '/app/admin/users', label: 'المستخدمون' })
+    if (isAdmin(user)) {
+      base.push({ to: '/app/admin', label: str('layout.nav_dashboard') })
+      base.push({ to: '/app/admin/users', label: str('layout.nav_users') })
+    }
     return base
-  }, [user])
+  }, [user, str])
 
   return (
     <div className="rh-plans">
@@ -526,14 +528,14 @@ export default function PlansPage() {
         <TextField label="اسم الخطة (اختياري)" placeholder="مثال: خطة صيف ١٤٤٧" value={planName} onChange={(e) => setPlanName(e.target.value)} />
         <p className="rh-plans__field-label">نوع الخطة</p>
         <div className="rh-segment rh-segment--plans">
-          {PLAN_TYPES.map((opt) => (
+          {planTypes.map((opt) => (
             <button
               key={opt.value}
               type="button"
               role="radio"
               aria-checked={planType === opt.value}
               className={['rh-segment__btn', planType === opt.value ? 'rh-segment__btn--active' : ''].filter(Boolean).join(' ')}
-              onClick={() => setPlanType(opt.value)}
+              onClick={() => setSelectedPlanType(opt.value)}
             >
               <span className="rh-segment__label">{opt.label}</span>
               <span className="rh-segment__hint">{opt.hint}</span>

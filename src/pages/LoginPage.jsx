@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { Link, Navigate, useNavigate, useSearchParams } from 'react-router-dom'
 import { useAuth } from '../context/useAuth.js'
 import { signInWithGoogle, signOut } from '../services/authService.js'
-import { SITE_TITLE } from '../config/site.js'
+import { useSiteContent } from '../context/useSiteContent.js'
 import { Button } from '../ui/Button.jsx'
 
 function GoogleIcon() {
@@ -29,6 +29,7 @@ function GoogleIcon() {
 }
 
 export default function LoginPage() {
+  const { branding } = useSiteContent()
   const { user, loading } = useAuth()
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
@@ -37,8 +38,8 @@ export default function LoginPage() {
   const suspendedNotice = searchParams.get('suspended') === '1'
 
   useEffect(() => {
-    document.title = `تسجيل الدخول — ${SITE_TITLE}`
-  }, [])
+    document.title = `تسجيل الدخول — ${branding.siteTitle}`
+  }, [branding.siteTitle])
 
   if (loading) {
     return (

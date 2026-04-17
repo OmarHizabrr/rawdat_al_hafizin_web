@@ -1,25 +1,26 @@
 import { useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { ProgramSections } from '../components/ProgramSections.jsx'
-import { SITE_TITLE } from '../config/site.js'
+import { useSiteContent } from '../context/useSiteContent.js'
 
 export default function LandingPage() {
   const navigate = useNavigate()
+  const { branding, str } = useSiteContent()
 
   useEffect(() => {
-    document.title = SITE_TITLE
-  }, [])
+    document.title = branding.siteTitle
+  }, [branding.siteTitle])
 
   return (
     <div className="page">
       <header className="hero">
         <div className="hero-inner">
-          <img className="logo" src="/logo.png" alt="شعار روضة الحافظين" width={120} height={120} />
-          <p className="eyebrow">بجمع الشيخ يحيى بن عبد العزيز اليحيى</p>
-          <h1>روضة الحافظين</h1>
-          <p className="subtitle">برنامج تحفيظ السنة النبوية — منصة ويب تدعم الهاتف والمتصفح</p>
+          <img className="logo" src="/logo.png" alt={str('landing.logo_alt')} width={120} height={120} />
+          <p className="eyebrow">{str('landing.eyebrow')}</p>
+          <h1>{str('landing.hero_title')}</h1>
+          <p className="subtitle">{str('landing.subtitle')}</p>
           <button type="button" className="cta" onClick={() => navigate('/login')}>
-            ابدأ رحلتك إلى هنا
+            {str('landing.cta')}
           </button>
         </div>
       </header>
@@ -27,23 +28,23 @@ export default function LandingPage() {
       <main className="content">
         <ProgramSections />
 
-        <section id="start-journey" className="card cta-panel" aria-label="بداية الرحلة">
-          <h2>بداية رحلتك</h2>
-          <p>للمتابعة إلى المنصة وتسجيل الدخول عبر Google، اضغط الزر أعلاه أو من هنا.</p>
+        <section id="start-journey" className="card cta-panel" aria-label={str('landing.section_start_title')}>
+          <h2>{str('landing.section_start_title')}</h2>
+          <p>{str('landing.section_start_p')}</p>
           <p className="landing-kit-link">
             <button type="button" className="rh-link-btn" onClick={() => navigate('/login')}>
-              الانتقال إلى تسجيل الدخول
+              {str('landing.section_start_login_btn')}
             </button>
             {' · '}
-            <Link to="/foundation">أساس الواجهة (للمطورين)</Link>
+            <Link to="/foundation">{str('landing.section_start_foundation_link')}</Link>
           </p>
         </section>
       </main>
 
       <footer className="footer">
-        <p>روضة الحافظين — برنامج تحفيظ السنة النبوية</p>
+        <p>{str('landing.footer_line')}</p>
         <p className="footer-links">
-          <Link to="/foundation">دليل المكوّنات</Link>
+          <Link to="/foundation">{str('landing.footer_kit_link')}</Link>
         </p>
       </footer>
     </div>

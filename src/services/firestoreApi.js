@@ -180,6 +180,21 @@ class FirestoreApi {
     return this.getDocument("users", userId);
   }
 
+  /** plan_types — أنواع الخطط (إعدادات عامة للموقع) */
+  getPlanTypesCollection() {
+    return this.getCollection("plan_types");
+  }
+
+  /** plan_types/{id} */
+  getPlanTypeDoc(planTypeId) {
+    return this.getDocument("plan_types", planTypeId);
+  }
+
+  /** site_config/main — هوية الموقع والنصوص الثابتة */
+  getSiteConfigDoc() {
+    return this.getDocument("site_config", "main");
+  }
+
   /** plans/{userId}/plans */
   getUserPlansCollection(userId) {
     return this.getUserScopedCollection("plans", userId);

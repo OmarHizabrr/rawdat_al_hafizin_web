@@ -1,9 +1,10 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import {
   BookOpen,
   ChevronsLeft,
   ChevronsRight,
   ClipboardList,
+  LayoutDashboard,
   NotebookPen,
   Home,
   Menu,
@@ -15,28 +16,40 @@ import { NavLink, Outlet, useLocation } from 'react-router-dom'
 import { UserMenu } from '../components/UserMenu.jsx'
 import { isAdmin } from '../config/roles.js'
 import { useAuth } from '../context/useAuth.js'
+import { useSiteContent } from '../context/useSiteContent.js'
 import { usePlanReminders } from '../hooks/usePlanReminders.js'
 import { getImpersonateUid, withImpersonationQuery } from '../utils/impersonation.js'
 import { RhIcon, RH_ICON_STROKE } from '../ui/RhIcon.jsx'
 
 const STORAGE_KEY = 'rh.sidebarCollapsed'
 
-const baseNav = [
-  { to: '/app', end: true, label: 'الرئيسية', Icon: Home },
-  { to: '/app/welcome', label: 'البداية', Icon: BookOpen },
-  { to: '/app/plans', label: 'الخطط', Icon: ClipboardList },
-  { to: '/app/awrad', label: 'الأوراد', Icon: NotebookPen },
-  { to: '/app/settings', label: 'الإعدادات', Icon: Settings },
-  { to: '/app/foundation', label: 'أساس الواجهة', Icon: Puzzle },
-]
-
-const adminNavItem = { to: '/app/admin/users', label: 'المستخدمون', Icon: Users }
-
 export function MainLayout() {
   const { user } = useAuth()
+  const { str } = useSiteContent()
   const { search } = useLocation()
   const impersonateUid = getImpersonateUid(user, search)
-  const nav = isAdmin(user) ? [...baseNav.slice(0, 4), adminNavItem, ...baseNav.slice(4)] : baseNav
+
+  const baseNav = useMemo(
+    () => [
+      { to: '/app', end: true, label: str('layout.nav_home'), Icon: Home },
+      { to: '/app/welcome', label: str('layout.nav_welcome'), Icon: BookOpen },
+      { to: '/app/plans', label: str('layout.nav_plans'), Icon: ClipboardList },
+      { to: '/app/awrad', label: str('layout.nav_awrad'), Icon: NotebookPen },
+      { to: '/app/settings', label: str('layout.nav_settings'), Icon: Settings },
+      { to: '/app/foundation', label: str('layout.nav_foundation'), Icon: Puzzle },
+    ],
+    [str],
+  )
+
+  const adminNavItems = useMemo(
+    () => [
+      { to: '/app/admin', label: str('layout.nav_dashboard'), Icon: LayoutDashboard },
+      { to: '/app/admin/users', label: str('layout.nav_users'), Icon: Users },
+    ],
+    [str],
+  )
+
+  const nav = isAdmin(user) ? [...baseNav.slice(0, 4), ...adminNavItems, ...baseNav.slice(4)] : baseNav
   usePlanReminders(impersonateUid ? null : user)
   const [collapsed, setCollapsed] = useState(() => {
     try {
@@ -82,10 +95,10 @@ export function MainLayout() {
               .join(' ')
           }
           onClick={closeMobile}
-          aria-label="الرئيسية — روضة الحافظين"
+          aria-label={str('layout.sidebar_brand_aria')}
         >
           <img src="/logo.png" alt="" className="rh-sidebar__logo" width={40} height={40} />
-          {!collapsed && <span className="rh-sidebar__title">روضة الحافظين</span>}
+          {!collapsed && <span className="rh-sidebar__title">{str('layout.sidebar_title')}</span>}
         </NavLink>
 
         <nav className="rh-sidebar__nav">
@@ -112,12 +125,12 @@ export function MainLayout() {
             className="rh-sidebar__collapse"
             onClick={() => setCollapsed((c) => !c)}
             aria-pressed={collapsed}
-            title={collapsed ? 'توسيع القائمة' : 'طي القائمة'}
+            title={collapsed ? str('layout.collapse_expand') : str('layout.collapse_collapse')}
           >
             <span className="rh-sidebar__collapse-icon" aria-hidden>
               <RhIcon as={CollapseIcon} size={20} strokeWidth={RH_ICON_STROKE} />
             </span>
-            {!collapsed && <span>طي القائمة</span>}
+            {!collapsed && <span>{str('layout.collapse_label')}</span>}
           </button>
         </div>
       </aside>
@@ -145,7 +158,7 @@ export function MainLayout() {
               }
               onClick={closeMobile}
             >
-              منصة روضة الحافظين
+              {str('layout.topbar_heading')}
             </NavLink>
           </h1>
           <div className="rh-topbar__spacer" />

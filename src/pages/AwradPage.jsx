@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Plus } from 'lucide-react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
-import { SITE_TITLE } from '../config/site.js'
+import { useSiteContent } from '../context/useSiteContent.js'
 import { isAdmin } from '../config/roles.js'
 import { useAuth } from '../context/useAuth.js'
 import { loadPlans, subscribePlans } from '../utils/plansStorage.js'
@@ -20,6 +20,7 @@ const WEEKDAY_AR = ['الأحد', 'الإثنين', 'الثلاثاء', 'الأ�
 
 export default function AwradPage() {
   const { user } = useAuth()
+  const { branding, str } = useSiteContent()
   const toast = useToast()
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
@@ -38,14 +39,17 @@ export default function AwradPage() {
 
   const awradCrossItems = useMemo(() => {
     const base = [
-      { to: '/app', label: 'الرئيسية' },
-      { to: '/app/plans', label: 'الخطط' },
-      { to: '/app/welcome', label: 'البداية' },
-      { to: '/app/settings', label: 'الإعدادات' },
+      { to: '/app', label: str('layout.nav_home') },
+      { to: '/app/plans', label: str('layout.nav_plans') },
+      { to: '/app/welcome', label: str('layout.nav_welcome') },
+      { to: '/app/settings', label: str('layout.nav_settings') },
     ]
-    if (isAdmin(user)) base.push({ to: '/app/admin/users', label: 'المستخدمون' })
+    if (isAdmin(user)) {
+      base.push({ to: '/app/admin', label: str('layout.nav_dashboard') })
+      base.push({ to: '/app/admin/users', label: str('layout.nav_users') })
+    }
     return base
-  }, [user])
+  }, [user, str])
 
   const [plans, setPlans] = useState([])
   const [awrad, setAwrad] = useState([])
@@ -72,10 +76,10 @@ export default function AwradPage() {
   }, [awrad])
 
   useEffect(() => {
-    if (viewOnly) document.title = `أوراد المستخدم — ${SITE_TITLE}`
-    else if (actingAsUser) document.title = `الأوراد (نيابة) — ${SITE_TITLE}`
-    else document.title = `الأوراد — ${SITE_TITLE}`
-  }, [viewOnly, actingAsUser])
+    if (viewOnly) document.title = `أوراد المستخدم — ${branding.siteTitle}`
+    else if (actingAsUser) document.title = `الأوراد (نيابة) — ${branding.siteTitle}`
+    else document.title = `الأوراد — ${branding.siteTitle}`
+  }, [viewOnly, actingAsUser, branding.siteTitle])
 
   useEffect(() => {
     const t = window.setTimeout(() => {
