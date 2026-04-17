@@ -39,6 +39,36 @@ export function buildDefaultThemeMap(mode) {
   return out
 }
 
+/** دمج مسودة المستخدم مع الافتراضيات لنفس الوضع (للمعاينة الحية) */
+export function mergeThemeDraftWithDefaults(draft, mode) {
+  const side = mode === 'dark' ? 'dark' : 'light'
+  const merged = {}
+  for (const [name, pair] of Object.entries(THEME_VAR_DEFAULTS)) {
+    const o = draft?.[name]
+    merged[name] = o && String(o).trim() ? String(o).trim() : pair[side]
+  }
+  return merged
+}
+
+/** كائن style لـ React يضم متغيرات المعاينة + أسماء مستعار للصفحة العامة */
+export function buildPreviewDomStyle(draft, mode) {
+  const m = mergeThemeDraftWithDefaults(draft, mode)
+  const style = {}
+  for (const [k, v] of Object.entries(m)) {
+    style[k] = v
+  }
+  style['--on-primary'] = m['--rh-on-primary']
+  style['--primary'] = m['--rh-primary']
+  style['--bg'] = m['--rh-bg']
+  style['--text'] = m['--rh-text']
+  style['--muted'] = m['--rh-text-muted']
+  style['--border'] = m['--rh-border']
+  style['--surface'] = m['--rh-surface']
+  style['--font'] = `'Noto Sans Arabic', system-ui, sans-serif`
+  style['--max'] = '520px'
+  return style
+}
+
 /**
  * مجموعات ألوان جاهزة (تُطبَّق على الوضع الفاتح أو الداكن حسب اختيارك).
  * كل عنصر: { id, name, light, dark } — القيم نفس مفاتيح THEME_VAR_DEFAULTS.

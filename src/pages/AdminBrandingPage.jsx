@@ -1,12 +1,14 @@
 import { ArrowLeft } from 'lucide-react'
-import { startTransition, useCallback, useEffect, useState } from 'react'
+import { startTransition, useCallback, useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { BrandingColorRow } from '../components/BrandingColorRow.jsx'
+import { BrandingLivePreview } from '../components/BrandingLivePreview.jsx'
 import { SITE_DESCRIPTION, SITE_NAME, SITE_OG_IMAGE_PATH, SITE_TITLE } from '../config/site.js'
 import { BRANDING_COLOR_PRESETS } from '../data/brandingPresets.js'
 import { BRANDING_THEME_GROUPS } from '../data/brandingThemeFields.js'
 import { useAuth } from '../context/useAuth.js'
 import { useSiteContent } from '../context/useSiteContent.js'
+import { useTheme } from '../theme/useTheme.js'
 import { saveBranding } from '../services/siteConfigService.js'
 import { sanitizeImageUrl } from '../utils/brandingAssets.js'
 import { CrossNav } from '../components/CrossNav.jsx'
@@ -21,6 +23,7 @@ function cloneThemeMap(map) {
 export default function AdminBrandingPage() {
   const { user } = useAuth()
   const { branding } = useSiteContent()
+  const { resolved: appColorScheme } = useTheme()
   const toast = useToast()
   const [siteName, setSiteName] = useState(branding.siteName)
   const [siteTitle, setSiteTitle] = useState(branding.siteTitle)
@@ -32,6 +35,9 @@ export default function AdminBrandingPage() {
   const [resetAllOpen, setResetAllOpen] = useState(false)
   const [lightSelectKey, setLightSelectKey] = useState(0)
   const [darkSelectKey, setDarkSelectKey] = useState(0)
+  const [previewMode, setPreviewMode] = useState(() => (appColorScheme === 'dark' ? 'dark' : 'light'))
+
+  const previewLogoSrc = useMemo(() => sanitizeImageUrl(logoUrl) || '/logo.png', [logoUrl])
 
   useEffect(() => {
     document.title = `هوية الموقع — ${branding.siteTitle}`
@@ -174,7 +180,7 @@ export default function AdminBrandingPage() {
   )
 
   return (
-    <div className="rh-admin-branding">
+    <div className="rh-admin-branding rh-admin-branding--split">
       <header className="rh-admin-branding__hero card">
         <div className="rh-admin-branding__head-row">
           <Link to="/app/admin" className="rh-admin-plan-types__back">
@@ -199,6 +205,8 @@ export default function AdminBrandingPage() {
         </Button>
       </div>
 
+      <div className="rh-admin-branding__split">
+        <div className="rh-admin-branding__col-main">
       <section className="rh-admin-branding__form card">
         <h2 className="rh-admin-branding__step-title">١ — اسم الموقع والشعار</h2>
         <p className="rh-admin-branding__step-desc">يظهر الاسم والعنوان في التبويبات والواجهة؛ الشعار يظهر في القائمة الجانبية وصفحة الدخول والصفحة العامة.</p>
@@ -219,7 +227,7 @@ export default function AdminBrandingPage() {
         {sanitizeImageUrl(logoUrl) ? (
           <div className="rh-admin-branding__preview">
             <span className="rh-admin-branding__preview-label">معاينة الشعار</span>
-            <img src={sanitizeImageUrl(logoUrl)} alt="" className="rh-admin-branding__preview-img" width={80} height={80} />
+            <img src={previewLogoSrc} alt="" className="rh-admin-branding__preview-img" width={80} height={80} />
           </div>
         ) : (
           <p className="rh-admin-branding__preview-fallback">بدون رابط: سيُستخدم الشعار الافتراضي /logo.png</p>
@@ -260,6 +268,20 @@ export default function AdminBrandingPage() {
           مسح كل ألوان الوضع الداكن
         </Button>
       </section>
+        </div>
+
+        <aside className="rh-admin-branding__aside-preview">
+          <BrandingLivePreview
+            previewMode={previewMode}
+            onPreviewMode={setPreviewMode}
+            themeLight={themeLight}
+            themeDark={themeDark}
+            siteName={siteName}
+            siteTitle={siteTitle}
+            logoSrc={previewLogoSrc}
+          />
+        </aside>
+      </div>
 
       <Modal open={resetAllOpen} title="إعادة الوضع الافتراضي؟" onClose={() => setResetAllOpen(false)} size="sm">
         <p className="rh-admin-users__warn">

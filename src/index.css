@@ -2805,3 +2805,222 @@ a.rh-peek-btn {
   font-size: var(--rh-text-sm);
   color: var(--rh-text-muted);
 }
+
+.rh-admin-branding--split {
+  max-width: 1320px;
+}
+
+.rh-admin-branding__split {
+  display: grid;
+  gap: var(--rh-space-4);
+  align-items: start;
+}
+
+.rh-admin-branding__col-main {
+  display: flex;
+  flex-direction: column;
+  gap: var(--rh-space-4);
+  min-width: 0;
+}
+
+@media (min-width: 1120px) {
+  .rh-admin-branding__split {
+    grid-template-columns: minmax(0, 1fr) minmax(300px, 400px);
+  }
+
+  .rh-admin-branding__aside-preview {
+    position: sticky;
+    top: 0.75rem;
+    max-height: calc(100vh - 1.5rem);
+    overflow: visible;
+  }
+}
+
+/* معاينة حية — هوية الموقع */
+.rh-live-preview {
+  isolation: isolate;
+  contain: inline-size;
+  padding: 0;
+  overflow: hidden;
+}
+
+.rh-live-preview__head {
+  padding: var(--rh-space-3) var(--rh-space-4);
+  border-bottom: 1px solid var(--rh-border);
+  background: var(--rh-surface-tint);
+}
+
+.rh-live-preview__title {
+  margin: 0 0 0.25rem;
+  font-size: var(--rh-text-base);
+}
+
+.rh-live-preview__subtitle {
+  margin: 0 0 var(--rh-space-3);
+  font-size: var(--rh-text-xs);
+  color: var(--rh-text-muted);
+}
+
+.rh-live-preview__mode {
+  display: inline-flex;
+  gap: 0;
+  border-radius: var(--rh-radius-pill);
+  border: 1px solid var(--rh-border-strong);
+  overflow: hidden;
+}
+
+.rh-live-preview__mode-btn {
+  font: inherit;
+  font-size: var(--rh-text-sm);
+  padding: 0.35rem 0.85rem;
+  border: none;
+  background: var(--rh-surface);
+  color: var(--rh-text-muted);
+  cursor: pointer;
+}
+
+.rh-live-preview__mode-btn--active {
+  background: var(--rh-primary);
+  color: var(--rh-on-primary);
+  font-weight: 600;
+}
+
+.rh-live-preview__scroll {
+  max-height: min(72vh, 620px);
+  overflow: auto;
+  overscroll-behavior: contain;
+}
+
+.rh-live-preview__page {
+  font-family: var(--font);
+  min-height: 200px;
+}
+
+.rh-live-preview__hero.hero {
+  padding: clamp(0.85rem, 2vw, 1.25rem) 0.75rem 1.25rem;
+}
+
+.rh-live-preview .content {
+  margin-top: 0;
+  margin-inline: auto;
+  padding: 0.75rem 0.65rem 1rem;
+  max-width: var(--max);
+}
+
+.rh-live-preview .card {
+  margin-bottom: 0.65rem;
+}
+
+.rh-live-preview__mock-app {
+  display: grid;
+  grid-template-columns: 108px 1fr;
+  min-height: 140px;
+  border-radius: var(--rh-radius-md);
+  overflow: hidden;
+  border: 1px solid var(--rh-border);
+  margin-top: 0.5rem;
+}
+
+.rh-live-preview__mock-side {
+  background: var(--rh-surface);
+  border-inline-end: 1px solid var(--rh-border);
+  padding: 0.45rem 0.35rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.rh-live-preview__mock-brand {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.rh-live-preview__mock-logo {
+  border-radius: 8px;
+  object-fit: cover;
+}
+
+.rh-live-preview__mock-site {
+  font-size: 0.65rem;
+  font-weight: 700;
+  color: var(--rh-text);
+  line-height: 1.2;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.rh-live-preview__mock-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.rh-live-preview__mock-link {
+  font-size: 0.62rem;
+  padding: 0.2rem 0.25rem;
+  border-radius: 6px;
+  color: var(--rh-text-muted);
+}
+
+.rh-live-preview__mock-link--on {
+  background: color-mix(in srgb, var(--rh-primary) 10%, transparent);
+  color: var(--rh-primary);
+  font-weight: 600;
+}
+
+.rh-live-preview__mock-main {
+  background: var(--rh-bg);
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.rh-live-preview__mock-topbar {
+  font-size: 0.62rem;
+  padding: 0.35rem 0.5rem;
+  border-bottom: 1px solid var(--rh-border);
+  color: var(--rh-text-muted);
+}
+
+.rh-live-preview__mock-card {
+  padding: 0.45rem 0.5rem;
+  font-size: 0.68rem;
+  color: var(--rh-text);
+  flex: 1;
+}
+
+.rh-live-preview__mock-card strong {
+  display: block;
+  margin-bottom: 0.25rem;
+  color: var(--rh-text);
+}
+
+.rh-live-preview__mock-btns {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  margin-top: 0.35rem;
+}
+
+.rh-live-preview__btn {
+  font: inherit;
+  font-size: 0.62rem;
+  padding: 0.25rem 0.55rem;
+  border-radius: 999px;
+  border: none;
+  cursor: default;
+}
+
+.rh-live-preview__btn--primary {
+  background: var(--rh-primary);
+  color: var(--rh-on-primary);
+  font-weight: 600;
+}
+
+.rh-live-preview__btn--secondary {
+  background: var(--rh-surface-tint);
+  color: var(--rh-primary);
+  border: 1px solid var(--rh-border);
+}
