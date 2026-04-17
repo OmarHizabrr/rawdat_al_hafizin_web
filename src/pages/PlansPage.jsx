@@ -1,4 +1,4 @@
-import { Trash2 } from 'lucide-react'
+import { Pencil, Plus, Trash2 } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 import { VOLUMES, VOLUME_BY_ID } from '../data/volumes.js'
 import { SITE_TITLE } from '../config/site.js'
@@ -29,6 +29,10 @@ function newId() {
     : `plan-${Date.now()}-${Math.random().toString(16).slice(2)}`
 }
 
+function createInitialVolumeState() {
+  return Object.fromEntries(VOLUMES.map((v) => [v.id, { selected: false, pages: v.pages }]))
+}
+
 /** @param {string | null | undefined} hhmm قيمة input type="time" */
 function formatReminderAr(hhmm) {
   if (!hhmm || typeof hhmm !== 'string') return null
@@ -42,12 +46,13 @@ function formatReminderAr(hhmm) {
 export default function PlansPage() {
   const toast = useToast()
   const [savedPlans, setSavedPlans] = useState(() => loadPlans())
+  const [isEditorOpen, setIsEditorOpen] = useState(false)
+  const [editingPlanId, setEditingPlanId] = useState(null)
+  const [deletingPlan, setDeletingPlan] = useState(null)
 
   const [planName, setPlanName] = useState('')
   const [planType, setPlanType] = useState('hifz')
-  const [volumeState, setVolumeState] = useState(() =>
-    Object.fromEntries(VOLUMES.map((v) => [v.id, { selected: false, pages: v.pages }])),
-  )
+  const [volumeState, setVolumeState] = useState(() => createInitialVolumeState())
   const [dailyPages, setDailyPages] = useState(5)
   const [reminderTime, setReminderTime] = useState('')
   const [useDateRange, setUseDateRange] = useState(false)
@@ -152,7 +157,7 @@ export default function PlansPage() {
   const resetForm = () => {
     setPlanName('')
     setPlanType('hifz')
-    setVolumeState(Object.fromEntries(VOLUMES.map((v) => [v.id, { selected: false, pages: v.pages }])))
+    setVolumeState(createInitialVolumeState())
     setDailyPages(5)
     setReminderTime('')
     setUseDateRange(false)
@@ -160,6 +165,37 @@ export default function PlansPage() {
     setDateEnd('')
     setUseWeekdayFilter(false)
     setWeekdays(new Set())
+  }
+
+  const openAddModal = () => {
+    setEditingPlanId(null)
+    resetForm()
+    setIsEditorOpen(true)
+  }
+
+  const openEditModal = (plan) => {
+    const nextVolumeState = createInitialVolumeState()
+    for (const x of plan.volumes ?? []) {
+      const v = VOLUME_BY_ID[x.id]
+      if (!v) continue
+      nextVolumeState[x.id] = {
+        selected: true,
+        pages: Math.min(Math.max(1, Number(x.pagesTarget) || v.pages), v.pages),
+      }
+    }
+
+    setEditingPlanId(plan.id)
+    setPlanName(plan.name ?? '')
+    setPlanType(plan.planType ?? 'hifz')
+    setVolumeState(nextVolumeState)
+    setDailyPages(Math.max(1, Number(plan.dailyPages) || 1))
+    setReminderTime(plan.reminderTime ?? '')
+    setUseDateRange(Boolean(plan.useDateRange))
+    setDateStart(plan.dateStart ?? '')
+    setDateEnd(plan.dateEnd ?? '')
+    setUseWeekdayFilter(Boolean(plan.useWeekdayFilter))
+    setWeekdays(new Set(Array.isArray(plan.weekdayFilter) ? plan.weekdayFilter : []))
+    setIsEditorOpen(true)
   }
 
   const handleSavePlan = () => {
@@ -192,9 +228,13 @@ export default function PlansPage() {
     const wdArr =
       useWeekdayFilter && weekdays.size > 0 && weekdays.size < 7 ? [...weekdays].sort((a, b) => a - b) : null
 
+    const nowIso = new Date().toISOString()
     const plan = {
-      id: newId(),
-      createdAt: new Date().toISOString(),
+      id: editingPlanId || newId(),
+      createdAt: editingPlanId
+        ? savedPlans.find((p) => p.id === editingPlanId)?.createdAt ?? nowIso
+        : nowIso,
+      updatedAt: nowIso,
       name: planName.trim() || `خطة ${new Date().toLocaleDateString('ar-SA')}`,
       planType,
       volumes: volumesSnapshot,
@@ -211,12 +251,16 @@ export default function PlansPage() {
     }
 
     setSavedPlans((prev) => {
-      const next = [plan, ...prev]
+      const next = editingPlanId
+        ? prev.map((p) => (p.id === editingPlanId ? plan : p))
+        : [plan, ...prev]
       savePlans(next)
       return next
     })
-    toast.success('تم حفظ الخطة. يمكنك مراجعتها في القائمة أدناه.', 'تم')
+    toast.success(editingPlanId ? 'تم تحديث الخطة بنجاح.' : 'تم حفظ الخطة. يمكنك مراجعتها في القائمة أدناه.', 'تم')
     resetForm()
+    setEditingPlanId(null)
+    setIsEditorOpen(false)
   }
 
   const deletePlan = (id) => {
@@ -226,6 +270,7 @@ export default function PlansPage() {
       return next
     })
     toast.info('حُذفت الخطة.', '')
+    setDeletingPlan(null)
   }
 
   const typeLabel = (v) => PLAN_TYPES.find((t) => t.value === v)?.label ?? v
@@ -236,14 +281,100 @@ export default function PlansPage() {
   return (
     <div className="rh-plans">
       <header className="rh-plans__hero">
-        <h1 className="rh-plans__title">الخطط</h1>
-        <p className="rh-plans__desc">
-          أنشئ خطة حفظ أو مراجعة أو قراءة، اختر المجلدات وعدد الصفحات من كل مجلد، ثم حدّد الورد اليومي ونمط الجدولة (مفتوح،
-          ضمن فترة، أو أيام أسبوع محددة).
-        </p>
+        <div className="rh-plans__hero-head">
+          <div>
+            <h1 className="rh-plans__title">الخطط</h1>
+            <p className="rh-plans__desc">
+              أنشئ خطة حفظ أو مراجعة أو قراءة، وحدد المجلدات والورد اليومي والجدولة، ثم أدر خططك بالتعديل والحذف بسهولة.
+            </p>
+          </div>
+          <Button type="button" variant="primary" className="rh-plans__add-btn" onClick={openAddModal}>
+            <RhIcon as={Plus} size={18} strokeWidth={RH_ICON_STROKE} />
+            إضافة خطة
+          </Button>
+        </div>
       </header>
 
-      <section className="rh-settings-card rh-plans__section">
+      {savedPlans.length > 0 ? (
+        <section className="rh-plans__saved">
+          <h2 className="rh-plans__saved-title">خططك المحفوظة</h2>
+          <ul className="rh-plans__saved-list">
+            {savedPlans.map((p) => (
+              <li key={p.id} className="rh-plans__saved-card">
+                <div className="rh-plans__saved-head">
+                  <strong>{p.name}</strong>
+                  <span className="rh-plans__saved-badge">{typeLabel(p.planType)}</span>
+                </div>
+                <p className="rh-plans__saved-meta">
+                  {p.totalTargetPages} صفحة — ورد {p.dailyPages} ص/يوم
+                  {p.reminderTime && ` — تذكير ${formatReminderAr(p.reminderTime)}`}
+                  {p.useDateRange && p.dateStart && p.dateEnd && ` — ${p.dateStart} → ${p.dateEnd}`}
+                  {p.weekdayLabels && ` — ${p.weekdayLabels}`}
+                </p>
+                <ul className="rh-plans__saved-vols">
+                  {p.volumes.map((x) => (
+                    <li key={x.id}>
+                      {x.label}: {x.pagesTarget} صفحة
+                    </li>
+                  ))}
+                </ul>
+                <div className="rh-plans__card-actions">
+                  <Button type="button" variant="secondary" size="sm" onClick={() => openEditModal(p)}>
+                    <RhIcon as={Pencil} size={16} strokeWidth={RH_ICON_STROKE} />
+                    تعديل
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="rh-plans__delete-btn"
+                    onClick={() => setDeletingPlan(p)}
+                  >
+                    <RhIcon as={Trash2} size={16} strokeWidth={RH_ICON_STROKE} />
+                    حذف
+                  </Button>
+                </div>
+              </li>
+            ))}
+          </ul>
+        </section>
+      ) : (
+        <section className="rh-settings-card rh-plans__empty">
+          <h2 className="rh-settings-card__title">لا توجد خطط بعد</h2>
+          <p className="rh-settings-card__subtitle">ابدأ بإضافة أول خطة من الزر بالأعلى، ثم عدّلها أو احذفها لاحقاً.</p>
+        </section>
+      )}
+
+      {isEditorOpen && (
+        <div className="rh-plans-modal" role="dialog" aria-modal="true" aria-label={editingPlanId ? 'تعديل خطة' : 'إضافة خطة'}>
+          <button
+            type="button"
+            className="rh-plans-modal__backdrop"
+            aria-label="إغلاق نافذة الخطة"
+            onClick={() => {
+              setIsEditorOpen(false)
+              setEditingPlanId(null)
+              resetForm()
+            }}
+          />
+          <section className="rh-plans-modal__content">
+            <div className="rh-plans-modal__head">
+              <h2 className="rh-plans-modal__title">{editingPlanId ? 'تعديل الخطة' : 'إضافة خطة جديدة'}</h2>
+              <button
+                type="button"
+                className="rh-plans-modal__close"
+                aria-label="إغلاق"
+                onClick={() => {
+                  setIsEditorOpen(false)
+                  setEditingPlanId(null)
+                  resetForm()
+                }}
+              >
+                ×
+              </button>
+            </div>
+
+            <section className="rh-settings-card rh-plans__section">
         <div className="rh-settings-card__head">
           <h2 className="rh-settings-card__title">بيانات الخطة</h2>
         </div>
@@ -264,9 +395,9 @@ export default function PlansPage() {
             </button>
           ))}
         </div>
-      </section>
+            </section>
 
-      <section className="rh-settings-card rh-plans__section">
+            <section className="rh-settings-card rh-plans__section">
         <div className="rh-settings-card__head">
           <h2 className="rh-settings-card__title">المجلدات وعدد الصفحات</h2>
           <p className="rh-settings-card__subtitle">
@@ -309,9 +440,9 @@ export default function PlansPage() {
             )
           }}
         />
-      </section>
+            </section>
 
-      <section className="rh-settings-card rh-plans__section">
+            <section className="rh-settings-card rh-plans__section">
         <div className="rh-settings-card__head">
           <h2 className="rh-settings-card__title">الورد اليومي والجدولة</h2>
           <p className="rh-settings-card__subtitle">عدد الصفحات في كل جلسة/يوم، ثم اختيار فترة زمنية و/أو أيام محددة من الأسبوع.</p>
@@ -396,9 +527,9 @@ export default function PlansPage() {
             </div>
           </div>
         )}
-      </section>
+            </section>
 
-      <section className="rh-plans__summary card">
+            <section className="rh-plans__summary card">
         <h2 className="rh-plans__summary-title">ملخص</h2>
         <ul className="rh-plans__summary-list">
           <li>
@@ -423,44 +554,46 @@ export default function PlansPage() {
         {rangeWarning && <p className="rh-plans__warn">{rangeWarning}</p>}
         <div className="rh-plans__actions">
           <Button type="button" variant="primary" onClick={handleSavePlan}>
-            حفظ الخطة
+            {editingPlanId ? 'حفظ التعديلات' : 'حفظ الخطة'}
           </Button>
           <Button type="button" variant="ghost" onClick={resetForm}>
             مسح النموذج
           </Button>
+          <Button
+            type="button"
+            variant="ghost"
+            onClick={() => {
+              setIsEditorOpen(false)
+              setEditingPlanId(null)
+              resetForm()
+            }}
+          >
+            إغلاق
+          </Button>
         </div>
-      </section>
+            </section>
+          </section>
+        </div>
+      )}
 
-      {savedPlans.length > 0 && (
-        <section className="rh-plans__saved">
-          <h2 className="rh-plans__saved-title">خططك المحفوظة</h2>
-          <ul className="rh-plans__saved-list">
-            {savedPlans.map((p) => (
-              <li key={p.id} className="rh-plans__saved-card">
-                <div className="rh-plans__saved-head">
-                  <strong>{p.name}</strong>
-                  <span className="rh-plans__saved-badge">{typeLabel(p.planType)}</span>
-                  <button type="button" className="rh-plans__delete" aria-label="حذف الخطة" onClick={() => deletePlan(p.id)}>
-                    <RhIcon as={Trash2} size={18} strokeWidth={RH_ICON_STROKE} />
-                  </button>
-                </div>
-                <p className="rh-plans__saved-meta">
-                  {p.totalTargetPages} صفحة — ورد {p.dailyPages} ص/يوم
-                  {p.reminderTime && ` — تذكير ${formatReminderAr(p.reminderTime)}`}
-                  {p.useDateRange && p.dateStart && p.dateEnd && ` — ${p.dateStart} → ${p.dateEnd}`}
-                  {p.weekdayLabels && ` — ${p.weekdayLabels}`}
-                </p>
-                <ul className="rh-plans__saved-vols">
-                  {p.volumes.map((x) => (
-                    <li key={x.id}>
-                      {x.label}: {x.pagesTarget} صفحة
-                    </li>
-                  ))}
-                </ul>
-              </li>
-            ))}
-          </ul>
-        </section>
+      {deletingPlan && (
+        <div className="rh-plans-modal" role="dialog" aria-modal="true" aria-label="تأكيد حذف الخطة">
+          <button type="button" className="rh-plans-modal__backdrop" aria-label="إغلاق" onClick={() => setDeletingPlan(null)} />
+          <section className="rh-plans-modal__content rh-plans-modal__content--sm">
+            <h3 className="rh-plans-modal__title">تأكيد الحذف</h3>
+            <p className="rh-plans__warn rh-plans__warn--confirm">
+              سيتم حذف خطة <strong>{deletingPlan.name}</strong> نهائياً. هل أنت متأكد من المتابعة؟
+            </p>
+            <div className="rh-plans__actions">
+              <Button type="button" variant="danger" onClick={() => deletePlan(deletingPlan.id)}>
+                نعم، حذف الخطة
+              </Button>
+              <Button type="button" variant="ghost" onClick={() => setDeletingPlan(null)}>
+                إلغاء
+              </Button>
+            </div>
+          </section>
+        </div>
       )}
     </div>
   )
