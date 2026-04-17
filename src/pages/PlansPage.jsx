@@ -4,7 +4,17 @@ import { VOLUMES, VOLUME_BY_ID } from '../data/volumes.js'
 import { SITE_TITLE } from '../config/site.js'
 import { countDaysInRange, sessionsNeeded } from '../utils/planSchedule.js'
 import { loadPlans, savePlans } from '../utils/plansStorage.js'
-import { Button, DateField, NumberStepField, SearchableMultiSelect, TextField, TimeField, useToast } from '../ui/index.js'
+import {
+  Button,
+  DateField,
+  Modal,
+  NumberStepField,
+  ScrollArea,
+  SearchableMultiSelect,
+  TextField,
+  TimeField,
+  useToast,
+} from '../ui/index.js'
 import { RhIcon, RH_ICON_STROKE } from '../ui/RhIcon.jsx'
 
 const PLAN_TYPES = [
@@ -345,34 +355,17 @@ export default function PlansPage() {
         </section>
       )}
 
-      {isEditorOpen && (
-        <div className="rh-plans-modal" role="dialog" aria-modal="true" aria-label={editingPlanId ? 'تعديل خطة' : 'إضافة خطة'}>
-          <button
-            type="button"
-            className="rh-plans-modal__backdrop"
-            aria-label="إغلاق نافذة الخطة"
-            onClick={() => {
-              setIsEditorOpen(false)
-              setEditingPlanId(null)
-              resetForm()
-            }}
-          />
-          <section className="rh-plans-modal__content">
-            <div className="rh-plans-modal__head">
-              <h2 className="rh-plans-modal__title">{editingPlanId ? 'تعديل الخطة' : 'إضافة خطة جديدة'}</h2>
-              <button
-                type="button"
-                className="rh-plans-modal__close"
-                aria-label="إغلاق"
-                onClick={() => {
-                  setIsEditorOpen(false)
-                  setEditingPlanId(null)
-                  resetForm()
-                }}
-              >
-                ×
-              </button>
-            </div>
+      <Modal
+        open={isEditorOpen}
+        title={editingPlanId ? 'تعديل الخطة' : 'إضافة خطة جديدة'}
+        onClose={() => {
+          setIsEditorOpen(false)
+          setEditingPlanId(null)
+          resetForm()
+        }}
+        size="md"
+      >
+        <ScrollArea className="rh-plans__editor-scroll" padded>
 
             <section className="rh-settings-card rh-plans__section">
         <div className="rh-settings-card__head">
@@ -572,29 +565,22 @@ export default function PlansPage() {
           </Button>
         </div>
             </section>
-          </section>
-        </div>
-      )}
+        </ScrollArea>
+      </Modal>
 
-      {deletingPlan && (
-        <div className="rh-plans-modal" role="dialog" aria-modal="true" aria-label="تأكيد حذف الخطة">
-          <button type="button" className="rh-plans-modal__backdrop" aria-label="إغلاق" onClick={() => setDeletingPlan(null)} />
-          <section className="rh-plans-modal__content rh-plans-modal__content--sm">
-            <h3 className="rh-plans-modal__title">تأكيد الحذف</h3>
+      <Modal open={Boolean(deletingPlan)} title="تأكيد الحذف" onClose={() => setDeletingPlan(null)} size="sm">
             <p className="rh-plans__warn rh-plans__warn--confirm">
-              سيتم حذف خطة <strong>{deletingPlan.name}</strong> نهائياً. هل أنت متأكد من المتابعة؟
+              سيتم حذف خطة <strong>{deletingPlan?.name}</strong> نهائياً. هل أنت متأكد من المتابعة؟
             </p>
             <div className="rh-plans__actions">
-              <Button type="button" variant="danger" onClick={() => deletePlan(deletingPlan.id)}>
+              <Button type="button" variant="danger" onClick={() => deletingPlan && deletePlan(deletingPlan.id)}>
                 نعم، حذف الخطة
               </Button>
               <Button type="button" variant="ghost" onClick={() => setDeletingPlan(null)}>
                 إلغاء
               </Button>
             </div>
-          </section>
-        </div>
-      )}
+      </Modal>
     </div>
   )
 }
