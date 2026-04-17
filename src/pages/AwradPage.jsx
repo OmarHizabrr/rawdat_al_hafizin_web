@@ -1,10 +1,10 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Plus } from 'lucide-react'
 import { SITE_TITLE } from '../config/site.js'
 import { useAuth } from '../context/useAuth.js'
 import { loadPlans, subscribePlans } from '../utils/plansStorage.js'
 import { addWird, deleteWird, subscribeAwrad, updateWird } from '../utils/awradStorage.js'
-import { Button, NumberStepField, TextField, useToast } from '../ui/index.js'
+import { Button, Modal, NumberStepField, ScrollArea, TextField, useToast } from '../ui/index.js'
 import { RhIcon, RH_ICON_STROKE } from '../ui/RhIcon.jsx'
 
 function asDate(v) {
@@ -31,14 +31,21 @@ export default function AwradPage() {
   const [fromPage, setFromPage] = useState(1)
   const [toPage, setToPage] = useState(1)
   const [editingWirdId, setEditingWirdId] = useState(null)
+  const [isEditorOpen, setIsEditorOpen] = useState(false)
+  const [deletingWird, setDeletingWird] = useState(null)
 
-  const applyPlanDefaults = (planId, srcPlans) => {
+  const applyPlanDefaults = useCallback((planId, srcPlans, srcAwrad = awrad) => {
     const p = srcPlans.find((x) => x.id === planId)
     const min = Math.max(1, Number(p?.dailyPages) || 1)
-    setPagesCount(min)
-    setFromPage(1)
-    setToPage(min)
-  }
+    const last = srcAwrad
+      .filter((w) => w.planId === planId)
+      .sort((a, b) => Date.parse(b.recordedAt || 0) - Date.parse(a.recordedAt || 0))[0]
+    const span = Math.max(min, Number(last?.pagesCount) || min)
+    const nextFrom = Math.max(1, Number(last?.toPage) || 0) + 1
+    setPagesCount(span)
+    setFromPage(nextFrom)
+    setToPage(nextFrom + span - 1)
+  }, [awrad])
 
   useEffect(() => {
     document.title = `الأوراد — ${SITE_TITLE}`
@@ -60,7 +67,7 @@ export default function AwradPage() {
       setPlans(v)
       if (!selectedPlanId && v[0]?.id) {
         setSelectedPlanId(v[0].id)
-        applyPlanDefaults(v[0].id, v)
+        applyPlanDefaults(v[0].id, v, awrad)
       }
     })
     const unsubAwrad = subscribeAwrad(user.uid, setAwrad)
@@ -68,7 +75,7 @@ export default function AwradPage() {
       unsubPlans()
       unsubAwrad()
     }
-  }, [user?.uid, selectedPlanId])
+  }, [user?.uid, selectedPlanId, awrad, applyPlanDefaults])
 
   const selectedPlan = useMemo(
     () => plans.find((p) => p.id === selectedPlanId) ?? null,
@@ -126,7 +133,7 @@ export default function AwradPage() {
       toast.warning('صفحة النهاية يجب أن تكون بعد صفحة البداية.', 'تنبيه')
       return
     }
-    if (mode === 'range' && fromPage !== nextFromPage) {
+    if (mode === 'range' && fromPage !== nextFromPage && !editingWirdId) {
       toast.warning(`لا يمكن تكرار المدى. يجب البدء من صفحة ${nextFromPage}.`, 'تنبيه')
       return
     }
@@ -160,10 +167,11 @@ export default function AwradPage() {
       `تم تسجيل ${computedPages} صفحات. وصلت إلى ${nextAchieved}/${targetPages || '—'} (${nextPercent.toFixed(1)}%).`,
       'تم تسجيل الورد',
     )
-    const min = Math.max(1, Number(selectedPlan?.dailyPages) || 1)
-    setPagesCount(min)
+    const nextSpan = Math.max(minDaily, computedPages)
+    setPagesCount(nextSpan)
     setFromPage(resolvedTo + 1)
-    setToPage(resolvedTo + min)
+    setToPage(resolvedTo + nextSpan)
+    setIsEditorOpen(false)
   }
 
   const startEdit = (wird) => {
@@ -172,14 +180,14 @@ export default function AwradPage() {
     setPagesCount(Math.max(1, Number(wird.pagesCount) || 1))
     setFromPage(Math.max(1, Number(wird.fromPage) || 1))
     setToPage(Math.max(1, Number(wird.toPage) || Math.max(1, Number(wird.pagesCount) || 1)))
+    setIsEditorOpen(true)
   }
 
   const cancelEdit = () => {
     setEditingWirdId(null)
     setMode('count')
-    setPagesCount(minDaily)
-    setFromPage(nextFromPage)
-    setToPage(nextFromPage + minDaily - 1)
+    applyPlanDefaults(selectedPlanId, plans)
+    setIsEditorOpen(false)
   }
 
   return (
@@ -193,27 +201,22 @@ export default function AwradPage() {
 
       <section className="rh-settings-card">
         <div className="rh-settings-card__head">
-          <h2 className="rh-settings-card__title">اختيار الخطة والتسجيل</h2>
-          <p className="rh-settings-card__subtitle">يمكنك الزيادة على الورد المحدد في الخطة، لكن لا يمكن التسجيل بأقل منه.</p>
+          <h2 className="rh-settings-card__title">تسجيل الأوراد</h2>
+          <p className="rh-settings-card__subtitle">يمكنك الزيادة على الورد المحدد في الخطة، مع حفظ التسلسل تلقائيًا.</p>
         </div>
-
-        <div className="ui-field">
-          <label className="ui-field__label" htmlFor="wird-plan">الخطة</label>
-          <select
-            id="wird-plan"
-            className="ui-input"
-            value={selectedPlanId}
-            onChange={(e) => {
-              const nextId = e.target.value
-              setSelectedPlanId(nextId)
-              applyPlanDefaults(nextId, plans)
+        <div className="rh-awrad__actions">
+          <Button
+            type="button"
+            onClick={() => {
+              setEditingWirdId(null)
+              setMode('count')
+              applyPlanDefaults(selectedPlanId || plans[0]?.id || '', plans)
+              setIsEditorOpen(true)
             }}
           >
-            <option value="">اختر خطة...</option>
-            {plans.map((p) => (
-              <option key={p.id} value={p.id}>{p.name}</option>
-            ))}
-          </select>
+            <RhIcon as={Plus} size={16} strokeWidth={RH_ICON_STROKE} />
+            إضافة ورد
+          </Button>
         </div>
 
         {selectedPlan && (
@@ -227,63 +230,10 @@ export default function AwradPage() {
               <div className="rh-awrad__stat"><strong>المنجز:</strong> {achievedPages} / {targetPages}</div>
               <div className="rh-awrad__stat"><strong>المتبقي:</strong> {remainingPages} صفحة</div>
             </div>
-
             <div className="rh-awrad__progress">
               <div className="rh-awrad__progress-bar" style={{ width: `${progressPercent}%` }} />
             </div>
             <p className="rh-awrad__progress-text">نسبة الإنجاز: {progressPercent.toFixed(1)}%</p>
-
-            <div className="rh-segment rh-awrad__mode">
-              <button
-                type="button"
-                className={['rh-segment__btn', mode === 'count' ? 'rh-segment__btn--active' : ''].join(' ')}
-                onClick={() => setMode('count')}
-              >
-                <span className="rh-segment__label">تحديد عدد الصفحات</span>
-              </button>
-              <button
-                type="button"
-                className={['rh-segment__btn', mode === 'range' ? 'rh-segment__btn--active' : ''].join(' ')}
-                onClick={() => setMode('range')}
-              >
-                <span className="rh-segment__label">من صفحة إلى صفحة</span>
-              </button>
-            </div>
-
-            {mode === 'count' ? (
-              <NumberStepField
-                label="عدد الصفحات"
-                  hint={`سيتم التسجيل تلقائيًا من صفحة ${nextFromPage}`}
-                value={pagesCount}
-                onChange={setPagesCount}
-                min={minDaily}
-                max={999}
-              />
-            ) : (
-              <div className="rh-awrad__range">
-                <NumberStepField
-                  label="من صفحة"
-                  value={fromPage}
-                  onChange={setFromPage}
-                  min={nextFromPage}
-                  max={9999}
-                />
-                <NumberStepField label="إلى صفحة" value={toPage} onChange={setToPage} min={1} max={9999} />
-                <TextField label="المجموع المحسوب" value={String(computedPages)} readOnly />
-              </div>
-            )}
-
-            <div className="rh-awrad__actions">
-              <Button type="button" onClick={submitWird}>
-                {!editingWirdId && <RhIcon as={Plus} size={16} strokeWidth={RH_ICON_STROKE} />}
-                {editingWirdId ? 'حفظ التعديل' : 'إضافة الورد'}
-              </Button>
-              {editingWirdId && (
-                <Button type="button" variant="ghost" onClick={cancelEdit}>
-                  إلغاء التعديل
-                </Button>
-              )}
-            </div>
           </>
         )}
       </section>
@@ -310,11 +260,7 @@ export default function AwradPage() {
                     type="button"
                     size="sm"
                     variant="ghost"
-                    onClick={async () => {
-                      await deleteWird(user?.uid, w.id)
-                      if (editingWirdId === w.id) cancelEdit()
-                      toast.info('تم حذف تسجيل الورد.', '')
-                    }}
+                    onClick={() => setDeletingWird(w)}
                   >
                     حذف
                   </Button>
@@ -324,6 +270,113 @@ export default function AwradPage() {
           )}
         </ul>
       </section>
+
+      <Modal
+        open={isEditorOpen}
+        title={editingWirdId ? 'تعديل تسجيل الورد' : 'إضافة ورد جديد'}
+        onClose={cancelEdit}
+        size="md"
+      >
+        <ScrollArea className="rh-plans__editor-scroll" padded>
+          <div className="ui-field">
+            <label className="ui-field__label" htmlFor="wird-plan">الخطة</label>
+            <select
+              id="wird-plan"
+              className="ui-input"
+              value={selectedPlanId}
+              onChange={(e) => {
+                const nextId = e.target.value
+                setSelectedPlanId(nextId)
+                applyPlanDefaults(nextId, plans)
+              }}
+            >
+              <option value="">اختر خطة...</option>
+              {plans.map((p) => (
+                <option key={p.id} value={p.id}>{p.name}</option>
+              ))}
+            </select>
+          </div>
+
+          <div className="rh-segment rh-awrad__mode">
+            <button
+              type="button"
+              className={['rh-segment__btn', mode === 'count' ? 'rh-segment__btn--active' : ''].join(' ')}
+              onClick={() => setMode('count')}
+            >
+              <span className="rh-segment__label">تحديد عدد الصفحات</span>
+            </button>
+            <button
+              type="button"
+              className={['rh-segment__btn', mode === 'range' ? 'rh-segment__btn--active' : ''].join(' ')}
+              onClick={() => setMode('range')}
+            >
+              <span className="rh-segment__label">من صفحة إلى صفحة</span>
+            </button>
+          </div>
+
+          {mode === 'count' ? (
+            <NumberStepField
+              label="عدد الصفحات"
+              hint={`سيتم التسجيل تلقائيًا من صفحة ${nextFromPage}`}
+              value={pagesCount}
+              onChange={setPagesCount}
+              min={minDaily}
+              max={999}
+            />
+          ) : (
+            <div className="rh-awrad__range">
+              <NumberStepField
+                label="من صفحة"
+                value={fromPage}
+                onChange={setFromPage}
+                min={nextFromPage}
+                max={9999}
+              />
+              <NumberStepField label="إلى صفحة" value={toPage} onChange={setToPage} min={1} max={9999} />
+              <TextField label="المجموع المحسوب" value={String(computedPages)} readOnly />
+            </div>
+          )}
+
+          <div className="rh-awrad__actions">
+            <Button type="button" onClick={submitWird}>
+              {!editingWirdId && <RhIcon as={Plus} size={16} strokeWidth={RH_ICON_STROKE} />}
+              {editingWirdId ? 'حفظ التعديل' : 'إضافة الورد'}
+            </Button>
+            <Button type="button" variant="ghost" onClick={cancelEdit}>
+              إلغاء
+            </Button>
+          </div>
+        </ScrollArea>
+      </Modal>
+
+      <Modal
+        open={Boolean(deletingWird)}
+        title="تأكيد حذف تسجيل الورد"
+        onClose={() => setDeletingWird(null)}
+        size="sm"
+      >
+        <p className="rh-plans__warn rh-plans__warn--confirm">
+          سيتم حذف هذا التسجيل نهائياً. هل أنت متأكد؟
+        </p>
+        <div className="rh-awrad__actions">
+          <Button
+            type="button"
+            variant="danger"
+            onClick={async () => {
+              if (!deletingWird) return
+              await deleteWird(user?.uid, deletingWird.id)
+              if (editingWirdId === deletingWird.id) cancelEdit()
+              setDeletingWird(null)
+              toast.info('تم حذف تسجيل الورد.', '')
+            }}
+          >
+            نعم، حذف
+          </Button>
+          <Button type="button" variant="ghost" onClick={() => setDeletingWird(null)}>
+            إلغاء
+          </Button>
+        </div>
+      </Modal>
     </div>
   )
 }
