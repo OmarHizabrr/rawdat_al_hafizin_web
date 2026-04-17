@@ -1455,6 +1455,12 @@ body {
   color: var(--rh-text-muted);
 }
 
+.rh-awrad__item-actions {
+  margin-inline-start: auto;
+  display: inline-flex;
+  gap: var(--rh-space-2);
+}
+
 .rh-awrad__empty {
   color: var(--rh-text-muted);
   font-size: var(--rh-text-sm);

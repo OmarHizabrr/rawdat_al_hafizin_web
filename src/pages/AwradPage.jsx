@@ -1,9 +1,11 @@
 import { useEffect, useMemo, useState } from 'react'
+import { Plus } from 'lucide-react'
 import { SITE_TITLE } from '../config/site.js'
 import { useAuth } from '../context/useAuth.js'
 import { loadPlans, subscribePlans } from '../utils/plansStorage.js'
-import { addWird, subscribeAwrad } from '../utils/awradStorage.js'
+import { addWird, deleteWird, subscribeAwrad, updateWird } from '../utils/awradStorage.js'
 import { Button, NumberStepField, TextField, useToast } from '../ui/index.js'
+import { RhIcon, RH_ICON_STROKE } from '../ui/RhIcon.jsx'
 
 function asDate(v) {
   const d = new Date(v)
@@ -28,6 +30,7 @@ export default function AwradPage() {
   const [pagesCount, setPagesCount] = useState(1)
   const [fromPage, setFromPage] = useState(1)
   const [toPage, setToPage] = useState(1)
+  const [editingWirdId, setEditingWirdId] = useState(null)
 
   const applyPlanDefaults = (planId, srcPlans) => {
     const p = srcPlans.find((x) => x.id === planId)
@@ -77,10 +80,28 @@ export default function AwradPage() {
     [awrad, selectedPlanId],
   )
 
+  const planAwradAsc = useMemo(
+    () => [...planAwrad].sort((a, b) => Date.parse(a.recordedAt || 0) - Date.parse(b.recordedAt || 0)),
+    [planAwrad],
+  )
+
   const achievedPages = useMemo(
     () => planAwrad.reduce((sum, w) => sum + (Number(w.pagesCount) || 0), 0),
     [planAwrad],
   )
+
+  const reachedPage = useMemo(() => {
+    let cursor = 0
+    for (const w of planAwradAsc) {
+      const pages = Math.max(0, Number(w.pagesCount) || 0)
+      if (w.fromPage && w.toPage) {
+        cursor = Math.max(cursor, Number(w.toPage) || 0)
+      } else {
+        cursor += pages
+      }
+    }
+    return cursor
+  }, [planAwradAsc])
 
   const targetPages = selectedPlan?.totalTargetPages || 0
   const progressPercent = pct(achievedPages, targetPages)
@@ -88,6 +109,7 @@ export default function AwradPage() {
 
   const minDaily = Math.max(1, Number(selectedPlan?.dailyPages) || 1)
   const computedPages = mode === 'count' ? pagesCount : Math.max(0, toPage - fromPage + 1)
+  const nextFromPage = reachedPage + 1
   const todayIdx = new Date().getDay()
   const todayLabel = WEEKDAY_AR[todayIdx]
   const requiredDaysLabel =
@@ -104,23 +126,33 @@ export default function AwradPage() {
       toast.warning('صفحة النهاية يجب أن تكون بعد صفحة البداية.', 'تنبيه')
       return
     }
+    if (mode === 'range' && fromPage !== nextFromPage) {
+      toast.warning(`لا يمكن تكرار المدى. يجب البدء من صفحة ${nextFromPage}.`, 'تنبيه')
+      return
+    }
     if (computedPages < minDaily) {
       toast.warning(`الورد المسجل يجب ألا يقل عن ${minDaily} صفحات حسب الخطة.`, 'تنبيه')
       return
     }
 
-    await addWird(
-      user?.uid,
-      {
-        planId: selectedPlan.id,
-        planName: selectedPlan.name,
-        mode,
-        pagesCount: computedPages,
-        fromPage: mode === 'range' ? fromPage : null,
-        toPage: mode === 'range' ? toPage : null,
-      },
-      user ?? {},
-    )
+    const resolvedFrom = mode === 'range' ? fromPage : nextFromPage
+    const resolvedTo = mode === 'range' ? toPage : nextFromPage + computedPages - 1
+    const payload = {
+      planId: selectedPlan.id,
+      planName: selectedPlan.name,
+      mode,
+      pagesCount: computedPages,
+      fromPage: resolvedFrom,
+      toPage: resolvedTo,
+    }
+
+    if (editingWirdId) {
+      await updateWird(user?.uid, editingWirdId, payload, user ?? {})
+      toast.success('تم تعديل تسجيل الورد.', 'تم')
+      setEditingWirdId(null)
+    } else {
+      await addWird(user?.uid, payload, user ?? {})
+    }
 
     const nextAchieved = achievedPages + computedPages
     const nextPercent = pct(nextAchieved, targetPages)
@@ -128,6 +160,26 @@ export default function AwradPage() {
       `تم تسجيل ${computedPages} صفحات. وصلت إلى ${nextAchieved}/${targetPages || '—'} (${nextPercent.toFixed(1)}%).`,
       'تم تسجيل الورد',
     )
+    const min = Math.max(1, Number(selectedPlan?.dailyPages) || 1)
+    setPagesCount(min)
+    setFromPage(resolvedTo + 1)
+    setToPage(resolvedTo + min)
+  }
+
+  const startEdit = (wird) => {
+    setEditingWirdId(wird.id)
+    setMode(wird.mode || 'count')
+    setPagesCount(Math.max(1, Number(wird.pagesCount) || 1))
+    setFromPage(Math.max(1, Number(wird.fromPage) || 1))
+    setToPage(Math.max(1, Number(wird.toPage) || Math.max(1, Number(wird.pagesCount) || 1)))
+  }
+
+  const cancelEdit = () => {
+    setEditingWirdId(null)
+    setMode('count')
+    setPagesCount(minDaily)
+    setFromPage(nextFromPage)
+    setToPage(nextFromPage + minDaily - 1)
   }
 
   return (
@@ -170,6 +222,8 @@ export default function AwradPage() {
               <div className="rh-awrad__stat"><strong>اليوم:</strong> {todayLabel}</div>
               <div className="rh-awrad__stat"><strong>الحد الأدنى اليومي:</strong> {minDaily} صفحات</div>
               <div className="rh-awrad__stat"><strong>أيام الخطة:</strong> {requiredDaysLabel}</div>
+              <div className="rh-awrad__stat"><strong>آخر صفحة وصلت لها:</strong> {reachedPage || 0}</div>
+              <div className="rh-awrad__stat"><strong>البداية التالية:</strong> {nextFromPage}</div>
               <div className="rh-awrad__stat"><strong>المنجز:</strong> {achievedPages} / {targetPages}</div>
               <div className="rh-awrad__stat"><strong>المتبقي:</strong> {remainingPages} صفحة</div>
             </div>
@@ -199,6 +253,7 @@ export default function AwradPage() {
             {mode === 'count' ? (
               <NumberStepField
                 label="عدد الصفحات"
+                  hint={`سيتم التسجيل تلقائيًا من صفحة ${nextFromPage}`}
                 value={pagesCount}
                 onChange={setPagesCount}
                 min={minDaily}
@@ -206,14 +261,28 @@ export default function AwradPage() {
               />
             ) : (
               <div className="rh-awrad__range">
-                <NumberStepField label="من صفحة" value={fromPage} onChange={setFromPage} min={1} max={9999} />
+                <NumberStepField
+                  label="من صفحة"
+                  value={fromPage}
+                  onChange={setFromPage}
+                  min={nextFromPage}
+                  max={9999}
+                />
                 <NumberStepField label="إلى صفحة" value={toPage} onChange={setToPage} min={1} max={9999} />
                 <TextField label="المجموع المحسوب" value={String(computedPages)} readOnly />
               </div>
             )}
 
             <div className="rh-awrad__actions">
-              <Button type="button" onClick={submitWird}>تسجيل الورد</Button>
+              <Button type="button" onClick={submitWird}>
+                {!editingWirdId && <RhIcon as={Plus} size={16} strokeWidth={RH_ICON_STROKE} />}
+                {editingWirdId ? 'حفظ التعديل' : 'إضافة الورد'}
+              </Button>
+              {editingWirdId && (
+                <Button type="button" variant="ghost" onClick={cancelEdit}>
+                  إلغاء التعديل
+                </Button>
+              )}
             </div>
           </>
         )}
@@ -235,6 +304,21 @@ export default function AwradPage() {
                 {w.mode === 'range' && w.fromPage && w.toPage && (
                   <span>من {w.fromPage} إلى {w.toPage}</span>
                 )}
+                <span className="rh-awrad__item-actions">
+                  <Button type="button" size="sm" variant="ghost" onClick={() => startEdit(w)}>تعديل</Button>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="ghost"
+                    onClick={async () => {
+                      await deleteWird(user?.uid, w.id)
+                      if (editingWirdId === w.id) cancelEdit()
+                      toast.info('تم حذف تسجيل الورد.', '')
+                    }}
+                  >
+                    حذف
+                  </Button>
+                </span>
               </li>
             ))
           )}

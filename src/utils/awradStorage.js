@@ -49,3 +49,18 @@ export async function addWird(userId, wird, userData = {}) {
   })
   return id
 }
+
+export async function updateWird(userId, wirdId, data, userData = {}) {
+  if (!userId || !wirdId) return
+  const ref = wirdDoc(userId, wirdId)
+  await firestoreApi.updateData({
+    docRef: ref,
+    data: { ...data, updatedAt: new Date().toISOString() },
+    userData,
+  })
+}
+
+export async function deleteWird(userId, wirdId) {
+  if (!userId || !wirdId) return
+  await firestoreApi.deleteData(wirdDoc(userId, wirdId))
+}
