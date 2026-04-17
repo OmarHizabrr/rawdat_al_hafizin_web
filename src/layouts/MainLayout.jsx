@@ -73,10 +73,20 @@ export function MainLayout() {
       .filter(Boolean)
       .join(' ')}>
       <aside className="rh-sidebar" aria-label="القائمة الرئيسية">
-        <div className="rh-sidebar__brand">
+        <NavLink
+          to={withImpersonationQuery('/app', impersonateUid)}
+          end
+          className={({ isActive }) =>
+            ['rh-sidebar__brand', 'rh-sidebar__brand-link', isActive ? 'rh-sidebar__brand-link--active' : '']
+              .filter(Boolean)
+              .join(' ')
+          }
+          onClick={closeMobile}
+          aria-label="الرئيسية — روضة الحافظين"
+        >
           <img src="/logo.png" alt="" className="rh-sidebar__logo" width={40} height={40} />
           {!collapsed && <span className="rh-sidebar__title">روضة الحافظين</span>}
-        </div>
+        </NavLink>
 
         <nav className="rh-sidebar__nav">
           {nav.map((item) => (
@@ -126,7 +136,18 @@ export function MainLayout() {
           >
             <RhIcon as={Menu} size={22} strokeWidth={RH_ICON_STROKE} />
           </button>
-          <h1 className="rh-topbar__heading">منصة روضة الحافظين</h1>
+          <h1 className="rh-topbar__heading">
+            <NavLink
+              to={withImpersonationQuery('/app', impersonateUid)}
+              end
+              className={({ isActive }) =>
+                ['rh-topbar__home-link', isActive ? 'rh-topbar__home-link--active' : ''].filter(Boolean).join(' ')
+              }
+              onClick={closeMobile}
+            >
+              منصة روضة الحافظين
+            </NavLink>
+          </h1>
           <div className="rh-topbar__spacer" />
           {user && <UserMenu user={user} />}
         </header>
