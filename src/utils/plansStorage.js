@@ -203,6 +203,23 @@ export async function loadPlanMembers(planId) {
   return docs.map((d) => ({ userId: d.id, ...d.data() }))
 }
 
+/** أعضاء الخطة مع دمج بيانات الملف من users/{userId} للعرض في البطاقات */
+export async function loadPlanMembersWithProfiles(planId) {
+  const rows = await loadPlanMembers(planId)
+  return Promise.all(
+    rows.map(async (row) => {
+      const profile = await firestoreApi.getData(firestoreApi.getUserDoc(row.userId))
+      const pr = profile || {}
+      return {
+        ...row,
+        displayName: pr.displayName?.trim() || pr.createdByName || row.userId,
+        email: (pr.email || '').toString(),
+        photoURL: pr.photoURL || pr.createdByImageUrl || '',
+      }
+    }),
+  )
+}
+
 /** يضيف مستخدماً إلى خطة (عامة أو يدعوه مدير/مالك) */
 export async function addUserToPlan(actorUser, planId, targetUid, userData = {}) {
   if (!actorUser?.uid || !planId || !targetUid) return

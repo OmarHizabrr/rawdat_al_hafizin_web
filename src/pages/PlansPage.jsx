@@ -8,11 +8,12 @@ import { useAuth } from '../context/useAuth.js'
 import { firestoreApi } from '../services/firestoreApi.js'
 import { setUserDefaultPlanId } from '../services/userService.js'
 import { countDaysInRange, sessionsNeeded } from '../utils/planSchedule.js'
+import { subscribeAllUsers } from '../services/adminUsersService.js'
 import {
   PLAN_MEMBER_ROLES,
   addUserToPlan,
   joinPublicPlan,
-  loadPlanMembers,
+  loadPlanMembersWithProfiles,
   loadPlans,
   removePlanForUser,
   removePlanMember,
@@ -27,6 +28,7 @@ import {
   NumberStepField,
   ScrollArea,
   SearchableMultiSelect,
+  SearchField,
   TextField,
   TimeField,
   useToast,
@@ -108,7 +110,9 @@ export default function PlansPage() {
   const [membersModalPlan, setMembersModalPlan] = useState(null)
   const [planMembersList, setPlanMembersList] = useState([])
   const [membersLoading, setMembersLoading] = useState(false)
-  const [addMemberUid, setAddMemberUid] = useState('')
+  const [directoryUsers, setDirectoryUsers] = useState([])
+  const [memberPickerQuery, setMemberPickerQuery] = useState('')
+  const [addingMemberUid, setAddingMemberUid] = useState('')
   const [joinPlanId, setJoinPlanId] = useState('')
 
   const [planName, setPlanName] = useState('')
@@ -189,7 +193,7 @@ export default function PlansPage() {
     queueMicrotask(() => {
       if (!cancelled) setMembersLoading(true)
     })
-    loadPlanMembers(membersModalPlan.id)
+    loadPlanMembersWithProfiles(membersModalPlan.id)
       .then((rows) => {
         if (!cancelled) setPlanMembersList(rows)
       })
@@ -199,6 +203,15 @@ export default function PlansPage() {
     return () => {
       cancelled = true
     }
+  }, [membersModalPlan?.id, user?.uid])
+
+  useEffect(() => {
+    if (!membersModalPlan?.id || !user?.uid) {
+      setDirectoryUsers([])
+      return undefined
+    }
+    const unsub = subscribeAllUsers(setDirectoryUsers, () => setDirectoryUsers([]))
+    return () => unsub()
   }, [membersModalPlan?.id, user?.uid])
 
   const totalTargetPages = useMemo(() => {
@@ -431,24 +444,52 @@ export default function PlansPage() {
   const refreshMembersList = () => {
     if (!membersModalPlan?.id) return
     setMembersLoading(true)
-    loadPlanMembers(membersModalPlan.id)
+    loadPlanMembersWithProfiles(membersModalPlan.id)
       .then(setPlanMembersList)
       .finally(() => setMembersLoading(false))
   }
 
-  const handleAddMember = async () => {
-    const uid = addMemberUid.trim()
-    if (!uid || !user || !membersModalPlan?.id) return
+  const memberUidSet = useMemo(
+    () => new Set(planMembersList.map((r) => r.userId).filter(Boolean)),
+    [planMembersList],
+  )
+
+  const filteredPickerUsers = useMemo(() => {
+    const q = memberPickerQuery.trim().toLowerCase()
+    let list = directoryUsers
+    if (q) {
+      list = list.filter((u) => {
+        const hay = `${u.displayName || ''} ${u.email || ''} ${u.uid || ''}`.toLowerCase()
+        return hay.includes(q)
+      })
+    }
+    return [...list].sort((a, b) => {
+      const aAdded = memberUidSet.has(a.uid)
+      const bAdded = memberUidSet.has(b.uid)
+      if (aAdded !== bAdded) return aAdded ? 1 : -1
+      return (a.displayName || a.uid || '').localeCompare(b.displayName || b.uid || '', 'ar')
+    })
+  }, [directoryUsers, memberPickerQuery, memberUidSet])
+
+  const handleAddMemberByUid = async (uid) => {
+    const trimmed = (uid || '').trim()
+    if (!trimmed || !user || !membersModalPlan?.id) return
+    if (memberUidSet.has(trimmed)) {
+      toast.info('هذا المستخدم مضاف مسبقاً إلى الخطة.', '')
+      return
+    }
+    setAddingMemberUid(trimmed)
     try {
-      await addUserToPlan(user, membersModalPlan.id, uid, user)
-      setAddMemberUid('')
+      await addUserToPlan(user, membersModalPlan.id, trimmed, user)
       toast.success('تمت إضافة العضو.', 'تم')
       refreshMembersList()
     } catch (e) {
       const m = e?.message
       if (m === 'ALREADY_MEMBER') toast.info('المستخدم مضاف مسبقاً.', '')
       else if (m === 'PLAN_FORBIDDEN') toast.warning('لا تملك صلاحية إضافة أعضاء لهذه الخطة.', '')
-      else toast.warning('تعذر الإضافة. تحقق من معرف المستخدم.', '')
+      else toast.warning('تعذر الإضافة.', '')
+    } finally {
+      setAddingMemberUid('')
     }
   }
 
@@ -671,7 +712,7 @@ export default function PlansPage() {
                         size="sm"
                         onClick={() => {
                           setMembersModalPlan(p)
-                          setAddMemberUid('')
+                          setMemberPickerQuery('')
                         }}
                       >
                         <RhIcon as={Users} size={16} strokeWidth={RH_ICON_STROKE} />
@@ -974,61 +1015,125 @@ export default function PlansPage() {
         title={membersModalPlan ? `أعضاء الخطة: ${membersModalPlan.name || membersModalPlan.id}` : 'الأعضاء'}
         onClose={() => {
           setMembersModalPlan(null)
-          setAddMemberUid('')
           setPlanMembersList([])
+          setMemberPickerQuery('')
+          setDirectoryUsers([])
         }}
-        size="md"
+        size="lg"
       >
-        <div className="rh-plans__members-add">
-          <TextField
-            label="إضافة بالمعرف (uid)"
-            placeholder="معرف المستخدم في Firebase"
-            value={addMemberUid}
-            onChange={(e) => setAddMemberUid(e.target.value)}
+        <p className="rh-plans__saved-meta rh-plan-members-modal__plan-id">
+          معرف الخطة: <code className="rh-plans__plan-id">{membersModalPlan?.id}</code>
+        </p>
+
+        <section className="rh-plan-members-modal__section">
+          <h3 className="rh-plan-members-modal__heading">إضافة من المستخدمين</h3>
+          <p className="rh-plan-members-modal__hint">
+            ابحث بالاسم أو البريد أو المعرف. المضافون للخطة يظهرون باهتين مع ملاحظة «مضاف مسبقاً».
+          </p>
+          <SearchField
+            label="بحث في المستخدمين"
+            placeholder="اسم، بريد، معرّف…"
+            value={memberPickerQuery}
+            onChange={(e) => setMemberPickerQuery(e.target.value)}
           />
-          <Button type="button" variant="primary" size="sm" onClick={handleAddMember}>
-            إضافة
-          </Button>
-        </div>
-        <p className="rh-plans__saved-meta">معرف الخطة: {membersModalPlan?.id}</p>
-        {membersLoading ? (
-          <p className="rh-plans__members-loading">جاري التحميل…</p>
-        ) : (
-          <ul className="rh-plans__members-list">
-            {planMembersList.map((row) => {
-              const isOwnerRow = row.role === PLAN_MEMBER_ROLES.OWNER
-              return (
-                <li key={row.userId} className="rh-plans__members-row">
-                  <div className="rh-plans__members-row-main">
-                    <code className="rh-plans__plan-id">{row.userId}</code>
-                    <span className="rh-plans__saved-badge">{planRoleLabel(row.role)}</span>
-                  </div>
-                  {!isOwnerRow && (
-                    <div className="rh-plans__members-row-actions">
-                      <Button
+          <ScrollArea className="rh-plan-members-picker" padded maxHeight="min(17rem, 42vh)">
+            {directoryUsers.length === 0 ? (
+              <p className="rh-plan-members-picker__empty">
+                جاري تحميل قائمة المستخدمين… إن بقيت فارغة فقد لا تملك صلاحية قراءة مجموعة المستخدمين في Firestore.
+              </p>
+            ) : filteredPickerUsers.length === 0 ? (
+              <p className="rh-plan-members-picker__empty">لا نتائج مطابقة للبحث.</p>
+            ) : (
+              <ul className="rh-plan-members-picker__list">
+                {filteredPickerUsers.map((u) => {
+                  const added = memberUidSet.has(u.uid)
+                  const name = u.displayName?.trim() || 'بدون اسم'
+                  const initial = name.charAt(0)
+                  const busy = addingMemberUid === u.uid
+                  return (
+                    <li key={u.uid} className="rh-plan-members-picker__item-wrap">
+                      <button
                         type="button"
-                        variant="secondary"
-                        size="sm"
-                        onClick={() => handleToggleAdminRow(row.userId, row.role)}
+                        className={[
+                          'rh-plan-members-pick__row',
+                          added ? 'rh-plan-members-pick__row--added' : '',
+                        ]
+                          .filter(Boolean)
+                          .join(' ')}
+                        disabled={added || busy}
+                        onClick={() => handleAddMemberByUid(u.uid)}
                       >
-                        {row.role === PLAN_MEMBER_ROLES.ADMIN ? 'إلغاء مشرف' : 'ترقية لمشرف'}
-                      </Button>
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        className="rh-plans__delete-btn"
-                        onClick={() => handleRemoveMemberRow(row.userId)}
-                      >
-                        إزالة
-                      </Button>
+                        <span className="rh-plan-members-pick__avatar" aria-hidden>
+                          {u.photoURL ? <img src={u.photoURL} alt="" width={44} height={44} /> : initial}
+                        </span>
+                        <span className="rh-plan-members-pick__body">
+                          <span className="rh-plan-members-pick__name">{name}</span>
+                          <span className="rh-plan-members-pick__sub">{u.email || u.uid}</span>
+                        </span>
+                        {added && <span className="rh-plan-members-pick__badge">مضاف مسبقاً</span>}
+                        {busy && <span className="rh-plan-members-pick__busy">…</span>}
+                      </button>
+                    </li>
+                  )
+                })}
+              </ul>
+            )}
+          </ScrollArea>
+        </section>
+
+        <section className="rh-plan-members-modal__section rh-plan-members-modal__section--members">
+          <h3 className="rh-plan-members-modal__heading">أعضاء الخطة</h3>
+          {membersLoading ? (
+            <p className="rh-plans__members-loading">جاري التحميل…</p>
+          ) : (
+            <ul className="rh-members-chat-list">
+              {planMembersList.map((row) => {
+                const isOwnerRow = row.role === PLAN_MEMBER_ROLES.OWNER
+                const name = row.displayName || row.userId
+                const initial = (name || '?').charAt(0)
+                return (
+                  <li key={row.userId} className="rh-members-chat__item">
+                    <span className="rh-members-chat__avatar" aria-hidden>
+                      {row.photoURL ? (
+                        <img src={row.photoURL} alt="" width={48} height={48} />
+                      ) : (
+                        initial
+                      )}
+                    </span>
+                    <div className="rh-members-chat__main">
+                      <div className="rh-members-chat__title-row">
+                        <strong className="rh-members-chat__name">{name}</strong>
+                        <span className="rh-plans__saved-badge">{planRoleLabel(row.role)}</span>
+                      </div>
+                      <span className="rh-members-chat__sub">{row.email || row.userId}</span>
                     </div>
-                  )}
-                </li>
-              )
-            })}
-          </ul>
-        )}
+                    {!isOwnerRow && (
+                      <div className="rh-members-chat__actions">
+                        <Button
+                          type="button"
+                          variant="secondary"
+                          size="sm"
+                          onClick={() => handleToggleAdminRow(row.userId, row.role)}
+                        >
+                          {row.role === PLAN_MEMBER_ROLES.ADMIN ? 'إلغاء مشرف' : 'ترقية لمشرف'}
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          className="rh-plans__delete-btn"
+                          onClick={() => handleRemoveMemberRow(row.userId)}
+                        >
+                          إزالة
+                        </Button>
+                      </div>
+                    )}
+                  </li>
+                )
+              })}
+            </ul>
+          )}
+        </section>
       </Modal>
     </div>
   )
