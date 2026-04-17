@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { VOLUMES, VOLUME_BY_ID } from '../data/volumes.js'
 import { SITE_TITLE } from '../config/site.js'
 import { useAuth } from '../context/useAuth.js'
+import { firestoreApi } from '../services/firestoreApi.js'
 import { countDaysInRange, sessionsNeeded } from '../utils/planSchedule.js'
 import { loadPlans, savePlans, subscribePlans } from '../utils/plansStorage.js'
 import {
@@ -35,9 +36,7 @@ const WEEKDAYS = [
 ]
 
 function newId() {
-  return typeof crypto !== 'undefined' && crypto.randomUUID
-    ? crypto.randomUUID()
-    : `plan-${Date.now()}-${Math.random().toString(16).slice(2)}`
+  return firestoreApi.getNewId('plans')
 }
 
 function createInitialVolumeState() {

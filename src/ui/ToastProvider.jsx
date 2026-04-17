@@ -1,5 +1,6 @@
 import { AlertTriangle, Check, Info, X, XCircle } from 'lucide-react'
 import { useCallback, useMemo, useState } from 'react'
+import { firestoreApi } from '../services/firestoreApi.js'
 import { ToastContext } from './toastContext.js'
 import { RhIcon, RH_ICON_STROKE } from './RhIcon.jsx'
 
@@ -37,10 +38,7 @@ export function ToastProvider({ children }) {
 
   const push = useCallback(
     (opts) => {
-      const id =
-        typeof crypto !== 'undefined' && crypto.randomUUID
-          ? crypto.randomUUID()
-          : `toast-${Date.now()}-${Math.random().toString(16).slice(2)}`
+      const id = firestoreApi.getNewId('toasts')
       const duration = opts.duration ?? 4500
       const entry = { id, variant: 'info', title: '', message: '', ...opts }
       setToasts((t) => [...t, entry])

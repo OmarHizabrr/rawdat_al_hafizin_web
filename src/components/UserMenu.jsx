@@ -67,6 +67,9 @@ export function UserMenu({ user }) {
           <Link to="/app/plans" className="rh-user-dropdown__item" role="menuitem" onClick={() => setOpen(false)}>
             الخطط
           </Link>
+          <Link to="/app/awrad" className="rh-user-dropdown__item" role="menuitem" onClick={() => setOpen(false)}>
+            الأوراد
+          </Link>
           <Link to="/app/welcome" className="rh-user-dropdown__item" role="menuitem" onClick={() => setOpen(false)}>
             صفحة البداية
           </Link>

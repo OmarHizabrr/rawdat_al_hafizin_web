@@ -1351,6 +1351,115 @@ body {
   margin-top: var(--rh-space-1);
 }
 
+/* صفحة الأوراد */
+.rh-awrad {
+  width: 100%;
+  max-width: min(46rem, 100%);
+  margin-inline: auto;
+}
+
+.rh-awrad__hero {
+  margin-bottom: var(--rh-space-4);
+}
+
+.rh-awrad__title {
+  margin-bottom: var(--rh-space-2);
+}
+
+.rh-awrad__desc {
+  color: var(--rh-text-muted);
+  font-size: var(--rh-text-sm);
+}
+
+.rh-awrad__stats {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--rh-space-2);
+  margin-bottom: var(--rh-space-3);
+}
+
+@media (min-width: 640px) {
+  .rh-awrad__stats {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+.rh-awrad__stat {
+  border: 1px solid var(--rh-border);
+  background: var(--rh-surface-tint);
+  border-radius: var(--rh-radius-md);
+  padding: var(--rh-space-2) var(--rh-space-3);
+  font-size: var(--rh-text-sm);
+}
+
+.rh-awrad__progress {
+  height: 0.8rem;
+  border-radius: var(--rh-radius-pill);
+  background: var(--rh-bg);
+  border: 1px solid var(--rh-border);
+  overflow: hidden;
+}
+
+.rh-awrad__progress-bar {
+  height: 100%;
+  background: linear-gradient(90deg, var(--rh-primary) 0%, var(--rh-forest-600) 100%);
+}
+
+.rh-awrad__progress-text {
+  margin-top: var(--rh-space-2);
+  margin-bottom: var(--rh-space-4);
+  font-size: var(--rh-text-sm);
+  color: var(--rh-text-muted);
+}
+
+.rh-awrad__mode {
+  margin-bottom: var(--rh-space-4);
+}
+
+.rh-awrad__range {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--rh-space-3);
+}
+
+@media (min-width: 680px) {
+  .rh-awrad__range {
+    grid-template-columns: 1fr 1fr 1fr;
+    align-items: end;
+  }
+}
+
+.rh-awrad__actions {
+  margin-top: var(--rh-space-2);
+}
+
+.rh-awrad__list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: var(--rh-space-2);
+  margin: 0;
+  padding: 0;
+}
+
+.rh-awrad__item {
+  border: 1px solid var(--rh-border);
+  background: var(--rh-surface);
+  border-radius: var(--rh-radius-md);
+  padding: var(--rh-space-3);
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--rh-space-3);
+  align-items: center;
+  font-size: var(--rh-text-sm);
+  color: var(--rh-text-muted);
+}
+
+.rh-awrad__empty {
+  color: var(--rh-text-muted);
+  font-size: var(--rh-text-sm);
+}
+
 @media (min-width: 720px) {
   .rh-plans__saved-list {
     grid-template-columns: 1fr 1fr;

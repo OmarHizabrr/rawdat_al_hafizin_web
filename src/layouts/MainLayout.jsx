@@ -4,6 +4,7 @@ import {
   ChevronsLeft,
   ChevronsRight,
   ClipboardList,
+  NotebookPen,
   Home,
   Menu,
   Puzzle,
@@ -21,6 +22,7 @@ const nav = [
   { to: '/app', end: true, label: 'الرئيسية', Icon: Home },
   { to: '/app/welcome', label: 'البداية', Icon: BookOpen },
   { to: '/app/plans', label: 'الخطط', Icon: ClipboardList },
+  { to: '/app/awrad', label: 'الأوراد', Icon: NotebookPen },
   { to: '/app/settings', label: 'الإعدادات', Icon: Settings },
   { to: '/app/foundation', label: 'أساس الواجهة', Icon: Puzzle },
 ]

@@ -9,6 +9,7 @@ import AppHomePage from './pages/AppHomePage.jsx'
 import FoundationPage from './pages/FoundationPage.jsx'
 import LandingPage from './pages/LandingPage.jsx'
 import LoginPage from './pages/LoginPage.jsx'
+import AwradPage from './pages/AwradPage.jsx'
 import PlansPage from './pages/PlansPage.jsx'
 import SettingsPage from './pages/SettingsPage.jsx'
 import WelcomePage from './pages/WelcomePage.jsx'
@@ -30,6 +31,7 @@ export default function App() {
                   <Route index element={<AppHomePage />} />
                   <Route path="welcome" element={<WelcomePage />} />
                   <Route path="plans" element={<PlansPage />} />
+                  <Route path="awrad" element={<AwradPage />} />
                   <Route path="foundation" element={<FoundationPage />} />
                   <Route path="settings" element={<SettingsPage />} />
                 </Route>
