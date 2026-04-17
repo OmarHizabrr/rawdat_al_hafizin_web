@@ -1601,6 +1601,21 @@ body {
   flex: 1;
 }
 
+.rh-plans__admin-banner {
+  margin-top: var(--rh-space-3);
+  font-size: var(--rh-text-sm);
+}
+
+.rh-plans__admin-banner a {
+  font-weight: 600;
+  color: var(--rh-primary);
+  text-decoration: none;
+}
+
+.rh-plans__admin-banner a:hover {
+  text-decoration: underline;
+}
+
 .rh-plans__saved-badges {
   display: inline-flex;
   flex-wrap: wrap;
@@ -1798,6 +1813,21 @@ body {
   font-size: var(--rh-text-sm);
 }
 
+.rh-awrad__view-links {
+  margin-top: var(--rh-space-3);
+  font-size: var(--rh-text-sm);
+}
+
+.rh-awrad__view-links a {
+  font-weight: 600;
+  color: var(--rh-primary);
+  text-decoration: none;
+}
+
+.rh-awrad__view-links a:hover {
+  text-decoration: underline;
+}
+
 @media (min-width: 720px) {
   .rh-plans__saved-list {
     grid-template-columns: 1fr 1fr;
@@ -1841,10 +1871,15 @@ body {
   background: var(--rh-surface-tint);
   color: var(--rh-primary);
   cursor: pointer;
+  text-decoration: none;
   transition:
     background 0.15s ease,
     border-color 0.15s ease,
     transform 0.12s ease;
+}
+
+a.rh-peek-btn {
+  color: var(--rh-primary);
 }
 
 .rh-peek-btn:hover:not(:disabled) {

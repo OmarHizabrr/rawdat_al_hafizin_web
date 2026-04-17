@@ -1,6 +1,6 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { SITE_TITLE } from '../config/site.js'
-import { USER_ROLES, isAdmin, normalizeRole, roleLabel } from '../config/roles.js'
+import { USER_ROLES, isAdmin, normalizeRole } from '../config/roles.js'
 import { useAuth } from '../context/useAuth.js'
 import {
   adminDeleteUserFirestore,
@@ -8,19 +8,14 @@ import {
   adminUpdateUserRole,
   subscribeAllUsers,
 } from '../services/adminUsersService.js'
-import { loadPlans } from '../utils/plansStorage.js'
 import { PeekButton } from '../components/PeekButton.jsx'
-import { PlanAwradModal } from '../components/PlanAwradModal.jsx'
-import { Button, Modal, ScrollArea, SearchField, useToast } from '../ui/index.js'
+import { Button, Modal, SearchField, useToast } from '../ui/index.js'
 
 export default function AdminUsersPage() {
   const { user: actor } = useAuth()
   const toast = useToast()
   const [users, setUsers] = useState([])
   const [query, setQuery] = useState('')
-  const [profileUser, setProfileUser] = useState(null)
-  const [profilePlans, setProfilePlans] = useState([])
-  const [planPeek, setPlanPeek] = useState(null)
   const [deleteTarget, setDeleteTarget] = useState(null)
   const [busyUid, setBusyUid] = useState(null)
 
@@ -36,20 +31,6 @@ export default function AdminUsersPage() {
     return () => unsub()
     // eslint-disable-next-line react-hooks/exhaustive-deps -- الاشتراك مرة عند فتح الصفحة كأدمن
   }, [actor?.uid])
-
-  useEffect(() => {
-    if (!profileUser?.uid) {
-      setProfilePlans([])
-      return
-    }
-    let cancelled = false
-    loadPlans(profileUser.uid).then((plans) => {
-      if (!cancelled) setProfilePlans(plans)
-    })
-    return () => {
-      cancelled = true
-    }
-  }, [profileUser?.uid])
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase()
@@ -103,7 +84,6 @@ export default function AdminUsersPage() {
         await adminDeleteUserFirestore(actor, deleteTarget.uid)
       })
       toast.info('تم حذف بيانات المستخدم من المنصة.', '')
-      if (profileUser?.uid === deleteTarget.uid) setProfileUser(null)
       setDeleteTarget(null)
     } catch (e) {
       if (e?.message === 'SELF_DELETE') {
@@ -115,11 +95,6 @@ export default function AdminUsersPage() {
     }
   }
 
-  const openProfile = useCallback((u) => {
-    setProfileUser(u)
-    setPlanPeek(null)
-  }, [])
-
   return (
     <div className="rh-admin-users">
       <header className="rh-admin-users__hero card">
@@ -127,7 +102,8 @@ export default function AdminUsersPage() {
         <p className="rh-admin-users__desc">
           عرض الحسابات، تغيير الدور (طالب / معلم / ادمن)، إيقاف الحساب، أو حذف بياناته من Firestore. لإسناد أول
           حساب أدمن يدوياً، عدّل الحقل <code className="rh-admin-users__code">role</code> في مستند المستخدم إلى{' '}
-          <code className="rh-admin-users__code">admin</code> من وحدة تحكم Firebase.
+          <code className="rh-admin-users__code">admin</code> من وحدة تحكم Firebase. استخدم أيقونة العين للانتقال
+          إلى صفحة خطط المستخدم ثم إلى أوراده من هناك.
         </p>
       </header>
 
@@ -161,8 +137,8 @@ export default function AdminUsersPage() {
                 </div>
                 <PeekButton
                   className="rh-admin-users__peek-user"
-                  title="ملف المستخدم وخططه"
-                  onClick={() => openProfile(u)}
+                  title="فتح صفحة خطط المستخدم"
+                  to={`/app/plans?uid=${encodeURIComponent(u.uid)}`}
                 />
               </div>
 
@@ -210,54 +186,6 @@ export default function AdminUsersPage() {
       {filtered.length === 0 && (
         <p className="rh-admin-users__empty">لا يوجد مستخدمون يطابقون البحث.</p>
       )}
-
-      <Modal open={Boolean(profileUser)} title={profileUser ? `ملف: ${profileUser.displayName || profileUser.email}` : ''} onClose={() => setProfileUser(null)} size="md">
-        {profileUser && (
-          <>
-            <div className="rh-admin-users__profile-meta">
-              <span>
-                <strong>البريد:</strong> {profileUser.email || '—'}
-              </span>
-              <span>
-                <strong>الدور:</strong> {roleLabel(profileUser.role)}
-              </span>
-              <span>
-                <strong>الحالة:</strong> {profileUser.isActive === false ? 'موقوف' : 'نشط'}
-              </span>
-            </div>
-            <h3 className="rh-admin-users__plans-title">الخطط</h3>
-            <ScrollArea className="rh-admin-users__plans-scroll" padded maxHeight="min(48dvh, 360px)">
-              {profilePlans.length === 0 ? (
-                <p className="rh-admin-users__plans-empty">لا توجد خطط محفوظة.</p>
-              ) : (
-                <ul className="rh-admin-users__plan-list">
-                  {profilePlans.map((p) => (
-                    <li key={p.id} className="rh-admin-users__plan-row">
-                      <div>
-                        <strong>{p.name}</strong>
-                        <span className="rh-admin-users__plan-sub">
-                          {p.totalTargetPages} صفحة — {p.dailyPages} ص/يوم
-                        </span>
-                      </div>
-                      <PeekButton
-                        title="عرض الأوراد لهذه الخطة"
-                        onClick={() => setPlanPeek({ userId: profileUser.uid, plan: p })}
-                      />
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </ScrollArea>
-          </>
-        )}
-      </Modal>
-
-      <PlanAwradModal
-        open={Boolean(planPeek)}
-        onClose={() => setPlanPeek(null)}
-        userId={planPeek?.userId}
-        plan={planPeek?.plan}
-      />
 
       <Modal open={Boolean(deleteTarget)} title="تأكيد حذف بيانات المستخدم" onClose={() => setDeleteTarget(null)} size="sm">
         <p className="rh-admin-users__warn">

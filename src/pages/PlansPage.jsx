@@ -1,7 +1,9 @@
 import { Pencil, Plus, Star, Trash2 } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
+import { Link, useSearchParams } from 'react-router-dom'
 import { VOLUMES, VOLUME_BY_ID } from '../data/volumes.js'
 import { SITE_TITLE } from '../config/site.js'
+import { isAdmin } from '../config/roles.js'
 import { useAuth } from '../context/useAuth.js'
 import { firestoreApi } from '../services/firestoreApi.js'
 import { setUserDefaultPlanId } from '../services/userService.js'
@@ -20,7 +22,6 @@ import {
 } from '../ui/index.js'
 import { RhIcon, RH_ICON_STROKE } from '../ui/RhIcon.jsx'
 import { PeekButton } from '../components/PeekButton.jsx'
-import { PlanAwradModal } from '../components/PlanAwradModal.jsx'
 
 const PLAN_TYPES = [
   { value: 'hifz', label: 'حفظ', hint: 'حفظ متون الأحاديث وفق المجلدات المختارة' },
@@ -59,11 +60,22 @@ function formatReminderAr(hhmm) {
 export default function PlansPage() {
   const { user } = useAuth()
   const toast = useToast()
+  const [searchParams] = useSearchParams()
+  const uidParam = searchParams.get('uid')?.trim() || ''
+
+  const viewUserId = useMemo(() => {
+    if (!user?.uid) return ''
+    if (uidParam && isAdmin(user)) return uidParam
+    return user.uid
+  }, [user, uidParam])
+
+  const readOnly = Boolean(user?.uid && viewUserId && viewUserId !== user.uid)
+  const [viewedDefaultPlanId, setViewedDefaultPlanId] = useState(null)
+
   const [savedPlans, setSavedPlans] = useState([])
   const [isEditorOpen, setIsEditorOpen] = useState(false)
   const [editingPlanId, setEditingPlanId] = useState(null)
   const [deletingPlan, setDeletingPlan] = useState(null)
-  const [peekPlan, setPeekPlan] = useState(null)
 
   const [planName, setPlanName] = useState('')
   const [planType, setPlanType] = useState('hifz')
@@ -87,20 +99,37 @@ export default function PlansPage() {
   )
 
   useEffect(() => {
-    document.title = `الخطط — ${SITE_TITLE}`
-  }, [])
+    document.title = readOnly ? `خطط المستخدم — ${SITE_TITLE}` : `الخطط — ${SITE_TITLE}`
+  }, [readOnly])
 
   useEffect(() => {
-    if (!user?.uid) {
+    if (readOnly && viewUserId) return undefined
+    const t = window.setTimeout(() => setViewedDefaultPlanId(null), 0)
+    return () => window.clearTimeout(t)
+  }, [readOnly, viewUserId])
+
+  useEffect(() => {
+    if (!readOnly || !viewUserId) return undefined
+    let cancelled = false
+    firestoreApi.getData(firestoreApi.getUserDoc(viewUserId)).then((d) => {
+      if (!cancelled) setViewedDefaultPlanId(d?.defaultPlanId ?? null)
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [readOnly, viewUserId])
+
+  useEffect(() => {
+    if (!viewUserId) {
       return
     }
 
     let mounted = true
-    loadPlans(user.uid).then((plans) => {
+    loadPlans(viewUserId).then((plans) => {
       if (mounted) setSavedPlans(plans)
     })
 
-    const unsub = subscribePlans(user.uid, (plans) => {
+    const unsub = subscribePlans(viewUserId, (plans) => {
       setSavedPlans(plans)
     })
 
@@ -108,7 +137,7 @@ export default function PlansPage() {
       mounted = false
       unsub()
     }
-  }, [user?.uid])
+  }, [viewUserId])
 
   const totalTargetPages = useMemo(() => {
     let s = 0
@@ -203,12 +232,14 @@ export default function PlansPage() {
   }
 
   const openAddModal = () => {
+    if (readOnly) return
     setEditingPlanId(null)
     resetForm()
     setIsEditorOpen(true)
   }
 
   const openEditModal = (plan) => {
+    if (readOnly) return
     const nextVolumeState = createInitialVolumeState()
     for (const x of plan.volumes ?? []) {
       const v = VOLUME_BY_ID[x.id]
@@ -234,6 +265,10 @@ export default function PlansPage() {
   }
 
   const handleSavePlan = async () => {
+    if (readOnly) {
+      toast.warning('عرض فقط — لا يمكن الحفظ من حساب مستخدم آخر.', 'تنبيه')
+      return
+    }
     const selected = VOLUMES.filter((v) => volumeState[v.id]?.selected)
     if (selected.length === 0) {
       toast.warning('اختر مجلداً واحداً على الأقل.', 'تنبيه')
@@ -288,7 +323,7 @@ export default function PlansPage() {
     const nextPlans = editingPlanId
       ? savedPlans.map((p) => (p.id === editingPlanId ? plan : p))
       : [plan, ...savedPlans]
-    await savePlans(user?.uid, nextPlans, user ?? {})
+    await savePlans(viewUserId, nextPlans, user ?? {})
     toast.success(editingPlanId ? 'تم تحديث الخطة بنجاح.' : 'تم حفظ الخطة. يمكنك مراجعتها في القائمة أدناه.', 'تم')
     resetForm()
     setEditingPlanId(null)
@@ -296,8 +331,9 @@ export default function PlansPage() {
   }
 
   const deletePlan = async (id) => {
+    if (readOnly) return
     const next = savedPlans.filter((p) => p.id !== id)
-    await savePlans(user?.uid, next, user ?? {})
+    await savePlans(viewUserId, next, user ?? {})
     if (user?.defaultPlanId === id) {
       await setUserDefaultPlanId(user, null)
     }
@@ -306,7 +342,7 @@ export default function PlansPage() {
   }
 
   const setAsHomeDefault = async (planId) => {
-    if (!user) return
+    if (!user || readOnly) return
     await setUserDefaultPlanId(user, planId)
     toast.success('أصبحت هذه الخطة هي المعروضة في الصفحة الرئيسية.', 'تم')
   }
@@ -315,28 +351,47 @@ export default function PlansPage() {
 
   const volumeSummary = (n) =>
     n === 0 ? 'اختر المجلدات…' : n === 1 ? 'مجلد واحد مختار' : `${n} مجلدات مختارة`
-  const displayedPlans = user?.uid ? savedPlans : []
+  const displayedPlans = viewUserId ? savedPlans : []
+  const homeDefaultId = readOnly ? viewedDefaultPlanId : user?.defaultPlanId
+
+  const awradPeekTo = (planId) => {
+    const q = new URLSearchParams()
+    q.set('plan', planId)
+    if (readOnly) q.set('uid', viewUserId)
+    return `/app/awrad?${q.toString()}`
+  }
 
   return (
     <div className="rh-plans">
       <header className="rh-plans__hero">
         <div className="rh-plans__hero-head">
           <div>
-            <h1 className="rh-plans__title">الخطط</h1>
+            <h1 className="rh-plans__title">{readOnly ? 'خطط المستخدم' : 'الخطط'}</h1>
             <p className="rh-plans__desc">
-              أنشئ خطة حفظ أو مراجعة أو قراءة، وحدد المجلدات والورد اليومي والجدولة، ثم أدر خططك بالتعديل والحذف بسهولة.
+              {readOnly
+                ? 'عرض للقراءة فقط. انتقل إلى الأوراد من أيقونة العين بجانب كل خطة.'
+                : 'أنشئ خطة حفظ أو مراجعة أو قراءة، وحدد المجلدات والورد اليومي والجدولة، ثم أدر خططك بالتعديل والحذف بسهولة.'}
             </p>
+            {readOnly && (
+              <p className="rh-plans__admin-banner">
+                <Link to="/app/admin/users">← العودة إلى إدارة المستخدمين</Link>
+                {' · '}
+                <Link to={`/app/awrad?uid=${encodeURIComponent(viewUserId)}`}>صفحة أوراد هذا المستخدم</Link>
+              </p>
+            )}
           </div>
-          <Button type="button" variant="primary" className="rh-plans__add-btn" onClick={openAddModal}>
-            <RhIcon as={Plus} size={18} strokeWidth={RH_ICON_STROKE} />
-            إضافة خطة
-          </Button>
+          {!readOnly && (
+            <Button type="button" variant="primary" className="rh-plans__add-btn" onClick={openAddModal}>
+              <RhIcon as={Plus} size={18} strokeWidth={RH_ICON_STROKE} />
+              إضافة خطة
+            </Button>
+          )}
         </div>
       </header>
 
       {displayedPlans.length > 0 ? (
         <section className="rh-plans__saved">
-          <h2 className="rh-plans__saved-title">خططك المحفوظة</h2>
+          <h2 className="rh-plans__saved-title">{readOnly ? 'الخطط المحفوظة' : 'خططك المحفوظة'}</h2>
           <ul className="rh-plans__saved-list">
             {displayedPlans.map((p) => (
               <li key={p.id} className="rh-plans__saved-card">
@@ -345,12 +400,19 @@ export default function PlansPage() {
                     <strong>{p.name}</strong>
                     <span className="rh-plans__saved-badges">
                       <span className="rh-plans__saved-badge">{typeLabel(p.planType)}</span>
-                      {user?.defaultPlanId === p.id && (
+                      {homeDefaultId === p.id && (
                         <span className="rh-plans__saved-badge rh-plans__saved-badge--home">الرئيسية</span>
                       )}
                     </span>
                   </div>
-                  <PeekButton title="عرض الأوراد المرتبطة بهذه الخطة" onClick={() => setPeekPlan(p)} />
+                  <PeekButton
+                    to={awradPeekTo(p.id)}
+                    title={
+                      readOnly
+                        ? 'الانتقال إلى صفحة الأوراد لهذه الخطة (حساب المستخدم)'
+                        : 'الانتقال إلى صفحة الأوراد لهذه الخطة'
+                    }
+                  />
                 </div>
                 <p className="rh-plans__saved-meta">
                   {p.totalTargetPages} صفحة — ورد {p.dailyPages} ص/يوم
@@ -365,46 +427,52 @@ export default function PlansPage() {
                     </li>
                   ))}
                 </ul>
-                <div className="rh-plans__card-actions">
-                  <Button
-                    type="button"
-                    variant={user?.defaultPlanId === p.id ? 'primary' : 'secondary'}
-                    size="sm"
-                    className="rh-plans__default-btn"
-                    onClick={() => setAsHomeDefault(p.id)}
-                    title="تظهر هذه الخطة في الصفحة الرئيسية مع نسبة الإنجاز"
-                  >
-                    <RhIcon as={Star} size={16} strokeWidth={RH_ICON_STROKE} />
-                    {user?.defaultPlanId === p.id ? 'افتراضية للرئيسية' : 'للرئيسية'}
-                  </Button>
-                  <Button type="button" variant="secondary" size="sm" onClick={() => openEditModal(p)}>
-                    <RhIcon as={Pencil} size={16} strokeWidth={RH_ICON_STROKE} />
-                    تعديل
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    className="rh-plans__delete-btn"
-                    onClick={() => setDeletingPlan(p)}
-                  >
-                    <RhIcon as={Trash2} size={16} strokeWidth={RH_ICON_STROKE} />
-                    حذف
-                  </Button>
-                </div>
+                {!readOnly && (
+                  <div className="rh-plans__card-actions">
+                    <Button
+                      type="button"
+                      variant={user?.defaultPlanId === p.id ? 'primary' : 'secondary'}
+                      size="sm"
+                      className="rh-plans__default-btn"
+                      onClick={() => setAsHomeDefault(p.id)}
+                      title="تظهر هذه الخطة في الصفحة الرئيسية مع نسبة الإنجاز"
+                    >
+                      <RhIcon as={Star} size={16} strokeWidth={RH_ICON_STROKE} />
+                      {user?.defaultPlanId === p.id ? 'افتراضية للرئيسية' : 'للرئيسية'}
+                    </Button>
+                    <Button type="button" variant="secondary" size="sm" onClick={() => openEditModal(p)}>
+                      <RhIcon as={Pencil} size={16} strokeWidth={RH_ICON_STROKE} />
+                      تعديل
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="rh-plans__delete-btn"
+                      onClick={() => setDeletingPlan(p)}
+                    >
+                      <RhIcon as={Trash2} size={16} strokeWidth={RH_ICON_STROKE} />
+                      حذف
+                    </Button>
+                  </div>
+                )}
               </li>
             ))}
           </ul>
         </section>
       ) : (
         <section className="rh-settings-card rh-plans__empty">
-          <h2 className="rh-settings-card__title">لا توجد خطط بعد</h2>
-          <p className="rh-settings-card__subtitle">ابدأ بإضافة أول خطة من الزر بالأعلى، ثم عدّلها أو احذفها لاحقاً.</p>
+          <h2 className="rh-settings-card__title">{readOnly ? 'لا توجد خطط لهذا المستخدم' : 'لا توجد خطط بعد'}</h2>
+          <p className="rh-settings-card__subtitle">
+            {readOnly
+              ? 'لم يُنشئ هذا المستخدم خططاً بعد، أو لا تملك صلاحية عرضها.'
+              : 'ابدأ بإضافة أول خطة من الزر بالأعلى، ثم عدّلها أو احذفها لاحقاً.'}
+          </p>
         </section>
       )}
 
       <Modal
-        open={isEditorOpen}
+        open={isEditorOpen && !readOnly}
         title={editingPlanId ? 'تعديل الخطة' : 'إضافة خطة جديدة'}
         onClose={() => {
           setIsEditorOpen(false)
@@ -615,13 +683,6 @@ export default function PlansPage() {
             </section>
         </ScrollArea>
       </Modal>
-
-      <PlanAwradModal
-        open={Boolean(peekPlan)}
-        onClose={() => setPeekPlan(null)}
-        userId={user?.uid}
-        plan={peekPlan}
-      />
 
       <Modal open={Boolean(deletingPlan)} title="تأكيد الحذف" onClose={() => setDeletingPlan(null)} size="sm">
             <p className="rh-plans__warn rh-plans__warn--confirm">

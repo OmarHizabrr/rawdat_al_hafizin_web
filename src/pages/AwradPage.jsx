@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Plus } from 'lucide-react'
-import { useNavigate, useSearchParams } from 'react-router-dom'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { SITE_TITLE } from '../config/site.js'
+import { isAdmin } from '../config/roles.js'
 import { useAuth } from '../context/useAuth.js'
 import { loadPlans, subscribePlans } from '../utils/plansStorage.js'
 import { addWird, deleteWird, subscribeAwrad, updateWird } from '../utils/awradStorage.js'
@@ -22,7 +23,16 @@ export default function AwradPage() {
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
   const planFromUrl = searchParams.get('plan')
+  const uidFromUrl = searchParams.get('uid')?.trim() || ''
   const clearedDeepLinkRef = useRef(false)
+
+  const contextUserId = useMemo(() => {
+    if (!user?.uid) return ''
+    if (uidFromUrl && isAdmin(user)) return uidFromUrl
+    return user.uid
+  }, [user, uidFromUrl])
+
+  const viewOnly = Boolean(user?.uid && contextUserId && contextUserId !== user.uid)
 
   const [plans, setPlans] = useState([])
   const [awrad, setAwrad] = useState([])
@@ -49,12 +59,20 @@ export default function AwradPage() {
   }, [awrad])
 
   useEffect(() => {
-    document.title = `الأوراد — ${SITE_TITLE}`
-  }, [])
+    document.title = viewOnly ? `أوراد المستخدم — ${SITE_TITLE}` : `الأوراد — ${SITE_TITLE}`
+  }, [viewOnly])
+
+  useEffect(() => {
+    const t = window.setTimeout(() => {
+      setSelectedPlanId('')
+      setAwrad([])
+    }, 0)
+    return () => window.clearTimeout(t)
+  }, [contextUserId])
 
   useEffect(() => {
     clearedDeepLinkRef.current = false
-  }, [planFromUrl])
+  }, [planFromUrl, contextUserId])
 
   useEffect(() => {
     if (!planFromUrl || !plans.length) return
@@ -65,37 +83,44 @@ export default function AwradPage() {
       applyPlanDefaults(id, plans, awrad)
       if (!clearedDeepLinkRef.current) {
         clearedDeepLinkRef.current = true
-        navigate('/app/awrad', { replace: true })
+        const next = new URLSearchParams()
+        if (uidFromUrl && isAdmin(user)) next.set('uid', uidFromUrl)
+        const s = next.toString()
+        navigate({ pathname: '/app/awrad', search: s ? `?${s}` : '' }, { replace: true })
       }
     }, 0)
     return () => window.clearTimeout(t)
-  }, [planFromUrl, plans, awrad, applyPlanDefaults, navigate])
+  }, [planFromUrl, plans, awrad, applyPlanDefaults, navigate, uidFromUrl, user])
 
   useEffect(() => {
-    if (!user?.uid) return
-    loadPlans(user.uid).then((v) => {
+    if (!contextUserId) return
+    loadPlans(contextUserId).then((v) => {
       setPlans(v)
-      if (v[0]?.id) {
+      const initialId =
+        planFromUrl && v.some((p) => p.id === planFromUrl) ? planFromUrl : v[0]?.id || ''
+      if (initialId) {
         setSelectedPlanId((x) => {
-          const next = x || v[0].id
+          const next = x || initialId
           if (!x) applyPlanDefaults(next, v)
           return next
         })
       }
     })
-    const unsubPlans = subscribePlans(user.uid, (v) => {
+    const unsubPlans = subscribePlans(contextUserId, (v) => {
       setPlans(v)
-      if (!selectedPlanId && v[0]?.id) {
-        setSelectedPlanId(v[0].id)
-        applyPlanDefaults(v[0].id, v, awrad)
+      const pick =
+        planFromUrl && v.some((p) => p.id === planFromUrl) ? planFromUrl : v[0]?.id || ''
+      if (!selectedPlanId && pick) {
+        setSelectedPlanId(pick)
+        applyPlanDefaults(pick, v, awrad)
       }
     })
-    const unsubAwrad = subscribeAwrad(user.uid, setAwrad)
+    const unsubAwrad = subscribeAwrad(contextUserId, setAwrad)
     return () => {
       unsubPlans()
       unsubAwrad()
     }
-  }, [user?.uid, selectedPlanId, awrad, applyPlanDefaults])
+  }, [contextUserId, selectedPlanId, awrad, applyPlanDefaults, planFromUrl])
 
   const selectedPlan = useMemo(
     () => plans.find((p) => p.id === selectedPlanId) ?? null,
@@ -129,6 +154,10 @@ export default function AwradPage() {
       : 'كل الأيام'
 
   const submitWird = async () => {
+    if (viewOnly) {
+      toast.info('وضع العرض فقط — سجّل الورد من حساب المستخدم نفسه.', '')
+      return
+    }
     if (!selectedPlan) {
       toast.warning('اختر خطة أولاً.', 'تنبيه')
       return
@@ -158,11 +187,11 @@ export default function AwradPage() {
     }
 
     if (editingWirdId) {
-      await updateWird(user?.uid, editingWirdId, payload, user ?? {})
+      await updateWird(contextUserId, editingWirdId, payload, user ?? {})
       toast.success('تم تعديل تسجيل الورد.', 'تم')
       setEditingWirdId(null)
     } else {
-      await addWird(user?.uid, payload, user ?? {})
+      await addWird(contextUserId, payload, user ?? {})
     }
 
     const nextAchieved = achievedPages + computedPages
@@ -197,31 +226,46 @@ export default function AwradPage() {
   return (
     <div className="rh-awrad">
       <header className="rh-awrad__hero card">
-        <h1 className="rh-awrad__title">الأوراد حسب الخطط</h1>
+        <h1 className="rh-awrad__title">{viewOnly ? 'أوراد المستخدم (عرض)' : 'الأوراد حسب الخطط'}</h1>
         <p className="rh-awrad__desc">
-          سجّل وِردك يوميًا وفق خطتك: بعدد صفحات مباشر أو من صفحة إلى صفحة، مع تتبع نسبة الإنجاز وما تحقق.
+          {viewOnly
+            ? 'تعرض بيانات المستخدم المحدد للمشرف. التسجيل والتعديل يتم من حسابه.'
+            : 'سجّل وِردك يوميًا وفق خطتك: بعدد صفحات مباشر أو من صفحة إلى صفحة، مع تتبع نسبة الإنجاز وما تحقق.'}
         </p>
+        {viewOnly && (
+          <p className="rh-awrad__view-links">
+            <Link to="/app/admin/users">← المستخدمون</Link>
+            {' · '}
+            <Link to={`/app/plans?uid=${encodeURIComponent(contextUserId)}`}>خطط هذا المستخدم</Link>
+          </p>
+        )}
       </header>
 
       <section className="rh-settings-card">
         <div className="rh-settings-card__head">
           <h2 className="rh-settings-card__title">تسجيل الأوراد</h2>
-          <p className="rh-settings-card__subtitle">يمكنك الزيادة على الورد المحدد في الخطة، مع حفظ التسلسل تلقائيًا.</p>
+          <p className="rh-settings-card__subtitle">
+            {viewOnly
+              ? 'عرض التقدّم والسجل فقط.'
+              : 'يمكنك الزيادة على الورد المحدد في الخطة، مع حفظ التسلسل تلقائيًا.'}
+          </p>
         </div>
-        <div className="rh-awrad__actions">
-          <Button
-            type="button"
-            onClick={() => {
-              setEditingWirdId(null)
-              setMode('count')
-              applyPlanDefaults(selectedPlanId || plans[0]?.id || '', plans)
-              setIsEditorOpen(true)
-            }}
-          >
-            <RhIcon as={Plus} size={16} strokeWidth={RH_ICON_STROKE} />
-            إضافة ورد
-          </Button>
-        </div>
+        {!viewOnly && (
+          <div className="rh-awrad__actions">
+            <Button
+              type="button"
+              onClick={() => {
+                setEditingWirdId(null)
+                setMode('count')
+                applyPlanDefaults(selectedPlanId || plans[0]?.id || '', plans)
+                setIsEditorOpen(true)
+              }}
+            >
+              <RhIcon as={Plus} size={16} strokeWidth={RH_ICON_STROKE} />
+              إضافة ورد
+            </Button>
+          </div>
+        )}
 
         {selectedPlan && (
           <>
@@ -276,7 +320,7 @@ export default function AwradPage() {
       </section>
 
       <Modal
-        open={isEditorOpen}
+        open={isEditorOpen && !viewOnly}
         title={editingWirdId ? 'تعديل تسجيل الورد' : 'إضافة ورد جديد'}
         onClose={cancelEdit}
         size="md"
@@ -368,7 +412,7 @@ export default function AwradPage() {
             variant="danger"
             onClick={async () => {
               if (!deletingWird) return
-              await deleteWird(user?.uid, deletingWird.id)
+              await deleteWird(contextUserId, deletingWird.id)
               if (editingWirdId === deletingWird.id) cancelEdit()
               setDeletingWird(null)
               toast.info('تم حذف تسجيل الورد.', '')
