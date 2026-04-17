@@ -1537,6 +1537,20 @@ a.rh-sidebar__brand-link.rh-sidebar__brand-link--active {
   flex-shrink: 0;
 }
 
+.rh-plans__join-explore {
+  margin-top: var(--rh-space-4);
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--rh-space-3);
+}
+
+.rh-plans__explore-link {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--rh-space-2);
+  text-decoration: none;
+}
+
 .rh-plans__plan-id {
   font-size: var(--rh-text-xs);
   word-break: break-all;
@@ -1595,6 +1609,188 @@ a.rh-sidebar__brand-link.rh-sidebar__brand-link--active {
   display: flex;
   flex-wrap: wrap;
   gap: var(--rh-space-2);
+}
+
+/* ——— استكشاف الخطط العامة ——— */
+.rh-explore-plans {
+  max-width: 56rem;
+  margin-inline: auto;
+  padding-inline: clamp(0.65rem, 3.5vw, 1.15rem);
+  padding-block-end: var(--rh-space-8);
+  box-sizing: border-box;
+}
+
+.rh-explore-plans__title {
+  display: flex;
+  align-items: center;
+  gap: var(--rh-space-3);
+  flex-wrap: wrap;
+}
+
+.rh-explore-plans__title-icon {
+  flex-shrink: 0;
+  color: var(--rh-primary);
+}
+
+.rh-explore-plans__to-mine {
+  flex-shrink: 0;
+  text-decoration: none;
+  align-self: flex-start;
+}
+
+.rh-explore-plans__toolbar {
+  margin-bottom: var(--rh-space-4);
+}
+
+.rh-explore-plans__toolbar-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--rh-space-4);
+  margin-bottom: var(--rh-space-4);
+}
+
+@media (min-width: 640px) {
+  .rh-explore-plans__toolbar-grid {
+    grid-template-columns: 2fr 1fr;
+    align-items: end;
+  }
+}
+
+.rh-explore-plans__toolbar-grid .ui-field {
+  margin-bottom: 0;
+}
+
+.rh-explore-plans__join-inline {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--rh-space-3);
+  align-items: flex-end;
+}
+
+.rh-explore-plans__join-inline .ui-field {
+  flex: 1 1 14rem;
+  margin-bottom: 0;
+}
+
+.rh-explore-plans__count {
+  font-size: var(--rh-text-sm);
+  color: var(--rh-text-muted);
+  margin: 0 0 var(--rh-space-3);
+}
+
+.rh-explore-plans__scroll {
+  max-height: min(70vh, 42rem);
+}
+
+.rh-explore-plans__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--rh-space-5);
+}
+
+.rh-explore-plans__card {
+  padding: var(--rh-space-5);
+  border-radius: var(--rh-radius-xl);
+  border: 1px solid var(--rh-border);
+  background: var(--rh-surface);
+  box-shadow: var(--rh-shadow-sm);
+}
+
+.rh-explore-plans__card-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--rh-space-3);
+  margin-bottom: var(--rh-space-3);
+}
+
+.rh-explore-plans__card-title-block {
+  display: flex;
+  flex-direction: column;
+  gap: var(--rh-space-2);
+  min-width: 0;
+}
+
+.rh-explore-plans__card-name {
+  font-size: var(--rh-text-lg);
+}
+
+.rh-explore-plans__label {
+  font-weight: 600;
+  color: var(--rh-text-muted);
+  font-size: var(--rh-text-xs);
+}
+
+.rh-explore-plans__creator {
+  display: flex;
+  gap: var(--rh-space-4);
+  align-items: flex-start;
+  padding: var(--rh-space-3);
+  margin-bottom: var(--rh-space-3);
+  border-radius: var(--rh-radius-md);
+  background: color-mix(in srgb, var(--rh-surface) 92%, var(--rh-border));
+}
+
+.rh-explore-plans__avatar {
+  width: 3rem;
+  height: 3rem;
+  border-radius: 999px;
+  object-fit: cover;
+  flex-shrink: 0;
+  border: 1px solid var(--rh-border);
+}
+
+.rh-explore-plans__avatar--placeholder {
+  background: color-mix(in srgb, var(--rh-primary-muted) 35%, var(--rh-surface));
+}
+
+.rh-explore-plans__creator-label {
+  font-size: var(--rh-text-xs);
+  color: var(--rh-text-muted);
+  margin: 0 0 var(--rh-space-1);
+}
+
+.rh-explore-plans__creator-name {
+  font-weight: 600;
+  margin: 0;
+}
+
+.rh-explore-plans__creator-email {
+  font-size: var(--rh-text-sm);
+  color: var(--rh-text-muted);
+  margin: var(--rh-space-1) 0 0;
+  word-break: break-all;
+}
+
+.rh-explore-plans__creator-uid {
+  font-size: var(--rh-text-xs);
+  margin: var(--rh-space-2) 0 0;
+}
+
+.rh-explore-plans__facts {
+  margin: 0 0 var(--rh-space-3);
+  padding-inline-start: 1.15rem;
+  font-size: var(--rh-text-sm);
+  line-height: var(--rh-leading-normal);
+}
+
+.rh-explore-plans__facts li {
+  margin-bottom: var(--rh-space-1);
+}
+
+.rh-explore-plans__volumes {
+  margin-bottom: var(--rh-space-3);
+}
+
+.rh-explore-plans__meta-muted {
+  font-size: var(--rh-text-xs);
+  color: var(--rh-text-muted);
+  margin: 0;
+  word-break: break-word;
 }
 
 .rh-plans__title {

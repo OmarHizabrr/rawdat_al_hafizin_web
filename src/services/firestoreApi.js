@@ -196,6 +196,11 @@ class FirestoreApi {
     return this.getDocument("plan_types", planTypeId);
   }
 
+  /** plans — مجموعة جذر الخطط */
+  getPlansCollection() {
+    return this.getCollection("plans");
+  }
+
   /** plans/{planId} — المستند الرئيسي للخطة */
   getPlanCanonicalDoc(planId) {
     return this.getDocument("plans", planId);

@@ -35,7 +35,22 @@ function canonicalPayload(plan) {
   const rest = { ...plan }
   delete rest.id
   delete rest.planRole
+  delete rest.memberCount
   return rest
+}
+
+/** يحدّث memberCount من عدد مستندات members/{planId}/members */
+async function syncPlanMemberCount(planId) {
+  if (!planId) return
+  const ref = canonicalRef(planId)
+  const canon = await firestoreApi.getData(ref)
+  if (!canon) return
+  const n = await firestoreApi.getSubCollectionCount('members', planId, 'members')
+  await firestoreApi.updateData({
+    docRef: ref,
+    data: { memberCount: n },
+    userData: {},
+  })
 }
 
 async function mergeMirrorDocs(mirrorDocs) {
@@ -111,6 +126,7 @@ export async function removePlanForUser(userId, planId) {
   }
   await firestoreApi.deleteData(memberRef(planId, userId))
   await firestoreApi.deleteData(mirrorDoc(userId, planId))
+  await syncPlanMemberCount(planId)
 }
 
 async function assertPlanManager(actorUid, planId) {
@@ -166,6 +182,7 @@ async function upsertPlanForUser(userId, plan, userData) {
       merge: true,
       userData,
     })
+    await syncPlanMemberCount(planId)
     return
   }
 
@@ -214,6 +231,7 @@ export async function addUserToPlan(actorUser, planId, targetUid, userData = {})
     merge: true,
     userData,
   })
+  await syncPlanMemberCount(planId)
 }
 
 /** انضمام ذاتي لخطة عامة */
@@ -237,6 +255,7 @@ export async function removePlanMember(actorUser, planId, targetUid) {
   }
   await firestoreApi.deleteData(memberRef(planId, targetUid))
   await firestoreApi.deleteData(mirrorDoc(targetUid, planId))
+  await syncPlanMemberCount(planId)
 }
 
 export async function setPlanMemberRole(actorUser, planId, targetUid, nextRole, userData = {}) {

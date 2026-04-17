@@ -8,6 +8,12 @@ export const SITE_STRING_REGISTRY = [
   { key: 'layout.nav_home', group: 'التنقل', label: 'قائمة: الرئيسية', defaultValue: 'الرئيسية' },
   { key: 'layout.nav_welcome', group: 'التنقل', label: 'قائمة: البداية', defaultValue: 'البداية' },
   { key: 'layout.nav_plans', group: 'التنقل', label: 'قائمة: الخطط', defaultValue: 'الخطط' },
+  {
+    key: 'layout.nav_plans_explore',
+    group: 'التنقل',
+    label: 'قائمة: استكشاف الخطط العامة',
+    defaultValue: 'استكشاف',
+  },
   { key: 'layout.nav_awrad', group: 'التنقل', label: 'قائمة: الأوراد', defaultValue: 'الأوراد' },
   { key: 'layout.nav_settings', group: 'التنقل', label: 'قائمة: الإعدادات', defaultValue: 'الإعدادات' },
   { key: 'layout.nav_foundation', group: 'التنقل', label: 'قائمة: أساس الواجهة', defaultValue: 'أساس الواجهة' },

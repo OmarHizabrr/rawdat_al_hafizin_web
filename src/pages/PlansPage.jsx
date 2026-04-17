@@ -1,4 +1,4 @@
-import { Pencil, Plus, Star, Trash2, UserPlus, Users } from 'lucide-react'
+import { Compass, Pencil, Plus, Star, Trash2, UserPlus, Users } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { VOLUMES, VOLUME_BY_ID } from '../data/volumes.js'
@@ -93,6 +93,11 @@ export default function PlansPage() {
 
   const actingAsUser = Boolean(user?.uid && viewUserId && viewUserId !== user.uid)
   const readOnly = Boolean(actingAsUser && !isAdmin(user))
+
+  const explorePlansHref = useMemo(() => {
+    if (uidParam && isAdmin(user)) return `/app/plans/explore?uid=${encodeURIComponent(uidParam)}`
+    return '/app/plans/explore'
+  }, [uidParam, user])
   const [viewedDefaultPlanId, setViewedDefaultPlanId] = useState(null)
 
   const [savedPlans, setSavedPlans] = useState([])
@@ -512,6 +517,7 @@ export default function PlansPage() {
   const plansCrossItems = useMemo(() => {
     const base = [
       { to: '/app', label: str('layout.nav_home') },
+      { to: explorePlansHref, label: str('layout.nav_plans_explore') },
       { to: '/app/awrad', label: str('layout.nav_awrad') },
       { to: '/app/welcome', label: str('layout.nav_welcome') },
       { to: '/app/settings', label: str('layout.nav_settings') },
@@ -521,7 +527,7 @@ export default function PlansPage() {
       base.push({ to: '/app/admin/users', label: str('layout.nav_users') })
     }
     return base
-  }, [user, str])
+  }, [user, str, explorePlansHref])
 
   return (
     <div className="rh-plans">
@@ -588,6 +594,12 @@ export default function PlansPage() {
               <RhIcon as={UserPlus} size={18} strokeWidth={RH_ICON_STROKE} />
               انضمام
             </Button>
+          </div>
+          <div className="rh-plans__join-explore">
+            <Link className="ui-btn ui-btn--secondary rh-plans__explore-link" to={explorePlansHref}>
+              <RhIcon as={Compass} size={18} strokeWidth={RH_ICON_STROKE} />
+              استكشاف كل الخطط العامة
+            </Link>
           </div>
         </section>
       )}

@@ -13,6 +13,7 @@ import LandingPage from './pages/LandingPage.jsx'
 import LoginPage from './pages/LoginPage.jsx'
 import AwradPage from './pages/AwradPage.jsx'
 import PlansPage from './pages/PlansPage.jsx'
+import ExplorePlansPage from './pages/ExplorePlansPage.jsx'
 import SettingsPage from './pages/SettingsPage.jsx'
 import WelcomePage from './pages/WelcomePage.jsx'
 import AdminUsersPage from './pages/AdminUsersPage.jsx'
@@ -38,6 +39,7 @@ export default function App() {
                   <Route path="/app" element={<MainLayout />}>
                     <Route index element={<AppHomePage />} />
                     <Route path="welcome" element={<WelcomePage />} />
+                    <Route path="plans/explore" element={<ExplorePlansPage />} />
                     <Route path="plans" element={<PlansPage />} />
                     <Route path="awrad" element={<AwradPage />} />
                     <Route path="foundation" element={<FoundationPage />} />

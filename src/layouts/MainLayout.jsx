@@ -4,6 +4,7 @@ import {
   ChevronsLeft,
   ChevronsRight,
   ClipboardList,
+  Compass,
   LayoutDashboard,
   NotebookPen,
   Home,
@@ -34,6 +35,7 @@ export function MainLayout() {
       { to: '/app', end: true, label: str('layout.nav_home'), Icon: Home },
       { to: '/app/welcome', label: str('layout.nav_welcome'), Icon: BookOpen },
       { to: '/app/plans', label: str('layout.nav_plans'), Icon: ClipboardList },
+      { to: '/app/plans/explore', label: str('layout.nav_plans_explore'), Icon: Compass },
       { to: '/app/awrad', label: str('layout.nav_awrad'), Icon: NotebookPen },
       { to: '/app/settings', label: str('layout.nav_settings'), Icon: Settings },
       { to: '/app/foundation', label: str('layout.nav_foundation'), Icon: Puzzle },
@@ -49,7 +51,7 @@ export function MainLayout() {
     [str],
   )
 
-  const nav = isAdmin(user) ? [...baseNav.slice(0, 4), ...adminNavItems, ...baseNav.slice(4)] : baseNav
+  const nav = isAdmin(user) ? [...baseNav.slice(0, 5), ...adminNavItems, ...baseNav.slice(5)] : baseNav
   usePlanReminders(impersonateUid ? null : user, { iconSrc: branding.logoSrc })
   const [collapsed, setCollapsed] = useState(() => {
     try {
