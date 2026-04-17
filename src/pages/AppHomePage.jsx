@@ -49,10 +49,7 @@ export default function AppHomePage() {
   }, [actingAsUser, branding.siteTitle])
 
   useEffect(() => {
-    if (!actingAsUser || !contextUserId) {
-      setSubjectProfile(null)
-      return undefined
-    }
+    if (!actingAsUser || !contextUserId) return undefined
     let cancelled = false
     firestoreApi.getData(firestoreApi.getUserDoc(contextUserId)).then((d) => {
       if (!cancelled) setSubjectProfile(d ? { ...d } : {})
@@ -61,6 +58,9 @@ export default function AppHomePage() {
       cancelled = true
     }
   }, [actingAsUser, contextUserId])
+
+  /** لا نقرأ ملف المستخدم المنتحل إلا عند تفعيل النيابة؛ يتفادى الاعتماد على حالة قديمة دون setState داخل التأثير */
+  const impersonatedSubject = actingAsUser && contextUserId ? subjectProfile : null
 
   useEffect(() => {
     if (!contextUserId) return undefined
@@ -74,10 +74,10 @@ export default function AppHomePage() {
   }, [contextUserId])
 
   const activePlanId = useMemo(() => {
-    const def = actingAsUser ? subjectProfile?.defaultPlanId : user?.defaultPlanId
+    const def = actingAsUser ? impersonatedSubject?.defaultPlanId : user?.defaultPlanId
     if (def && plans.some((p) => p.id === def)) return def
     return plans[0]?.id ?? ''
-  }, [actingAsUser, subjectProfile?.defaultPlanId, user?.defaultPlanId, plans])
+  }, [actingAsUser, impersonatedSubject?.defaultPlanId, user?.defaultPlanId, plans])
 
   const activePlan = useMemo(
     () => plans.find((p) => p.id === activePlanId) ?? null,
@@ -102,7 +102,7 @@ export default function AppHomePage() {
   )
 
   const name = actingAsUser
-    ? subjectProfile?.displayName?.trim() || str('app.home_greeting_user_fallback')
+    ? impersonatedSubject?.displayName?.trim() || str('app.home_greeting_user_fallback')
     : user?.displayName?.trim() || str('app.home_greeting_fallback')
   const pct = progress?.progressPercent ?? 0
 
