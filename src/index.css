@@ -1779,6 +1779,7 @@ a.rh-sidebar__brand-link.rh-sidebar__brand-link--active {
   background: var(--rh-surface-elevated);
   border: 1px solid color-mix(in srgb, var(--rh-border) 80%, transparent);
   box-shadow: 0 1px 0 color-mix(in srgb, var(--rh-border) 40%, transparent);
+  color: var(--rh-text);
 }
 
 .rh-members-chat__avatar {

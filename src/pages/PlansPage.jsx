@@ -1020,7 +1020,9 @@ export default function PlansPage() {
           setDirectoryUsers([])
         }}
         size="lg"
+        contentClassName="ui-modal__content--plan-members"
       >
+        <div className="rh-plan-members-modal__body">
         <p className="rh-plans__saved-meta rh-plan-members-modal__plan-id">
           معرف الخطة: <code className="rh-plans__plan-id">{membersModalPlan?.id}</code>
         </p>
@@ -1036,7 +1038,7 @@ export default function PlansPage() {
             value={memberPickerQuery}
             onChange={(e) => setMemberPickerQuery(e.target.value)}
           />
-          <ScrollArea className="rh-plan-members-picker" padded maxHeight="min(17rem, 42vh)">
+          <ScrollArea className="rh-plan-members-picker" padded maxHeight="min(14rem, 36vh)">
             {directoryUsers.length === 0 ? (
               <p className="rh-plan-members-picker__empty">
                 جاري تحميل قائمة المستخدمين… إن بقيت فارغة فقد لا تملك صلاحية قراءة مجموعة المستخدمين في Firestore.
@@ -1085,6 +1087,8 @@ export default function PlansPage() {
           <h3 className="rh-plan-members-modal__heading">أعضاء الخطة</h3>
           {membersLoading ? (
             <p className="rh-plans__members-loading">جاري التحميل…</p>
+          ) : planMembersList.length === 0 ? (
+            <p className="rh-plans__members-loading">لا يوجد أعضاء مسجّلون بعد.</p>
           ) : (
             <ul className="rh-members-chat-list">
               {planMembersList.map((row) => {
@@ -1134,6 +1138,7 @@ export default function PlansPage() {
             </ul>
           )}
         </section>
+        </div>
       </Modal>
     </div>
   )
