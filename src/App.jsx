@@ -1,3 +1,4 @@
+import { lazy, Suspense } from 'react'
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
 import { AuthProvider } from './context/AuthProvider.jsx'
 import { PermissionsProvider } from './context/PermissionsProvider.jsx'
@@ -8,26 +9,47 @@ import { GuestOnly } from './routes/GuestOnly.jsx'
 import { ProtectedRoute } from './routes/ProtectedRoute.jsx'
 import { MainLayout } from './layouts/MainLayout.jsx'
 import { ToastProvider } from './ui/ToastProvider.jsx'
-import AppHomePage from './pages/AppHomePage.jsx'
-import FoundationPage from './pages/FoundationPage.jsx'
-import LandingPage from './pages/LandingPage.jsx'
-import LoginPage from './pages/LoginPage.jsx'
-import AwradPage from './pages/AwradPage.jsx'
-import PlansPage from './pages/PlansPage.jsx'
-import ExplorePlansPage from './pages/ExplorePlansPage.jsx'
-import HalakatPage from './pages/HalakatPage.jsx'
-import ExploreHalakatPage from './pages/ExploreHalakatPage.jsx'
-import DawratPage from './pages/DawratPage.jsx'
-import ExploreDawratPage from './pages/ExploreDawratPage.jsx'
-import SettingsPage from './pages/SettingsPage.jsx'
-import WelcomePage from './pages/WelcomePage.jsx'
-import AdminUsersPage from './pages/AdminUsersPage.jsx'
-import AdminDashboardPage from './pages/AdminDashboardPage.jsx'
-import AdminPlanTypesPage from './pages/AdminPlanTypesPage.jsx'
-import AdminSiteCopyPage from './pages/AdminSiteCopyPage.jsx'
-import AdminBrandingPage from './pages/AdminBrandingPage.jsx'
-import AdminUserTypesPage from './pages/AdminUserTypesPage.jsx'
 import { PageGuard } from './routes/PageGuard.jsx'
+
+const LandingPage = lazy(() => import('./pages/LandingPage.jsx'))
+const LoginPage = lazy(() => import('./pages/LoginPage.jsx'))
+const FoundationPage = lazy(() => import('./pages/FoundationPage.jsx'))
+const AppHomePage = lazy(() => import('./pages/AppHomePage.jsx'))
+const WelcomePage = lazy(() => import('./pages/WelcomePage.jsx'))
+const ExplorePlansPage = lazy(() => import('./pages/ExplorePlansPage.jsx'))
+const PlansPage = lazy(() => import('./pages/PlansPage.jsx'))
+const ExploreHalakatPage = lazy(() => import('./pages/ExploreHalakatPage.jsx'))
+const HalakatPage = lazy(() => import('./pages/HalakatPage.jsx'))
+const ExploreDawratPage = lazy(() => import('./pages/ExploreDawratPage.jsx'))
+const DawratPage = lazy(() => import('./pages/DawratPage.jsx'))
+const AwradPage = lazy(() => import('./pages/AwradPage.jsx'))
+const SettingsPage = lazy(() => import('./pages/SettingsPage.jsx'))
+const AdminUsersPage = lazy(() => import('./pages/AdminUsersPage.jsx'))
+const AdminDashboardPage = lazy(() => import('./pages/AdminDashboardPage.jsx'))
+const AdminPlanTypesPage = lazy(() => import('./pages/AdminPlanTypesPage.jsx'))
+const AdminSiteCopyPage = lazy(() => import('./pages/AdminSiteCopyPage.jsx'))
+const AdminBrandingPage = lazy(() => import('./pages/AdminBrandingPage.jsx'))
+const AdminUserTypesPage = lazy(() => import('./pages/AdminUserTypesPage.jsx'))
+
+function FullPageLazyFallback() {
+  return (
+    <div
+      style={{
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        minHeight: '70vh',
+        padding: '2rem',
+      }}
+      role="status"
+      aria-live="polite"
+    >
+      <p className="lead" style={{ color: 'var(--rh-text-muted)', margin: 0, textAlign: 'center' }}>
+        جاري التحميل…
+      </p>
+    </div>
+  )
+}
 
 export default function App() {
   return (
@@ -39,10 +61,31 @@ export default function App() {
             <BrowserRouter>
               <Routes>
                 <Route element={<GuestOnly />}>
-                  <Route path="/" element={<LandingPage />} />
+                  <Route
+                    path="/"
+                    element={
+                      <Suspense fallback={<FullPageLazyFallback />}>
+                        <LandingPage />
+                      </Suspense>
+                    }
+                  />
                 </Route>
-                <Route path="/login" element={<LoginPage />} />
-                <Route path="/foundation" element={<FoundationPage />} />
+                <Route
+                  path="/login"
+                  element={
+                    <Suspense fallback={<FullPageLazyFallback />}>
+                      <LoginPage />
+                    </Suspense>
+                  }
+                />
+                <Route
+                  path="/foundation"
+                  element={
+                    <Suspense fallback={<FullPageLazyFallback />}>
+                      <FoundationPage />
+                    </Suspense>
+                  }
+                />
                 <Route element={<ProtectedRoute />}>
                   <Route path="/app" element={<MainLayout />}>
                     <Route index element={<PageGuard pageId="home"><AppHomePage /></PageGuard>} />

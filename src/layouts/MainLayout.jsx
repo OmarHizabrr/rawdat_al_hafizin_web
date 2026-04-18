@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { Suspense, useCallback, useEffect, useMemo, useState } from 'react'
 import {
   BookOpen,
   ChevronsLeft,
@@ -182,7 +182,22 @@ export function MainLayout() {
 
         <main className="rh-content">
           <div className="rh-mob-app-scaffold">
-            <Outlet />
+            <Suspense
+              fallback={
+                <div
+                  className="rh-mob-app-scaffold"
+                  style={{ display: 'flex', justifyContent: 'center', padding: '3rem' }}
+                  role="status"
+                  aria-live="polite"
+                >
+                  <p className="lead" style={{ color: 'var(--rh-text-muted)', margin: 0 }}>
+                    جاري التحميل…
+                  </p>
+                </div>
+              }
+            >
+              <Outlet />
+            </Suspense>
           </div>
         </main>
       </div>
