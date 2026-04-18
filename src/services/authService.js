@@ -1,4 +1,9 @@
-import { onAuthStateChanged, signInWithPopup, signOut as firebaseSignOut } from 'firebase/auth'
+import {
+  onAuthStateChanged,
+  signInWithPopup,
+  signOut as firebaseSignOut,
+  updateProfile,
+} from 'firebase/auth'
 import { auth, googleProvider } from '../firebase.js'
 
 export function subscribeAuth(callback) {
@@ -12,4 +17,15 @@ export async function signInWithGoogle() {
 
 export async function signOut() {
   await firebaseSignOut(auth)
+}
+
+/** تحديث الاسم وصورة الملف في Firebase Auth (المستخدم الحالي فقط) */
+export async function updateFirebaseAuthProfile(firebaseUser, { displayName, photoURL }) {
+  if (!firebaseUser) return
+  const name = typeof displayName === 'string' ? displayName.trim() : ''
+  const photo = typeof photoURL === 'string' ? photoURL.trim() : ''
+  await updateProfile(firebaseUser, {
+    displayName: name || firebaseUser.displayName || '',
+    photoURL: photo || '',
+  })
 }

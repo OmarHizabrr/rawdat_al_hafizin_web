@@ -48,6 +48,26 @@ export async function adminUpdateUserRole(actorUser, targetUid, role) {
 }
 
 /** ربط مستخدم بنوع صلاحيات (permission_profiles) أو إزالة الإسناد بقيمة فارغة */
+/** تحديث الاسم وصورة العرض في Firestore فقط (لا يغيّر حساب Google للمستخدم) */
+export async function adminUpdateUserDisplay(actorUser, targetUid, { displayName, photoURL }) {
+  if (!targetUid || !actorUser?.uid) return
+  const name = typeof displayName === 'string' ? displayName.trim() : ''
+  const photo = typeof photoURL === 'string' ? photoURL.trim() : ''
+  if (!name) {
+    throw new Error('DISPLAY_NAME_REQUIRED')
+  }
+  const docRef = firestoreApi.getUserDoc(targetUid)
+  await firestoreApi.updateData({
+    docRef,
+    data: {
+      displayName: name,
+      photoURL: photo,
+      useCustomDisplay: true,
+    },
+    userData: actorUser,
+  })
+}
+
 export async function adminUpdateUserPermissionProfile(actorUser, targetUid, permissionProfileId) {
   if (!targetUid || !actorUser?.uid) return
   const docRef = firestoreApi.getUserDoc(targetUid)

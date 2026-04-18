@@ -77,7 +77,10 @@ export const PERMISSION_PAGES = [
     id: PERMISSION_PAGE_IDS.settings,
     path: '/app/settings',
     label: 'الإعدادات',
-    actions: [{ id: 'settings_theme', label: 'تغيير وضع المظهر (فاتح/داكن)' }],
+    actions: [
+      { id: 'settings_theme', label: 'تغيير وضع المظهر (فاتح/داكن)' },
+      { id: 'settings_edit_profile', label: 'تعديل الاسم وصورة العرض (رابط)' },
+    ],
   },
   {
     id: PERMISSION_PAGE_IDS.foundation,

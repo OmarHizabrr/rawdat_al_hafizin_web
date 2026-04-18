@@ -1,4 +1,5 @@
 import { isAdmin, normalizeRole } from '../config/roles.js'
+import { updateFirebaseAuthProfile } from './authService.js'
 import { firestoreApi } from './firestoreApi.js'
 
 function toAuthUserPayload(u) {
@@ -39,16 +40,51 @@ export async function ensureUserProfile(firebaseUser) {
     return { ...authPayload, role: 'student', isActive: true, starterAccess: true }
   }
 
+  const syncPatch = {
+    uid: authPayload.uid,
+    email: authPayload.email,
+    providerId: authPayload.providerId,
+    lastSignInTime: authPayload.lastSignInTime,
+  }
+  if (existing.useCustomDisplay !== true) {
+    syncPatch.displayName = authPayload.displayName
+    syncPatch.photoURL = authPayload.photoURL
+  }
+
   await firestoreApi.updateData({
     docRef,
-    data: authPayload,
+    data: syncPatch,
     userData: firebaseUser,
   })
 
-  const merged = { ...existing, ...authPayload }
+  const merged = { ...existing, ...syncPatch }
   merged.role = normalizeRole(merged.role)
   if (merged.isActive === undefined) merged.isActive = true
   return merged
+}
+
+/**
+ * المستخدم الحالي: تحديث الاسم وصورة العرض في Auth + Firestore.
+ * يفعّل useCustomDisplay حتى لا يُستبدل الاسم/الصورة من Google عند كل دخول.
+ */
+export async function updateMyProfileDisplay(firebaseUser, { displayName, photoURL }) {
+  if (!firebaseUser?.uid) return
+  const name = typeof displayName === 'string' ? displayName.trim() : ''
+  const photo = typeof photoURL === 'string' ? photoURL.trim() : ''
+  if (!name) {
+    throw new Error('DISPLAY_NAME_REQUIRED')
+  }
+  await updateFirebaseAuthProfile(firebaseUser, { displayName: name, photoURL: photo })
+  const docRef = firestoreApi.getUserDoc(firebaseUser.uid)
+  await firestoreApi.updateData({
+    docRef,
+    data: {
+      displayName: name,
+      photoURL: photo,
+      useCustomDisplay: true,
+    },
+    userData: firebaseUser,
+  })
 }
 
 /**

@@ -7,6 +7,7 @@ import { useAuth } from '../context/useAuth.js'
 import {
   adminDeleteUserFirestore,
   adminSetUserActive,
+  adminUpdateUserDisplay,
   adminUpdateUserPermissionProfile,
   adminUpdateUserRole,
   subscribeAllUsers,
@@ -14,7 +15,7 @@ import {
 import { subscribePermissionProfiles } from '../services/permissionProfilesService.js'
 import { CrossNav } from '../components/CrossNav.jsx'
 import { PeekButton } from '../components/PeekButton.jsx'
-import { Button, Modal, SearchField, useToast } from '../ui/index.js'
+import { Button, Modal, SearchField, TextField, useToast } from '../ui/index.js'
 import { RhIcon, RH_ICON_STROKE } from '../ui/RhIcon.jsx'
 
 export default function AdminUsersPage() {
@@ -26,6 +27,9 @@ export default function AdminUsersPage() {
   const [deleteTarget, setDeleteTarget] = useState(null)
   const [busyUid, setBusyUid] = useState(null)
   const [permissionProfiles, setPermissionProfiles] = useState([])
+  const [displayModalUser, setDisplayModalUser] = useState(null)
+  const [editDisplayName, setEditDisplayName] = useState('')
+  const [editDisplayPhoto, setEditDisplayPhoto] = useState('')
 
   useEffect(() => {
     document.title = `المستخدمون — ${branding.siteTitle}`
@@ -106,6 +110,32 @@ export default function AdminUsersPage() {
     })
   }
 
+  const openDisplayModal = (u) => {
+    setEditDisplayName(u.displayName?.trim() ?? '')
+    setEditDisplayPhoto((u.photoURL || '').trim())
+    setDisplayModalUser(u)
+  }
+
+  const saveDisplayEdit = async () => {
+    if (!displayModalUser || !actor) return
+    try {
+      await runBusy(displayModalUser.uid, async () => {
+        await adminUpdateUserDisplay(actor, displayModalUser.uid, {
+          displayName: editDisplayName,
+          photoURL: editDisplayPhoto,
+        })
+      })
+      toast.success('تم تحديث الاسم والصورة في قاعدة بيانات المنصة.', 'تم')
+      setDisplayModalUser(null)
+    } catch (e) {
+      if (e?.message === 'DISPLAY_NAME_REQUIRED') {
+        toast.warning('يرجى إدخال اسم للعرض.', 'تنبيه')
+      } else {
+        toast.warning('تعذّر الحفظ. تحقق من الصلاحيات.', 'تنبيه')
+      }
+    }
+  }
+
   const confirmDelete = async () => {
     if (!deleteTarget || !actor) return
     if (deleteTarget.uid === actor.uid) {
@@ -140,8 +170,9 @@ export default function AdminUsersPage() {
           الدور من لوحة «أنواع المستخدمين». الدور «ادمن» يفرّغ <code className="rh-admin-users__code">permissionProfileId</code>.
           يمكنك أيضاً ضبط نوع الصلاحيات يدوياً دون تغيير الدور؛ أي تغيير لاحق للدور يعيد الإسناد التلقائي. الحسابات
           الجديدة تُنشأ بدور طالب وحقل <code className="rh-admin-users__code">starterAccess</code> حتى يروا صفحتي البداية
-          والإعدادات فقط إلى أن تُسنَد لهم صلاحيات أو يُختار «وصول كامل» من نوع الصلاحيات. أيقونة المنزل تفتح رئيسيته،
-          وأيقونة العين صفحة خططه.
+          والإعدادات فقط إلى أن تُسنَد لهم صلاحيات أو يُختار «وصول كامل» من نوع الصلاحيات. يمكنك تعديل الاسم وصورة
+          العرض (رابط) لأي مستخدم من زر «الاسم والصورة» — يُخزَّن في Firestore ولا يغيّر حساب Google. أيقونة المنزل
+          تفتح رئيسيته، وأيقونة العين صفحة خططه.
         </p>
         <CrossNav items={adminCrossItems} className="rh-admin-users__cross" />
       </header>
@@ -229,6 +260,15 @@ export default function AdminUsersPage() {
               </div>
 
               <div className="rh-admin-users__row rh-admin-users__row--actions">
+                <Button
+                  type="button"
+                  variant="secondary"
+                  size="sm"
+                  disabled={loading}
+                  onClick={() => openDisplayModal(u)}
+                >
+                  الاسم والصورة
+                </Button>
                 <label className="rh-admin-users__toggle">
                   <input
                     type="checkbox"
@@ -256,6 +296,54 @@ export default function AdminUsersPage() {
       {filtered.length === 0 && (
         <p className="rh-admin-users__empty">لا يوجد مستخدمون يطابقون البحث.</p>
       )}
+
+      <Modal
+        open={Boolean(displayModalUser)}
+        title={displayModalUser ? `الاسم والصورة — ${displayModalUser.displayName?.trim() || displayModalUser.email || displayModalUser.uid}` : 'الاسم والصورة'}
+        onClose={() => {
+          if (displayModalUser && busyUid === displayModalUser.uid) return
+          setDisplayModalUser(null)
+        }}
+        size="sm"
+        closeOnBackdrop={!(displayModalUser && busyUid === displayModalUser?.uid)}
+        closeOnEsc={!(displayModalUser && busyUid === displayModalUser?.uid)}
+        showClose={!(displayModalUser && busyUid === displayModalUser?.uid)}
+      >
+        <p className="rh-admin-users__profile-meta">
+          يُحدَّث مستند المستخدم في Firestore فقط. حساب Google يبقى كما هو؛ المستخدم يرى الاسم والصورة الجديدة داخل
+          المنصة بعد تحديث الصفحة.
+        </p>
+        <TextField
+          label="الاسم المعروض"
+          value={editDisplayName}
+          onChange={(e) => setEditDisplayName(e.target.value)}
+          autoComplete="off"
+        />
+        <TextField
+          label="رابط صورة العرض (اختياري)"
+          value={editDisplayPhoto}
+          onChange={(e) => setEditDisplayPhoto(e.target.value)}
+          placeholder="https://…"
+        />
+        <div className="rh-admin-users__modal-actions">
+          <Button
+            type="button"
+            variant="primary"
+            loading={Boolean(displayModalUser) && busyUid === displayModalUser?.uid}
+            onClick={saveDisplayEdit}
+          >
+            حفظ
+          </Button>
+          <Button
+            type="button"
+            variant="ghost"
+            disabled={Boolean(displayModalUser) && busyUid === displayModalUser?.uid}
+            onClick={() => setDisplayModalUser(null)}
+          >
+            إلغاء
+          </Button>
+        </div>
+      </Modal>
 
       <Modal
         open={Boolean(deleteTarget)}
