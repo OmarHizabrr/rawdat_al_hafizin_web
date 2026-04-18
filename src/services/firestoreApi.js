@@ -35,6 +35,16 @@ const db = getFirestore(app);
  *   members/{planId}/members/{userId} — دور العضو على الخطة (owner | admin | member)
  *   Myplans/{userId}/Myplans/{planId} — مرآة ظهور الخطة في قائمة المستخدم
  * لجدول أعضاء الخطة استخدم getPlanMembersCollection / getPlanMemberDoc (نفس مسار members).
+ *
+ * الحلقات (halakaId):
+ *   halakat/{halakaId} — بيانات الحلقة
+ *   members/{halakaId}/members/{userId} — الأعضاء (نفس هيكل members للخطط)
+ *   Myhalakat/{userId}/Myhalakat/{halakaId} — مرآة قائمة المستخدم
+ *
+ * الدورات (dawraId):
+ *   dawrat/{dawraId} — بيانات الدورة
+ *   members/{dawraId}/members/{userId} — الأعضاء
+ *   Mydawrat/{userId}/Mydawrat/{dawraId} — مرآة قائمة المستخدم
  */
 class FirestoreApi {
   static get Api() {
@@ -250,6 +260,70 @@ class FirestoreApi {
       userId,
       FirestoreApi.USER_PLAN_MIRROR_SUB,
       planId,
+    );
+  }
+
+  /** halakat — جذر الحلقات */
+  getHalakatCollection() {
+    return this.getCollection("halakat");
+  }
+
+  /** halakat/{halakaId} */
+  getHalakaCanonicalDoc(halakaId) {
+    return this.getDocument("halakat", halakaId);
+  }
+
+  static USER_HALAKAT_MIRROR_COLL = "Myhalakat";
+  static USER_HALAKAT_MIRROR_SUB = "Myhalakat";
+
+  /** Myhalakat/{userId}/Myhalakat */
+  getUserHalakatCollection(userId) {
+    return this.getSubCollection(
+      FirestoreApi.USER_HALAKAT_MIRROR_COLL,
+      userId,
+      FirestoreApi.USER_HALAKAT_MIRROR_SUB,
+    );
+  }
+
+  /** Myhalakat/{userId}/Myhalakat/{halakaId} */
+  getUserHalakatDoc(userId, halakaId) {
+    return this.getSubDocument(
+      FirestoreApi.USER_HALAKAT_MIRROR_COLL,
+      userId,
+      FirestoreApi.USER_HALAKAT_MIRROR_SUB,
+      halakaId,
+    );
+  }
+
+  /** dawrat — جذر الدورات */
+  getDawratCollection() {
+    return this.getCollection("dawrat");
+  }
+
+  /** dawrat/{dawraId} */
+  getDawraCanonicalDoc(dawraId) {
+    return this.getDocument("dawrat", dawraId);
+  }
+
+  static USER_DAWRA_MIRROR_COLL = "Mydawrat";
+  static USER_DAWRA_MIRROR_SUB = "Mydawrat";
+
+  /** Mydawrat/{userId}/Mydawrat */
+  getUserDawratCollection(userId) {
+    return this.getSubCollection(
+      FirestoreApi.USER_DAWRA_MIRROR_COLL,
+      userId,
+      FirestoreApi.USER_DAWRA_MIRROR_SUB,
+    );
+  }
+
+  /** Mydawrat/{userId}/Mydawrat/{dawraId} */
+  getUserDawratDoc(userId, dawraId) {
+    return this.getSubDocument(
+      FirestoreApi.USER_DAWRA_MIRROR_COLL,
+      userId,
+      FirestoreApi.USER_DAWRA_MIRROR_SUB,
+      dawraId,
     );
   }
 

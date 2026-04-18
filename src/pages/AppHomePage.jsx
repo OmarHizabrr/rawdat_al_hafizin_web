@@ -4,11 +4,13 @@ import {
   ChevronDown,
   Coffee,
   Flame,
+  GraduationCap,
   ListOrdered,
   Loader2,
   NotebookPen,
   Sparkles,
   Sunrise,
+  UsersRound,
 } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useLocation, useSearchParams } from 'react-router-dom'
@@ -43,7 +45,7 @@ const PH = PERMISSION_PAGE_IDS.home
 
 export default function AppHomePage() {
   const { user } = useAuth()
-  const { can } = usePermissions()
+  const { can, canAccessPage } = usePermissions()
   const { typeLabel, branding, str } = useSiteContent()
   const { search } = useLocation()
   const [searchParams] = useSearchParams()
@@ -213,18 +215,24 @@ export default function AppHomePage() {
   }, [shouldOfferCheckIn])
 
   const homeCrossItems = useMemo(() => {
-    const base = [
-      { to: '/app/plans', label: str('app.home_cross_plans') },
-      { to: '/app/awrad', label: str('app.home_cross_awrad') },
-      { to: '/app/welcome', label: str('app.home_cross_welcome') },
-      { to: '/app/settings', label: str('app.home_cross_settings') },
-    ]
+    const base = [{ to: appPath('/app/plans'), label: str('app.home_cross_plans') }]
+    if (canAccessPage('halakat')) {
+      base.push({ to: appPath('/app/halakat'), label: str('app.home_cross_halakat') })
+    }
+    if (canAccessPage('dawrat')) {
+      base.push({ to: appPath('/app/dawrat'), label: str('app.home_cross_dawrat') })
+    }
+    base.push(
+      { to: appPath('/app/awrad'), label: str('app.home_cross_awrad') },
+      { to: appPath('/app/welcome'), label: str('app.home_cross_welcome') },
+      { to: appPath('/app/settings'), label: str('app.home_cross_settings') },
+    )
     if (isAdmin(user)) {
       base.push({ to: '/app/admin', label: str('layout.nav_dashboard') })
       base.push({ to: '/app/admin/users', label: str('app.home_cross_users') })
     }
     return base
-  }, [user, str])
+  }, [user, str, appPath, canAccessPage])
 
   return (
     <div className="rh-app-home">
@@ -243,6 +251,10 @@ export default function AppHomePage() {
             <Link to="/app/admin/users">{str('app.home_impersonation_users')}</Link>
             {' · '}
             <Link to={`/app/plans?uid=${encodeURIComponent(contextUserId)}`}>{str('app.home_impersonation_plans')}</Link>
+            {' · '}
+            <Link to={`/app/halakat?uid=${encodeURIComponent(contextUserId)}`}>{str('app.home_impersonation_halakat')}</Link>
+            {' · '}
+            <Link to={`/app/dawrat?uid=${encodeURIComponent(contextUserId)}`}>{str('app.home_impersonation_dawrat')}</Link>
             {' · '}
             <Link to={`/app/awrad?uid=${encodeURIComponent(contextUserId)}`}>{str('app.home_impersonation_awrad')}</Link>
             {' · '}
@@ -408,6 +420,18 @@ export default function AppHomePage() {
                   <span>البداية</span>
                 </Link>
               )}
+              {canAccessPage('halakat') && (
+                <Link className="rh-home-quick-icon" to={appPath('/app/halakat')} title={str('layout.nav_halakat')}>
+                  <UsersRound size={22} strokeWidth={1.75} />
+                  <span>{str('layout.nav_halakat')}</span>
+                </Link>
+              )}
+              {canAccessPage('dawrat') && (
+                <Link className="rh-home-quick-icon" to={appPath('/app/dawrat')} title={str('layout.nav_dawrat')}>
+                  <GraduationCap size={22} strokeWidth={1.75} />
+                  <span>{str('layout.nav_dawrat')}</span>
+                </Link>
+              )}
             </div>
             {(can(PH, 'home_footer_awrad_link') || can(PH, 'home_footer_plans_link')) && (
             <p className="rh-app-home__quick-extra">
@@ -456,6 +480,16 @@ export default function AppHomePage() {
             <Link className="rh-home-empty-focus__link" to={appPath('/app/plans')}>
               الانتقال إلى الخطط
             </Link>
+            {canAccessPage('halakat') && (
+              <Link className="rh-home-empty-focus__link" to={appPath('/app/halakat')}>
+                الحلقات
+              </Link>
+            )}
+            {canAccessPage('dawrat') && (
+              <Link className="rh-home-empty-focus__link" to={appPath('/app/dawrat')}>
+                الدورات
+              </Link>
+            )}
             <Link className="rh-home-empty-focus__link" to={appPath('/app/welcome')}>
               صفحة البداية
             </Link>
@@ -469,7 +503,8 @@ export default function AppHomePage() {
         <p className="lead rh-app-home__hint-text">
           لحظة سريعة تذكّرك بما أنجزت وتدفعك للمتابعة — غيّر الخطة المعروضة من القائمة فوق متى شئت؛ الخطة
           الافتراضية تُحدَّد من صفحة «الخطط» بنجمة الرئيسية. من قائمة الخطط أو أيقونة «أوراد» تنتقل مباشرة
-          لصفحة الأوراد لتلك الخطة دون فقدان الترابط بين الصفحات.
+          لصفحة الأوراد لتلك الخطة دون فقدان الترابط بين الصفحات. أقسام «الحلقات» و«الدورات» تتيح إدارة
+          الحلقات والدورات والانضمام للعام من صفحات الاستكشاف، بنفس أسلوب صلاحيات وأعضاء الخطط.
         </p>
       </section>
     </div>

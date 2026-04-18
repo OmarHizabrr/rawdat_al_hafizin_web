@@ -15,6 +15,10 @@ import LoginPage from './pages/LoginPage.jsx'
 import AwradPage from './pages/AwradPage.jsx'
 import PlansPage from './pages/PlansPage.jsx'
 import ExplorePlansPage from './pages/ExplorePlansPage.jsx'
+import HalakatPage from './pages/HalakatPage.jsx'
+import ExploreHalakatPage from './pages/ExploreHalakatPage.jsx'
+import DawratPage from './pages/DawratPage.jsx'
+import ExploreDawratPage from './pages/ExploreDawratPage.jsx'
 import SettingsPage from './pages/SettingsPage.jsx'
 import WelcomePage from './pages/WelcomePage.jsx'
 import AdminUsersPage from './pages/AdminUsersPage.jsx'
@@ -45,6 +49,10 @@ export default function App() {
                     <Route path="welcome" element={<PageGuard pageId="welcome"><WelcomePage /></PageGuard>} />
                     <Route path="plans/explore" element={<PageGuard pageId="plans_explore"><ExplorePlansPage /></PageGuard>} />
                     <Route path="plans" element={<PageGuard pageId="plans"><PlansPage /></PageGuard>} />
+                    <Route path="halakat/explore" element={<PageGuard pageId="halakat_explore"><ExploreHalakatPage /></PageGuard>} />
+                    <Route path="halakat" element={<PageGuard pageId="halakat"><HalakatPage /></PageGuard>} />
+                    <Route path="dawrat/explore" element={<PageGuard pageId="dawrat_explore"><ExploreDawratPage /></PageGuard>} />
+                    <Route path="dawrat" element={<PageGuard pageId="dawrat"><DawratPage /></PageGuard>} />
                     <Route path="awrad" element={<PageGuard pageId="awrad"><AwradPage /></PageGuard>} />
                     <Route path="foundation" element={<PageGuard pageId="foundation"><FoundationPage /></PageGuard>} />
                     <Route path="settings" element={<PageGuard pageId="settings"><SettingsPage /></PageGuard>} />

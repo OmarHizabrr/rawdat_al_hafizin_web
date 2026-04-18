@@ -5,6 +5,7 @@ import {
   ChevronsRight,
   ClipboardList,
   Compass,
+  GraduationCap,
   LayoutDashboard,
   NotebookPen,
   Home,
@@ -12,6 +13,7 @@ import {
   Puzzle,
   Settings,
   Users,
+  UsersRound,
 } from 'lucide-react'
 import { NavLink, Outlet, useLocation } from 'react-router-dom'
 import { UserMenu } from '../components/UserMenu.jsx'
@@ -38,6 +40,10 @@ export function MainLayout() {
       { to: '/app/welcome', label: str('layout.nav_welcome'), Icon: BookOpen, pageId: 'welcome' },
       { to: '/app/plans', label: str('layout.nav_plans'), Icon: ClipboardList, pageId: 'plans' },
       { to: '/app/plans/explore', label: str('layout.nav_plans_explore'), Icon: Compass, pageId: 'plans_explore' },
+      { to: '/app/halakat', label: str('layout.nav_halakat'), Icon: UsersRound, pageId: 'halakat' },
+      { to: '/app/halakat/explore', label: str('layout.nav_halakat_explore'), Icon: Compass, pageId: 'halakat_explore' },
+      { to: '/app/dawrat', label: str('layout.nav_dawrat'), Icon: GraduationCap, pageId: 'dawrat' },
+      { to: '/app/dawrat/explore', label: str('layout.nav_dawrat_explore'), Icon: Compass, pageId: 'dawrat_explore' },
       { to: '/app/awrad', label: str('layout.nav_awrad'), Icon: NotebookPen, pageId: 'awrad' },
       { to: '/app/settings', label: str('layout.nav_settings'), Icon: Settings, pageId: 'settings' },
       { to: '/app/foundation', label: str('layout.nav_foundation'), Icon: Puzzle, pageId: 'foundation' },
@@ -57,7 +63,7 @@ export function MainLayout() {
     const visible = (item) =>
       !item.pageId || !permReady || isAdmin(user) || canAccessPage(item.pageId)
     const filtered = baseNav.filter(visible)
-    return isAdmin(user) ? [...filtered.slice(0, 5), ...adminNavItems, ...filtered.slice(5)] : filtered
+    return isAdmin(user) ? [...filtered.slice(0, 9), ...adminNavItems, ...filtered.slice(9)] : filtered
   }, [baseNav, adminNavItems, user, permReady, canAccessPage])
   usePlanReminders(impersonateUid ? null : user, { iconSrc: branding.logoSrc })
   const [collapsed, setCollapsed] = useState(() => {
