@@ -572,12 +572,13 @@
   color: var(--rh-text);
 }
 
-/* ScrollArea عام */
+/* ScrollArea عام — يتبع الثيم (فاتح/داكن) */
 .ui-scroll {
   overflow: auto;
   min-height: 0;
   scrollbar-width: thin;
-  scrollbar-color: color-mix(in srgb, var(--rh-primary) 35%, var(--rh-border)) transparent;
+  scrollbar-gutter: stable;
+  scrollbar-color: color-mix(in srgb, var(--rh-primary) 38%, var(--rh-border)) var(--rh-surface-tint);
 }
 
 .ui-scroll--padded {
@@ -590,16 +591,77 @@
 }
 
 .ui-scroll::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-.ui-scroll::-webkit-scrollbar-thumb {
-  background: color-mix(in srgb, var(--rh-primary) 35%, var(--rh-border));
+  background: var(--rh-surface-tint);
   border-radius: var(--rh-radius-pill);
 }
 
+.ui-scroll::-webkit-scrollbar-thumb {
+  background: color-mix(in srgb, var(--rh-primary) 42%, var(--rh-border));
+  border-radius: var(--rh-radius-pill);
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+
 .ui-scroll::-webkit-scrollbar-thumb:hover {
-  background: color-mix(in srgb, var(--rh-primary) 55%, var(--rh-border-strong));
+  background: color-mix(in srgb, var(--rh-primary) 62%, var(--rh-border-strong));
+  background-clip: padding-box;
+}
+
+html[data-theme='dark'] .ui-scroll {
+  scrollbar-color: color-mix(in srgb, var(--rh-text-muted) 55%, var(--rh-border)) var(--rh-surface-tint);
+}
+
+html[data-theme='dark'] .ui-scroll::-webkit-scrollbar-thumb {
+  background: color-mix(in srgb, var(--rh-text-muted) 50%, var(--rh-border-strong));
+  background-clip: padding-box;
+}
+
+html[data-theme='dark'] .ui-scroll::-webkit-scrollbar-thumb:hover {
+  background: color-mix(in srgb, var(--rh-text-muted) 72%, var(--rh-border-strong));
+  background-clip: padding-box;
+}
+
+/* تمرير يتبع الثيم — للعناصر التي لديها overflow بالفعل (معاينة، قوائم، إلخ) */
+.rh-themed-scroll {
+  scrollbar-width: thin;
+  scrollbar-gutter: stable;
+  scrollbar-color: color-mix(in srgb, var(--rh-primary) 38%, var(--rh-border)) var(--rh-surface-tint);
+}
+
+.rh-themed-scroll::-webkit-scrollbar {
+  width: 0.55rem;
+  height: 0.55rem;
+}
+
+.rh-themed-scroll::-webkit-scrollbar-track {
+  background: var(--rh-surface-tint);
+  border-radius: var(--rh-radius-pill);
+}
+
+.rh-themed-scroll::-webkit-scrollbar-thumb {
+  background: color-mix(in srgb, var(--rh-primary) 42%, var(--rh-border));
+  border-radius: var(--rh-radius-pill);
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+
+.rh-themed-scroll::-webkit-scrollbar-thumb:hover {
+  background: color-mix(in srgb, var(--rh-primary) 62%, var(--rh-border-strong));
+  background-clip: padding-box;
+}
+
+html[data-theme='dark'] .rh-themed-scroll {
+  scrollbar-color: color-mix(in srgb, var(--rh-text-muted) 55%, var(--rh-border)) var(--rh-surface-tint);
+}
+
+html[data-theme='dark'] .rh-themed-scroll::-webkit-scrollbar-thumb {
+  background: color-mix(in srgb, var(--rh-text-muted) 50%, var(--rh-border-strong));
+  background-clip: padding-box;
+}
+
+html[data-theme='dark'] .rh-themed-scroll::-webkit-scrollbar-thumb:hover {
+  background: color-mix(in srgb, var(--rh-text-muted) 72%, var(--rh-border-strong));
+  background-clip: padding-box;
 }
 
 @media (max-width: 480px) {

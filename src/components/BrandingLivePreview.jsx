@@ -43,7 +43,7 @@ export function BrandingLivePreview({ previewMode, onPreviewMode, themeLight, th
         </div>
       </div>
 
-      <div className="rh-live-preview__scroll">
+      <div className="rh-live-preview__scroll rh-themed-scroll">
         <div className="rh-live-preview__page">
           <header className="hero rh-live-preview__hero">
             <div className="hero-inner">

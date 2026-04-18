@@ -1,5 +1,9 @@
 /* هوية روضة الحافظين — رموز التصميم (إلهام بأسلوب Google / Material: حواف ناعمة، أسطح هادئة) */
 
+html {
+  color-scheme: light;
+}
+
 :root {
   /* ألوان العلامة */
   --rh-forest-950: #0d1f17;
@@ -92,6 +96,7 @@
 }
 
 html[data-theme='dark'] {
+  color-scheme: dark;
   --rh-bg: #131314;
   --rh-surface: #1e1f20;
   --rh-surface-elevated: #282a2c;
