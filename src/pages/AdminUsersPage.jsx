@@ -138,8 +138,10 @@ export default function AdminUsersPage() {
           يُحدَّث في مستند <code className="rh-admin-users__code">users</code> كلٌّ من <code className="rh-admin-users__code">role</code> و{' '}
           <code className="rh-admin-users__code">permissionProfileId</code> تلقائياً: يُختار أول نوع صلاحيات مربوط بذلك
           الدور من لوحة «أنواع المستخدمين». الدور «ادمن» يفرّغ <code className="rh-admin-users__code">permissionProfileId</code>.
-          يمكنك أيضاً ضبط نوع الصلاحيات يدوياً دون تغيير الدور؛ أي تغيير لاحق للدور يعيد الإسناد التلقائي. أيقونة المنزل
-          تفتح رئيسيته، وأيقونة العين صفحة خططه.
+          يمكنك أيضاً ضبط نوع الصلاحيات يدوياً دون تغيير الدور؛ أي تغيير لاحق للدور يعيد الإسناد التلقائي. الحسابات
+          الجديدة تُنشأ بدور طالب وحقل <code className="rh-admin-users__code">starterAccess</code> حتى يروا صفحتي البداية
+          والإعدادات فقط إلى أن تُسنَد لهم صلاحيات أو يُختار «وصول كامل» من نوع الصلاحيات. أيقونة المنزل تفتح رئيسيته،
+          وأيقونة العين صفحة خططه.
         </p>
         <CrossNav items={adminCrossItems} className="rh-admin-users__cross" />
       </header>

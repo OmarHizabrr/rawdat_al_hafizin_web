@@ -35,9 +35,14 @@ export async function adminUpdateUserRole(actorUser, targetUid, role) {
     permissionProfileId = await getDefaultPermissionProfileIdForPlatformRole(nr)
   }
 
+  const data = { role: nr, permissionProfileId }
+  if (nr === 'admin' || permissionProfileId) {
+    data.starterAccess = false
+  }
+
   await firestoreApi.updateData({
     docRef,
-    data: { role: nr, permissionProfileId },
+    data,
     userData: actorUser,
   })
 }
@@ -49,7 +54,7 @@ export async function adminUpdateUserPermissionProfile(actorUser, targetUid, per
   const v = typeof permissionProfileId === 'string' ? permissionProfileId.trim() : ''
   await firestoreApi.updateData({
     docRef,
-    data: { permissionProfileId: v || null },
+    data: { permissionProfileId: v || null, starterAccess: false },
     userData: actorUser,
   })
 }

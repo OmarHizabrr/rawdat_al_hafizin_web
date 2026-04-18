@@ -30,11 +30,13 @@ export async function ensureUserProfile(firebaseUser) {
         ...authPayload,
         role: 'student',
         isActive: true,
+        /** أول تسجيل: صلاحيات أولية (البداية + الإعدادات) إلى أن يُسنَد له نوع أو يُزال الوضع */
+        starterAccess: true,
       },
       merge: true,
       userData: firebaseUser,
     })
-    return { ...authPayload, role: 'student', isActive: true }
+    return { ...authPayload, role: 'student', isActive: true, starterAccess: true }
   }
 
   await firestoreApi.updateData({
