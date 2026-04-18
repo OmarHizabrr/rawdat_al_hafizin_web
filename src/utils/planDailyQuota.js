@@ -150,3 +150,24 @@ export function isoFromLocalYmd(ymd) {
   if (Number.isNaN(d.getTime())) return new Date().toISOString()
   return d.toISOString()
 }
+
+/**
+ * عند `false`: لا تقل الدفعة عن الورد اليومي إن سمح الحد الأقصى بذلك؛
+ * وإن كان المسموح تراكمياً أقل من الورد اليومي فالحد الأدنى يصبح المسموح كله (دفعة واحدة).
+ * الافتراضي (حقل غير محفوظ): true — السلوك السابق (مسموح أقل من اليومي عند التراكمي).
+ */
+export function planAllowsBelowDailyPages(plan) {
+  return plan?.allowBelowDailyPages !== false
+}
+
+/**
+ * أقل عدد صفحات مسموح في دفعة واحدة وفق الخطة والحد التراكمي.
+ */
+export function minPagesPerWirdEntry(plan, { strictCarryover, maxExtra, minDaily }) {
+  if (planAllowsBelowDailyPages(plan)) return 1
+  const md = Math.max(1, Number(minDaily) || 1)
+  if (!strictCarryover) return md
+  const cap = Math.max(0, Number(maxExtra) || 0)
+  if (cap <= 0) return 1
+  return Math.min(md, cap)
+}

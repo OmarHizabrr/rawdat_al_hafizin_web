@@ -258,6 +258,12 @@ export default function ExplorePlansPage() {
                         : 'دائماً اليوم المحلي عند التسجيل'}
                     </li>
                     <li>
+                      <strong>الحد الأدنى للدفعة:</strong>{' '}
+                      {p.allowBelowDailyPages === false
+                        ? 'اشتراط الورد اليومي كاملاً عند الإمكان'
+                        : 'مسموح أقل من الورد اليومي'}
+                    </li>
+                    <li>
                       <strong>إجمالي الصفحات:</strong> {p.totalTargetPages ?? '—'}
                     </li>
                     {p.reminderTime && (

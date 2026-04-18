@@ -14,6 +14,8 @@ import {
   isoFromLocalYmd,
   localYmd,
   maxAdditionalPagesForRecordingDay,
+  minPagesPerWirdEntry,
+  planAllowsBelowDailyPages,
   planAllowsCustomRecordingDate,
   planScheduleStartYmd,
   recordingYmdForEditorQuota,
@@ -86,12 +88,19 @@ export default function AwradPage() {
     const maxAdd = strict
       ? maxAdditionalPagesForRecordingDay(p, srcAwrad, recordingYmd, {})
       : 999999
+    const minP = minPagesPerWirdEntry(p, {
+      strictCarryover: strict,
+      maxExtra: maxAdd,
+      minDaily: min,
+    })
     const baseSpan = Math.max(min, Number(last?.pagesCount) || min)
     const span = strict
       ? maxAdd > 0
-        ? Math.max(1, Math.min(baseSpan, maxAdd))
+        ? Math.max(minP, Math.min(Math.max(min, baseSpan), maxAdd))
         : 1
-      : baseSpan
+      : planAllowsBelowDailyPages(p)
+        ? Math.max(1, Number(last?.pagesCount) || min)
+        : Math.max(minP, baseSpan)
     const nextFrom = Math.max(1, Number(last?.toPage) || 0) + 1
     setPagesCount(span)
     setFromPage(nextFrom)
@@ -195,6 +204,7 @@ export default function AwradPage() {
   const nextFromPage = progress?.nextFromPage ?? 1
   const minDaily = progress?.minDaily ?? 1
   const customDateOn = Boolean(selectedPlan && planAllowsCustomRecordingDate(selectedPlan))
+  const allowBelowDaily = Boolean(selectedPlan && planAllowsBelowDailyPages(selectedPlan))
   const quotaYmd = useMemo(() => {
     if (!isEditorOpen || !selectedPlan) return localYmd()
     return recordingYmdForEditorQuota(selectedPlan, formRecordingYmd)
@@ -210,6 +220,24 @@ export default function AwradPage() {
         : 999,
     [strictQuota, selectedPlan, awrad, editingWirdId, quotaYmd],
   )
+
+  const minPagesForEntry = useMemo(
+    () =>
+      selectedPlan
+        ? minPagesPerWirdEntry(selectedPlan, {
+            strictCarryover: strictQuota,
+            maxExtra: maxPagesToday,
+            minDaily,
+          })
+        : 1,
+    [selectedPlan, strictQuota, maxPagesToday, minDaily],
+  )
+
+  const rangeFromMin = editingWirdId ? 1 : nextFromPage
+  const rangeToMax = useMemo(() => {
+    if (!strictQuota || maxPagesToday <= 0) return 9999
+    return Math.max(fromPage, fromPage + maxPagesToday - 1)
+  }, [strictQuota, maxPagesToday, fromPage])
 
   const computedPages = mode === 'count' ? pagesCount : Math.max(0, toPage - fromPage + 1)
   const todayIdx = new Date().getDay()
@@ -258,8 +286,18 @@ export default function AwradPage() {
       toast.warning('أدخل عدد صفحات صحيح (١ على الأقل).', 'تنبيه')
       return
     }
-    if (!strictQuota && computedPages < minDaily) {
-      toast.warning(`الورد المسجل يجب ألا يقل عن ${minDaily} صفحات حسب الخطة.`, 'تنبيه')
+    const minP = minPagesPerWirdEntry(selectedPlan, {
+      strictCarryover: strictQuota,
+      maxExtra,
+      minDaily,
+    })
+    if (computedPages < minP) {
+      toast.warning(
+        `عدد الصفحات في الدفعة يجب ألا يقل عن ${minP} وفق هذه الخطة${
+          strictQuota ? ` (المسموح تراكمياً لهذا التاريخ ${maxExtra} صفحة كحدّ أقصى).` : ` (الورد المقرر ${minDaily} صفحة).`
+        }`,
+        'تنبيه',
+      )
       return
     }
 
@@ -402,10 +440,12 @@ export default function AwradPage() {
                 : strictQuota
                   ? `الخطة على وضع تراكمي: لا يتجاوز تسجيلك ما يبقّى عليك من الورد تراكمياً${
                       customDateOn ? ' (يمكن اختيار يوم التسجيل من النموذج عند تفعيل الخطة لهذا الخيار).' : ' حتى اليوم المحلي (مع تعويض أيام فائتة).'
-                    }`
+                    }${!allowBelowDaily ? ' الحد الأدنى لكل دفعة هو الورد اليومي إن سمح المسموح بذلك.' : ''}`
                   : customDateOn
                     ? 'يمكنك تجاوز الورد اليومي أو اختيار تاريخ تسجيل مختلف عند فتح النموذج، مع حفظ التسلسل تلقائيًا.'
-                    : 'يمكنك تجاوز الورد اليومي المحدد في الخطة إن رغبت، مع حفظ التسلسل تلقائيًا.'}
+                    : `يمكنك تجاوز الورد اليومي المحدد في الخطة إن رغبت، مع حفظ التسلسل تلقائيًا.${
+                        !allowBelowDaily ? ` الحد الأدنى لكل دفعة ${minDaily} صفحة.` : ''
+                      }`}
           </p>
         </div>
         {!viewOnly && (
@@ -542,14 +582,31 @@ export default function AwradPage() {
             <button
               type="button"
               className={['rh-segment__btn', mode === 'count' ? 'rh-segment__btn--active' : ''].join(' ')}
-              onClick={() => setMode('count')}
+              onClick={() => {
+                const span = Math.max(1, toPage - fromPage + 1)
+                setPagesCount(span)
+                setMode('count')
+              }}
             >
               <span className="rh-segment__label">تحديد عدد الصفحات</span>
             </button>
             <button
               type="button"
               className={['rh-segment__btn', mode === 'range' ? 'rh-segment__btn--active' : ''].join(' ')}
-              onClick={() => setMode('range')}
+              onClick={() => {
+                setMode('range')
+                if (!editingWirdId) {
+                  const span = Math.max(1, pagesCount)
+                  const start = nextFromPage
+                  let end = start + span - 1
+                  if (strictQuota && maxPagesToday > 0) {
+                    const cap = Math.max(start, start + maxPagesToday - 1)
+                    end = Math.min(end, cap)
+                  }
+                  setFromPage(start)
+                  setToPage(Math.max(start, end))
+                }
+              }}
             >
               <span className="rh-segment__label">من صفحة إلى صفحة</span>
             </button>
@@ -560,33 +617,64 @@ export default function AwradPage() {
               label="عدد الصفحات"
               hint={
                 strictQuota
-                  ? `من صفحة ${nextFromPage} — لا يتجاوز المسموح ${maxPagesToday} صفحة وفق الورد التراكمي${
+                  ? `من صفحة ${nextFromPage} — حدّ أدنى ${minPagesForEntry} وأقصى ${maxPagesToday} وفق الورد التراكمي${
                       customDateOn ? ` (لتاريخ ${quotaYmd})` : ''
                     }.`
-                  : `سيتم التسجيل تلقائيًا من صفحة ${nextFromPage} (يمكنك تجاوز الورد اليومي).`
+                  : `سيتم التسجيل تلقائيًا من صفحة ${nextFromPage}. حدّ أدنى ${minPagesForEntry}${
+                      allowBelowDaily ? ' (مسموح أقل من الورد اليومي إن فعّلت الخطة ذلك).' : ''
+                    }`
               }
               value={pagesCount}
               onChange={setPagesCount}
-              min={strictQuota ? 1 : minDaily}
-              max={strictQuota ? Math.max(1, maxPagesToday) : 999}
+              min={minPagesForEntry}
+              max={strictQuota ? Math.max(minPagesForEntry, maxPagesToday) : 999}
             />
           ) : (
             <div className="rh-awrad__range">
               <NumberStepField
                 label="من صفحة"
                 value={fromPage}
-                onChange={setFromPage}
-                min={nextFromPage}
+                onChange={(n) => {
+                  setFromPage(n)
+                  if (mode === 'range' && strictQuota && maxPagesToday > 0) {
+                    const cap = Math.max(n, n + maxPagesToday - 1)
+                    setToPage((t) => Math.min(Math.max(t, n), cap))
+                  } else {
+                    setToPage((t) => Math.max(t, n))
+                  }
+                }}
+                min={rangeFromMin}
                 max={9999}
+                hint={
+                  editingWirdId
+                    ? 'عند التعديل يمكنك تغيير المدى؛ تأكد أن المجموع يطابق الحد الأدنى والأقصى للخطة.'
+                    : `يجب أن يبدأ المدى من صفحة ${nextFromPage} عند إضافة ورد جديد.`
+                }
               />
-              <NumberStepField label="إلى صفحة" value={toPage} onChange={setToPage} min={1} max={9999} />
+              <NumberStepField
+                label="إلى صفحة"
+                value={toPage}
+                onChange={(n) => {
+                  const cap =
+                    strictQuota && maxPagesToday > 0
+                      ? Math.max(fromPage, fromPage + maxPagesToday - 1)
+                      : 9999
+                  setToPage(Math.min(Math.max(n, fromPage), cap))
+                }}
+                min={fromPage}
+                max={rangeToMax}
+                hint={
+                  strictQuota && maxPagesToday > 0
+                    ? `لا يتجاوز المدى ${maxPagesToday} صفحة من صفحة ${fromPage} (حتى صفحة ${rangeToMax}).`
+                    : undefined
+                }
+              />
               <TextField label="المجموع المحسوب" value={String(computedPages)} readOnly />
-              {strictQuota && (
-                <p className="ui-field__hint">
-                  في الوضع التراكمي يجب ألا يتجاوز المجموع المحسوب {maxPagesToday} صفحة
-                  {customDateOn ? ` لتاريخ ${quotaYmd}.` : ' لهذا اليوم.'}
-                </p>
-              )}
+              <p className="ui-field__hint">
+                حدّ أدنى للمجموع: {minPagesForEntry} صفحة
+                {strictQuota && maxPagesToday >= 0 && ` — أقصى مسموح: ${maxPagesToday} صفحة`}
+                {customDateOn ? ` — تاريخ الاحتساب: ${quotaYmd}` : ''}
+              </p>
             </div>
           )}
 

@@ -113,6 +113,8 @@ export default function PlansPage() {
   const [planVisibility, setPlanVisibility] = useState('private')
   const [dailyLoggingMode, setDailyLoggingMode] = useState(DAILY_LOGGING_ALLOW_OVER)
   const [allowCustomRecordingDate, setAllowCustomRecordingDate] = useState(false)
+  /** false = اشتراط ألا تقل الدفعة عن الورد اليومي (مع مراعاة الحد التراكمي) */
+  const [allowBelowDailyPages, setAllowBelowDailyPages] = useState(true)
   const [membersModalPlan, setMembersModalPlan] = useState(null)
   const [planMembersList, setPlanMembersList] = useState([])
   const [membersLoading, setMembersLoading] = useState(false)
@@ -313,6 +315,7 @@ export default function PlansPage() {
     setPlanVisibility('private')
     setDailyLoggingMode(DAILY_LOGGING_ALLOW_OVER)
     setAllowCustomRecordingDate(false)
+    setAllowBelowDailyPages(true)
   }
 
   const openAddModal = () => {
@@ -356,6 +359,7 @@ export default function PlansPage() {
         : DAILY_LOGGING_ALLOW_OVER,
     )
     setAllowCustomRecordingDate(Boolean(plan.allowCustomRecordingDate))
+    setAllowBelowDailyPages(plan.allowBelowDailyPages !== false)
     setIsEditorOpen(true)
   }
 
@@ -423,6 +427,7 @@ export default function PlansPage() {
         wdArr ? wdArr.map((d) => WEEKDAYS.find((w) => w.d === d).label).join('، ') : null,
       dailyLoggingMode,
       allowCustomRecordingDate,
+      allowBelowDailyPages,
     }
 
     const nextPlans = editingPlanId
@@ -951,6 +956,32 @@ export default function PlansPage() {
         <p className="rh-settings-card__subtitle rh-plans__toggle-follow">
           عند التفعيل يظهر في صفحة الأوراد حقل تاريخ يحدد يوم احتساب الورد والحد التراكمي؛ عند الإلغاء يُسجَّل دائماً بتاريخ اليوم المحلي.
         </p>
+
+        <p className="rh-plans__field-label">الحد الأدنى لكل دفعة تسجيل</p>
+        <div className="rh-segment rh-segment--plans">
+          <button
+            type="button"
+            role="radio"
+            aria-checked={allowBelowDailyPages}
+            className={['rh-segment__btn', allowBelowDailyPages ? 'rh-segment__btn--active' : ''].filter(Boolean).join(' ')}
+            onClick={() => setAllowBelowDailyPages(true)}
+          >
+            <span className="rh-segment__label">السماح بأقل من الورد اليومي</span>
+            <span className="rh-segment__hint">مثلاً تسجيل صفحة أو صفحتين حتى لو كان الورد المقرر ٥ صفحات.</span>
+          </button>
+          <button
+            type="button"
+            role="radio"
+            aria-checked={!allowBelowDailyPages}
+            className={['rh-segment__btn', !allowBelowDailyPages ? 'rh-segment__btn--active' : ''].filter(Boolean).join(' ')}
+            onClick={() => setAllowBelowDailyPages(false)}
+          >
+            <span className="rh-segment__label">اشتراط الورد اليومي كاملاً</span>
+            <span className="rh-segment__hint">
+              لا تقل الدفعة عن الورد المحدد إن سمح المسموح تراكمياً بذلك؛ وإن كان المسموح أقل (مثل ٣) فتُشترى ال٣ دفعة واحدة.
+            </span>
+          </button>
+        </div>
 
         {typeof Notification !== 'undefined' && reminderTime.trim() && Notification.permission === 'default' && (
           <div className="rh-plans__notif-prompt">
