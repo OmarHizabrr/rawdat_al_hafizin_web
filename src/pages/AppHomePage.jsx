@@ -16,8 +16,10 @@ import { useSiteContent } from '../context/useSiteContent.js'
 import { CrossNav } from '../components/CrossNav.jsx'
 import { HomeWirdModal } from '../components/HomeWirdModal.jsx'
 import { pickHomeMotivationQuote } from '../data/homeMotivationQuotes.js'
+import { PERMISSION_PAGE_IDS } from '../config/permissionRegistry.js'
 import { isAdmin } from '../config/roles.js'
 import { useAuth } from '../context/useAuth.js'
+import { usePermissions } from '../context/usePermissions.js'
 import { firestoreApi } from '../services/firestoreApi.js'
 import { setUserDefaultPlanId } from '../services/userService.js'
 import { useOnClickOutside } from '../ui/hooks/useOnClickOutside.js'
@@ -28,8 +30,11 @@ import { computePlanProgress } from '../utils/planProgress.js'
 import { getImpersonateUid, withImpersonationQuery } from '../utils/impersonation.js'
 import { RhIcon, RH_ICON_STROKE } from '../ui/RhIcon.jsx'
 
+const PH = PERMISSION_PAGE_IDS.home
+
 export default function AppHomePage() {
   const { user } = useAuth()
+  const { can } = usePermissions()
   const { typeLabel, branding, str } = useSiteContent()
   const { search } = useLocation()
   const [searchParams] = useSearchParams()
@@ -202,59 +207,72 @@ export default function AppHomePage() {
           <div className="rh-home-focus__head">
             <p className="rh-home-focus__eyebrow">{actingAsUser ? str('app.home_plan_now_other') : str('app.home_plan_now_you')}</p>
             <div className="rh-home-focus__picker-wrap" ref={planMenuRef}>
-              <button
-                type="button"
-                className="rh-home-focus__picker-trigger"
-                onClick={() => setPlanMenuOpen((o) => !o)}
-                aria-expanded={planMenuOpen}
-                aria-haspopup="listbox"
-              >
-                <span className="rh-home-focus__picker-title">{activePlan.name}</span>
-                <span className="rh-home-focus__picker-meta">
-                  {typeLabel(activePlan.planType)} · {activePlan.dailyPages} ص/يوم
-                </span>
-                <ChevronDown
-                  size={20}
-                  strokeWidth={2}
-                  className={['rh-home-focus__chevron', planMenuOpen ? 'rh-home-focus__chevron--open' : ''].join(' ')}
-                />
-              </button>
-              {planMenuOpen && (
-                <ul className="rh-home-focus__menu" role="listbox">
-                  {plans.map((p) => (
-                    <li key={p.id} role="option" aria-selected={p.id === activePlanId}>
-                      <div className="rh-home-focus__menu-row">
-                        <button
-                          type="button"
-                          className={[
-                            'rh-home-focus__menu-item',
-                            p.id === activePlanId ? 'rh-home-focus__menu-item--active' : '',
-                          ]
-                            .filter(Boolean)
-                            .join(' ')}
-                          disabled={selectPlanLoadingId !== null}
-                          aria-busy={selectPlanLoadingId === p.id || undefined}
-                          onClick={() => selectPlan(p.id)}
-                        >
-                          {selectPlanLoadingId === p.id ? (
-                            <RhIcon as={Loader2} size={20} strokeWidth={RH_ICON_STROKE} className="ui-btn__spinner" />
-                          ) : null}
-                          <strong>{p.name}</strong>
-                          <span>
-                            {typeLabel(p.planType)} — {p.totalTargetPages} صفحة
-                          </span>
-                        </button>
-                        <Link
-                          className="rh-home-focus__menu-peek"
-                          to={appPath(`/app/awrad?plan=${encodeURIComponent(p.id)}`)}
-                          onClick={() => setPlanMenuOpen(false)}
-                        >
-                          {str('app.home_menu_awrad_link')}
-                        </Link>
-                      </div>
-                    </li>
-                  ))}
-                </ul>
+              {can(PH, 'home_switch_plan') ? (
+                <>
+                  <button
+                    type="button"
+                    className="rh-home-focus__picker-trigger"
+                    onClick={() => setPlanMenuOpen((o) => !o)}
+                    aria-expanded={planMenuOpen}
+                    aria-haspopup="listbox"
+                  >
+                    <span className="rh-home-focus__picker-title">{activePlan.name}</span>
+                    <span className="rh-home-focus__picker-meta">
+                      {typeLabel(activePlan.planType)} · {activePlan.dailyPages} ص/يوم
+                    </span>
+                    <ChevronDown
+                      size={20}
+                      strokeWidth={2}
+                      className={['rh-home-focus__chevron', planMenuOpen ? 'rh-home-focus__chevron--open' : ''].join(
+                        ' ',
+                      )}
+                    />
+                  </button>
+                  {planMenuOpen && (
+                    <ul className="rh-home-focus__menu" role="listbox">
+                      {plans.map((p) => (
+                        <li key={p.id} role="option" aria-selected={p.id === activePlanId}>
+                          <div className="rh-home-focus__menu-row">
+                            <button
+                              type="button"
+                              className={[
+                                'rh-home-focus__menu-item',
+                                p.id === activePlanId ? 'rh-home-focus__menu-item--active' : '',
+                              ]
+                                .filter(Boolean)
+                                .join(' ')}
+                              disabled={selectPlanLoadingId !== null}
+                              aria-busy={selectPlanLoadingId === p.id || undefined}
+                              onClick={() => selectPlan(p.id)}
+                            >
+                              {selectPlanLoadingId === p.id ? (
+                                <RhIcon as={Loader2} size={20} strokeWidth={RH_ICON_STROKE} className="ui-btn__spinner" />
+                              ) : null}
+                              <strong>{p.name}</strong>
+                              <span>
+                                {typeLabel(p.planType)} — {p.totalTargetPages} صفحة
+                              </span>
+                            </button>
+                            <Link
+                              className="rh-home-focus__menu-peek"
+                              to={appPath(`/app/awrad?plan=${encodeURIComponent(p.id)}`)}
+                              onClick={() => setPlanMenuOpen(false)}
+                            >
+                              {str('app.home_menu_awrad_link')}
+                            </Link>
+                          </div>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </>
+              ) : (
+                <div className="rh-home-focus__picker-trigger rh-home-focus__picker-trigger--static" aria-hidden={false}>
+                  <span className="rh-home-focus__picker-title">{activePlan.name}</span>
+                  <span className="rh-home-focus__picker-meta">
+                    {typeLabel(activePlan.planType)} · {activePlan.dailyPages} ص/يوم
+                  </span>
+                </div>
               )}
             </div>
           </div>
@@ -317,33 +335,45 @@ export default function AppHomePage() {
 
             <p className="rh-home-focus__quick-label">اختصارات</p>
             <div className="rh-home-focus__quick-btns">
-              <button
-                type="button"
-                className="rh-home-quick-icon rh-home-quick-icon--primary"
-                title="تسجيل الورد للخطة الرئيسية"
-                onClick={() => setHomeWirdOpen(true)}
-              >
-                <NotebookPen size={22} strokeWidth={1.75} />
-                <span>تسجيل الورد</span>
-              </button>
-              <Link className="rh-home-quick-icon" to={appPath('/app/plans')} title="إدارة الخطط">
-                <ListOrdered size={22} strokeWidth={1.75} />
-                <span>الخطط</span>
-              </Link>
-              <Link className="rh-home-quick-icon" to={appPath('/app/welcome')} title="صفحة البداية داخل المنصة">
-                <BookOpen size={22} strokeWidth={1.75} />
-                <span>البداية</span>
-              </Link>
+              {can(PH, 'home_log_wird') && (
+                <button
+                  type="button"
+                  className="rh-home-quick-icon rh-home-quick-icon--primary"
+                  title="تسجيل الورد للخطة الرئيسية"
+                  onClick={() => setHomeWirdOpen(true)}
+                >
+                  <NotebookPen size={22} strokeWidth={1.75} />
+                  <span>تسجيل الورد</span>
+                </button>
+              )}
+              {can(PH, 'home_quick_plans') && (
+                <Link className="rh-home-quick-icon" to={appPath('/app/plans')} title="إدارة الخطط">
+                  <ListOrdered size={22} strokeWidth={1.75} />
+                  <span>الخطط</span>
+                </Link>
+              )}
+              {can(PH, 'home_quick_welcome') && (
+                <Link className="rh-home-quick-icon" to={appPath('/app/welcome')} title="صفحة البداية داخل المنصة">
+                  <BookOpen size={22} strokeWidth={1.75} />
+                  <span>البداية</span>
+                </Link>
+              )}
             </div>
+            {(can(PH, 'home_footer_awrad_link') || can(PH, 'home_footer_plans_link')) && (
             <p className="rh-app-home__quick-extra">
-              <Link to={appPath(`/app/awrad?plan=${encodeURIComponent(activePlan.id)}`)}>صفحة الأوراد لهذه الخطة</Link>
-              {' · '}
-              <Link to={appPath('/app/plans')}>تعديل الخطط وتعيين الافتراضية</Link>
+              {can(PH, 'home_footer_awrad_link') && (
+                <Link to={appPath(`/app/awrad?plan=${encodeURIComponent(activePlan.id)}`)}>صفحة الأوراد لهذه الخطة</Link>
+              )}
+              {can(PH, 'home_footer_awrad_link') && can(PH, 'home_footer_plans_link') && ' · '}
+              {can(PH, 'home_footer_plans_link') && (
+                <Link to={appPath('/app/plans')}>تعديل الخطط وتعيين الافتراضية</Link>
+              )}
             </p>
+            )}
           </div>
 
           <HomeWirdModal
-            open={homeWirdOpen}
+            open={homeWirdOpen && can(PH, 'home_log_wird')}
             onClose={() => setHomeWirdOpen(false)}
             activePlan={activePlan}
             awrad={awrad}

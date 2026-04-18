@@ -186,6 +186,16 @@ class FirestoreApi {
     return this.getDocument("users", userId);
   }
 
+  /** permission_profiles — أنواع المستخدمين وصلاحيات الصفحات */
+  getPermissionProfilesCollection() {
+    return this.getCollection("permission_profiles");
+  }
+
+  /** permission_profiles/{profileId} */
+  getPermissionProfileDoc(profileId) {
+    return this.getDocument("permission_profiles", profileId);
+  }
+
   /** plan_types — أنواع الخطط (إعدادات عامة للموقع) */
   getPlanTypesCollection() {
     return this.getCollection("plan_types");

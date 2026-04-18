@@ -1,5 +1,6 @@
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
 import { AuthProvider } from './context/AuthProvider.jsx'
+import { PermissionsProvider } from './context/PermissionsProvider.jsx'
 import { SiteContentProvider } from './context/SiteContentProvider.jsx'
 import { ThemeProvider } from './theme/ThemeProvider.jsx'
 import { AdminRoute } from './routes/AdminRoute.jsx'
@@ -21,6 +22,8 @@ import AdminDashboardPage from './pages/AdminDashboardPage.jsx'
 import AdminPlanTypesPage from './pages/AdminPlanTypesPage.jsx'
 import AdminSiteCopyPage from './pages/AdminSiteCopyPage.jsx'
 import AdminBrandingPage from './pages/AdminBrandingPage.jsx'
+import AdminUserTypesPage from './pages/AdminUserTypesPage.jsx'
+import { PageGuard } from './routes/PageGuard.jsx'
 
 export default function App() {
   return (
@@ -28,6 +31,7 @@ export default function App() {
       <ToastProvider>
         <SiteContentProvider>
           <AuthProvider>
+            <PermissionsProvider>
             <BrowserRouter>
               <Routes>
                 <Route element={<GuestOnly />}>
@@ -37,18 +41,19 @@ export default function App() {
                 <Route path="/foundation" element={<FoundationPage />} />
                 <Route element={<ProtectedRoute />}>
                   <Route path="/app" element={<MainLayout />}>
-                    <Route index element={<AppHomePage />} />
-                    <Route path="welcome" element={<WelcomePage />} />
-                    <Route path="plans/explore" element={<ExplorePlansPage />} />
-                    <Route path="plans" element={<PlansPage />} />
-                    <Route path="awrad" element={<AwradPage />} />
-                    <Route path="foundation" element={<FoundationPage />} />
-                    <Route path="settings" element={<SettingsPage />} />
+                    <Route index element={<PageGuard pageId="home"><AppHomePage /></PageGuard>} />
+                    <Route path="welcome" element={<PageGuard pageId="welcome"><WelcomePage /></PageGuard>} />
+                    <Route path="plans/explore" element={<PageGuard pageId="plans_explore"><ExplorePlansPage /></PageGuard>} />
+                    <Route path="plans" element={<PageGuard pageId="plans"><PlansPage /></PageGuard>} />
+                    <Route path="awrad" element={<PageGuard pageId="awrad"><AwradPage /></PageGuard>} />
+                    <Route path="foundation" element={<PageGuard pageId="foundation"><FoundationPage /></PageGuard>} />
+                    <Route path="settings" element={<PageGuard pageId="settings"><SettingsPage /></PageGuard>} />
                     <Route element={<AdminRoute />}>
                       <Route path="admin" element={<AdminDashboardPage />} />
                       <Route path="admin/plan-types" element={<AdminPlanTypesPage />} />
                       <Route path="admin/copy" element={<AdminSiteCopyPage />} />
                       <Route path="admin/branding" element={<AdminBrandingPage />} />
+                      <Route path="admin/user-types" element={<AdminUserTypesPage />} />
                       <Route path="admin/users" element={<AdminUsersPage />} />
                     </Route>
                   </Route>
@@ -56,6 +61,7 @@ export default function App() {
                 <Route path="*" element={<Navigate to="/" replace />} />
               </Routes>
             </BrowserRouter>
+            </PermissionsProvider>
           </AuthProvider>
         </SiteContentProvider>
       </ToastProvider>

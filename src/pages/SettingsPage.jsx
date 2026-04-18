@@ -2,13 +2,18 @@ import { UserRound } from 'lucide-react'
 import { useEffect, useMemo } from 'react'
 import { CrossNav } from '../components/CrossNav.jsx'
 import { ThemeModePicker } from '../components/ThemeModePicker.jsx'
+import { PERMISSION_PAGE_IDS } from '../config/permissionRegistry.js'
 import { isAdmin } from '../config/roles.js'
 import { useAuth } from '../context/useAuth.js'
+import { usePermissions } from '../context/usePermissions.js'
 import { useSiteContent } from '../context/useSiteContent.js'
 import { RhIcon, RH_ICON_STROKE } from '../ui/RhIcon.jsx'
 
+const PS = PERMISSION_PAGE_IDS.settings
+
 export default function SettingsPage() {
   const { user } = useAuth()
+  const { can } = usePermissions()
   const { branding, str } = useSiteContent()
 
   const settingsCrossItems = useMemo(() => {
@@ -46,7 +51,11 @@ export default function SettingsPage() {
           <h2 className="rh-settings-card__title">المظهر</h2>
           <p className="rh-settings-card__subtitle">اختر وضع الألوان المناسب لك أو اتركه يتبع النظام.</p>
         </div>
-        <ThemeModePicker />
+        {can(PS, 'settings_theme') ? (
+          <ThemeModePicker />
+        ) : (
+          <p className="rh-settings-footnote">تغيير المظهر غير مفعّل لصلاحيات حسابك.</p>
+        )}
       </section>
 
       <section className="rh-settings-card">

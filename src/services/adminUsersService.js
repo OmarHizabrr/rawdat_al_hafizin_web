@@ -31,6 +31,18 @@ export async function adminUpdateUserRole(actorUser, targetUid, role) {
   })
 }
 
+/** ربط مستخدم بنوع صلاحيات (permission_profiles) أو إزالة الإسناد بقيمة فارغة */
+export async function adminUpdateUserPermissionProfile(actorUser, targetUid, permissionProfileId) {
+  if (!targetUid || !actorUser?.uid) return
+  const docRef = firestoreApi.getUserDoc(targetUid)
+  const v = typeof permissionProfileId === 'string' ? permissionProfileId.trim() : ''
+  await firestoreApi.updateData({
+    docRef,
+    data: { permissionProfileId: v || null },
+    userData: actorUser,
+  })
+}
+
 export async function adminSetUserActive(actorUser, targetUid, isActive) {
   if (!targetUid || !actorUser?.uid) return
   const docRef = firestoreApi.getUserDoc(targetUid)

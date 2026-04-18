@@ -1,4 +1,4 @@
-import { FileText, LayoutDashboard, Palette, Shapes, Users } from 'lucide-react'
+import { FileText, LayoutDashboard, Palette, Shapes, Shield, Users } from 'lucide-react'
 import { useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { useSiteContent } from '../context/useSiteContent.js'
@@ -6,6 +6,12 @@ import { CrossNav } from '../components/CrossNav.jsx'
 import { RhIcon, RH_ICON_STROKE } from '../ui/RhIcon.jsx'
 
 const tiles = [
+  {
+    to: '/app/admin/user-types',
+    title: 'أنواع المستخدمين',
+    desc: 'تعريف طالب / معلم / أدوار مخصّصة: الصفحات الظاهرة وأزرار الإضافة والتعديل والحذف لكل صفحة.',
+    Icon: Shield,
+  },
   {
     to: '/app/admin/plan-types',
     title: 'أنواع الخطط',
@@ -57,7 +63,8 @@ export default function AdminDashboardPage() {
           <p className="rh-admin-dashboard__desc">
             اختر أحد الأقسام أدناه لإدارة إعدادات الموقع. تتطلّب التعديلات صلاحية مشرف وقواعد Firestore تسمح بالقراءة/الكتابة
             على المجموعات <code className="rh-admin-dashboard__code">plan_types</code> و{' '}
-            <code className="rh-admin-dashboard__code">site_config</code>.
+            <code className="rh-admin-dashboard__code">site_config</code> و{' '}
+            <code className="rh-admin-dashboard__code">permission_profiles</code>.
           </p>
         </div>
       </header>

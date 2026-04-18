@@ -2,8 +2,10 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Plus } from 'lucide-react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { useSiteContent } from '../context/useSiteContent.js'
+import { PERMISSION_PAGE_IDS } from '../config/permissionRegistry.js'
 import { isAdmin } from '../config/roles.js'
 import { useAuth } from '../context/useAuth.js'
+import { usePermissions } from '../context/usePermissions.js'
 import { loadPlans, subscribePlans } from '../utils/plansStorage.js'
 import { addWird, deleteWird, subscribeAwrad, updateWird } from '../utils/awradStorage.js'
 import { clampProgressPercent, computePlanProgress } from '../utils/planProgress.js'
@@ -32,8 +34,11 @@ function asDate(v) {
 
 const WEEKDAY_AR = ['الأحد', 'الإثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت']
 
+const PA = PERMISSION_PAGE_IDS.awrad
+
 export default function AwradPage() {
   const { user } = useAuth()
+  const { can } = usePermissions()
   const { branding, str } = useSiteContent()
   const toast = useToast()
   const navigate = useNavigate()
@@ -457,7 +462,7 @@ export default function AwradPage() {
                       }`}
           </p>
         </div>
-        {!viewOnly && (
+        {!viewOnly && can(PA, 'wird_create') && (
           <div className="rh-awrad__actions">
             <Button
               type="button"
@@ -522,15 +527,16 @@ export default function AwradPage() {
                   <span>من {w.fromPage} إلى {w.toPage}</span>
                 )}
                 <span className="rh-awrad__item-actions">
-                  <Button type="button" size="sm" variant="ghost" onClick={() => startEdit(w)}>تعديل</Button>
-                  <Button
-                    type="button"
-                    size="sm"
-                    variant="ghost"
-                    onClick={() => setDeletingWird(w)}
-                  >
-                    حذف
-                  </Button>
+                  {!viewOnly && can(PA, 'wird_edit') && (
+                    <Button type="button" size="sm" variant="ghost" onClick={() => startEdit(w)}>
+                      تعديل
+                    </Button>
+                  )}
+                  {!viewOnly && can(PA, 'wird_delete') && (
+                    <Button type="button" size="sm" variant="ghost" onClick={() => setDeletingWird(w)}>
+                      حذف
+                    </Button>
+                  )}
                 </span>
               </li>
             ))
@@ -539,7 +545,11 @@ export default function AwradPage() {
       </section>
 
       <Modal
-        open={isEditorOpen && !viewOnly}
+        open={
+          isEditorOpen &&
+          !viewOnly &&
+          (editingWirdId ? can(PA, 'wird_edit') : can(PA, 'wird_create'))
+        }
         title={editingWirdId ? 'تعديل تسجيل الورد' : 'إضافة ورد جديد'}
         onClose={cancelEdit}
         size="md"

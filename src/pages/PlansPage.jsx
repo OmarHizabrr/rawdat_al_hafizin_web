@@ -3,8 +3,10 @@ import { useEffect, useMemo, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { VOLUMES, VOLUME_BY_ID } from '../data/volumes.js'
 import { useSiteContent } from '../context/useSiteContent.js'
+import { PERMISSION_PAGE_IDS } from '../config/permissionRegistry.js'
 import { isAdmin } from '../config/roles.js'
 import { useAuth } from '../context/useAuth.js'
+import { usePermissions } from '../context/usePermissions.js'
 import { firestoreApi } from '../services/firestoreApi.js'
 import { setUserDefaultPlanId } from '../services/userService.js'
 import {
@@ -84,8 +86,11 @@ function formatReminderAr(hhmm) {
   return d.toLocaleTimeString('ar-SA', { hour: 'numeric', minute: '2-digit' })
 }
 
+const PP = PERMISSION_PAGE_IDS.plans
+
 export default function PlansPage() {
   const { user } = useAuth()
+  const { can } = usePermissions()
   const { planTypes, typeLabel, branding, str } = useSiteContent()
   const toast = useToast()
   const [searchParams] = useSearchParams()
@@ -661,7 +666,7 @@ export default function PlansPage() {
             )}
             <CrossNav items={plansCrossItems} className="rh-plans__cross" />
           </div>
-            {!readOnly && (
+            {!readOnly && can(PP, 'plan_create') && (
             <div className="rh-plans__hero-actions">
               <Button type="button" variant="primary" className="rh-plans__add-btn" onClick={openAddModal}>
                 <RhIcon as={Plus} size={18} strokeWidth={RH_ICON_STROKE} />
@@ -672,7 +677,7 @@ export default function PlansPage() {
         </div>
       </header>
 
-      {!readOnly && (
+      {!readOnly && can(PP, 'plan_join_public') && (
         <section className="rh-settings-card rh-plans__join-card">
           <div className="rh-settings-card__head">
             <h2 className="rh-settings-card__title">الانضمام لخطة عامة</h2>
@@ -760,22 +765,28 @@ export default function PlansPage() {
                     </li>
                   ))}
                 </ul>
-                {!readOnly && (
+                {!readOnly &&
+                  (can(PP, 'plan_card_set_home') ||
+                    (planCanManageMembers(p) && can(PP, 'plan_card_members')) ||
+                    (planCanEdit(p) && can(PP, 'plan_card_edit')) ||
+                    can(PP, 'plan_card_delete_leave')) && (
                   <div className="rh-plans__card-actions">
-                    <Button
-                      type="button"
-                      variant={homeDefaultId === p.id ? 'primary' : 'secondary'}
-                      size="sm"
-                      className="rh-plans__default-btn"
-                      loading={homeDefaultSavingId === p.id}
-                      disabled={homeDefaultSavingId !== null && homeDefaultSavingId !== p.id}
-                      onClick={() => setAsHomeDefault(p.id)}
-                      title="تظهر هذه الخطة في الصفحة الرئيسية مع نسبة الإنجاز"
-                    >
-                      {homeDefaultSavingId !== p.id && <RhIcon as={Star} size={16} strokeWidth={RH_ICON_STROKE} />}
-                      {homeDefaultId === p.id ? 'افتراضية للرئيسية' : 'للرئيسية'}
-                    </Button>
-                    {planCanManageMembers(p) && (
+                    {can(PP, 'plan_card_set_home') && (
+                      <Button
+                        type="button"
+                        variant={homeDefaultId === p.id ? 'primary' : 'secondary'}
+                        size="sm"
+                        className="rh-plans__default-btn"
+                        loading={homeDefaultSavingId === p.id}
+                        disabled={homeDefaultSavingId !== null && homeDefaultSavingId !== p.id}
+                        onClick={() => setAsHomeDefault(p.id)}
+                        title="تظهر هذه الخطة في الصفحة الرئيسية مع نسبة الإنجاز"
+                      >
+                        {homeDefaultSavingId !== p.id && <RhIcon as={Star} size={16} strokeWidth={RH_ICON_STROKE} />}
+                        {homeDefaultId === p.id ? 'افتراضية للرئيسية' : 'للرئيسية'}
+                      </Button>
+                    )}
+                    {planCanManageMembers(p) && can(PP, 'plan_card_members') && (
                       <Button
                         type="button"
                         variant="secondary"
@@ -789,23 +800,25 @@ export default function PlansPage() {
                         الأعضاء
                       </Button>
                     )}
-                    {planCanEdit(p) && (
+                    {planCanEdit(p) && can(PP, 'plan_card_edit') && (
                       <Button type="button" variant="secondary" size="sm" onClick={() => openEditModal(p)}>
                         <RhIcon as={Pencil} size={16} strokeWidth={RH_ICON_STROKE} />
                         تعديل
                       </Button>
                     )}
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      className="rh-plans__delete-btn"
-                      disabled={Boolean(deletingPlan) || deletePlanSubmitting}
-                      onClick={() => setDeletingPlan(p)}
-                    >
-                      <RhIcon as={Trash2} size={16} strokeWidth={RH_ICON_STROKE} />
-                      {p.planRole === PLAN_MEMBER_ROLES.MEMBER ? 'مغادرة' : 'حذف'}
-                    </Button>
+                    {can(PP, 'plan_card_delete_leave') && (
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        className="rh-plans__delete-btn"
+                        disabled={Boolean(deletingPlan) || deletePlanSubmitting}
+                        onClick={() => setDeletingPlan(p)}
+                      >
+                        <RhIcon as={Trash2} size={16} strokeWidth={RH_ICON_STROKE} />
+                        {p.planRole === PLAN_MEMBER_ROLES.MEMBER ? 'مغادرة' : 'حذف'}
+                      </Button>
+                    )}
                   </div>
                 )}
               </li>
@@ -1194,6 +1207,7 @@ export default function PlansPage() {
           معرف الخطة: <code className="rh-plans__plan-id">{membersModalPlan?.id}</code>
         </p>
 
+        {can(PP, 'plan_member_add') && (
         <section className="rh-plan-members-modal__section">
           <h3 className="rh-plan-members-modal__heading">إضافة من المستخدمين</h3>
           <p className="rh-plan-members-modal__hint">
@@ -1249,6 +1263,7 @@ export default function PlansPage() {
             )}
           </ScrollArea>
         </section>
+        )}
 
         <section className="rh-plan-members-modal__section rh-plan-members-modal__section--members">
           <h3 className="rh-plan-members-modal__heading">أعضاء الخطة</h3>
@@ -1278,29 +1293,33 @@ export default function PlansPage() {
                       </div>
                       <span className="rh-members-chat__sub">{row.email || row.userId}</span>
                     </div>
-                    {!isOwnerRow && (
+                    {!isOwnerRow && (can(PP, 'plan_member_promote') || can(PP, 'plan_member_remove')) && (
                       <div className="rh-members-chat__actions">
-                        <Button
-                          type="button"
-                          variant="secondary"
-                          size="sm"
-                          loading={memberRowBusy?.uid === row.userId && memberRowBusy?.kind === 'admin'}
-                          disabled={Boolean(memberRowBusy)}
-                          onClick={() => handleToggleAdminRow(row.userId, row.role)}
-                        >
-                          {row.role === PLAN_MEMBER_ROLES.ADMIN ? 'إلغاء مشرف' : 'ترقية لمشرف'}
-                        </Button>
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="sm"
-                          className="rh-plans__delete-btn"
-                          loading={memberRowBusy?.uid === row.userId && memberRowBusy?.kind === 'remove'}
-                          disabled={Boolean(memberRowBusy)}
-                          onClick={() => handleRemoveMemberRow(row.userId)}
-                        >
-                          إزالة
-                        </Button>
+                        {can(PP, 'plan_member_promote') && (
+                          <Button
+                            type="button"
+                            variant="secondary"
+                            size="sm"
+                            loading={memberRowBusy?.uid === row.userId && memberRowBusy?.kind === 'admin'}
+                            disabled={Boolean(memberRowBusy)}
+                            onClick={() => handleToggleAdminRow(row.userId, row.role)}
+                          >
+                            {row.role === PLAN_MEMBER_ROLES.ADMIN ? 'إلغاء مشرف' : 'ترقية لمشرف'}
+                          </Button>
+                        )}
+                        {can(PP, 'plan_member_remove') && (
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            className="rh-plans__delete-btn"
+                            loading={memberRowBusy?.uid === row.userId && memberRowBusy?.kind === 'remove'}
+                            disabled={Boolean(memberRowBusy)}
+                            onClick={() => handleRemoveMemberRow(row.userId)}
+                          >
+                            إزالة
+                          </Button>
+                        )}
                       </div>
                     )}
                   </li>

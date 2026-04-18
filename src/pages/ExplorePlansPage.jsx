@@ -3,7 +3,9 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import { useAuth } from '../context/useAuth.js'
 import { useSiteContent } from '../context/useSiteContent.js'
+import { PERMISSION_PAGE_IDS } from '../config/permissionRegistry.js'
 import { isAdmin } from '../config/roles.js'
+import { usePermissions } from '../context/usePermissions.js'
 import {
   EXPLORE_SORT_OPTIONS,
   filterPublicPlansBySearch,
@@ -26,8 +28,11 @@ function formatReminderAr(hhmm) {
   return d.toLocaleTimeString('ar-SA', { hour: 'numeric', minute: '2-digit' })
 }
 
+const PE = PERMISSION_PAGE_IDS.plans_explore
+
 export default function ExplorePlansPage() {
   const { user } = useAuth()
+  const { can } = usePermissions()
   const { search } = useLocation()
   const { typeLabel, branding, str } = useSiteContent()
   const toast = useToast()
@@ -171,6 +176,7 @@ export default function ExplorePlansPage() {
             </select>
           </div>
         </div>
+        {can(PE, 'explore_join_by_id') && (
         <div className="rh-explore-plans__join-inline">
           <TextField
             label="انضمام بمعرف الخطة"
@@ -189,6 +195,7 @@ export default function ExplorePlansPage() {
             انضمام
           </Button>
         </div>
+        )}
       </section>
 
       <p className="rh-explore-plans__count">
@@ -222,6 +229,7 @@ export default function ExplorePlansPage() {
                         <span className="rh-plans__saved-badge">{p.memberCount ?? 0} عضواً</span>
                       </span>
                     </div>
+                    {can(PE, 'explore_join_card') ? (
                     <Button
                       type="button"
                       variant={inPlan ? 'secondary' : 'primary'}
@@ -232,6 +240,9 @@ export default function ExplorePlansPage() {
                     >
                       {inPlan ? 'أنت منضم' : 'انضمام'}
                     </Button>
+                    ) : (
+                      <span className="rh-plans__saved-badge">{inPlan ? 'منضم' : 'عرض فقط'}</span>
+                    )}
                   </div>
 
                   <p className="rh-plans__saved-meta">

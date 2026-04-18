@@ -7,9 +7,11 @@ import { useAuth } from '../context/useAuth.js'
 import {
   adminDeleteUserFirestore,
   adminSetUserActive,
+  adminUpdateUserPermissionProfile,
   adminUpdateUserRole,
   subscribeAllUsers,
 } from '../services/adminUsersService.js'
+import { subscribePermissionProfiles } from '../services/permissionProfilesService.js'
 import { CrossNav } from '../components/CrossNav.jsx'
 import { PeekButton } from '../components/PeekButton.jsx'
 import { Button, Modal, SearchField, useToast } from '../ui/index.js'
@@ -23,6 +25,7 @@ export default function AdminUsersPage() {
   const [query, setQuery] = useState('')
   const [deleteTarget, setDeleteTarget] = useState(null)
   const [busyUid, setBusyUid] = useState(null)
+  const [permissionProfiles, setPermissionProfiles] = useState([])
 
   useEffect(() => {
     document.title = `المستخدمون — ${branding.siteTitle}`
@@ -36,6 +39,12 @@ export default function AdminUsersPage() {
     return () => unsub()
     // eslint-disable-next-line react-hooks/exhaustive-deps -- الاشتراك مرة عند فتح الصفحة كأدمن
   }, [actor?.uid])
+
+  useEffect(() => {
+    if (!isAdmin(actor)) return undefined
+    const unsub = subscribePermissionProfiles(setPermissionProfiles, () => {})
+    return () => unsub()
+  }, [actor])
 
   const adminCrossItems = useMemo(
     () => [
@@ -65,6 +74,14 @@ export default function AdminUsersPage() {
     } finally {
       setBusyUid(null)
     }
+  }
+
+  const onPermissionProfileChange = async (target, profileId) => {
+    if (!actor) return
+    await runBusy(target.uid, async () => {
+      await adminUpdateUserPermissionProfile(actor, target.uid, profileId)
+      toast.success('تم تحديث نوع الصلاحيات.', 'تم')
+    })
   }
 
   const onRoleChange = async (target, nextRole) => {
@@ -119,8 +136,9 @@ export default function AdminUsersPage() {
         <p className="rh-admin-users__desc">
           عرض الحسابات، تغيير الدور (طالب / معلم / ادمن)، إيقاف الحساب، أو حذف بياناته من Firestore. لإسناد أول
           حساب أدمن يدوياً، عدّل الحقل <code className="rh-admin-users__code">role</code> في مستند المستخدم إلى{' '}
-          <code className="rh-admin-users__code">admin</code> من وحدة تحكم Firebase. أيقونة المنزل تفتح رئيسيته
-          (مع التعديل نيابة عنه)، وأيقونة العين صفحة خططه.
+          <code className="rh-admin-users__code">admin</code> من وحدة تحكم Firebase. يمكن إسناد «نوع الصلاحيات»
+          (طالب/معلم مخصّص) من لوحة «أنواع المستخدمين»؛ الأدمن يتجاهل القيود في الواجهة. أيقونة المنزل تفتح رئيسيته،
+          وأيقونة العين صفحة خططه.
         </p>
         <CrossNav items={adminCrossItems} className="rh-admin-users__cross" />
       </header>
@@ -181,6 +199,23 @@ export default function AdminUsersPage() {
                   {USER_ROLES.map((r) => (
                     <option key={r.value} value={r.value}>
                       {r.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="rh-admin-users__row">
+                <span className="rh-admin-users__label">نوع الصلاحيات</span>
+                <select
+                  className="rh-admin-users__select"
+                  value={u.permissionProfileId || ''}
+                  disabled={loading || role === 'admin'}
+                  onChange={(e) => onPermissionProfileChange(u, e.target.value)}
+                >
+                  <option value="">— بدون (وصول كامل للصفحات) —</option>
+                  {permissionProfiles.map((p) => (
+                    <option key={p.id} value={p.id}>
+                      {p.name || p.id}
                     </option>
                   ))}
                 </select>

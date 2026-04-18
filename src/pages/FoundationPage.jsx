@@ -1,7 +1,9 @@
 import { ArrowRight } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
+import { PERMISSION_PAGE_IDS } from '../config/permissionRegistry.js'
 import { useAuth } from '../context/useAuth.js'
+import { usePermissions } from '../context/usePermissions.js'
 import { useSiteContent } from '../context/useSiteContent.js'
 import { Button, SearchableSelect, TextAreaField, TextField, useToast } from '../ui/index.js'
 import { RhIcon, RH_ICON_STROKE } from '../ui/RhIcon.jsx'
@@ -15,8 +17,11 @@ const STAGE_OPTIONS = [
   { value: 'other', label: 'مراحل أخرى' },
 ]
 
+const PF = PERMISSION_PAGE_IDS.foundation
+
 export default function FoundationPage() {
   const { user } = useAuth()
+  const { can } = usePermissions()
   const { branding } = useSiteContent()
   const toast = useToast()
   const homeHref = user ? '/app' : '/'
@@ -40,6 +45,8 @@ export default function FoundationPage() {
     if (!stage) return 'الرجاء اختيار مرحلة من القائمة'
     return ''
   }, [stage, showErrors])
+
+  const playground = can(PF, 'foundation_playground')
 
   const validateDemo = () => {
     setShowErrors(true)
@@ -80,6 +87,7 @@ export default function FoundationPage() {
             error={nameError}
             required
             autoComplete="name"
+            readOnly={!playground}
           />
           <SearchableSelect
             label="المرحلة الدراسية"
@@ -92,6 +100,7 @@ export default function FoundationPage() {
             hint="يمكن البحث بالكتابة ثم الاختيار من لوحة المفاتيح أو الفأرة."
             error={stageError}
             required
+            disabled={!playground}
           />
           <TextAreaField
             label="ملاحظات (اختياري)"
@@ -99,7 +108,9 @@ export default function FoundationPage() {
             value={note}
             onChange={(e) => setNote(e.target.value)}
             rows={4}
+            readOnly={!playground}
           />
+          {playground && (
           <div className="foundation-actions">
             <Button type="button" variant="primary" onClick={validateDemo}>
               تحقق وإظهار رسالة
@@ -108,8 +119,13 @@ export default function FoundationPage() {
               إخفاء أخطاء العرض
             </Button>
           </div>
+          )}
+          {!playground && (
+            <p className="lead">معاينة الحقول التفاعلية غير مفعّلة لصلاحياتك (وضع مطالعة).</p>
+          )}
         </section>
 
+        {playground && (
         <section className="card">
           <h2>الأزرار</h2>
           <div className="foundation-button-row">
@@ -130,7 +146,9 @@ export default function FoundationPage() {
             </Button>
           </div>
         </section>
+        )}
 
+        {playground && (
         <section className="card">
           <h2>رسائل المستخدم (Toast)</h2>
           <p className="lead">استخدم <code className="inline-code">useToast()</code> من أي صفحة داخل التطبيق.</p>
@@ -149,6 +167,7 @@ export default function FoundationPage() {
             </Button>
           </div>
         </section>
+        )}
       </main>
 
       <footer className="footer">

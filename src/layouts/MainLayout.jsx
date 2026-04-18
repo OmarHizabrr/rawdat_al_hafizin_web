@@ -17,6 +17,7 @@ import { NavLink, Outlet, useLocation } from 'react-router-dom'
 import { UserMenu } from '../components/UserMenu.jsx'
 import { isAdmin } from '../config/roles.js'
 import { useAuth } from '../context/useAuth.js'
+import { usePermissions } from '../context/usePermissions.js'
 import { useSiteContent } from '../context/useSiteContent.js'
 import { usePlanReminders } from '../hooks/usePlanReminders.js'
 import { getImpersonateUid, withImpersonationQuery } from '../utils/impersonation.js'
@@ -26,19 +27,20 @@ const STORAGE_KEY = 'rh.sidebarCollapsed'
 
 export function MainLayout() {
   const { user } = useAuth()
+  const { ready: permReady, canAccessPage } = usePermissions()
   const { str, branding } = useSiteContent()
   const { search } = useLocation()
   const impersonateUid = getImpersonateUid(user, search)
 
   const baseNav = useMemo(
     () => [
-      { to: '/app', end: true, label: str('layout.nav_home'), Icon: Home },
-      { to: '/app/welcome', label: str('layout.nav_welcome'), Icon: BookOpen },
-      { to: '/app/plans', label: str('layout.nav_plans'), Icon: ClipboardList },
-      { to: '/app/plans/explore', label: str('layout.nav_plans_explore'), Icon: Compass },
-      { to: '/app/awrad', label: str('layout.nav_awrad'), Icon: NotebookPen },
-      { to: '/app/settings', label: str('layout.nav_settings'), Icon: Settings },
-      { to: '/app/foundation', label: str('layout.nav_foundation'), Icon: Puzzle },
+      { to: '/app', end: true, label: str('layout.nav_home'), Icon: Home, pageId: 'home' },
+      { to: '/app/welcome', label: str('layout.nav_welcome'), Icon: BookOpen, pageId: 'welcome' },
+      { to: '/app/plans', label: str('layout.nav_plans'), Icon: ClipboardList, pageId: 'plans' },
+      { to: '/app/plans/explore', label: str('layout.nav_plans_explore'), Icon: Compass, pageId: 'plans_explore' },
+      { to: '/app/awrad', label: str('layout.nav_awrad'), Icon: NotebookPen, pageId: 'awrad' },
+      { to: '/app/settings', label: str('layout.nav_settings'), Icon: Settings, pageId: 'settings' },
+      { to: '/app/foundation', label: str('layout.nav_foundation'), Icon: Puzzle, pageId: 'foundation' },
     ],
     [str],
   )
@@ -51,7 +53,12 @@ export function MainLayout() {
     [str],
   )
 
-  const nav = isAdmin(user) ? [...baseNav.slice(0, 5), ...adminNavItems, ...baseNav.slice(5)] : baseNav
+  const nav = useMemo(() => {
+    const visible = (item) =>
+      !item.pageId || !permReady || isAdmin(user) || canAccessPage(item.pageId)
+    const filtered = baseNav.filter(visible)
+    return isAdmin(user) ? [...filtered.slice(0, 5), ...adminNavItems, ...filtered.slice(5)] : filtered
+  }, [baseNav, adminNavItems, user, permReady, canAccessPage])
   usePlanReminders(impersonateUid ? null : user, { iconSrc: branding.logoSrc })
   const [collapsed, setCollapsed] = useState(() => {
     try {
