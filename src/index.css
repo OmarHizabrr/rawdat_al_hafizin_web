@@ -1234,6 +1234,108 @@ a.rh-sidebar__brand-link.rh-sidebar__brand-link--active {
   border-top: 1px solid var(--rh-border);
 }
 
+/* تذكير يومي / تحفيز — الرئيسية (ألوان حسب إكمال الورد والتأخير) */
+.rh-home-streak {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--rh-space-3);
+  padding: var(--rh-space-3) var(--rh-space-4);
+  border-radius: var(--rh-radius-lg);
+  border: 1px solid var(--rh-border);
+  margin-bottom: var(--rh-space-3);
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease,
+    background 0.2s ease;
+}
+
+.rh-home-streak__icon {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.85rem;
+  height: 2.85rem;
+  border-radius: var(--rh-radius-md);
+}
+
+.rh-home-streak__body {
+  min-width: 0;
+}
+
+.rh-home-streak__title {
+  margin: 0 0 0.35rem;
+  font-size: 1.05rem;
+  font-weight: 800;
+  color: var(--rh-text);
+  line-height: 1.35;
+}
+
+.rh-home-streak__quote {
+  margin: 0;
+  font-size: var(--rh-text-sm);
+  color: var(--rh-text-muted);
+  line-height: 1.55;
+}
+
+.rh-home-streak--rest {
+  background: linear-gradient(
+    140deg,
+    color-mix(in srgb, var(--rh-text-muted) 10%, var(--rh-surface)) 0%,
+    var(--rh-surface) 100%
+  );
+}
+
+.rh-home-streak--rest .rh-home-streak__icon {
+  background: color-mix(in srgb, var(--rh-text-muted) 14%, transparent);
+  color: var(--rh-text-muted);
+}
+
+.rh-home-streak--ok {
+  background: linear-gradient(
+    140deg,
+    color-mix(in srgb, #22c55e 12%, var(--rh-surface)) 0%,
+    color-mix(in srgb, var(--rh-forest-600) 8%, var(--rh-surface)) 100%
+  );
+  border-color: color-mix(in srgb, #22c55e 32%, var(--rh-border));
+}
+
+.rh-home-streak--ok .rh-home-streak__icon {
+  background: color-mix(in srgb, #22c55e 18%, transparent);
+  color: #15803d;
+}
+
+.rh-home-streak--pending {
+  background: linear-gradient(
+    140deg,
+    color-mix(in srgb, #f59e0b 11%, var(--rh-surface)) 0%,
+    var(--rh-surface) 100%
+  );
+  border-color: color-mix(in srgb, #f59e0b 38%, var(--rh-border));
+}
+
+.rh-home-streak--pending .rh-home-streak__icon {
+  background: color-mix(in srgb, #f59e0b 16%, transparent);
+  color: #c2410c;
+}
+
+.rh-home-streak--urgent {
+  background: linear-gradient(
+    140deg,
+    color-mix(in srgb, #ef4444 14%, var(--rh-surface)) 0%,
+    color-mix(in srgb, #f97316 7%, var(--rh-surface)) 100%
+  );
+  border-color: color-mix(in srgb, #ef4444 42%, var(--rh-border));
+  box-shadow:
+    0 1px 0 color-mix(in srgb, #ef4444 18%, transparent),
+    0 8px 24px color-mix(in srgb, #ef4444 12%, transparent);
+}
+
+.rh-home-streak--urgent .rh-home-streak__icon {
+  background: color-mix(in srgb, #ef4444 20%, transparent);
+  color: #b91c1c;
+}
+
 .rh-home-focus__quick-label {
   font-size: var(--rh-text-xs);
   font-weight: 700;
@@ -1245,6 +1347,12 @@ a.rh-sidebar__brand-link.rh-sidebar__brand-link--active {
   display: flex;
   flex-wrap: wrap;
   gap: var(--rh-space-2);
+}
+
+button.rh-home-quick-icon {
+  font: inherit;
+  cursor: pointer;
+  appearance: none;
 }
 
 .rh-home-quick-icon {
@@ -1269,6 +1377,21 @@ a.rh-sidebar__brand-link.rh-sidebar__brand-link--active {
     transform 0.12s ease;
 }
 
+.rh-home-quick-icon--primary {
+  background: linear-gradient(
+    145deg,
+    color-mix(in srgb, var(--rh-primary) 18%, var(--rh-surface)),
+    color-mix(in srgb, var(--rh-forest-600) 10%, var(--rh-surface))
+  );
+  border-color: color-mix(in srgb, var(--rh-primary) 40%, var(--rh-border));
+  box-shadow: var(--rh-shadow-sm);
+}
+
+.rh-home-quick-icon--primary span {
+  color: var(--rh-text);
+  font-weight: 800;
+}
+
 .rh-home-quick-icon span {
   color: var(--rh-text);
 }
@@ -1277,6 +1400,14 @@ a.rh-sidebar__brand-link.rh-sidebar__brand-link--active {
   background: var(--rh-primary-muted);
   border-color: color-mix(in srgb, var(--rh-primary) 40%, var(--rh-border));
   transform: translateY(-1px);
+}
+
+.rh-home-quick-icon--primary:hover {
+  background: linear-gradient(
+    145deg,
+    color-mix(in srgb, var(--rh-primary) 26%, var(--rh-surface)),
+    color-mix(in srgb, var(--rh-forest-600) 14%, var(--rh-surface))
+  );
 }
 
 .rh-home-quick-icon:focus-visible {

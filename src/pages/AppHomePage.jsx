@@ -1,8 +1,21 @@
-import { BookOpen, ChevronDown, ListOrdered, Loader2, NotebookPen, Sparkles } from 'lucide-react'
+import {
+  BookOpen,
+  CheckCircle2,
+  ChevronDown,
+  Coffee,
+  Flame,
+  ListOrdered,
+  Loader2,
+  NotebookPen,
+  Sparkles,
+  Sunrise,
+} from 'lucide-react'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useLocation, useSearchParams } from 'react-router-dom'
 import { useSiteContent } from '../context/useSiteContent.js'
 import { CrossNav } from '../components/CrossNav.jsx'
+import { HomeWirdModal } from '../components/HomeWirdModal.jsx'
+import { pickHomeMotivationQuote } from '../data/homeMotivationQuotes.js'
 import { isAdmin } from '../config/roles.js'
 import { useAuth } from '../context/useAuth.js'
 import { firestoreApi } from '../services/firestoreApi.js'
@@ -10,6 +23,7 @@ import { setUserDefaultPlanId } from '../services/userService.js'
 import { useOnClickOutside } from '../ui/hooks/useOnClickOutside.js'
 import { loadPlans, subscribePlans } from '../utils/plansStorage.js'
 import { subscribeAwrad } from '../utils/awradStorage.js'
+import { getHomeWirdDayStatus } from '../utils/homeWirdStatus.js'
 import { computePlanProgress } from '../utils/planProgress.js'
 import { getImpersonateUid, withImpersonationQuery } from '../utils/impersonation.js'
 import { RhIcon, RH_ICON_STROKE } from '../ui/RhIcon.jsx'
@@ -42,8 +56,15 @@ export default function AppHomePage() {
   const [selectPlanLoadingId, setSelectPlanLoadingId] = useState(null)
   const planSwitchBusyRef = useRef(false)
   const planMenuRef = useRef(null)
+  const [homeWirdOpen, setHomeWirdOpen] = useState(false)
+  const [homeNow, setHomeNow] = useState(() => new Date())
 
   useOnClickOutside(planMenuRef, () => setPlanMenuOpen(false), planMenuOpen)
+
+  useEffect(() => {
+    const id = window.setInterval(() => setHomeNow(new Date()), 60_000)
+    return () => window.clearInterval(id)
+  }, [])
 
   useEffect(() => {
     document.title = actingAsUser
@@ -117,6 +138,24 @@ export default function AppHomePage() {
     ? impersonatedSubject?.displayName?.trim() || str('app.home_greeting_user_fallback')
     : user?.displayName?.trim() || str('app.home_greeting_fallback')
   const pct = progress?.progressPercent ?? 0
+
+  const homeWirdStatus = useMemo(
+    () => getHomeWirdDayStatus(activePlan, awrad, homeNow),
+    [activePlan, awrad, homeNow],
+  )
+  const homeMotivationQuote = useMemo(
+    () => pickHomeMotivationQuote(homeWirdStatus.todayYmd),
+    [homeWirdStatus.todayYmd],
+  )
+
+  const homeStreakTitle = useMemo(() => {
+    if (homeWirdStatus.variant === 'rest' || !homeWirdStatus.appliesToday) {
+      return 'يوم راحة ضمن خطتك — استغلّه بخير'
+    }
+    if (homeWirdStatus.isComplete) return 'أحسنت — ورد اليوم مكتمل'
+    if (homeWirdStatus.variant === 'urgent') return 'تأخّرت قليلاً — سجّل وردك قبل انتهاء اليوم'
+    return 'حان وقت وردك اليوم'
+  }, [homeWirdStatus])
 
   const homeCrossItems = useMemo(() => {
     const base = [
@@ -251,16 +290,42 @@ export default function AppHomePage() {
           </div>
 
           <div className="rh-home-focus__quick">
-            <p className="rh-home-focus__quick-label">سجّل اليوم</p>
+            <div
+              className={[
+                'rh-home-streak',
+                `rh-home-streak--${homeWirdStatus.variant}`,
+              ].join(' ')}
+              role="status"
+              aria-live="polite"
+            >
+              <div className="rh-home-streak__icon" aria-hidden>
+                {homeWirdStatus.variant === 'rest' || !homeWirdStatus.appliesToday ? (
+                  <Coffee size={26} strokeWidth={1.75} />
+                ) : homeWirdStatus.variant === 'ok' ? (
+                  <CheckCircle2 size={26} strokeWidth={1.75} />
+                ) : homeWirdStatus.variant === 'urgent' ? (
+                  <Flame size={26} strokeWidth={1.75} />
+                ) : (
+                  <Sunrise size={26} strokeWidth={1.75} />
+                )}
+              </div>
+              <div className="rh-home-streak__body">
+                <p className="rh-home-streak__title">{homeStreakTitle}</p>
+                <p className="rh-home-streak__quote">{homeMotivationQuote}</p>
+              </div>
+            </div>
+
+            <p className="rh-home-focus__quick-label">اختصارات</p>
             <div className="rh-home-focus__quick-btns">
-              <Link
-                className="rh-home-quick-icon"
-                to={appPath(`/app/awrad?plan=${encodeURIComponent(activePlan.id)}`)}
-                title="تسجيل الورد"
+              <button
+                type="button"
+                className="rh-home-quick-icon rh-home-quick-icon--primary"
+                title="تسجيل الورد للخطة الرئيسية"
+                onClick={() => setHomeWirdOpen(true)}
               >
                 <NotebookPen size={22} strokeWidth={1.75} />
-                <span>ورد</span>
-              </Link>
+                <span>تسجيل الورد</span>
+              </button>
               <Link className="rh-home-quick-icon" to={appPath('/app/plans')} title="إدارة الخطط">
                 <ListOrdered size={22} strokeWidth={1.75} />
                 <span>الخطط</span>
@@ -271,11 +336,20 @@ export default function AppHomePage() {
               </Link>
             </div>
             <p className="rh-app-home__quick-extra">
-              <Link to={appPath('/app/awrad')}>عرض صفحة الأوراد كاملة</Link>
+              <Link to={appPath(`/app/awrad?plan=${encodeURIComponent(activePlan.id)}`)}>صفحة الأوراد لهذه الخطة</Link>
               {' · '}
               <Link to={appPath('/app/plans')}>تعديل الخطط وتعيين الافتراضية</Link>
             </p>
           </div>
+
+          <HomeWirdModal
+            open={homeWirdOpen}
+            onClose={() => setHomeWirdOpen(false)}
+            activePlan={activePlan}
+            awrad={awrad}
+            contextUserId={contextUserId}
+            user={user}
+          />
         </section>
       ) : (
         <section className="card rh-home-empty-focus">
