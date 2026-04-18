@@ -40,6 +40,8 @@ export default function ExplorePlansPage() {
   const [sortValue, setSortValue] = useState('newest')
   const [joinId, setJoinId] = useState('')
   const [myPlanIds, setMyPlanIds] = useState(() => new Set())
+  const [joinByIdLoading, setJoinByIdLoading] = useState(false)
+  const [joiningCardId, setJoiningCardId] = useState(null)
 
   const appLink = useCallback(
     (path) => withImpersonationQuery(path, impersonateUid),
@@ -73,6 +75,7 @@ export default function ExplorePlansPage() {
   const handleJoinById = async () => {
     const id = joinId.trim()
     if (!id || !viewUserId || !user) return
+    setJoinByIdLoading(true)
     try {
       await joinPublicPlan(viewUserId, id, user)
       setJoinId('')
@@ -84,11 +87,14 @@ export default function ExplorePlansPage() {
       else if (m === 'ALREADY_MEMBER') toast.info('أنت مضاف مسبقاً.', '')
       else if (m === 'PLAN_NOT_FOUND') toast.warning('لم يُعثر على خطة بهذا المعرف.', '')
       else toast.warning('تعذر الانضمام.', '')
+    } finally {
+      setJoinByIdLoading(false)
     }
   }
 
   const handleJoinCard = async (planId) => {
     if (!viewUserId || !user) return
+    setJoiningCardId(planId)
     try {
       await joinPublicPlan(viewUserId, planId, user)
       setMyPlanIds((prev) => new Set(prev).add(planId))
@@ -97,6 +103,8 @@ export default function ExplorePlansPage() {
       const m = e?.message
       if (m === 'ALREADY_MEMBER') toast.info('أنت مضاف مسبقاً.', '')
       else toast.warning('تعذر الانضمام.', '')
+    } finally {
+      setJoiningCardId(null)
     }
   }
 
@@ -170,8 +178,14 @@ export default function ExplorePlansPage() {
             value={joinId}
             onChange={(e) => setJoinId(e.target.value)}
           />
-          <Button type="button" variant="primary" onClick={handleJoinById} disabled={!joinId.trim() || !viewUserId}>
-            <RhIcon as={UserPlus} size={18} strokeWidth={RH_ICON_STROKE} />
+          <Button
+            type="button"
+            variant="primary"
+            onClick={handleJoinById}
+            loading={joinByIdLoading}
+            disabled={!joinId.trim() || !viewUserId || joinByIdLoading}
+          >
+            {!joinByIdLoading && <RhIcon as={UserPlus} size={18} strokeWidth={RH_ICON_STROKE} />}
             انضمام
           </Button>
         </div>
@@ -212,7 +226,8 @@ export default function ExplorePlansPage() {
                       type="button"
                       variant={inPlan ? 'secondary' : 'primary'}
                       size="sm"
-                      disabled={inPlan}
+                      loading={joiningCardId === p.id}
+                      disabled={inPlan || joiningCardId !== null}
                       onClick={() => !inPlan && handleJoinCard(p.id)}
                     >
                       {inPlan ? 'أنت منضم' : 'انضمام'}

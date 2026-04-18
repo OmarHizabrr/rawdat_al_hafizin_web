@@ -76,6 +76,8 @@ export default function AwradPage() {
   const [isEditorOpen, setIsEditorOpen] = useState(false)
   const [deletingWird, setDeletingWird] = useState(null)
   const [formRecordingYmd, setFormRecordingYmd] = useState(() => localYmd())
+  const [wirdSubmitting, setWirdSubmitting] = useState(false)
+  const [wirdDeleteSubmitting, setWirdDeleteSubmitting] = useState(false)
 
   const applyPlanDefaults = useCallback((planId, srcPlans, srcAwrad = awrad, opts = {}) => {
     const p = srcPlans.find((x) => x.id === planId)
@@ -301,69 +303,76 @@ export default function AwradPage() {
       return
     }
 
-    const resolvedFrom = mode === 'range' ? fromPage : nextFromPage
-    const resolvedTo = mode === 'range' ? toPage : nextFromPage + computedPages - 1
-    const allowCust = planAllowsCustomRecordingDate(selectedPlan)
-    const recordedAtIso = allowCust ? isoFromLocalYmd(recordingYmd) : undefined
-    const payload = {
-      planId: selectedPlan.id,
-      planName: selectedPlan.name,
-      mode,
-      pagesCount: computedPages,
-      fromPage: resolvedFrom,
-      toPage: resolvedTo,
-      ...(allowCust ? { recordedAt: recordedAtIso } : {}),
-    }
-    const recordOpts = { allowCustomRecordedAt: allowCust }
+    setWirdSubmitting(true)
+    try {
+      const resolvedFrom = mode === 'range' ? fromPage : nextFromPage
+      const resolvedTo = mode === 'range' ? toPage : nextFromPage + computedPages - 1
+      const allowCust = planAllowsCustomRecordingDate(selectedPlan)
+      const recordedAtIso = allowCust ? isoFromLocalYmd(recordingYmd) : undefined
+      const payload = {
+        planId: selectedPlan.id,
+        planName: selectedPlan.name,
+        mode,
+        pagesCount: computedPages,
+        fromPage: resolvedFrom,
+        toPage: resolvedTo,
+        ...(allowCust ? { recordedAt: recordedAtIso } : {}),
+      }
+      const recordOpts = { allowCustomRecordedAt: allowCust }
 
-    const editId = editingWirdId
-    if (editId) {
-      await updateWird(contextUserId, editId, payload, user ?? {}, recordOpts)
-    } else {
-      await addWird(contextUserId, payload, user ?? {}, recordOpts)
-    }
+      const editId = editingWirdId
+      if (editId) {
+        await updateWird(contextUserId, editId, payload, user ?? {}, recordOpts)
+      } else {
+        await addWird(contextUserId, payload, user ?? {}, recordOpts)
+      }
 
-    const prevPages = editId
-      ? Math.max(0, Number(awrad.find((w) => w.id === editId)?.pagesCount) || 0)
-      : 0
-    const nextAchieved = editId ? achievedPages - prevPages + computedPages : achievedPages + computedPages
-    const nextPercent = clampProgressPercent(nextAchieved, targetPages)
-    toast.success(
-      editId
-        ? `تم تحديث التسجيل إلى ${computedPages} صفحة. وصلت إلى ${nextAchieved}/${targetPages || '—'} (${nextPercent.toFixed(1)}%).`
-        : `تم تسجيل ${computedPages} صفحات. وصلت إلى ${nextAchieved}/${targetPages || '—'} (${nextPercent.toFixed(1)}%).`,
-      editId ? 'تم التعديل' : 'تم تسجيل الورد',
-    )
-    const optimisticAwrad = editId
-      ? awrad.map((w) =>
-          w.id === editId
-            ? {
-                ...w,
-                ...payload,
-                recordedAt:
-                  allowCust && recordedAtIso ? recordedAtIso : w.recordedAt,
-              }
-            : w,
-        )
-      : [
-          {
-            id: '__local_pending__',
-            planId: selectedPlan.id,
-            planName: selectedPlan.name,
-            mode: payload.mode,
-            pagesCount: payload.pagesCount,
-            fromPage: payload.fromPage,
-            toPage: payload.toPage,
-            recordedAt:
-              allowCust && recordedAtIso ? recordedAtIso : new Date().toISOString(),
-          },
-          ...awrad,
-        ]
-    setEditingWirdId(null)
-    const yNext = localYmd()
-    setFormRecordingYmd(yNext)
-    applyPlanDefaults(selectedPlan.id, plans, optimisticAwrad, { formRecordingYmd: yNext })
-    setIsEditorOpen(false)
+      const prevPages = editId
+        ? Math.max(0, Number(awrad.find((w) => w.id === editId)?.pagesCount) || 0)
+        : 0
+      const nextAchieved = editId ? achievedPages - prevPages + computedPages : achievedPages + computedPages
+      const nextPercent = clampProgressPercent(nextAchieved, targetPages)
+      toast.success(
+        editId
+          ? `تم تحديث التسجيل إلى ${computedPages} صفحة. وصلت إلى ${nextAchieved}/${targetPages || '—'} (${nextPercent.toFixed(1)}%).`
+          : `تم تسجيل ${computedPages} صفحات. وصلت إلى ${nextAchieved}/${targetPages || '—'} (${nextPercent.toFixed(1)}%).`,
+        editId ? 'تم التعديل' : 'تم تسجيل الورد',
+      )
+      const optimisticAwrad = editId
+        ? awrad.map((w) =>
+            w.id === editId
+              ? {
+                  ...w,
+                  ...payload,
+                  recordedAt:
+                    allowCust && recordedAtIso ? recordedAtIso : w.recordedAt,
+                }
+              : w,
+          )
+        : [
+            {
+              id: '__local_pending__',
+              planId: selectedPlan.id,
+              planName: selectedPlan.name,
+              mode: payload.mode,
+              pagesCount: payload.pagesCount,
+              fromPage: payload.fromPage,
+              toPage: payload.toPage,
+              recordedAt:
+                allowCust && recordedAtIso ? recordedAtIso : new Date().toISOString(),
+            },
+            ...awrad,
+          ]
+      setEditingWirdId(null)
+      const yNext = localYmd()
+      setFormRecordingYmd(yNext)
+      applyPlanDefaults(selectedPlan.id, plans, optimisticAwrad, { formRecordingYmd: yNext })
+      setIsEditorOpen(false)
+    } catch {
+      toast.warning('تعذّر حفظ الورد. تحقق من الاتصال وحاول مرة أخرى.', 'تنبيه')
+    } finally {
+      setWirdSubmitting(false)
+    }
   }
 
   const startEdit = (wird) => {
@@ -534,6 +543,9 @@ export default function AwradPage() {
         title={editingWirdId ? 'تعديل تسجيل الورد' : 'إضافة ورد جديد'}
         onClose={cancelEdit}
         size="md"
+        closeOnBackdrop={!wirdSubmitting}
+        closeOnEsc={!wirdSubmitting}
+        showClose={!wirdSubmitting}
       >
         <ScrollArea className="rh-plans__editor-scroll" padded>
           <div className="ui-field">
@@ -679,11 +691,11 @@ export default function AwradPage() {
           )}
 
           <div className="rh-awrad__actions">
-            <Button type="button" onClick={submitWird}>
-              {!editingWirdId && <RhIcon as={Plus} size={16} strokeWidth={RH_ICON_STROKE} />}
+            <Button type="button" onClick={submitWird} loading={wirdSubmitting}>
+              {!editingWirdId && !wirdSubmitting && <RhIcon as={Plus} size={16} strokeWidth={RH_ICON_STROKE} />}
               {editingWirdId ? 'حفظ التعديل' : 'إضافة الورد'}
             </Button>
-            <Button type="button" variant="ghost" onClick={cancelEdit}>
+            <Button type="button" variant="ghost" onClick={cancelEdit} disabled={wirdSubmitting}>
               إلغاء
             </Button>
           </div>
@@ -693,8 +705,11 @@ export default function AwradPage() {
       <Modal
         open={Boolean(deletingWird)}
         title="تأكيد حذف تسجيل الورد"
-        onClose={() => setDeletingWird(null)}
+        onClose={() => !wirdDeleteSubmitting && setDeletingWird(null)}
         size="sm"
+        closeOnBackdrop={!wirdDeleteSubmitting}
+        closeOnEsc={!wirdDeleteSubmitting}
+        showClose={!wirdDeleteSubmitting}
       >
         <p className="rh-plans__warn rh-plans__warn--confirm">
           سيتم حذف هذا التسجيل نهائياً. هل أنت متأكد؟
@@ -703,17 +718,30 @@ export default function AwradPage() {
           <Button
             type="button"
             variant="danger"
+            loading={wirdDeleteSubmitting}
             onClick={async () => {
               if (!deletingWird) return
-              await deleteWird(contextUserId, deletingWird.id)
-              if (editingWirdId === deletingWird.id) cancelEdit()
-              setDeletingWird(null)
-              toast.info('تم حذف تسجيل الورد.', '')
+              setWirdDeleteSubmitting(true)
+              try {
+                await deleteWird(contextUserId, deletingWird.id)
+                if (editingWirdId === deletingWird.id) cancelEdit()
+                setDeletingWird(null)
+                toast.info('تم حذف تسجيل الورد.', '')
+              } catch {
+                toast.warning('تعذّر الحذف. حاول مرة أخرى.', 'تنبيه')
+              } finally {
+                setWirdDeleteSubmitting(false)
+              }
             }}
           >
             نعم، حذف
           </Button>
-          <Button type="button" variant="ghost" onClick={() => setDeletingWird(null)}>
+          <Button
+            type="button"
+            variant="ghost"
+            disabled={wirdDeleteSubmitting}
+            onClick={() => setDeletingWird(null)}
+          >
             إلغاء
           </Button>
         </div>

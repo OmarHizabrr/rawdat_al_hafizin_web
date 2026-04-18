@@ -1,4 +1,4 @@
-import { BookOpen, ChevronDown, ListOrdered, NotebookPen, Sparkles } from 'lucide-react'
+import { BookOpen, ChevronDown, ListOrdered, Loader2, NotebookPen, Sparkles } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useLocation, useSearchParams } from 'react-router-dom'
 import { useSiteContent } from '../context/useSiteContent.js'
@@ -12,6 +12,7 @@ import { loadPlans, subscribePlans } from '../utils/plansStorage.js'
 import { subscribeAwrad } from '../utils/awradStorage.js'
 import { computePlanProgress } from '../utils/planProgress.js'
 import { getImpersonateUid, withImpersonationQuery } from '../utils/impersonation.js'
+import { RhIcon, RH_ICON_STROKE } from '../ui/RhIcon.jsx'
 
 export default function AppHomePage() {
   const { user } = useAuth()
@@ -38,6 +39,8 @@ export default function AppHomePage() {
   const [awrad, setAwrad] = useState([])
   const [subjectProfile, setSubjectProfile] = useState(null)
   const [planMenuOpen, setPlanMenuOpen] = useState(false)
+  const [selectPlanLoadingId, setSelectPlanLoadingId] = useState(null)
+  const planSwitchBusyRef = useRef(false)
   const planMenuRef = useRef(null)
 
   useOnClickOutside(planMenuRef, () => setPlanMenuOpen(false), planMenuOpen)
@@ -91,12 +94,21 @@ export default function AppHomePage() {
 
   const selectPlan = useCallback(
     async (planId) => {
-      if (!user || !planId) return
-      await setUserDefaultPlanId(user, planId, { targetUid: actingAsUser ? contextUserId : undefined })
-      if (actingAsUser) {
-        setSubjectProfile((p) => ({ ...(p || {}), defaultPlanId: planId }))
+      if (!user || !planId || planSwitchBusyRef.current) return
+      planSwitchBusyRef.current = true
+      setSelectPlanLoadingId(planId)
+      try {
+        await setUserDefaultPlanId(user, planId, { targetUid: actingAsUser ? contextUserId : undefined })
+        if (actingAsUser) {
+          setSubjectProfile((p) => ({ ...(p || {}), defaultPlanId: planId }))
+        }
+        setPlanMenuOpen(false)
+      } catch {
+        /* يبقى الاختيار السابق؛ يمكن إضافة تنبيه لاحقاً */
+      } finally {
+        planSwitchBusyRef.current = false
+        setSelectPlanLoadingId(null)
       }
-      setPlanMenuOpen(false)
     },
     [user, actingAsUser, contextUserId],
   )
@@ -181,8 +193,13 @@ export default function AppHomePage() {
                           ]
                             .filter(Boolean)
                             .join(' ')}
+                          disabled={selectPlanLoadingId !== null}
+                          aria-busy={selectPlanLoadingId === p.id || undefined}
                           onClick={() => selectPlan(p.id)}
                         >
+                          {selectPlanLoadingId === p.id ? (
+                            <RhIcon as={Loader2} size={20} strokeWidth={RH_ICON_STROKE} className="ui-btn__spinner" />
+                          ) : null}
                           <strong>{p.name}</strong>
                           <span>
                             {typeLabel(p.planType)} — {p.totalTargetPages} صفحة

@@ -122,6 +122,11 @@ export default function PlansPage() {
   const [memberPickerQuery, setMemberPickerQuery] = useState('')
   const [addingMemberUid, setAddingMemberUid] = useState('')
   const [joinPlanId, setJoinPlanId] = useState('')
+  const [savePlanSubmitting, setSavePlanSubmitting] = useState(false)
+  const [deletePlanSubmitting, setDeletePlanSubmitting] = useState(false)
+  const [joinPlanSubmitting, setJoinPlanSubmitting] = useState(false)
+  const [homeDefaultSavingId, setHomeDefaultSavingId] = useState(null)
+  const [memberRowBusy, setMemberRowBusy] = useState(null)
 
   const [planName, setPlanName] = useState('')
   /** اختيار المستخدم؛ قد يصير غير مطابق لقائمة الأنواع بعد تغيير الإعدادات */
@@ -433,27 +438,41 @@ export default function PlansPage() {
     const nextPlans = editingPlanId
       ? savedPlans.map((p) => (p.id === editingPlanId ? plan : p))
       : [plan, ...savedPlans]
-    await savePlans(viewUserId, nextPlans, user ?? {})
-    toast.success(editingPlanId ? 'تم تحديث الخطة بنجاح.' : 'تم حفظ الخطة. يمكنك مراجعتها في القائمة أدناه.', 'تم')
-    resetForm()
-    setEditingPlanId(null)
-    setIsEditorOpen(false)
+    setSavePlanSubmitting(true)
+    try {
+      await savePlans(viewUserId, nextPlans, user ?? {})
+      toast.success(editingPlanId ? 'تم تحديث الخطة بنجاح.' : 'تم حفظ الخطة. يمكنك مراجعتها في القائمة أدناه.', 'تم')
+      resetForm()
+      setEditingPlanId(null)
+      setIsEditorOpen(false)
+    } catch {
+      toast.warning('تعذّر حفظ الخطة. تحقق من الاتصال والصلاحيات.', 'تنبيه')
+    } finally {
+      setSavePlanSubmitting(false)
+    }
   }
 
   const deletePlan = async (id) => {
     if (readOnly) return
     const meta = savedPlans.find((p) => p.id === id)
+    setDeletePlanSubmitting(true)
     try {
       await removePlanForUser(viewUserId, id)
     } catch {
       toast.warning('تعذر تنفيذ العملية. حاول مرة أخرى.', 'تنبيه')
       setDeletingPlan(null)
       return
+    } finally {
+      setDeletePlanSubmitting(false)
     }
     const prevHomeDefault = actingAsUser ? viewedDefaultPlanId : user?.defaultPlanId
     if (prevHomeDefault === id) {
-      await setUserDefaultPlanId(user, null, { targetUid: actingAsUser ? viewUserId : undefined })
-      if (actingAsUser) setViewedDefaultPlanId(null)
+      try {
+        await setUserDefaultPlanId(user, null, { targetUid: actingAsUser ? viewUserId : undefined })
+        if (actingAsUser) setViewedDefaultPlanId(null)
+      } catch {
+        /* تجاهل — الخطة أُزيلت بالفعل */
+      }
     }
     toast.info(
       meta?.planRole === PLAN_MEMBER_ROLES.MEMBER ? 'تمت مغادرة الخطة.' : 'حُذفت الخطة عن جميع الأعضاء.',
@@ -516,6 +535,7 @@ export default function PlansPage() {
 
   const handleRemoveMemberRow = async (targetUid) => {
     if (!user || !membersModalPlan?.id) return
+    setMemberRowBusy({ uid: targetUid, kind: 'remove' })
     try {
       await removePlanMember(user, membersModalPlan.id, targetUid)
       toast.info('تمت إزالة العضو.', '')
@@ -524,12 +544,15 @@ export default function PlansPage() {
       const m = e?.message
       if (m === 'CANNOT_REMOVE_OWNER') toast.warning('لا يمكن إزالة مالك الخطة.', '')
       else toast.warning('تعذر الإزالة.', '')
+    } finally {
+      setMemberRowBusy(null)
     }
   }
 
   const handleToggleAdminRow = async (targetUid, currentRole) => {
     if (!user || !membersModalPlan?.id) return
     const next = currentRole === PLAN_MEMBER_ROLES.ADMIN ? PLAN_MEMBER_ROLES.MEMBER : PLAN_MEMBER_ROLES.ADMIN
+    setMemberRowBusy({ uid: targetUid, kind: 'admin' })
     try {
       await setPlanMemberRole(user, membersModalPlan.id, targetUid, next, user)
       toast.success(next === PLAN_MEMBER_ROLES.ADMIN ? 'تمت الترقية إلى مشرف.' : 'أصبح عضواً عادياً.', 'تم')
@@ -538,12 +561,15 @@ export default function PlansPage() {
       const m = e?.message
       if (m === 'CANNOT_DEMOTE_OWNER') toast.warning('لا يمكن تغيير دور المالك.', '')
       else toast.warning('تعذر تحديث الدور.', '')
+    } finally {
+      setMemberRowBusy(null)
     }
   }
 
   const handleJoinPublic = async () => {
     const id = joinPlanId.trim()
     if (!id || !viewUserId || !user) return
+    setJoinPlanSubmitting(true)
     try {
       await joinPublicPlan(viewUserId, id, user)
       setJoinPlanId('')
@@ -554,14 +580,23 @@ export default function PlansPage() {
       else if (m === 'ALREADY_MEMBER') toast.info('أنت مضاف لهذه الخطة مسبقاً.', '')
       else if (m === 'PLAN_NOT_FOUND') toast.warning('لم يُعثر على خطة بهذا المعرف.', '')
       else toast.warning('تعذر الانضمام.', '')
+    } finally {
+      setJoinPlanSubmitting(false)
     }
   }
 
   const setAsHomeDefault = async (planId) => {
     if (!user || readOnly) return
-    await setUserDefaultPlanId(user, planId, { targetUid: actingAsUser ? viewUserId : undefined })
-    if (actingAsUser) setViewedDefaultPlanId(planId)
-    toast.success('أصبحت هذه الخطة هي المعروضة في الصفحة الرئيسية.', 'تم')
+    setHomeDefaultSavingId(planId)
+    try {
+      await setUserDefaultPlanId(user, planId, { targetUid: actingAsUser ? viewUserId : undefined })
+      if (actingAsUser) setViewedDefaultPlanId(planId)
+      toast.success('أصبحت هذه الخطة هي المعروضة في الصفحة الرئيسية.', 'تم')
+    } catch {
+      toast.warning('تعذّر تعيين الخطة الافتراضية.', 'تنبيه')
+    } finally {
+      setHomeDefaultSavingId(null)
+    }
   }
 
   const volumeSummary = (n) =>
@@ -652,8 +687,15 @@ export default function PlansPage() {
               value={joinPlanId}
               onChange={(e) => setJoinPlanId(e.target.value)}
             />
-            <Button type="button" variant="secondary" className="rh-plans__join-btn" onClick={handleJoinPublic}>
-              <RhIcon as={UserPlus} size={18} strokeWidth={RH_ICON_STROKE} />
+            <Button
+              type="button"
+              variant="secondary"
+              className="rh-plans__join-btn"
+              loading={joinPlanSubmitting}
+              disabled={!joinPlanId.trim() || !viewUserId}
+              onClick={handleJoinPublic}
+            >
+              {!joinPlanSubmitting && <RhIcon as={UserPlus} size={18} strokeWidth={RH_ICON_STROKE} />}
               انضمام
             </Button>
           </div>
@@ -725,10 +767,12 @@ export default function PlansPage() {
                       variant={homeDefaultId === p.id ? 'primary' : 'secondary'}
                       size="sm"
                       className="rh-plans__default-btn"
+                      loading={homeDefaultSavingId === p.id}
+                      disabled={homeDefaultSavingId !== null && homeDefaultSavingId !== p.id}
                       onClick={() => setAsHomeDefault(p.id)}
                       title="تظهر هذه الخطة في الصفحة الرئيسية مع نسبة الإنجاز"
                     >
-                      <RhIcon as={Star} size={16} strokeWidth={RH_ICON_STROKE} />
+                      {homeDefaultSavingId !== p.id && <RhIcon as={Star} size={16} strokeWidth={RH_ICON_STROKE} />}
                       {homeDefaultId === p.id ? 'افتراضية للرئيسية' : 'للرئيسية'}
                     </Button>
                     {planCanManageMembers(p) && (
@@ -756,6 +800,7 @@ export default function PlansPage() {
                       variant="ghost"
                       size="sm"
                       className="rh-plans__delete-btn"
+                      disabled={Boolean(deletingPlan) || deletePlanSubmitting}
                       onClick={() => setDeletingPlan(p)}
                     >
                       <RhIcon as={Trash2} size={16} strokeWidth={RH_ICON_STROKE} />
@@ -782,11 +827,15 @@ export default function PlansPage() {
         open={isEditorOpen && !readOnly}
         title={editingPlanId ? 'تعديل الخطة' : 'إضافة خطة جديدة'}
         onClose={() => {
+          if (savePlanSubmitting) return
           setIsEditorOpen(false)
           setEditingPlanId(null)
           resetForm()
         }}
         size="md"
+        closeOnBackdrop={!savePlanSubmitting}
+        closeOnEsc={!savePlanSubmitting}
+        showClose={!savePlanSubmitting}
       >
         <ScrollArea className="rh-plans__editor-scroll" padded>
 
@@ -1066,15 +1115,16 @@ export default function PlansPage() {
         </ul>
         {rangeWarning && <p className="rh-plans__warn">{rangeWarning}</p>}
         <div className="rh-plans__actions">
-          <Button type="button" variant="primary" onClick={handleSavePlan}>
+          <Button type="button" variant="primary" onClick={handleSavePlan} loading={savePlanSubmitting}>
             {editingPlanId ? 'حفظ التعديلات' : 'حفظ الخطة'}
           </Button>
-          <Button type="button" variant="ghost" onClick={resetForm}>
+          <Button type="button" variant="ghost" onClick={resetForm} disabled={savePlanSubmitting}>
             مسح النموذج
           </Button>
           <Button
             type="button"
             variant="ghost"
+            disabled={savePlanSubmitting}
             onClick={() => {
               setIsEditorOpen(false)
               setEditingPlanId(null)
@@ -1088,7 +1138,15 @@ export default function PlansPage() {
         </ScrollArea>
       </Modal>
 
-      <Modal open={Boolean(deletingPlan)} title="تأكيد" onClose={() => setDeletingPlan(null)} size="sm">
+      <Modal
+        open={Boolean(deletingPlan)}
+        title="تأكيد"
+        onClose={() => !deletePlanSubmitting && setDeletingPlan(null)}
+        size="sm"
+        closeOnBackdrop={!deletePlanSubmitting}
+        closeOnEsc={!deletePlanSubmitting}
+        showClose={!deletePlanSubmitting}
+      >
             <p className="rh-plans__warn rh-plans__warn--confirm">
               {deletingPlan?.planRole === PLAN_MEMBER_ROLES.MEMBER ? (
                 <>
@@ -1101,10 +1159,15 @@ export default function PlansPage() {
               )}
             </p>
             <div className="rh-plans__actions">
-              <Button type="button" variant="danger" onClick={() => deletingPlan && deletePlan(deletingPlan.id)}>
+              <Button
+                type="button"
+                variant="danger"
+                loading={deletePlanSubmitting}
+                onClick={() => deletingPlan && deletePlan(deletingPlan.id)}
+              >
                 {deletingPlan?.planRole === PLAN_MEMBER_ROLES.MEMBER ? 'نعم، مغادرة' : 'نعم، حذف للجميع'}
               </Button>
-              <Button type="button" variant="ghost" onClick={() => setDeletingPlan(null)}>
+              <Button type="button" variant="ghost" disabled={deletePlanSubmitting} onClick={() => setDeletingPlan(null)}>
                 إلغاء
               </Button>
             </div>
@@ -1114,6 +1177,7 @@ export default function PlansPage() {
         open={Boolean(membersModalPlan)}
         title={membersModalPlan ? `أعضاء الخطة: ${membersModalPlan.name || membersModalPlan.id}` : 'الأعضاء'}
         onClose={() => {
+          if (memberRowBusy || addingMemberUid) return
           setMembersModalPlan(null)
           setPlanMembersList([])
           setMemberPickerQuery('')
@@ -1121,6 +1185,9 @@ export default function PlansPage() {
         }}
         size="lg"
         contentClassName="ui-modal__content--plan-members"
+        closeOnBackdrop={!memberRowBusy && !addingMemberUid}
+        closeOnEsc={!memberRowBusy && !addingMemberUid}
+        showClose={!memberRowBusy && !addingMemberUid}
       >
         <div className="rh-plan-members-modal__body">
         <p className="rh-plans__saved-meta rh-plan-members-modal__plan-id">
@@ -1217,6 +1284,8 @@ export default function PlansPage() {
                           type="button"
                           variant="secondary"
                           size="sm"
+                          loading={memberRowBusy?.uid === row.userId && memberRowBusy?.kind === 'admin'}
+                          disabled={Boolean(memberRowBusy)}
                           onClick={() => handleToggleAdminRow(row.userId, row.role)}
                         >
                           {row.role === PLAN_MEMBER_ROLES.ADMIN ? 'إلغاء مشرف' : 'ترقية لمشرف'}
@@ -1226,6 +1295,8 @@ export default function PlansPage() {
                           variant="ghost"
                           size="sm"
                           className="rh-plans__delete-btn"
+                          loading={memberRowBusy?.uid === row.userId && memberRowBusy?.kind === 'remove'}
+                          disabled={Boolean(memberRowBusy)}
                           onClick={() => handleRemoveMemberRow(row.userId)}
                         >
                           إزالة

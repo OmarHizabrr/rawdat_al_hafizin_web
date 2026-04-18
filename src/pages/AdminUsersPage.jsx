@@ -215,7 +215,15 @@ export default function AdminUsersPage() {
         <p className="rh-admin-users__empty">لا يوجد مستخدمون يطابقون البحث.</p>
       )}
 
-      <Modal open={Boolean(deleteTarget)} title="تأكيد حذف بيانات المستخدم" onClose={() => setDeleteTarget(null)} size="sm">
+      <Modal
+        open={Boolean(deleteTarget)}
+        title="تأكيد حذف بيانات المستخدم"
+        onClose={() => !(deleteTarget && busyUid === deleteTarget.uid) && setDeleteTarget(null)}
+        size="sm"
+        closeOnBackdrop={!(deleteTarget && busyUid === deleteTarget?.uid)}
+        closeOnEsc={!(deleteTarget && busyUid === deleteTarget?.uid)}
+        showClose={!(deleteTarget && busyUid === deleteTarget?.uid)}
+      >
         <p className="rh-admin-users__warn">
           سيتم حذف مستند المستخدم وجميع <strong>خططه</strong> و<strong>أوراده</strong> من قاعدة البيانات. لا يُحذف حساب
           Google تلقائياً.
@@ -224,10 +232,20 @@ export default function AdminUsersPage() {
           <strong>{deleteTarget?.displayName || deleteTarget?.email}</strong>
         </p>
         <div className="rh-admin-users__modal-actions">
-          <Button type="button" variant="danger" onClick={confirmDelete}>
+          <Button
+            type="button"
+            variant="danger"
+            loading={Boolean(deleteTarget) && busyUid === deleteTarget?.uid}
+            onClick={confirmDelete}
+          >
             نعم، احذف نهائياً
           </Button>
-          <Button type="button" variant="ghost" onClick={() => setDeleteTarget(null)}>
+          <Button
+            type="button"
+            variant="ghost"
+            disabled={Boolean(deleteTarget) && busyUid === deleteTarget?.uid}
+            onClick={() => setDeleteTarget(null)}
+          >
             إلغاء
           </Button>
         </div>

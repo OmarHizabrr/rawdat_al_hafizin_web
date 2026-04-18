@@ -62,12 +62,15 @@ export default function LoginPage() {
           <Button
             type="button"
             variant="primary"
-            disabled={busy}
+            loading={busy}
             onClick={async () => {
               setBusy(true)
-              await signOut()
-              setBusy(false)
-              navigate('/login', { replace: true })
+              try {
+                await signOut()
+                navigate('/login', { replace: true })
+              } finally {
+                setBusy(false)
+              }
             }}
           >
             تسجيل الخروج والعودة
@@ -118,9 +121,9 @@ export default function LoginPage() {
           </div>
         )}
 
-        <Button type="button" variant="secondary" className="rh-google-btn" disabled={busy} onClick={onGoogle}>
-          <GoogleIcon />
-          {busy ? 'جاري الاتصال…' : 'المتابعة عبر Google'}
+        <Button type="button" variant="secondary" className="rh-google-btn" loading={busy} onClick={onGoogle}>
+          {!busy && <GoogleIcon />}
+          المتابعة عبر Google
         </Button>
 
         <p className="rh-login-hint">بتسجيل الدخول أنت توافق على استخدام المنصة لأغراض تعليمية.</p>

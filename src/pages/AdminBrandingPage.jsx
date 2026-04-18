@@ -36,6 +36,7 @@ export default function AdminBrandingPage() {
   const [lightSelectKey, setLightSelectKey] = useState(0)
   const [darkSelectKey, setDarkSelectKey] = useState(0)
   const [previewMode, setPreviewMode] = useState(() => (appColorScheme === 'dark' ? 'dark' : 'light'))
+  const [saveSubmitting, setSaveSubmitting] = useState(false)
 
   const previewLogoSrc = useMemo(() => sanitizeImageUrl(logoUrl) || '/logo.png', [logoUrl])
 
@@ -112,6 +113,7 @@ export default function AdminBrandingPage() {
 
   const onSave = async () => {
     if (!user) return
+    setSaveSubmitting(true)
     try {
       await saveBranding(user, {
         siteName,
@@ -125,6 +127,8 @@ export default function AdminBrandingPage() {
       toast.success('تم حفظ هوية الموقع.', 'تم')
     } catch {
       toast.warning('تعذّر الحفظ.', 'تنبيه')
+    } finally {
+      setSaveSubmitting(false)
     }
   }
 
@@ -197,10 +201,10 @@ export default function AdminBrandingPage() {
       <CrossNav items={crossItems} className="rh-admin-dashboard__cross" />
 
       <div className="rh-admin-branding__toolbar card">
-        <Button type="button" variant="primary" onClick={onSave}>
+        <Button type="button" variant="primary" loading={saveSubmitting} onClick={onSave}>
           حفظ التغييرات في السحابة
         </Button>
-        <Button type="button" variant="secondary" onClick={() => setResetAllOpen(true)}>
+        <Button type="button" variant="secondary" disabled={saveSubmitting} onClick={() => setResetAllOpen(true)}>
           إعادة الوضع الافتراضي (النموذج)
         </Button>
       </div>

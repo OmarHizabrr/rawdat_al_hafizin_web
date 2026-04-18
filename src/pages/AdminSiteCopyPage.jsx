@@ -121,13 +121,21 @@ export default function AdminSiteCopyPage() {
                   rows={e.key.includes('list') || e.key.includes('lead') || e.key.includes('p') ? 5 : 3}
                 />
                 <div className="rh-admin-copy__row-actions">
-                  <Button type="button" variant="primary" size="sm" disabled={savingKey === e.key} onClick={() => saveOne(e.key)}>
-                    {savingKey === e.key ? 'جاري الحفظ…' : 'حفظ'}
+                  <Button
+                    type="button"
+                    variant="primary"
+                    size="sm"
+                    loading={savingKey === e.key}
+                    disabled={savingKey !== null}
+                    onClick={() => saveOne(e.key)}
+                  >
+                    حفظ
                   </Button>
                   <Button
                     type="button"
                     variant="ghost"
                     size="sm"
+                    disabled={savingKey !== null}
                     onClick={() => {
                       setDraft(e.key, e.defaultValue)
                     }}
