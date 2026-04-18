@@ -36,26 +36,46 @@ export function subscribeAwrad(userId, onNext) {
   })
 }
 
-export async function addWird(userId, wird, userData = {}) {
+export async function addWird(userId, wird, userData = {}, options = {}) {
   if (!userId) return null
   const id = firestoreApi.getNewId('awrad')
   const ref = wirdDoc(userId, id)
-  const recordedAt = new Date().toISOString()
+  const nowIso = new Date().toISOString()
+  const { recordedAt: clientRecordedAt, ...rest } = wird
+  const trust = options.allowCustomRecordedAt === true
+  const recordedAt =
+    trust &&
+    typeof clientRecordedAt === 'string' &&
+    Number.isFinite(Date.parse(clientRecordedAt))
+      ? clientRecordedAt
+      : nowIso
   await firestoreApi.setData({
     docRef: ref,
-    data: { id, ...wird, recordedAt, updatedAt: recordedAt },
+    data: { id, ...rest, recordedAt, updatedAt: nowIso },
     merge: true,
     userData,
   })
   return id
 }
 
-export async function updateWird(userId, wirdId, data, userData = {}) {
+export async function updateWird(userId, wirdId, data, userData = {}, options = {}) {
   if (!userId || !wirdId) return
   const ref = wirdDoc(userId, wirdId)
+  const patch = { ...data, updatedAt: new Date().toISOString() }
+  if (options.allowCustomRecordedAt === true) {
+    if (
+      !('recordedAt' in data) ||
+      data.recordedAt == null ||
+      !Number.isFinite(Date.parse(String(data.recordedAt)))
+    ) {
+      delete patch.recordedAt
+    }
+  } else {
+    delete patch.recordedAt
+  }
   await firestoreApi.updateData({
     docRef: ref,
-    data: { ...data, updatedAt: new Date().toISOString() },
+    data: patch,
     userData,
   })
 }

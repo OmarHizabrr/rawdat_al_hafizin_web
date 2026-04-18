@@ -10,6 +10,7 @@ import {
   sortPublicPlans,
   subscribePublicPlansForExplore,
 } from '../services/explorePlansService.js'
+import { DAILY_LOGGING_STRICT_CARRYOVER } from '../utils/planDailyQuota.js'
 import { joinPublicPlan, loadPlans } from '../utils/plansStorage.js'
 import { getImpersonateUid, withImpersonationQuery } from '../utils/impersonation.js'
 import { Button, ScrollArea, TextField, useToast } from '../ui/index.js'
@@ -243,6 +244,18 @@ export default function ExplorePlansPage() {
                   <ul className="rh-explore-plans__facts">
                     <li>
                       <strong>الورد اليومي:</strong> {p.dailyPages ?? '—'} صفحة
+                    </li>
+                    <li>
+                      <strong>سياسة التسجيل:</strong>{' '}
+                      {p.dailyLoggingMode === DAILY_LOGGING_STRICT_CARRYOVER
+                        ? 'تراكمي (لا تجاوز يومي إلا بتعويض الغياب)'
+                        : 'تجاوز يومي مسموح'}
+                    </li>
+                    <li>
+                      <strong>تاريخ الورد:</strong>{' '}
+                      {p.allowCustomRecordingDate
+                        ? 'يمكن اختيار يوم التسجيل في النموذج'
+                        : 'دائماً اليوم المحلي عند التسجيل'}
                     </li>
                     <li>
                       <strong>إجمالي الصفحات:</strong> {p.totalTargetPages ?? '—'}

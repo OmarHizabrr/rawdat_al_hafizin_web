@@ -7,8 +7,20 @@ import { useAuth } from '../context/useAuth.js'
 import { loadPlans, subscribePlans } from '../utils/plansStorage.js'
 import { addWird, deleteWird, subscribeAwrad, updateWird } from '../utils/awradStorage.js'
 import { clampProgressPercent, computePlanProgress } from '../utils/planProgress.js'
+import {
+  DAILY_LOGGING_STRICT_CARRYOVER,
+  assertValidRecordingYmd,
+  getPlanDailyLoggingMode,
+  isoFromLocalYmd,
+  localYmd,
+  maxAdditionalPagesForRecordingDay,
+  planAllowsCustomRecordingDate,
+  planScheduleStartYmd,
+  recordingYmdForEditorQuota,
+  ymdFromRecordedAt,
+} from '../utils/planDailyQuota.js'
 import { CrossNav } from '../components/CrossNav.jsx'
-import { Button, Modal, NumberStepField, ScrollArea, TextField, useToast } from '../ui/index.js'
+import { Button, DateField, Modal, NumberStepField, ScrollArea, TextField, useToast } from '../ui/index.js'
 import { RhIcon, RH_ICON_STROKE } from '../ui/RhIcon.jsx'
 
 function asDate(v) {
@@ -61,14 +73,25 @@ export default function AwradPage() {
   const [editingWirdId, setEditingWirdId] = useState(null)
   const [isEditorOpen, setIsEditorOpen] = useState(false)
   const [deletingWird, setDeletingWird] = useState(null)
+  const [formRecordingYmd, setFormRecordingYmd] = useState(() => localYmd())
 
-  const applyPlanDefaults = useCallback((planId, srcPlans, srcAwrad = awrad) => {
+  const applyPlanDefaults = useCallback((planId, srcPlans, srcAwrad = awrad, opts = {}) => {
     const p = srcPlans.find((x) => x.id === planId)
     const min = Math.max(1, Number(p?.dailyPages) || 1)
+    const strict = getPlanDailyLoggingMode(p) === DAILY_LOGGING_STRICT_CARRYOVER
     const last = srcAwrad
       .filter((w) => w.planId === planId)
       .sort((a, b) => Date.parse(b.recordedAt || 0) - Date.parse(a.recordedAt || 0))[0]
-    const span = Math.max(min, Number(last?.pagesCount) || min)
+    const recordingYmd = recordingYmdForEditorQuota(p, opts.formRecordingYmd)
+    const maxAdd = strict
+      ? maxAdditionalPagesForRecordingDay(p, srcAwrad, recordingYmd, {})
+      : 999999
+    const baseSpan = Math.max(min, Number(last?.pagesCount) || min)
+    const span = strict
+      ? maxAdd > 0
+        ? Math.max(1, Math.min(baseSpan, maxAdd))
+        : 1
+      : baseSpan
     const nextFrom = Math.max(1, Number(last?.toPage) || 0) + 1
     setPagesCount(span)
     setFromPage(nextFrom)
@@ -99,7 +122,9 @@ export default function AwradPage() {
     const id = planFromUrl
     const t = window.setTimeout(() => {
       setSelectedPlanId(id)
-      applyPlanDefaults(id, plans, awrad)
+      const y = localYmd()
+      setFormRecordingYmd(y)
+      applyPlanDefaults(id, plans, awrad, { formRecordingYmd: y })
       if (!clearedDeepLinkRef.current) {
         clearedDeepLinkRef.current = true
         const next = new URLSearchParams()
@@ -120,7 +145,11 @@ export default function AwradPage() {
       if (initialId) {
         setSelectedPlanId((x) => {
           const next = x || initialId
-          if (!x) applyPlanDefaults(next, v)
+          if (!x) {
+            const y = localYmd()
+            setFormRecordingYmd(y)
+            applyPlanDefaults(next, v, undefined, { formRecordingYmd: y })
+          }
           return next
         })
       }
@@ -131,7 +160,9 @@ export default function AwradPage() {
         planFromUrl && v.some((p) => p.id === planFromUrl) ? planFromUrl : v[0]?.id || ''
       if (!selectedPlanId && pick) {
         setSelectedPlanId(pick)
-        applyPlanDefaults(pick, v, awrad)
+        const y = localYmd()
+        setFormRecordingYmd(y)
+        applyPlanDefaults(pick, v, awrad, { formRecordingYmd: y })
       }
     })
     const unsubAwrad = subscribeAwrad(contextUserId, setAwrad)
@@ -163,6 +194,22 @@ export default function AwradPage() {
   const remainingPages = progress?.remainingPages ?? 0
   const nextFromPage = progress?.nextFromPage ?? 1
   const minDaily = progress?.minDaily ?? 1
+  const customDateOn = Boolean(selectedPlan && planAllowsCustomRecordingDate(selectedPlan))
+  const quotaYmd = useMemo(() => {
+    if (!isEditorOpen || !selectedPlan) return localYmd()
+    return recordingYmdForEditorQuota(selectedPlan, formRecordingYmd)
+  }, [isEditorOpen, selectedPlan, formRecordingYmd])
+  const strictQuota =
+    selectedPlan && getPlanDailyLoggingMode(selectedPlan) === DAILY_LOGGING_STRICT_CARRYOVER
+  const maxPagesToday = useMemo(
+    () =>
+      strictQuota && selectedPlan
+        ? maxAdditionalPagesForRecordingDay(selectedPlan, awrad, quotaYmd, {
+            excludeWirdId: editingWirdId || undefined,
+          })
+        : 999,
+    [strictQuota, selectedPlan, awrad, editingWirdId, quotaYmd],
+  )
 
   const computedPages = mode === 'count' ? pagesCount : Math.max(0, toPage - fromPage + 1)
   const todayIdx = new Date().getDay()
@@ -189,13 +236,37 @@ export default function AwradPage() {
       toast.warning(`لا يمكن تكرار المدى. يجب البدء من صفحة ${nextFromPage}.`, 'تنبيه')
       return
     }
-    if (computedPages < minDaily) {
+    const dateCheck = assertValidRecordingYmd(selectedPlan, formRecordingYmd)
+    if (!dateCheck.ok) {
+      toast.warning(dateCheck.message, 'تنبيه')
+      return
+    }
+    const recordingYmd = dateCheck.ymd
+    const maxExtra = maxAdditionalPagesForRecordingDay(selectedPlan, awrad, recordingYmd, {
+      excludeWirdId: editingWirdId || undefined,
+    })
+    if (strictQuota && computedPages > maxExtra) {
+      toast.warning(
+        maxExtra <= 0
+          ? 'لا يتبقّى لك ورد تراكمي مسموح بتسجيله في التاريخ المحدد وفق هذه الخطة (أو أنك أتممت المطلوب حتى ذلك اليوم).'
+          : `الحد الأقصى المسموح في التاريخ المحدد وفق الورد التراكمي هو ${maxExtra} صفحة (يشمل تعويض الأيام الفائتة).`,
+        'تنبيه',
+      )
+      return
+    }
+    if (computedPages < 1) {
+      toast.warning('أدخل عدد صفحات صحيح (١ على الأقل).', 'تنبيه')
+      return
+    }
+    if (!strictQuota && computedPages < minDaily) {
       toast.warning(`الورد المسجل يجب ألا يقل عن ${minDaily} صفحات حسب الخطة.`, 'تنبيه')
       return
     }
 
     const resolvedFrom = mode === 'range' ? fromPage : nextFromPage
     const resolvedTo = mode === 'range' ? toPage : nextFromPage + computedPages - 1
+    const allowCust = planAllowsCustomRecordingDate(selectedPlan)
+    const recordedAtIso = allowCust ? isoFromLocalYmd(recordingYmd) : undefined
     const payload = {
       planId: selectedPlan.id,
       planName: selectedPlan.name,
@@ -203,42 +274,83 @@ export default function AwradPage() {
       pagesCount: computedPages,
       fromPage: resolvedFrom,
       toPage: resolvedTo,
+      ...(allowCust ? { recordedAt: recordedAtIso } : {}),
     }
+    const recordOpts = { allowCustomRecordedAt: allowCust }
 
-    if (editingWirdId) {
-      await updateWird(contextUserId, editingWirdId, payload, user ?? {})
-      toast.success('تم تعديل تسجيل الورد.', 'تم')
-      setEditingWirdId(null)
+    const editId = editingWirdId
+    if (editId) {
+      await updateWird(contextUserId, editId, payload, user ?? {}, recordOpts)
     } else {
-      await addWird(contextUserId, payload, user ?? {})
+      await addWird(contextUserId, payload, user ?? {}, recordOpts)
     }
 
-    const nextAchieved = achievedPages + computedPages
+    const prevPages = editId
+      ? Math.max(0, Number(awrad.find((w) => w.id === editId)?.pagesCount) || 0)
+      : 0
+    const nextAchieved = editId ? achievedPages - prevPages + computedPages : achievedPages + computedPages
     const nextPercent = clampProgressPercent(nextAchieved, targetPages)
     toast.success(
-      `تم تسجيل ${computedPages} صفحات. وصلت إلى ${nextAchieved}/${targetPages || '—'} (${nextPercent.toFixed(1)}%).`,
-      'تم تسجيل الورد',
+      editId
+        ? `تم تحديث التسجيل إلى ${computedPages} صفحة. وصلت إلى ${nextAchieved}/${targetPages || '—'} (${nextPercent.toFixed(1)}%).`
+        : `تم تسجيل ${computedPages} صفحات. وصلت إلى ${nextAchieved}/${targetPages || '—'} (${nextPercent.toFixed(1)}%).`,
+      editId ? 'تم التعديل' : 'تم تسجيل الورد',
     )
-    const nextSpan = Math.max(minDaily, computedPages)
-    setPagesCount(nextSpan)
-    setFromPage(resolvedTo + 1)
-    setToPage(resolvedTo + nextSpan)
+    const optimisticAwrad = editId
+      ? awrad.map((w) =>
+          w.id === editId
+            ? {
+                ...w,
+                ...payload,
+                recordedAt:
+                  allowCust && recordedAtIso ? recordedAtIso : w.recordedAt,
+              }
+            : w,
+        )
+      : [
+          {
+            id: '__local_pending__',
+            planId: selectedPlan.id,
+            planName: selectedPlan.name,
+            mode: payload.mode,
+            pagesCount: payload.pagesCount,
+            fromPage: payload.fromPage,
+            toPage: payload.toPage,
+            recordedAt:
+              allowCust && recordedAtIso ? recordedAtIso : new Date().toISOString(),
+          },
+          ...awrad,
+        ]
+    setEditingWirdId(null)
+    const yNext = localYmd()
+    setFormRecordingYmd(yNext)
+    applyPlanDefaults(selectedPlan.id, plans, optimisticAwrad, { formRecordingYmd: yNext })
     setIsEditorOpen(false)
   }
 
   const startEdit = (wird) => {
+    const planRow = plans.find((x) => x.id === wird.planId) ?? selectedPlan
+    const nextYmd = planAllowsCustomRecordingDate(planRow)
+      ? ymdFromRecordedAt(wird.recordedAt) || localYmd()
+      : localYmd()
+    setFormRecordingYmd(nextYmd)
     setEditingWirdId(wird.id)
     setMode(wird.mode || 'count')
     setPagesCount(Math.max(1, Number(wird.pagesCount) || 1))
     setFromPage(Math.max(1, Number(wird.fromPage) || 1))
     setToPage(Math.max(1, Number(wird.toPage) || Math.max(1, Number(wird.pagesCount) || 1)))
     setIsEditorOpen(true)
+    queueMicrotask(() => {
+      applyPlanDefaults(wird.planId, plans, awrad, { formRecordingYmd: nextYmd })
+    })
   }
 
   const cancelEdit = () => {
     setEditingWirdId(null)
     setMode('count')
-    applyPlanDefaults(selectedPlanId, plans)
+    const y = localYmd()
+    setFormRecordingYmd(y)
+    applyPlanDefaults(selectedPlanId, plans, awrad, { formRecordingYmd: y })
     setIsEditorOpen(false)
   }
 
@@ -287,7 +399,13 @@ export default function AwradPage() {
               ? 'عرض التقدّم والسجل فقط.'
               : actingAsUser
                 ? 'إضافة وتعديل وحذف الأوراد لهذا المستخدم من حساب المشرف.'
-                : 'يمكنك الزيادة على الورد المحدد في الخطة، مع حفظ التسلسل تلقائيًا.'}
+                : strictQuota
+                  ? `الخطة على وضع تراكمي: لا يتجاوز تسجيلك ما يبقّى عليك من الورد تراكمياً${
+                      customDateOn ? ' (يمكن اختيار يوم التسجيل من النموذج عند تفعيل الخطة لهذا الخيار).' : ' حتى اليوم المحلي (مع تعويض أيام فائتة).'
+                    }`
+                  : customDateOn
+                    ? 'يمكنك تجاوز الورد اليومي أو اختيار تاريخ تسجيل مختلف عند فتح النموذج، مع حفظ التسلسل تلقائيًا.'
+                    : 'يمكنك تجاوز الورد اليومي المحدد في الخطة إن رغبت، مع حفظ التسلسل تلقائيًا.'}
           </p>
         </div>
         {!viewOnly && (
@@ -297,7 +415,11 @@ export default function AwradPage() {
               onClick={() => {
                 setEditingWirdId(null)
                 setMode('count')
-                applyPlanDefaults(selectedPlanId || plans[0]?.id || '', plans)
+                const y = localYmd()
+                setFormRecordingYmd(y)
+                applyPlanDefaults(selectedPlanId || plans[0]?.id || '', plans, awrad, {
+                  formRecordingYmd: y,
+                })
                 setIsEditorOpen(true)
               }}
             >
@@ -311,7 +433,15 @@ export default function AwradPage() {
           <>
             <div className="rh-awrad__stats">
               <div className="rh-awrad__stat"><strong>اليوم:</strong> {todayLabel}</div>
-              <div className="rh-awrad__stat"><strong>الحد الأدنى اليومي:</strong> {minDaily} صفحات</div>
+              <div className="rh-awrad__stat"><strong>الورد المقرر يوميًا:</strong> {minDaily} صفحات</div>
+              {strictQuota && (
+                <div className="rh-awrad__stat">
+                  <strong>الحد الأقصى المسموح (تراكمي):</strong>{' '}
+                  {maxPagesToday <= 0 ? 'لا يتبقّى ورد لهذا اليوم' : `${maxPagesToday} صفحة`}
+                  {isEditorOpen && customDateOn && ` — تاريخ النموذج: ${quotaYmd}`}
+                  {(!isEditorOpen || !customDateOn) && ' — بحسب اليوم المحلي'}
+                </div>
+              )}
               <div className="rh-awrad__stat"><strong>أيام الخطة:</strong> {requiredDaysLabel}</div>
               <div className="rh-awrad__stat"><strong>آخر صفحة وصلت لها:</strong> {reachedPage || 0}</div>
               <div className="rh-awrad__stat"><strong>البداية التالية:</strong> {nextFromPage}</div>
@@ -375,7 +505,9 @@ export default function AwradPage() {
               onChange={(e) => {
                 const nextId = e.target.value
                 setSelectedPlanId(nextId)
-                applyPlanDefaults(nextId, plans)
+                const y = localYmd()
+                setFormRecordingYmd(y)
+                applyPlanDefaults(nextId, plans, awrad, { formRecordingYmd: y })
               }}
             >
               <option value="">اختر خطة...</option>
@@ -384,6 +516,27 @@ export default function AwradPage() {
               ))}
             </select>
           </div>
+
+          {selectedPlan && planAllowsCustomRecordingDate(selectedPlan) && (
+            <DateField
+              label="تاريخ تسجيل الورد"
+              hint="يُحتسب الورد التراكمي وفق هذا اليوم. لا يمكن اختيار تاريخ مستقبلي أو قبل بداية الخطة."
+              value={formRecordingYmd}
+              onChange={(e) => {
+                const v = e.target.value
+                setFormRecordingYmd(v)
+                queueMicrotask(() => {
+                  applyPlanDefaults(selectedPlanId, plans, awrad, { formRecordingYmd: v })
+                })
+              }}
+              max={localYmd()}
+              min={
+                selectedPlan.useDateRange && selectedPlan.dateStart
+                  ? String(selectedPlan.dateStart).slice(0, 10)
+                  : planScheduleStartYmd(selectedPlan)
+              }
+            />
+          )}
 
           <div className="rh-segment rh-awrad__mode">
             <button
@@ -405,11 +558,17 @@ export default function AwradPage() {
           {mode === 'count' ? (
             <NumberStepField
               label="عدد الصفحات"
-              hint={`سيتم التسجيل تلقائيًا من صفحة ${nextFromPage}`}
+              hint={
+                strictQuota
+                  ? `من صفحة ${nextFromPage} — لا يتجاوز المسموح ${maxPagesToday} صفحة وفق الورد التراكمي${
+                      customDateOn ? ` (لتاريخ ${quotaYmd})` : ''
+                    }.`
+                  : `سيتم التسجيل تلقائيًا من صفحة ${nextFromPage} (يمكنك تجاوز الورد اليومي).`
+              }
               value={pagesCount}
               onChange={setPagesCount}
-              min={minDaily}
-              max={999}
+              min={strictQuota ? 1 : minDaily}
+              max={strictQuota ? Math.max(1, maxPagesToday) : 999}
             />
           ) : (
             <div className="rh-awrad__range">
@@ -422,6 +581,12 @@ export default function AwradPage() {
               />
               <NumberStepField label="إلى صفحة" value={toPage} onChange={setToPage} min={1} max={9999} />
               <TextField label="المجموع المحسوب" value={String(computedPages)} readOnly />
+              {strictQuota && (
+                <p className="ui-field__hint">
+                  في الوضع التراكمي يجب ألا يتجاوز المجموع المحسوب {maxPagesToday} صفحة
+                  {customDateOn ? ` لتاريخ ${quotaYmd}.` : ' لهذا اليوم.'}
+                </p>
+              )}
             </div>
           )}
 

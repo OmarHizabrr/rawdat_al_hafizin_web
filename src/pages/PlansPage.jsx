@@ -7,6 +7,10 @@ import { isAdmin } from '../config/roles.js'
 import { useAuth } from '../context/useAuth.js'
 import { firestoreApi } from '../services/firestoreApi.js'
 import { setUserDefaultPlanId } from '../services/userService.js'
+import {
+  DAILY_LOGGING_ALLOW_OVER,
+  DAILY_LOGGING_STRICT_CARRYOVER,
+} from '../utils/planDailyQuota.js'
 import { countDaysInRange, sessionsNeeded } from '../utils/planSchedule.js'
 import { subscribeAllUsers } from '../services/adminUsersService.js'
 import {
@@ -107,6 +111,8 @@ export default function PlansPage() {
   const [editingPlanId, setEditingPlanId] = useState(null)
   const [deletingPlan, setDeletingPlan] = useState(null)
   const [planVisibility, setPlanVisibility] = useState('private')
+  const [dailyLoggingMode, setDailyLoggingMode] = useState(DAILY_LOGGING_ALLOW_OVER)
+  const [allowCustomRecordingDate, setAllowCustomRecordingDate] = useState(false)
   const [membersModalPlan, setMembersModalPlan] = useState(null)
   const [planMembersList, setPlanMembersList] = useState([])
   const [membersLoading, setMembersLoading] = useState(false)
@@ -305,6 +311,8 @@ export default function PlansPage() {
     setUseWeekdayFilter(false)
     setWeekdays(new Set())
     setPlanVisibility('private')
+    setDailyLoggingMode(DAILY_LOGGING_ALLOW_OVER)
+    setAllowCustomRecordingDate(false)
   }
 
   const openAddModal = () => {
@@ -342,6 +350,12 @@ export default function PlansPage() {
     setUseWeekdayFilter(Boolean(plan.useWeekdayFilter))
     setWeekdays(new Set(Array.isArray(plan.weekdayFilter) ? plan.weekdayFilter : []))
     setPlanVisibility(plan.planVisibility === 'public' ? 'public' : 'private')
+    setDailyLoggingMode(
+      plan.dailyLoggingMode === DAILY_LOGGING_STRICT_CARRYOVER
+        ? DAILY_LOGGING_STRICT_CARRYOVER
+        : DAILY_LOGGING_ALLOW_OVER,
+    )
+    setAllowCustomRecordingDate(Boolean(plan.allowCustomRecordingDate))
     setIsEditorOpen(true)
   }
 
@@ -407,6 +421,8 @@ export default function PlansPage() {
       weekdayFilter: wdArr,
       weekdayLabels:
         wdArr ? wdArr.map((d) => WEEKDAYS.find((w) => w.d === d).label).join('، ') : null,
+      dailyLoggingMode,
+      allowCustomRecordingDate,
     }
 
     const nextPlans = editingPlanId
@@ -665,6 +681,11 @@ export default function PlansPage() {
                       {homeDefaultId === p.id && (
                         <span className="rh-plans__saved-badge rh-plans__saved-badge--home">الرئيسية</span>
                       )}
+                      {p.dailyLoggingMode === DAILY_LOGGING_STRICT_CARRYOVER ? (
+                        <span className="rh-plans__saved-badge">ورد تراكمي</span>
+                      ) : (
+                        <span className="rh-plans__saved-badge">تجاوز يومي</span>
+                      )}
                     </span>
                   </div>
                   <PeekButton
@@ -882,6 +903,54 @@ export default function PlansPage() {
             />
           </div>
         </div>
+
+        <p className="rh-plans__field-label">سياسة تسجيل الورد</p>
+        <div className="rh-segment rh-segment--plans">
+          <button
+            type="button"
+            role="radio"
+            aria-checked={dailyLoggingMode === DAILY_LOGGING_ALLOW_OVER}
+            className={[
+              'rh-segment__btn',
+              dailyLoggingMode === DAILY_LOGGING_ALLOW_OVER ? 'rh-segment__btn--active' : '',
+            ]
+              .filter(Boolean)
+              .join(' ')}
+            onClick={() => setDailyLoggingMode(DAILY_LOGGING_ALLOW_OVER)}
+          >
+            <span className="rh-segment__label">تجاوز الورد اليومي مسموح</span>
+            <span className="rh-segment__hint">يمكن تسجيل أكثر من الورد المحدد في اليوم (مثلاً ١٠ أو ٢٠ صفحة).</span>
+          </button>
+          <button
+            type="button"
+            role="radio"
+            aria-checked={dailyLoggingMode === DAILY_LOGGING_STRICT_CARRYOVER}
+            className={[
+              'rh-segment__btn',
+              dailyLoggingMode === DAILY_LOGGING_STRICT_CARRYOVER ? 'rh-segment__btn--active' : '',
+            ]
+              .filter(Boolean)
+              .join(' ')}
+            onClick={() => setDailyLoggingMode(DAILY_LOGGING_STRICT_CARRYOVER)}
+          >
+            <span className="rh-segment__label">التزام تراكمي مع تعويض الغياب</span>
+            <span className="rh-segment__hint">
+              لا يتجاوز المطلوب تراكمياً؛ إن فاتك أيام يسمح لك بتسجيل المتأخرات مع اليوم ضمن الحد.
+            </span>
+          </button>
+        </div>
+
+        <label className="rh-plans__toggle">
+          <input
+            type="checkbox"
+            checked={allowCustomRecordingDate}
+            onChange={(e) => setAllowCustomRecordingDate(e.target.checked)}
+          />
+          <span>السماح باختيار تاريخ تسجيل الورد (غير اليوم المحلي)</span>
+        </label>
+        <p className="rh-settings-card__subtitle rh-plans__toggle-follow">
+          عند التفعيل يظهر في صفحة الأوراد حقل تاريخ يحدد يوم احتساب الورد والحد التراكمي؛ عند الإلغاء يُسجَّل دائماً بتاريخ اليوم المحلي.
+        </p>
 
         {typeof Notification !== 'undefined' && reminderTime.trim() && Notification.permission === 'default' && (
           <div className="rh-plans__notif-prompt">

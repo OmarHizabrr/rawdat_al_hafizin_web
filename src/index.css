@@ -2118,6 +2118,12 @@ a.rh-sidebar__brand-link.rh-sidebar__brand-link--active {
   accent-color: var(--rh-primary);
 }
 
+.rh-plans__toggle-follow {
+  margin-top: calc(-1 * var(--rh-space-2));
+  margin-bottom: var(--rh-space-4);
+  max-width: 46rem;
+}
+
 .rh-plans__dates-grid {
   display: grid;
   grid-template-columns: 1fr;
