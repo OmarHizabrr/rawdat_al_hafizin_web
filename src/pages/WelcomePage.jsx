@@ -3,25 +3,35 @@ import { CrossNav } from '../components/CrossNav.jsx'
 import { ProgramSections } from '../components/ProgramSections.jsx'
 import { isAdmin } from '../config/roles.js'
 import { useAuth } from '../context/useAuth.js'
+import { usePermissions } from '../context/usePermissions.js'
 import { useSiteContent } from '../context/useSiteContent.js'
 
 export default function WelcomePage() {
   const { user } = useAuth()
+  const { canAccessPage } = usePermissions()
   const { branding, str } = useSiteContent()
 
   const welcomeCrossItems = useMemo(() => {
     const base = [
       { to: '/app', label: str('layout.nav_home') },
       { to: '/app/plans', label: str('layout.nav_plans') },
+    ]
+    if (canAccessPage('halakat')) {
+      base.push({ to: '/app/halakat', label: str('layout.nav_halakat') })
+    }
+    if (canAccessPage('dawrat')) {
+      base.push({ to: '/app/dawrat', label: str('layout.nav_dawrat') })
+    }
+    base.push(
       { to: '/app/awrad', label: str('layout.nav_awrad') },
       { to: '/app/settings', label: str('layout.nav_settings') },
-    ]
+    )
     if (isAdmin(user)) {
       base.push({ to: '/app/admin', label: str('layout.nav_dashboard') })
       base.push({ to: '/app/admin/users', label: str('layout.nav_users') })
     }
     return base
-  }, [user, str])
+  }, [user, str, canAccessPage])
 
   useEffect(() => {
     document.title = `البداية — ${branding.siteTitle}`

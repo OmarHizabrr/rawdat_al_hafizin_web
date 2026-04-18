@@ -1,5 +1,5 @@
 import { Compass, Pencil, Plus, Star, Trash2, UserPlus, Users } from 'lucide-react'
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { VOLUMES, VOLUME_BY_ID } from '../data/volumes.js'
 import { useSiteContent } from '../context/useSiteContent.js'
@@ -90,7 +90,7 @@ const PP = PERMISSION_PAGE_IDS.plans
 
 export default function PlansPage() {
   const { user } = useAuth()
-  const { can } = usePermissions()
+  const { can, canAccessPage } = usePermissions()
   const { planTypes, typeLabel, branding, str } = useSiteContent()
   const toast = useToast()
   const [searchParams] = useSearchParams()
@@ -109,6 +109,24 @@ export default function PlansPage() {
     if (uidParam && isAdmin(user)) return `/app/plans/explore?uid=${encodeURIComponent(uidParam)}`
     return '/app/plans/explore'
   }, [uidParam, user])
+  const halakatListHref = useMemo(() => {
+    if (uidParam && isAdmin(user)) return `/app/halakat?uid=${encodeURIComponent(uidParam)}`
+    return '/app/halakat'
+  }, [uidParam, user])
+  const dawratListHref = useMemo(() => {
+    if (uidParam && isAdmin(user)) return `/app/dawrat?uid=${encodeURIComponent(uidParam)}`
+    return '/app/dawrat'
+  }, [uidParam, user])
+  const withUserCtx = useCallback(
+    (path) => {
+      if (uidParam && isAdmin(user)) {
+        const joiner = path.includes('?') ? '&' : '?'
+        return `${path}${joiner}uid=${encodeURIComponent(uidParam)}`
+      }
+      return path
+    },
+    [uidParam, user],
+  )
   const [viewedDefaultPlanId, setViewedDefaultPlanId] = useState(null)
 
   const [savedPlans, setSavedPlans] = useState([])
@@ -618,18 +636,26 @@ export default function PlansPage() {
 
   const plansCrossItems = useMemo(() => {
     const base = [
-      { to: '/app', label: str('layout.nav_home') },
+      { to: withUserCtx('/app'), label: str('layout.nav_home') },
       { to: explorePlansHref, label: str('layout.nav_plans_explore') },
-      { to: '/app/awrad', label: str('layout.nav_awrad') },
-      { to: '/app/welcome', label: str('layout.nav_welcome') },
-      { to: '/app/settings', label: str('layout.nav_settings') },
     ]
+    if (canAccessPage('halakat')) {
+      base.push({ to: halakatListHref, label: str('layout.nav_halakat') })
+    }
+    if (canAccessPage('dawrat')) {
+      base.push({ to: dawratListHref, label: str('layout.nav_dawrat') })
+    }
+    base.push(
+      { to: withUserCtx('/app/awrad'), label: str('layout.nav_awrad') },
+      { to: withUserCtx('/app/welcome'), label: str('layout.nav_welcome') },
+      { to: withUserCtx('/app/settings'), label: str('layout.nav_settings') },
+    )
     if (isAdmin(user)) {
       base.push({ to: '/app/admin', label: str('layout.nav_dashboard') })
       base.push({ to: '/app/admin/users', label: str('layout.nav_users') })
     }
     return base
-  }, [user, str, explorePlansHref])
+  }, [user, str, explorePlansHref, halakatListHref, dawratListHref, canAccessPage, withUserCtx])
 
   return (
     <div className="rh-plans">

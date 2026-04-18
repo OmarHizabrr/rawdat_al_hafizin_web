@@ -38,7 +38,7 @@ const PA = PERMISSION_PAGE_IDS.awrad
 
 export default function AwradPage() {
   const { user } = useAuth()
-  const { can } = usePermissions()
+  const { can, canAccessPage } = usePermissions()
   const { branding, str } = useSiteContent()
   const toast = useToast()
   const navigate = useNavigate()
@@ -56,19 +56,38 @@ export default function AwradPage() {
   const actingAsUser = Boolean(user?.uid && contextUserId && contextUserId !== user.uid)
   const viewOnly = Boolean(actingAsUser && !isAdmin(user))
 
+  const appPathWithImpersonation = useCallback(
+    (path) => {
+      if (uidFromUrl && isAdmin(user)) {
+        const joiner = path.includes('?') ? '&' : '?'
+        return `${path}${joiner}uid=${encodeURIComponent(uidFromUrl)}`
+      }
+      return path
+    },
+    [uidFromUrl, user],
+  )
+
   const awradCrossItems = useMemo(() => {
     const base = [
-      { to: '/app', label: str('layout.nav_home') },
-      { to: '/app/plans', label: str('layout.nav_plans') },
-      { to: '/app/welcome', label: str('layout.nav_welcome') },
-      { to: '/app/settings', label: str('layout.nav_settings') },
+      { to: appPathWithImpersonation('/app'), label: str('layout.nav_home') },
+      { to: appPathWithImpersonation('/app/plans'), label: str('layout.nav_plans') },
     ]
+    if (canAccessPage('halakat')) {
+      base.push({ to: appPathWithImpersonation('/app/halakat'), label: str('layout.nav_halakat') })
+    }
+    if (canAccessPage('dawrat')) {
+      base.push({ to: appPathWithImpersonation('/app/dawrat'), label: str('layout.nav_dawrat') })
+    }
+    base.push(
+      { to: appPathWithImpersonation('/app/welcome'), label: str('layout.nav_welcome') },
+      { to: appPathWithImpersonation('/app/settings'), label: str('layout.nav_settings') },
+    )
     if (isAdmin(user)) {
       base.push({ to: '/app/admin', label: str('layout.nav_dashboard') })
       base.push({ to: '/app/admin/users', label: str('layout.nav_users') })
     }
     return base
-  }, [user, str])
+  }, [user, str, appPathWithImpersonation, canAccessPage])
 
   const [plans, setPlans] = useState([])
   const [awrad, setAwrad] = useState([])

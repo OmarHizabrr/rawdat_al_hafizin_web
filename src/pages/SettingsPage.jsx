@@ -21,7 +21,7 @@ const PS = PERMISSION_PAGE_IDS.settings
 
 export default function SettingsPage() {
   const { user } = useAuth()
-  const { can } = usePermissions()
+  const { can, canAccessPage } = usePermissions()
   const { branding, str } = useSiteContent()
   const toast = useToast()
   const [draftName, setDraftName] = useState('')
@@ -34,15 +34,23 @@ export default function SettingsPage() {
     const base = [
       { to: '/app', label: str('layout.nav_home') },
       { to: '/app/plans', label: str('layout.nav_plans') },
+    ]
+    if (canAccessPage('halakat')) {
+      base.push({ to: '/app/halakat', label: str('layout.nav_halakat') })
+    }
+    if (canAccessPage('dawrat')) {
+      base.push({ to: '/app/dawrat', label: str('layout.nav_dawrat') })
+    }
+    base.push(
       { to: '/app/awrad', label: str('layout.nav_awrad') },
       { to: '/app/welcome', label: str('layout.nav_welcome') },
-    ]
+    )
     if (isAdmin(user)) {
       base.push({ to: '/app/admin', label: str('layout.nav_dashboard') })
       base.push({ to: '/app/admin/users', label: str('layout.nav_users') })
     }
     return base
-  }, [user, str])
+  }, [user, str, canAccessPage])
 
   useEffect(() => {
     document.title = `الإعدادات — ${branding.siteTitle}`

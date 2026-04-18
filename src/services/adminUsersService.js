@@ -2,6 +2,8 @@ import { normalizeRole } from '../config/roles.js'
 import { uploadUserProfileAvatar } from './profilePhotoStorage.js'
 import { firestoreApi } from './firestoreApi.js'
 import { removePlanForUser } from '../utils/plansStorage.js'
+import { removeHalakaForUser } from '../utils/halakatStorage.js'
+import { removeDawraForUser } from '../utils/dawratStorage.js'
 import { getDefaultPermissionProfileIdForPlatformRole } from './permissionProfilesService.js'
 
 function mapUserDocs(docs) {
@@ -116,6 +118,16 @@ export async function adminDeleteUserFirestore(actorUser, targetUid) {
   )
   for (const d of planMirrors) {
     await removePlanForUser(targetUid, d.id)
+  }
+
+  const halakaMirrors = await firestoreApi.getDocuments(firestoreApi.getUserHalakatCollection(targetUid))
+  for (const d of halakaMirrors) {
+    await removeHalakaForUser(targetUid, d.id)
+  }
+
+  const dawraMirrors = await firestoreApi.getDocuments(firestoreApi.getUserDawratCollection(targetUid))
+  for (const d of dawraMirrors) {
+    await removeDawraForUser(targetUid, d.id)
   }
 
   const awradCol = firestoreApi.getUserAwradCollection(targetUid)

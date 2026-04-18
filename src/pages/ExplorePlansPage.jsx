@@ -32,7 +32,7 @@ const PE = PERMISSION_PAGE_IDS.plans_explore
 
 export default function ExplorePlansPage() {
   const { user } = useAuth()
-  const { can } = usePermissions()
+  const { can, canAccessPage } = usePermissions()
   const { search } = useLocation()
   const { typeLabel, branding, str } = useSiteContent()
   const toast = useToast()
@@ -117,16 +117,24 @@ export default function ExplorePlansPage() {
     const base = [
       { to: appLink('/app'), label: str('layout.nav_home') },
       { to: appLink('/app/plans'), label: str('layout.nav_plans') },
+    ]
+    if (canAccessPage('halakat')) {
+      base.push({ to: appLink('/app/halakat'), label: str('layout.nav_halakat') })
+    }
+    if (canAccessPage('dawrat')) {
+      base.push({ to: appLink('/app/dawrat'), label: str('layout.nav_dawrat') })
+    }
+    base.push(
       { to: appLink('/app/awrad'), label: str('layout.nav_awrad') },
       { to: appLink('/app/welcome'), label: str('layout.nav_welcome') },
       { to: appLink('/app/settings'), label: str('layout.nav_settings') },
-    ]
+    )
     if (isAdmin(user)) {
       base.push({ to: '/app/admin', label: str('layout.nav_dashboard') })
       base.push({ to: '/app/admin/users', label: str('layout.nav_users') })
     }
     return base
-  }, [user, str, appLink])
+  }, [user, str, appLink, canAccessPage])
 
   return (
     <div className="rh-explore-plans">
