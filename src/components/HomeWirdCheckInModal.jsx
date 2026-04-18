@@ -76,11 +76,12 @@ export function HomeWirdCheckInModal({
     <Modal
       open={open}
       title={null}
-      onClose={handleSnooze}
+      ariaLabel="هل أكملت وردك اليوم؟"
+      onClose={() => {}}
       size="md"
-      closeOnBackdrop={!busy}
-      closeOnEsc={!busy}
-      showClose={!busy}
+      closeOnBackdrop={false}
+      closeOnEsc={false}
+      showClose={false}
       className="rh-checkin-modal"
       contentClassName="rh-checkin-modal__sheet"
     >

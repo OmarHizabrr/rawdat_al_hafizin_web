@@ -73,7 +73,7 @@ export default function AppHomePage() {
   const [homeWirdOpen, setHomeWirdOpen] = useState(false)
   const [homeWirdCheckInOpen, setHomeWirdCheckInOpen] = useState(false)
   const [homeNow, setHomeNow] = useState(() => new Date())
-  const checkInGateRef = useRef({ ymd: '', planId: '', shown: false })
+  const prevShouldOfferCheckInRef = useRef(false)
 
   useOnClickOutside(planMenuRef, () => setPlanMenuOpen(false), planMenuOpen)
 
@@ -173,51 +173,44 @@ export default function AppHomePage() {
     return 'حان وقت وردك اليوم'
   }, [homeWirdStatus])
 
-  useEffect(() => {
-    if (!activePlan || !progress || !can(PH, 'home_log_wird')) return undefined
-    if (homeWirdOpen) {
-      setHomeWirdCheckInOpen(false)
-      return undefined
-    }
-    if (!homeWirdStatus.appliesToday || homeWirdStatus.isComplete) {
-      setHomeWirdCheckInOpen(false)
-      return undefined
-    }
+  const shouldOfferCheckIn = useMemo(() => {
+    homeNow.getTime()
+    if (!activePlan || !progress || !contextUserId) return false
+    if (!can(PH, 'home_log_wird')) return false
+    if (homeWirdOpen) return false
+    if (!homeWirdStatus.appliesToday || homeWirdStatus.isComplete) return false
     const ymd = homeWirdStatus.todayYmd
     const planId = activePlan.id
-    if (isCheckinDismissedForDay(contextUserId, ymd, planId)) return undefined
-    if (isCheckinSnoozed(contextUserId, ymd, planId)) return undefined
-
-    const built = buildAutoDefaultWirdAddRequest(activePlan, awrad, localYmd())
-    if (!built.ok) return undefined
-
-    if (checkInGateRef.current.ymd !== ymd || checkInGateRef.current.planId !== planId) {
-      checkInGateRef.current = { ymd, planId, shown: false }
-    }
-    if (checkInGateRef.current.shown) return undefined
-
-    const t = window.setTimeout(() => {
-      checkInGateRef.current.shown = true
-      setHomeWirdCheckInOpen(true)
-    }, 550)
-    return () => window.clearTimeout(t)
+    if (isCheckinDismissedForDay(contextUserId, ymd, planId)) return false
+    if (isCheckinSnoozed(contextUserId, ymd, planId)) return false
+    if (!buildAutoDefaultWirdAddRequest(activePlan, awrad, localYmd()).ok) return false
+    return true
   }, [
     activePlan,
     progress,
+    contextUserId,
+    can,
     homeWirdOpen,
     homeWirdStatus.appliesToday,
     homeWirdStatus.isComplete,
     homeWirdStatus.todayYmd,
     awrad,
-    contextUserId,
-    can,
     homeNow,
   ])
 
-  const homeCheckInPayloadOk = useMemo(() => {
-    if (!activePlan || !progress) return false
-    return buildAutoDefaultWirdAddRequest(activePlan, awrad, localYmd()).ok
-  }, [activePlan, progress, awrad])
+  useEffect(() => {
+    if (!shouldOfferCheckIn) {
+      setHomeWirdCheckInOpen(false)
+      prevShouldOfferCheckInRef.current = false
+      return undefined
+    }
+    if (!prevShouldOfferCheckInRef.current) {
+      prevShouldOfferCheckInRef.current = true
+      const t = window.setTimeout(() => setHomeWirdCheckInOpen(true), 550)
+      return () => window.clearTimeout(t)
+    }
+    return undefined
+  }, [shouldOfferCheckIn])
 
   const homeCrossItems = useMemo(() => {
     const base = [
@@ -438,7 +431,7 @@ export default function AppHomePage() {
             user={user}
           />
           <HomeWirdCheckInModal
-            open={homeWirdCheckInOpen && can(PH, 'home_log_wird') && homeCheckInPayloadOk}
+            open={homeWirdCheckInOpen && shouldOfferCheckIn && can(PH, 'home_log_wird')}
             onClose={() => setHomeWirdCheckInOpen(false)}
             activePlan={activePlan}
             awrad={awrad}
@@ -446,11 +439,9 @@ export default function AppHomePage() {
             user={user}
             onSnooze={() => {
               setCheckinSnooze(contextUserId, homeWirdStatus.todayYmd, activePlan.id)
-              checkInGateRef.current.shown = false
             }}
             onDismissNo={() => {
               setCheckinDismissNo(contextUserId, homeWirdStatus.todayYmd, activePlan.id)
-              checkInGateRef.current.shown = false
             }}
           />
         </section>
