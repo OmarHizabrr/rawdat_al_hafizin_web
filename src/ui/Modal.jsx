@@ -13,6 +13,7 @@ export function Modal({
   showClose = true,
   className = '',
   contentClassName = '',
+  ariaLabel,
 }) {
   useEffect(() => {
     if (!open) return
@@ -35,7 +36,12 @@ export function Modal({
   if (!open) return null
 
   return (
-    <div className={['ui-modal', className].filter(Boolean).join(' ')} role="dialog" aria-modal="true" aria-label={title}>
+    <div
+      className={['ui-modal', className].filter(Boolean).join(' ')}
+      role="dialog"
+      aria-modal="true"
+      aria-label={ariaLabel ?? title ?? 'حوار'}
+    >
       <button
         type="button"
         className="ui-modal__backdrop"

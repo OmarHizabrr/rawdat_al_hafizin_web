@@ -14,6 +14,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useLocation, useSearchParams } from 'react-router-dom'
 import { useSiteContent } from '../context/useSiteContent.js'
 import { CrossNav } from '../components/CrossNav.jsx'
+import { HomeWirdCheckInModal } from '../components/HomeWirdCheckInModal.jsx'
 import { HomeWirdModal } from '../components/HomeWirdModal.jsx'
 import { pickHomeMotivationQuote } from '../data/homeMotivationQuotes.js'
 import { PERMISSION_PAGE_IDS } from '../config/permissionRegistry.js'
@@ -25,7 +26,15 @@ import { setUserDefaultPlanId } from '../services/userService.js'
 import { useOnClickOutside } from '../ui/hooks/useOnClickOutside.js'
 import { loadPlans, subscribePlans } from '../utils/plansStorage.js'
 import { subscribeAwrad } from '../utils/awradStorage.js'
+import { buildAutoDefaultWirdAddRequest } from '../utils/autoLogDefaultWird.js'
 import { getHomeWirdDayStatus } from '../utils/homeWirdStatus.js'
+import {
+  isCheckinDismissedForDay,
+  isCheckinSnoozed,
+  setCheckinDismissNo,
+  setCheckinSnooze,
+} from '../utils/homeWirdCheckinStorage.js'
+import { localYmd } from '../utils/planDailyQuota.js'
 import { computePlanProgress } from '../utils/planProgress.js'
 import { getImpersonateUid, withImpersonationQuery } from '../utils/impersonation.js'
 import { RhIcon, RH_ICON_STROKE } from '../ui/RhIcon.jsx'
@@ -62,7 +71,9 @@ export default function AppHomePage() {
   const planSwitchBusyRef = useRef(false)
   const planMenuRef = useRef(null)
   const [homeWirdOpen, setHomeWirdOpen] = useState(false)
+  const [homeWirdCheckInOpen, setHomeWirdCheckInOpen] = useState(false)
   const [homeNow, setHomeNow] = useState(() => new Date())
+  const checkInGateRef = useRef({ ymd: '', planId: '', shown: false })
 
   useOnClickOutside(planMenuRef, () => setPlanMenuOpen(false), planMenuOpen)
 
@@ -161,6 +172,52 @@ export default function AppHomePage() {
     if (homeWirdStatus.variant === 'urgent') return 'تأخّرت قليلاً — سجّل وردك قبل انتهاء اليوم'
     return 'حان وقت وردك اليوم'
   }, [homeWirdStatus])
+
+  useEffect(() => {
+    if (!activePlan || !progress || !can(PH, 'home_log_wird')) return undefined
+    if (homeWirdOpen) {
+      setHomeWirdCheckInOpen(false)
+      return undefined
+    }
+    if (!homeWirdStatus.appliesToday || homeWirdStatus.isComplete) {
+      setHomeWirdCheckInOpen(false)
+      return undefined
+    }
+    const ymd = homeWirdStatus.todayYmd
+    const planId = activePlan.id
+    if (isCheckinDismissedForDay(contextUserId, ymd, planId)) return undefined
+    if (isCheckinSnoozed(contextUserId, ymd, planId)) return undefined
+
+    const built = buildAutoDefaultWirdAddRequest(activePlan, awrad, localYmd())
+    if (!built.ok) return undefined
+
+    if (checkInGateRef.current.ymd !== ymd || checkInGateRef.current.planId !== planId) {
+      checkInGateRef.current = { ymd, planId, shown: false }
+    }
+    if (checkInGateRef.current.shown) return undefined
+
+    const t = window.setTimeout(() => {
+      checkInGateRef.current.shown = true
+      setHomeWirdCheckInOpen(true)
+    }, 550)
+    return () => window.clearTimeout(t)
+  }, [
+    activePlan,
+    progress,
+    homeWirdOpen,
+    homeWirdStatus.appliesToday,
+    homeWirdStatus.isComplete,
+    homeWirdStatus.todayYmd,
+    awrad,
+    contextUserId,
+    can,
+    homeNow,
+  ])
+
+  const homeCheckInPayloadOk = useMemo(() => {
+    if (!activePlan || !progress) return false
+    return buildAutoDefaultWirdAddRequest(activePlan, awrad, localYmd()).ok
+  }, [activePlan, progress, awrad])
 
   const homeCrossItems = useMemo(() => {
     const base = [
@@ -379,6 +436,22 @@ export default function AppHomePage() {
             awrad={awrad}
             contextUserId={contextUserId}
             user={user}
+          />
+          <HomeWirdCheckInModal
+            open={homeWirdCheckInOpen && can(PH, 'home_log_wird') && homeCheckInPayloadOk}
+            onClose={() => setHomeWirdCheckInOpen(false)}
+            activePlan={activePlan}
+            awrad={awrad}
+            contextUserId={contextUserId}
+            user={user}
+            onSnooze={() => {
+              setCheckinSnooze(contextUserId, homeWirdStatus.todayYmd, activePlan.id)
+              checkInGateRef.current.shown = false
+            }}
+            onDismissNo={() => {
+              setCheckinDismissNo(contextUserId, homeWirdStatus.todayYmd, activePlan.id)
+              checkInGateRef.current.shown = false
+            }}
           />
         </section>
       ) : (
