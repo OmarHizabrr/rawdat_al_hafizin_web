@@ -1,5 +1,7 @@
+import { normalizeRole } from '../config/roles.js'
 import { firestoreApi } from './firestoreApi.js'
 import { removePlanForUser } from '../utils/plansStorage.js'
+import { getDefaultPermissionProfileIdForPlatformRole } from './permissionProfilesService.js'
 
 function mapUserDocs(docs) {
   return docs
@@ -24,9 +26,18 @@ export function subscribeAllUsers(onNext, onError) {
 export async function adminUpdateUserRole(actorUser, targetUid, role) {
   if (!targetUid || !actorUser?.uid) return
   const docRef = firestoreApi.getUserDoc(targetUid)
+  const nr = normalizeRole(role)
+
+  let permissionProfileId = null
+  if (nr === 'admin') {
+    permissionProfileId = null
+  } else if (nr === 'student' || nr === 'teacher') {
+    permissionProfileId = await getDefaultPermissionProfileIdForPlatformRole(nr)
+  }
+
   await firestoreApi.updateData({
     docRef,
-    data: { role },
+    data: { role: nr, permissionProfileId },
     userData: actorUser,
   })
 }

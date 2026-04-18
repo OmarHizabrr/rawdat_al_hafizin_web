@@ -2,7 +2,7 @@ import { Shield, Trash2 } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 import { useSiteContent } from '../context/useSiteContent.js'
 import { useAuth } from '../context/useAuth.js'
-import { isAdmin } from '../config/roles.js'
+import { isAdmin, USER_ROLES } from '../config/roles.js'
 import { PERMISSION_PAGES } from '../config/permissionRegistry.js'
 import { firestoreApi } from '../services/firestoreApi.js'
 import {
@@ -26,6 +26,8 @@ export default function AdminUserTypesPage() {
   const [selectedId, setSelectedId] = useState(null)
   const [nameDraft, setNameDraft] = useState('')
   const [pagesDraft, setPagesDraft] = useState(emptyPagesMap)
+  /** ربط تلقائي مع حقل users.role (طالب/معلم فقط) */
+  const [roleBindingDraft, setRoleBindingDraft] = useState('')
   const [saving, setSaving] = useState(false)
   const [deleteTarget, setDeleteTarget] = useState(null)
   const [busyDelete, setBusyDelete] = useState(false)
@@ -49,6 +51,7 @@ export default function AdminUserTypesPage() {
     if (!selected) {
       setNameDraft('')
       setPagesDraft(emptyPagesMap())
+      setRoleBindingDraft('')
       return
     }
     setNameDraft(selected.name || '')
@@ -57,6 +60,8 @@ export default function AdminUserTypesPage() {
         ? JSON.parse(JSON.stringify(selected.pages))
         : emptyPagesMap(),
     )
+    const rb = selected.roleBinding
+    setRoleBindingDraft(rb === 'student' || rb === 'teacher' ? rb : '')
   }, [selected])
 
   const adminCrossItems = useMemo(
@@ -110,6 +115,7 @@ export default function AdminUserTypesPage() {
     setSelectedId(id)
     setNameDraft('نوع جديد')
     setPagesDraft(emptyPagesMap())
+    setRoleBindingDraft('')
   }
 
   const onSave = async () => {
@@ -121,7 +127,11 @@ export default function AdminUserTypesPage() {
     }
     setSaving(true)
     try {
-      await savePermissionProfile(user, selectedId, { name: n, pages: pagesDraft })
+      await savePermissionProfile(user, selectedId, {
+        name: n,
+        pages: pagesDraft,
+        roleBinding: roleBindingDraft,
+      })
       toast.success('تم حفظ نوع المستخدم.', 'تم')
     } catch {
       toast.warning('تعذّر الحفظ. تحقق من الصلاحيات على permission_profiles.', 'تنبيه')
@@ -154,10 +164,11 @@ export default function AdminUserTypesPage() {
         <h1 className="rh-admin-users__title">أنواع المستخدمين والصلاحيات</h1>
         <p className="rh-admin-users__desc">
           أنشئ أنواعاً مثل «طالب» أو «معلم»، وحدد الصفحات الظاهرة في القائمة، ثم فعّل أزرار الإضافة والتعديل والحذف
-          وغيرها لكل صفحة. المستخدمون بدون نوع مخصّص يحتفظون بصلاحيات كاملة كالسابق. يُخزَّن النوع في Firestore تحت{' '}
-          <code className="rh-admin-users__code">permission_profiles</code> ويُربَط بالحقل{' '}
-          <code className="rh-admin-users__code">permissionProfileId</code> في مستند المستخدم. تأكد من السماح بالقراءة
-          والكتابة لهذه المجموعة لحسابات المشرف في قواعد الأمان.
+          وغيرها لكل صفحة. يمكن ربط كل نوع بدور المنصة (طالب/معلم): عند تغيير حقل{' '}
+          <code className="rh-admin-users__code">role</code> في مستند <code className="rh-admin-users__code">users</code>{' '}
+          يُحدَّث <code className="rh-admin-users__code">permissionProfileId</code> تلقائياً لأول نوع مطابق لذلك الدور (حسب
+          الاسم إن وُجد أكثر من نوع). المستخدمون بدون إسناد أو بدون نوع مطابق يحصلون على وصول كامل كالسابق. تأكد من
+          قواعد Firestore لمجموعة <code className="rh-admin-users__code">permission_profiles</code>.
         </p>
         <CrossNav items={adminCrossItems} className="rh-admin-users__cross" />
       </header>
@@ -184,6 +195,9 @@ export default function AdminUserTypesPage() {
                   onClick={() => setSelectedId(p.id)}
                 >
                   {p.name || p.id}
+                  {p.roleBinding === 'student' || p.roleBinding === 'teacher'
+                    ? ` · ${USER_ROLES.find((r) => r.value === p.roleBinding)?.label ?? p.roleBinding}`
+                    : ''}
                 </button>
               </li>
             ))}
@@ -201,6 +215,28 @@ export default function AdminUserTypesPage() {
                   <RhIcon as={Shield} size={22} strokeWidth={RH_ICON_STROKE} />
                 </span>
                 <TextField label="اسم النوع" value={nameDraft} onChange={(e) => setNameDraft(e.target.value)} />
+                <div className="ui-field rh-admin-user-types__role-bind">
+                  <label className="ui-field__label" htmlFor="perm-role-binding">
+                    ربط بدور المستخدم في المنصة
+                  </label>
+                  <select
+                    id="perm-role-binding"
+                    className="ui-input"
+                    value={roleBindingDraft}
+                    onChange={(e) => setRoleBindingDraft(e.target.value)}
+                  >
+                    <option value="">— بدون ربط تلقائي —</option>
+                    {USER_ROLES.filter((r) => r.value !== 'admin').map((r) => (
+                      <option key={r.value} value={r.value}>
+                        عند كون المستخدم «{r.label}» يُعيَّن هذا النوع تلقائياً
+                      </option>
+                    ))}
+                  </select>
+                  <p className="ui-field__hint">
+                    عند تغيير الدور من صفحة المستخدمين يُحدَّث نوع الصلاحيات وفق هذا الربط. دور الأدمن يزيل الإسناد
+                    تلقائياً.
+                  </p>
+                </div>
                 <span className="rh-admin-user-types__id">
                   المعرّف: <code className="rh-admin-users__code">{selectedId}</code>
                 </span>

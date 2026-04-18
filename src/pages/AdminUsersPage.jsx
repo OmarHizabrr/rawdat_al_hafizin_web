@@ -91,7 +91,7 @@ export default function AdminUsersPage() {
     }
     await runBusy(target.uid, async () => {
       await adminUpdateUserRole(actor, target.uid, nextRole)
-      toast.success('تم تحديث الدور.', 'تم')
+      toast.success('تم تحديث الدور وربط نوع الصلاحيات تلقائياً عند وجود نوع مربوط بهذا الدور.', 'تم')
     })
   }
 
@@ -134,11 +134,12 @@ export default function AdminUsersPage() {
       <header className="rh-admin-users__hero card">
         <h1 className="rh-admin-users__title">إدارة المستخدمين</h1>
         <p className="rh-admin-users__desc">
-          عرض الحسابات، تغيير الدور (طالب / معلم / ادمن)، إيقاف الحساب، أو حذف بياناته من Firestore. لإسناد أول
-          حساب أدمن يدوياً، عدّل الحقل <code className="rh-admin-users__code">role</code> في مستند المستخدم إلى{' '}
-          <code className="rh-admin-users__code">admin</code> من وحدة تحكم Firebase. يمكن إسناد «نوع الصلاحيات»
-          (طالب/معلم مخصّص) من لوحة «أنواع المستخدمين»؛ الأدمن يتجاهل القيود في الواجهة. أيقونة المنزل تفتح رئيسيته،
-          وأيقونة العين صفحة خططه.
+          عرض الحسابات، تغيير الدور (طالب / معلم / ادمن)، إيقاف الحساب، أو حذف بياناته من Firestore. عند تغيير الدور
+          يُحدَّث في مستند <code className="rh-admin-users__code">users</code> كلٌّ من <code className="rh-admin-users__code">role</code> و{' '}
+          <code className="rh-admin-users__code">permissionProfileId</code> تلقائياً: يُختار أول نوع صلاحيات مربوط بذلك
+          الدور من لوحة «أنواع المستخدمين». الدور «ادمن» يفرّغ <code className="rh-admin-users__code">permissionProfileId</code>.
+          يمكنك أيضاً ضبط نوع الصلاحيات يدوياً دون تغيير الدور؛ أي تغيير لاحق للدور يعيد الإسناد التلقائي. أيقونة المنزل
+          تفتح رئيسيته، وأيقونة العين صفحة خططه.
         </p>
         <CrossNav items={adminCrossItems} className="rh-admin-users__cross" />
       </header>
@@ -219,6 +220,10 @@ export default function AdminUsersPage() {
                     </option>
                   ))}
                 </select>
+                <p className="rh-admin-users__profile-meta">
+                  يتغيّر هذا الإسناد تلقائياً عند تعديل «الدور» أعلاه، ما لم تضبط نوعاً يدوياً ثم تغيّر الدور فيُستبدل
+                  بالنوع المطابق للدور الجديد.
+                </p>
               </div>
 
               <div className="rh-admin-users__row rh-admin-users__row--actions">
