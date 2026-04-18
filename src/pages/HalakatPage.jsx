@@ -21,7 +21,11 @@ import {
   setHalakaMemberRole,
   subscribeHalakat,
 } from '../utils/halakatStorage.js'
-import { sessionDurationLabelAr } from '../utils/datePeriodAr.js'
+import {
+  defaultHalakaSessionDates,
+  durationBetweenDatesAr,
+  halakaSessionDisplay,
+} from '../utils/datePeriodAr.js'
 import { getImpersonateUid, withImpersonationQuery } from '../utils/impersonation.js'
 import {
   Button,
@@ -30,7 +34,7 @@ import {
   SearchField,
   TextField,
   TextAreaField,
-  TimeField,
+  RhDateTimePickerField,
   useToast,
 } from '../ui/index.js'
 import { RhIcon, RH_ICON_STROKE } from '../ui/RhIcon.jsx'
@@ -72,6 +76,26 @@ function weekdayArrLabel(arr) {
     .join('، ')
 }
 
+function localHHmm(d) {
+  if (!d || !(d instanceof Date) || Number.isNaN(d.getTime())) return '18:00'
+  return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`
+}
+
+function legacyTimesToSessionDates(startTime, endTime) {
+  const { sessionStart: defS, sessionEnd: defE } = defaultHalakaSessionDates()
+  const parse = (raw, fallback) => {
+    const m = /^(\d{1,2}):(\d{2})$/.exec(String(raw || '').trim())
+    const d = new Date(defS)
+    if (!m) return new Date(fallback)
+    d.setHours(Number(m[1]), Number(m[2]), 0, 0)
+    return d
+  }
+  return {
+    sessionStart: parse(startTime, defS),
+    sessionEnd: parse(endTime, defE),
+  }
+}
+
 const PH = PERMISSION_PAGE_IDS.halakat
 
 export default function HalakatPage() {
@@ -105,8 +129,8 @@ export default function HalakatPage() {
   const [description, setDescription] = useState('')
   const [location, setLocation] = useState('')
   const [genderType, setGenderType] = useState('men')
-  const [startTime, setStartTime] = useState('18:00')
-  const [endTime, setEndTime] = useState('20:00')
+  const [sessionStart, setSessionStart] = useState(() => new Date(defaultHalakaSessionDates().sessionStart))
+  const [sessionEnd, setSessionEnd] = useState(() => new Date(defaultHalakaSessionDates().sessionEnd))
   const [tasmeeDays, setTasmeeDays] = useState(() => new Set())
   const [reviewDays, setReviewDays] = useState(() => new Set())
   const [saveBusy, setSaveBusy] = useState(false)
@@ -170,7 +194,10 @@ export default function HalakatPage() {
     return () => unsub()
   }, [membersModal?.id, user?.uid])
 
-  const durationLabel = useMemo(() => sessionDurationLabelAr(startTime, endTime), [startTime, endTime])
+  const durationLabel = useMemo(
+    () => (sessionStart && sessionEnd ? durationBetweenDatesAr(sessionStart, sessionEnd) : '—'),
+    [sessionStart, sessionEnd],
+  )
 
   const toWeekdayArr = (set) => {
     if (set.size === 0 || set.size >= 7) return null
@@ -184,8 +211,9 @@ export default function HalakatPage() {
     setLocation('')
     setHalakaVisibility('private')
     setGenderType('men')
-    setStartTime('18:00')
-    setEndTime('20:00')
+    const { sessionStart: s, sessionEnd: e } = defaultHalakaSessionDates()
+    setSessionStart(s)
+    setSessionEnd(e)
     setTasmeeDays(new Set())
     setReviewDays(new Set())
     setEditorOpen(true)
@@ -199,8 +227,22 @@ export default function HalakatPage() {
     setLocation(h.location || '')
     setHalakaVisibility(h.halakaVisibility === 'public' ? 'public' : 'private')
     setGenderType(h.genderType === 'women' ? 'women' : 'men')
-    setStartTime(h.startTime || '18:00')
-    setEndTime(h.endTime || '20:00')
+    if (h.sessionStartAt && h.sessionEndAt) {
+      const a = new Date(h.sessionStartAt)
+      const b = new Date(h.sessionEndAt)
+      if (!Number.isNaN(a.getTime()) && !Number.isNaN(b.getTime())) {
+        setSessionStart(a)
+        setSessionEnd(b)
+      } else {
+        const leg = legacyTimesToSessionDates(h.startTime, h.endTime)
+        setSessionStart(leg.sessionStart)
+        setSessionEnd(leg.sessionEnd)
+      }
+    } else {
+      const leg = legacyTimesToSessionDates(h.startTime, h.endTime)
+      setSessionStart(leg.sessionStart)
+      setSessionEnd(leg.sessionEnd)
+    }
     const t = h.tasmeeWeekdays
     setTasmeeDays(
       t && Array.isArray(t) && t.length > 0 && t.length < 7 ? new Set(t) : new Set(),
@@ -223,6 +265,10 @@ export default function HalakatPage() {
 
   const handleSave = async () => {
     if (!viewUserId) return
+    if (!sessionStart || !sessionEnd || sessionEnd.getTime() <= sessionStart.getTime()) {
+      toast.warning('تاريخ ووقت نهاية الحلقة يجب أن يكونا بعد البداية.', '')
+      return
+    }
     const tasmeeWeekdays = toWeekdayArr(tasmeeDays)
     const reviewWeekdays = toWeekdayArr(reviewDays)
     const nowIso = new Date().toISOString()
@@ -235,8 +281,10 @@ export default function HalakatPage() {
       description: description.trim(),
       location: location.trim(),
       genderType,
-      startTime: startTime.trim() || '18:00',
-      endTime: endTime.trim() || '20:00',
+      sessionStartAt: sessionStart.toISOString(),
+      sessionEndAt: sessionEnd.toISOString(),
+      startTime: localHHmm(sessionStart),
+      endTime: localHHmm(sessionEnd),
       tasmeeWeekdays,
       reviewWeekdays,
       tasmeeWeekdayLabels: weekdayArrLabel(tasmeeWeekdays),
@@ -414,7 +462,16 @@ export default function HalakatPage() {
                   <br />
                   <strong>المراجعة:</strong> {h.reviewWeekdayLabels || weekdayArrLabel(h.reviewWeekdays)}
                   <br />
-                  <strong>الوقت:</strong> {h.startTime} — {h.endTime} ({sessionDurationLabelAr(h.startTime, h.endTime)})
+                  <strong>موعد الحلقة:</strong>{' '}
+                  {(() => {
+                    const disp = halakaSessionDisplay(h)
+                    if (!disp) return '—'
+                    return (
+                      <>
+                        {disp.startLabel} — {disp.endLabel} ({disp.durationLabel})
+                      </>
+                    )
+                  })()}
                 </p>
                 {h.description && <p className="rh-plans__saved-desc">{h.description}</p>}
                 <p className="rh-plans__saved-meta">
@@ -526,9 +583,20 @@ export default function HalakatPage() {
               </button>
             ))}
           </div>
-          <div className="rh-plans__daily-row">
-            <TimeField label="وقت البداية" value={startTime} onChange={(e) => setStartTime(e.target.value)} />
-            <TimeField label="وقت النهاية" value={endTime} onChange={(e) => setEndTime(e.target.value)} />
+          <p className="rh-plans__field-label">بداية ونهاية الحلقة (تاريخ ووقت)</p>
+          <div className="rh-plans__dates-grid">
+            <RhDateTimePickerField
+              label="البداية"
+              selected={sessionStart}
+              onChange={(d) => d && setSessionStart(d)}
+              maxDate={sessionEnd || undefined}
+            />
+            <RhDateTimePickerField
+              label="النهاية"
+              selected={sessionEnd}
+              onChange={(d) => d && setSessionEnd(d)}
+              minDate={sessionStart || undefined}
+            />
           </div>
           <p className="ui-field__hint">المدة: {durationLabel}</p>
           <div className="rh-plans__actions">

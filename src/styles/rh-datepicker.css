@@ -1,0 +1,111 @@
+/* تنسيق react-datepicker ليتماشى مع واجهة روضة الحافظين — فوق النوافذ المنبثقة (z-index ~100) */
+.react-datepicker-popper {
+  z-index: 12000 !important;
+}
+
+.rh-datepicker .react-datepicker {
+  font-family: var(--font, 'Noto Sans Arabic', system-ui, sans-serif);
+  background: var(--rh-surface, #fff);
+  border: 1px solid var(--rh-border, #e2e8e0);
+  border-radius: var(--rh-radius-lg, 12px);
+  box-shadow: 0 12px 40px rgba(15, 23, 42, 0.12);
+  color: var(--rh-text, #0f172a);
+}
+
+.rh-datepicker .react-datepicker__header {
+  background: var(--rh-forest-800, #1e3a2f);
+  border-bottom: none;
+  border-radius: var(--rh-radius-lg, 12px) var(--rh-radius-lg, 12px) 0 0;
+  padding-top: 0.75rem;
+}
+
+.rh-datepicker .react-datepicker__current-month,
+.rh-datepicker .react-datepicker-time__header {
+  color: var(--on-primary, #f8fafc);
+  font-weight: 700;
+  font-size: 0.95rem;
+}
+
+.rh-datepicker .react-datepicker__day-name {
+  color: rgba(248, 250, 252, 0.85);
+  font-weight: 600;
+  font-size: 0.72rem;
+}
+
+.rh-datepicker .react-datepicker__day {
+  border-radius: var(--rh-radius-md, 8px);
+  margin: 0.2rem;
+  color: var(--rh-text, #0f172a);
+}
+
+.rh-datepicker .react-datepicker__day:hover {
+  background: var(--rh-forest-100, #d8ebe3);
+}
+
+.rh-datepicker .react-datepicker__day--selected,
+.rh-datepicker .react-datepicker__day--keyboard-selected {
+  background: var(--rh-primary, #2d6a4f) !important;
+  color: #fff !important;
+}
+
+.rh-datepicker .react-datepicker__day--today {
+  font-weight: 700;
+  outline: 1px solid var(--rh-primary, #2d6a4f);
+}
+
+.rh-datepicker .react-datepicker__day--outside-month {
+  opacity: 0.45;
+}
+
+.rh-datepicker .react-datepicker__navigation-icon::before {
+  border-color: var(--on-primary, #f8fafc);
+}
+
+.rh-datepicker .react-datepicker__navigation:hover *::before {
+  border-color: #fff;
+}
+
+.rh-datepicker .react-datepicker__time-container {
+  border-left: 1px solid var(--rh-border, #e2e8e0);
+}
+
+.rh-datepicker .react-datepicker__time-container .react-datepicker__time {
+  background: var(--rh-surface, #fff);
+}
+
+.rh-datepicker .react-datepicker__time-list-item:hover {
+  background: var(--rh-forest-100, #d8ebe3) !important;
+}
+
+.rh-datepicker .react-datepicker__time-list-item--selected {
+  background: var(--rh-primary, #2d6a4f) !important;
+  color: #fff !important;
+}
+
+.rh-datepicker .react-datepicker__triangle {
+  display: none;
+}
+
+/* صف تحرير النقاط (مميزات / شروط) */
+.rh-bullet-list-editor {
+  display: flex;
+  flex-direction: column;
+  gap: var(--rh-space-2, 0.5rem);
+  margin-bottom: var(--rh-space-3, 0.75rem);
+}
+
+.rh-bullet-list-editor__row {
+  display: flex;
+  gap: var(--rh-space-2, 0.5rem);
+  align-items: flex-start;
+}
+
+.rh-bullet-list-editor__row .ui-field {
+  flex: 1;
+  min-width: 0;
+}
+
+.rh-bullet-list-editor__remove {
+  flex-shrink: 0;
+  margin-top: 1.85rem;
+}

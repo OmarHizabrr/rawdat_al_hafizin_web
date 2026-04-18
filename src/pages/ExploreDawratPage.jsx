@@ -26,6 +26,15 @@ const DELIVERY_LABELS = {
 
 const PE = PERMISSION_PAGE_IDS.dawrat_explore
 
+function dawraLines(p, listKey, textKey) {
+  const arr = Array.isArray(p[listKey]) ? p[listKey].filter((x) => typeof x === 'string') : []
+  if (arr.length) return arr
+  return String(p[textKey] || '')
+    .split(/\r?\n/)
+    .map((s) => s.trim())
+    .filter(Boolean)
+}
+
 function deliveryLabel(mode) {
   return DELIVERY_LABELS[mode] || mode || '—'
 }
@@ -293,16 +302,24 @@ export default function ExploreDawratPage() {
                     )}
                   </ul>
 
-                  {p.benefitsText ? (
+                  {dawraLines(p, 'benefitsList', 'benefitsText').length > 0 ? (
                     <div className="rh-explore-plans__volumes">
                       <p className="rh-explore-plans__label">المميزات</p>
-                      <p className="rh-plans__saved-desc">{p.benefitsText}</p>
+                      <ul className="rh-plans__saved-vols">
+                        {dawraLines(p, 'benefitsList', 'benefitsText').map((line, i) => (
+                          <li key={`bf-${i}-${line.slice(0, 24)}`}>{line}</li>
+                        ))}
+                      </ul>
                     </div>
                   ) : null}
-                  {p.conditionsText ? (
+                  {dawraLines(p, 'conditionsList', 'conditionsText').length > 0 ? (
                     <div className="rh-explore-plans__volumes">
                       <p className="rh-explore-plans__label">الشروط</p>
-                      <p className="rh-plans__saved-desc">{p.conditionsText}</p>
+                      <ul className="rh-plans__saved-vols">
+                        {dawraLines(p, 'conditionsList', 'conditionsText').map((line, i) => (
+                          <li key={`cd-${i}-${line.slice(0, 24)}`}>{line}</li>
+                        ))}
+                      </ul>
                     </div>
                   ) : null}
 

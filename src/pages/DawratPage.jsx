@@ -25,8 +25,8 @@ import { daysInclusiveYmd } from '../utils/datePeriodAr.js'
 import { getImpersonateUid, withImpersonationQuery } from '../utils/impersonation.js'
 import {
   Button,
-  DateField,
   Modal,
+  RhDatePickerField,
   ScrollArea,
   SearchField,
   TextField,
@@ -37,6 +37,43 @@ import { RhIcon, RH_ICON_STROKE } from '../ui/RhIcon.jsx'
 
 function newId() {
   return firestoreApi.getNewId('dawrat')
+}
+
+function newBulletRow() {
+  return { id: `b-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`, text: '' }
+}
+
+function docToBenefitRows(d) {
+  const arr = Array.isArray(d.benefitsList) ? d.benefitsList.filter((x) => typeof x === 'string') : []
+  if (arr.length) return arr.map((text) => ({ ...newBulletRow(), text }))
+  return String(d.benefitsText || '')
+    .split(/\r?\n/)
+    .map((s) => s.trim())
+    .filter(Boolean)
+    .map((text) => ({ ...newBulletRow(), text }))
+}
+
+function docToConditionRows(d) {
+  const arr = Array.isArray(d.conditionsList) ? d.conditionsList.filter((x) => typeof x === 'string') : []
+  if (arr.length) return arr.map((text) => ({ ...newBulletRow(), text }))
+  return String(d.conditionsText || '')
+    .split(/\r?\n/)
+    .map((s) => s.trim())
+    .filter(Boolean)
+    .map((text) => ({ ...newBulletRow(), text }))
+}
+
+function rowsToStringList(rows) {
+  return rows.map((r) => r.text.trim()).filter(Boolean)
+}
+
+function dawraListLines(d, keyList, keyText) {
+  const arr = Array.isArray(d[keyList]) ? d[keyList].filter((x) => typeof x === 'string') : []
+  if (arr.length) return arr
+  return String(d[keyText] || '')
+    .split(/\r?\n/)
+    .map((s) => s.trim())
+    .filter(Boolean)
 }
 
 function dawraCanEdit(d) {
@@ -97,8 +134,8 @@ export default function DawratPage() {
   const [registrationEnd, setRegistrationEnd] = useState('')
   const [courseStart, setCourseStart] = useState('')
   const [courseEnd, setCourseEnd] = useState('')
-  const [benefitsText, setBenefitsText] = useState('')
-  const [conditionsText, setConditionsText] = useState('')
+  const [benefitRows, setBenefitRows] = useState([])
+  const [conditionRows, setConditionRows] = useState([])
   const [saveBusy, setSaveBusy] = useState(false)
   const [deleteBusy, setDeleteBusy] = useState(false)
   const [joinId, setJoinId] = useState('')
@@ -176,8 +213,8 @@ export default function DawratPage() {
     setRegistrationEnd('')
     setCourseStart('')
     setCourseEnd('')
-    setBenefitsText('')
-    setConditionsText('')
+    setBenefitRows([])
+    setConditionRows([])
     setDawraVisibility('private')
     setEditorOpen(true)
   }
@@ -193,8 +230,8 @@ export default function DawratPage() {
     setRegistrationEnd(d.registrationEnd || '')
     setCourseStart(d.courseStart || '')
     setCourseEnd(d.courseEnd || '')
-    setBenefitsText(d.benefitsText || '')
-    setConditionsText(d.conditionsText || '')
+    setBenefitRows(docToBenefitRows(d))
+    setConditionRows(docToConditionRows(d))
     setDawraVisibility(d.dawraVisibility === 'public' ? 'public' : 'private')
     setEditorOpen(true)
   }
@@ -210,6 +247,8 @@ export default function DawratPage() {
       return
     }
     const nowIso = new Date().toISOString()
+    const benefitsList = rowsToStringList(benefitRows)
+    const conditionsList = rowsToStringList(conditionRows)
     const dawra = {
       id: editingId || newId(),
       createdAt: editingId ? saved.find((x) => x.id === editingId)?.createdAt ?? nowIso : nowIso,
@@ -225,8 +264,10 @@ export default function DawratPage() {
       courseEnd: courseEnd || null,
       registrationPeriodDays: regDays,
       coursePeriodDays: courseDays,
-      benefitsText: benefitsText.trim() || null,
-      conditionsText: conditionsText.trim() || null,
+      benefitsList: benefitsList.length ? benefitsList : null,
+      conditionsList: conditionsList.length ? conditionsList : null,
+      benefitsText: benefitsList.length ? benefitsList.join('\n') : null,
+      conditionsText: conditionsList.length ? conditionsList.join('\n') : null,
     }
     const next = editingId ? saved.map((x) => (x.id === editingId ? dawra : x)) : [dawra, ...saved]
     setSaveBusy(true)
@@ -398,15 +439,25 @@ export default function DawratPage() {
                     : '—'}
                 </p>
                 {d.description && <p className="rh-plans__saved-desc">{d.description}</p>}
-                {d.benefitsText && (
-                  <p className="rh-plans__saved-desc">
-                    <strong>المميزات:</strong> {d.benefitsText}
-                  </p>
+                {dawraListLines(d, 'benefitsList', 'benefitsText').length > 0 && (
+                  <div className="rh-plans__saved-desc">
+                    <strong>المميزات:</strong>
+                    <ul className="rh-plans__saved-vols" style={{ marginTop: '0.35rem' }}>
+                      {dawraListLines(d, 'benefitsList', 'benefitsText').map((line, i) => (
+                        <li key={`bf-${i}-${line.slice(0, 24)}`}>{line}</li>
+                      ))}
+                    </ul>
+                  </div>
                 )}
-                {d.conditionsText && (
-                  <p className="rh-plans__saved-desc">
-                    <strong>الشروط:</strong> {d.conditionsText}
-                  </p>
+                {dawraListLines(d, 'conditionsList', 'conditionsText').length > 0 && (
+                  <div className="rh-plans__saved-desc">
+                    <strong>الشروط:</strong>
+                    <ul className="rh-plans__saved-vols" style={{ marginTop: '0.35rem' }}>
+                      {dawraListLines(d, 'conditionsList', 'conditionsText').map((line, i) => (
+                        <li key={`cd-${i}-${line.slice(0, 24)}`}>{line}</li>
+                      ))}
+                    </ul>
+                  </div>
                 )}
                 <p className="rh-plans__saved-meta">
                   المعرف: <code className="rh-plans__plan-id">{d.id}</code>
@@ -500,12 +551,12 @@ export default function DawratPage() {
             التسجيل
           </h3>
           <div className="rh-plans__dates-grid">
-            <DateField label="بداية التسجيل" value={registrationStart} onChange={(e) => setRegistrationStart(e.target.value)} />
-            <DateField
+            <RhDatePickerField label="بداية التسجيل" value={registrationStart} onChange={setRegistrationStart} />
+            <RhDatePickerField
               label="نهاية التسجيل"
               value={registrationEnd}
-              onChange={(e) => setRegistrationEnd(e.target.value)}
-              min={registrationStart || undefined}
+              onChange={setRegistrationEnd}
+              minDate={registrationStart ? new Date(`${registrationStart}T12:00:00`) : undefined}
             />
           </div>
           {regDays != null && (
@@ -515,27 +566,84 @@ export default function DawratPage() {
             فترة الدورة
           </h3>
           <div className="rh-plans__dates-grid">
-            <DateField label="بداية الدورة" value={courseStart} onChange={(e) => setCourseStart(e.target.value)} />
-            <DateField
+            <RhDatePickerField label="بداية الدورة" value={courseStart} onChange={setCourseStart} />
+            <RhDatePickerField
               label="نهاية الدورة"
               value={courseEnd}
-              onChange={(e) => setCourseEnd(e.target.value)}
-              min={courseStart || undefined}
+              onChange={setCourseEnd}
+              minDate={courseStart ? new Date(`${courseStart}T12:00:00`) : undefined}
             />
           </div>
           {courseDays != null && <p className="ui-field__hint">مدة الدورة: {courseDays} يوماً (شاملة)</p>}
-          <TextAreaField
-            label="مميزات الدورة (اختياري)"
-            value={benefitsText}
-            onChange={(e) => setBenefitsText(e.target.value)}
-            rows={2}
-          />
-          <TextAreaField
-            label="شروط الدورة (اختياري)"
-            value={conditionsText}
-            onChange={(e) => setConditionsText(e.target.value)}
-            rows={2}
-          />
+          <p className="rh-plans__field-label">مميزات الدورة (اختياري)</p>
+          <div className="rh-bullet-list-editor">
+            {benefitRows.map((row, idx) => (
+              <div key={row.id} className="rh-bullet-list-editor__row">
+                <TextField
+                  label={`نقطة ${idx + 1}`}
+                  value={row.text}
+                  onChange={(e) => {
+                    const v = e.target.value
+                    setBenefitRows((prev) => prev.map((r) => (r.id === row.id ? { ...r, text: v } : r)))
+                  }}
+                />
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="rh-bullet-list-editor__remove"
+                  onClick={() => setBenefitRows((prev) => prev.filter((r) => r.id !== row.id))}
+                  aria-label="حذف النقطة"
+                >
+                  <RhIcon as={Trash2} size={18} strokeWidth={RH_ICON_STROKE} />
+                </Button>
+              </div>
+            ))}
+            <Button
+              type="button"
+              variant="secondary"
+              size="sm"
+              onClick={() => setBenefitRows((prev) => [...prev, newBulletRow()])}
+            >
+              <RhIcon as={Plus} size={18} strokeWidth={RH_ICON_STROKE} />
+              إضافة نقطة
+            </Button>
+          </div>
+
+          <p className="rh-plans__field-label">شروط الدورة (اختياري)</p>
+          <div className="rh-bullet-list-editor">
+            {conditionRows.map((row, idx) => (
+              <div key={row.id} className="rh-bullet-list-editor__row">
+                <TextField
+                  label={`شرط ${idx + 1}`}
+                  value={row.text}
+                  onChange={(e) => {
+                    const v = e.target.value
+                    setConditionRows((prev) => prev.map((r) => (r.id === row.id ? { ...r, text: v } : r)))
+                  }}
+                />
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="rh-bullet-list-editor__remove"
+                  onClick={() => setConditionRows((prev) => prev.filter((r) => r.id !== row.id))}
+                  aria-label="حذف الشرط"
+                >
+                  <RhIcon as={Trash2} size={18} strokeWidth={RH_ICON_STROKE} />
+                </Button>
+              </div>
+            ))}
+            <Button
+              type="button"
+              variant="secondary"
+              size="sm"
+              onClick={() => setConditionRows((prev) => [...prev, newBulletRow()])}
+            >
+              <RhIcon as={Plus} size={18} strokeWidth={RH_ICON_STROKE} />
+              إضافة شرط
+            </Button>
+          </div>
           <div className="rh-plans__actions">
             <Button type="button" variant="primary" onClick={handleSave} loading={saveBusy}>
               حفظ

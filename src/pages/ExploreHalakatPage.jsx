@@ -13,7 +13,7 @@ import {
   sortPublicHalakat,
   subscribePublicHalakatForExplore,
 } from '../services/exploreHalakatService.js'
-import { sessionDurationLabelAr } from '../utils/datePeriodAr.js'
+import { halakaSessionDisplay } from '../utils/datePeriodAr.js'
 import { getImpersonateUid, withImpersonationQuery } from '../utils/impersonation.js'
 import { joinPublicHalaka, loadHalakat } from '../utils/halakatStorage.js'
 import { Button, ScrollArea, TextField, useToast } from '../ui/index.js'
@@ -227,7 +227,7 @@ export default function ExploreHalakatPage() {
           <ul className="rh-explore-plans__list">
             {displayed.map((p) => {
               const inItem = myIds.has(p.id)
-              const dur = sessionDurationLabelAr(p.startTime, p.endTime)
+              const sessionDisp = halakaSessionDisplay(p)
               return (
                 <li key={p.id} className="rh-explore-plans__card">
                   <div className="rh-explore-plans__card-head">
@@ -290,10 +290,10 @@ export default function ExploreHalakatPage() {
                     <li>
                       <strong>أيام المراجعة:</strong> {weekdayArrLabel(p.reviewWeekdays)}
                     </li>
-                    {(p.startTime || p.endTime) && (
+                    {sessionDisp && (
                       <li>
-                        <strong>وقت الحلقة:</strong> {p.startTime || '—'} — {p.endTime || '—'}
-                        {dur ? ` (${dur})` : ''}
+                        <strong>موعد الحلقة:</strong> {sessionDisp.startLabel} — {sessionDisp.endLabel} (
+                        {sessionDisp.durationLabel})
                       </li>
                     )}
                   </ul>

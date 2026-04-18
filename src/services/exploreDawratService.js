@@ -74,13 +74,25 @@ export function filterPublicDawratBySearch(rows, searchRaw) {
     const mode = (p.deliveryMode || '').toLowerCase()
     const id = (p.id || '').toLowerCase()
     const creator = `${p.creatorDisplayName || ''} ${p.creatorEmail || ''}`.toLowerCase()
+    const benefitsHay = Array.isArray(p.benefitsList)
+      ? p.benefitsList.filter((x) => typeof x === 'string').join(' ').toLowerCase()
+      : ''
+    const conditionsHay = Array.isArray(p.conditionsList)
+      ? p.conditionsList.filter((x) => typeof x === 'string').join(' ').toLowerCase()
+      : ''
+    const benefitsTextHay = String(p.benefitsText || '').toLowerCase()
+    const conditionsTextHay = String(p.conditionsText || '').toLowerCase()
     return (
       title.includes(q) ||
       desc.includes(q) ||
       cost.includes(q) ||
       mode.includes(q) ||
       id.includes(q) ||
-      creator.includes(q)
+      creator.includes(q) ||
+      benefitsHay.includes(q) ||
+      conditionsHay.includes(q) ||
+      benefitsTextHay.includes(q) ||
+      conditionsTextHay.includes(q)
     )
   })
 }
