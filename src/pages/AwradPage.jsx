@@ -24,7 +24,16 @@ import {
   ymdFromRecordedAt,
 } from '../utils/planDailyQuota.js'
 import { CrossNav } from '../components/CrossNav.jsx'
-import { Button, DateField, Modal, NumberStepField, ScrollArea, TextField, useToast } from '../ui/index.js'
+import {
+  Button,
+  Modal,
+  NumberStepField,
+  parseYmdToLocalNoon,
+  RhDatePickerField,
+  ScrollArea,
+  TextField,
+  useToast,
+} from '../ui/index.js'
 import { RhIcon, RH_ICON_STROKE } from '../ui/RhIcon.jsx'
 
 function asDate(v) {
@@ -599,22 +608,23 @@ export default function AwradPage() {
           </div>
 
           {selectedPlan && planAllowsCustomRecordingDate(selectedPlan) && (
-            <DateField
+            <RhDatePickerField
               label="تاريخ تسجيل الورد"
               hint="يُحتسب الورد التراكمي وفق هذا اليوم. لا يمكن اختيار تاريخ مستقبلي أو قبل بداية الخطة."
               value={formRecordingYmd}
-              onChange={(e) => {
-                const v = e.target.value
+              onChange={(v) => {
                 setFormRecordingYmd(v)
                 queueMicrotask(() => {
                   applyPlanDefaults(selectedPlanId, plans, awrad, { formRecordingYmd: v })
                 })
               }}
-              max={localYmd()}
-              min={
-                selectedPlan.useDateRange && selectedPlan.dateStart
-                  ? String(selectedPlan.dateStart).slice(0, 10)
-                  : planScheduleStartYmd(selectedPlan)
+              maxDate={parseYmdToLocalNoon(localYmd()) || undefined}
+              minDate={
+                parseYmdToLocalNoon(
+                  selectedPlan.useDateRange && selectedPlan.dateStart
+                    ? String(selectedPlan.dateStart).slice(0, 10)
+                    : planScheduleStartYmd(selectedPlan),
+                ) || undefined
               }
             />
           )}

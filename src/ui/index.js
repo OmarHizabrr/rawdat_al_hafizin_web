@@ -3,6 +3,7 @@ export { TextField } from './TextField.jsx'
 export { TextAreaField } from './TextAreaField.jsx'
 export { SearchableSelect } from './SearchableSelect.jsx'
 export { SearchableMultiSelect } from './SearchableMultiSelect.jsx'
+/** حقول تاريخ/وقت أصلية — يُفضَّل استخدام RhDatePickerField / RhTimePickerField / RhDateTimePickerField */
 export { DateField } from './DateField.jsx'
 export { TimeField } from './TimeField.jsx'
 export { RhDatePickerField, RhDateTimePickerField, RhTimePickerField } from './RhPickers.jsx'

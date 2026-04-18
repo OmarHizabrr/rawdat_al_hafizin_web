@@ -29,14 +29,14 @@ import {
 } from '../utils/plansStorage.js'
 import {
   Button,
-  DateField,
   Modal,
   NumberStepField,
+  RhDatePickerField,
+  RhTimePickerField,
   ScrollArea,
   SearchableMultiSelect,
   SearchField,
   TextField,
-  TimeField,
   useToast,
 } from '../ui/index.js'
 import { RhIcon, RH_ICON_STROKE } from '../ui/RhIcon.jsx'
@@ -988,11 +988,11 @@ export default function PlansPage() {
             />
           </div>
           <div className="rh-plans__daily-field">
-            <TimeField
+            <RhTimePickerField
               label="وقت التذكير بالورد (اختياري)"
               hint="يُحفظ مع الخطة. يُذكَّرك التطبيق في هذا الوقت، ويمكن تفعيل إشعار المتصفح أدناه."
               value={reminderTime}
-              onChange={(e) => setReminderTime(e.target.value)}
+              onChange={setReminderTime}
             />
           </div>
         </div>
@@ -1097,8 +1097,13 @@ export default function PlansPage() {
         </label>
         {useDateRange && (
           <div className="rh-plans__dates-grid">
-            <DateField label="من" value={dateStart} onChange={(e) => setDateStart(e.target.value)} />
-            <DateField label="إلى" value={dateEnd} onChange={(e) => setDateEnd(e.target.value)} min={dateStart || undefined} />
+            <RhDatePickerField label="من" value={dateStart} onChange={setDateStart} />
+            <RhDatePickerField
+              label="إلى"
+              value={dateEnd}
+              onChange={setDateEnd}
+              minDate={dateStart ? new Date(`${dateStart}T12:00:00`) : undefined}
+            />
           </div>
         )}
 
