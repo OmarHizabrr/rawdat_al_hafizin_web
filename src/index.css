@@ -1626,6 +1626,23 @@ button.rh-home-quick-icon {
   gap: var(--rh-space-2);
 }
 
+.rh-settings-profile-form__file-input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+
+.rh-settings-footnote--tight {
+  margin-top: var(--rh-space-2);
+}
+
 .rh-settings-footnote {
   margin-top: var(--rh-space-4);
   font-size: var(--rh-text-xs);
@@ -2949,6 +2966,24 @@ a.rh-peek-btn {
   font-size: var(--rh-text-sm);
   margin-bottom: var(--rh-space-4);
   color: var(--rh-text-muted);
+}
+
+.rh-admin-users__profile-meta--compact {
+  margin-bottom: var(--rh-space-2);
+  font-size: var(--rh-text-xs);
+}
+
+.rh-admin-users__hidden-file {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
 }
 
 .rh-admin-users__plans-title {

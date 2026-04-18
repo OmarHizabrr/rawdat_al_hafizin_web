@@ -1,5 +1,6 @@
 import { isAdmin, normalizeRole } from '../config/roles.js'
 import { updateFirebaseAuthProfile } from './authService.js'
+import { uploadUserProfileAvatar } from './profilePhotoStorage.js'
 import { firestoreApi } from './firestoreApi.js'
 
 function toAuthUserPayload(u) {
@@ -63,26 +64,43 @@ export async function ensureUserProfile(firebaseUser) {
   return merged
 }
 
-/**
- * المستخدم الحالي: تحديث الاسم وصورة العرض في Auth + Firestore.
- * يفعّل useCustomDisplay حتى لا يُستبدل الاسم/الصورة من Google عند كل دخول.
- */
-export async function updateMyProfileDisplay(firebaseUser, { displayName, photoURL }) {
+/** المستخدم الحالي: الاسم فقط (نص) في Auth + Firestore */
+export async function updateMyDisplayName(firebaseUser, displayName) {
   if (!firebaseUser?.uid) return
   const name = typeof displayName === 'string' ? displayName.trim() : ''
-  const photo = typeof photoURL === 'string' ? photoURL.trim() : ''
   if (!name) {
     throw new Error('DISPLAY_NAME_REQUIRED')
   }
+  const photo = firebaseUser.photoURL || ''
   await updateFirebaseAuthProfile(firebaseUser, { displayName: name, photoURL: photo })
-  const docRef = firestoreApi.getUserDoc(firebaseUser.uid)
   await firestoreApi.updateData({
-    docRef,
-    data: {
-      displayName: name,
-      photoURL: photo,
-      useCustomDisplay: true,
-    },
+    docRef: firestoreApi.getUserDoc(firebaseUser.uid),
+    data: { displayName: name, useCustomDisplay: true },
+    userData: firebaseUser,
+  })
+}
+
+/** المستخدم الحالي: رفع ملف صورة إلى Storage ثم تحديث Auth + Firestore */
+export async function updateMyProfilePhotoFromFile(firebaseUser, file) {
+  if (!firebaseUser?.uid) return
+  const url = await uploadUserProfileAvatar(firebaseUser.uid, file)
+  const name = firebaseUser.displayName || ''
+  await updateFirebaseAuthProfile(firebaseUser, { displayName: name, photoURL: url })
+  await firestoreApi.updateData({
+    docRef: firestoreApi.getUserDoc(firebaseUser.uid),
+    data: { photoURL: url, useCustomDisplay: true },
+    userData: firebaseUser,
+  })
+}
+
+/** إزالة صورة العرض من Auth + Firestore (لا يحذف ملفات Storage القديمة) */
+export async function clearMyProfilePhoto(firebaseUser) {
+  if (!firebaseUser?.uid) return
+  const name = firebaseUser.displayName || ''
+  await updateFirebaseAuthProfile(firebaseUser, { displayName: name, photoURL: '' })
+  await firestoreApi.updateData({
+    docRef: firestoreApi.getUserDoc(firebaseUser.uid),
+    data: { photoURL: '', useCustomDisplay: true },
     userData: firebaseUser,
   })
 }

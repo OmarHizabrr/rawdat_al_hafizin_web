@@ -1,4 +1,5 @@
 import { normalizeRole } from '../config/roles.js'
+import { uploadUserProfileAvatar } from './profilePhotoStorage.js'
 import { firestoreApi } from './firestoreApi.js'
 import { removePlanForUser } from '../utils/plansStorage.js'
 import { getDefaultPermissionProfileIdForPlatformRole } from './permissionProfilesService.js'
@@ -47,23 +48,37 @@ export async function adminUpdateUserRole(actorUser, targetUid, role) {
   })
 }
 
-/** ربط مستخدم بنوع صلاحيات (permission_profiles) أو إزالة الإسناد بقيمة فارغة */
-/** تحديث الاسم وصورة العرض في Firestore فقط (لا يغيّر حساب Google للمستخدم) */
-export async function adminUpdateUserDisplay(actorUser, targetUid, { displayName, photoURL }) {
+/** الاسم فقط في Firestore (لا يغيّر Google Auth للمستخدم المستهدف) */
+export async function adminUpdateUserDisplayName(actorUser, targetUid, displayName) {
   if (!targetUid || !actorUser?.uid) return
   const name = typeof displayName === 'string' ? displayName.trim() : ''
-  const photo = typeof photoURL === 'string' ? photoURL.trim() : ''
   if (!name) {
     throw new Error('DISPLAY_NAME_REQUIRED')
   }
-  const docRef = firestoreApi.getUserDoc(targetUid)
   await firestoreApi.updateData({
-    docRef,
-    data: {
-      displayName: name,
-      photoURL: photo,
-      useCustomDisplay: true,
-    },
+    docRef: firestoreApi.getUserDoc(targetUid),
+    data: { displayName: name, useCustomDisplay: true },
+    userData: actorUser,
+  })
+}
+
+/** رفع صورة إلى Storage ثم حفظ الرابط في Firestore فقط */
+export async function adminUploadUserProfilePhoto(actorUser, targetUid, file) {
+  if (!targetUid || !actorUser?.uid) return
+  const url = await uploadUserProfileAvatar(targetUid, file)
+  await firestoreApi.updateData({
+    docRef: firestoreApi.getUserDoc(targetUid),
+    data: { photoURL: url, useCustomDisplay: true },
+    userData: actorUser,
+  })
+}
+
+/** إزالة رابط الصورة من مستند المستخدم */
+export async function adminClearUserProfilePhoto(actorUser, targetUid) {
+  if (!targetUid || !actorUser?.uid) return
+  await firestoreApi.updateData({
+    docRef: firestoreApi.getUserDoc(targetUid),
+    data: { photoURL: '', useCustomDisplay: true },
     userData: actorUser,
   })
 }

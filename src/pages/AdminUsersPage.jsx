@@ -1,17 +1,20 @@
 import { Home } from 'lucide-react'
 import { Link } from 'react-router-dom'
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useSiteContent } from '../context/useSiteContent.js'
 import { USER_ROLES, isAdmin, normalizeRole } from '../config/roles.js'
 import { useAuth } from '../context/useAuth.js'
 import {
+  adminClearUserProfilePhoto,
   adminDeleteUserFirestore,
   adminSetUserActive,
-  adminUpdateUserDisplay,
+  adminUpdateUserDisplayName,
   adminUpdateUserPermissionProfile,
   adminUpdateUserRole,
+  adminUploadUserProfilePhoto,
   subscribeAllUsers,
 } from '../services/adminUsersService.js'
+import { messageForProfilePhotoError } from '../services/profilePhotoStorage.js'
 import { subscribePermissionProfiles } from '../services/permissionProfilesService.js'
 import { CrossNav } from '../components/CrossNav.jsx'
 import { PeekButton } from '../components/PeekButton.jsx'
@@ -29,7 +32,8 @@ export default function AdminUsersPage() {
   const [permissionProfiles, setPermissionProfiles] = useState([])
   const [displayModalUser, setDisplayModalUser] = useState(null)
   const [editDisplayName, setEditDisplayName] = useState('')
-  const [editDisplayPhoto, setEditDisplayPhoto] = useState('')
+  const [displayModalBusyKind, setDisplayModalBusyKind] = useState(null)
+  const adminPhotoInputRef = useRef(null)
 
   useEffect(() => {
     document.title = `المستخدمون — ${branding.siteTitle}`
@@ -112,20 +116,17 @@ export default function AdminUsersPage() {
 
   const openDisplayModal = (u) => {
     setEditDisplayName(u.displayName?.trim() ?? '')
-    setEditDisplayPhoto((u.photoURL || '').trim())
     setDisplayModalUser(u)
   }
 
-  const saveDisplayEdit = async () => {
+  const saveDisplayName = async () => {
     if (!displayModalUser || !actor) return
+    setDisplayModalBusyKind('name')
     try {
       await runBusy(displayModalUser.uid, async () => {
-        await adminUpdateUserDisplay(actor, displayModalUser.uid, {
-          displayName: editDisplayName,
-          photoURL: editDisplayPhoto,
-        })
+        await adminUpdateUserDisplayName(actor, displayModalUser.uid, editDisplayName)
       })
-      toast.success('تم تحديث الاسم والصورة في قاعدة بيانات المنصة.', 'تم')
+      toast.success('تم تحديث الاسم في قاعدة بيانات المنصة.', 'تم')
       setDisplayModalUser(null)
     } catch (e) {
       if (e?.message === 'DISPLAY_NAME_REQUIRED') {
@@ -133,6 +134,43 @@ export default function AdminUsersPage() {
       } else {
         toast.warning('تعذّر الحفظ. تحقق من الصلاحيات.', 'تنبيه')
       }
+    } finally {
+      setDisplayModalBusyKind(null)
+    }
+  }
+
+  const onAdminPhotoSelected = async (e) => {
+    const file = e.target.files?.[0]
+    e.target.value = ''
+    if (!file || !displayModalUser || !actor) return
+    setDisplayModalBusyKind('photo')
+    try {
+      await runBusy(displayModalUser.uid, async () => {
+        await adminUploadUserProfilePhoto(actor, displayModalUser.uid, file)
+      })
+      toast.success('تم رفع الصورة وتحديث المستند.', 'تم')
+      setDisplayModalUser(null)
+    } catch (err) {
+      const msg = messageForProfilePhotoError(err)
+      toast.warning(msg || 'تعذّر رفع الصورة. تحقق من الصلاحيات وقواعد التخزين.', 'تنبيه')
+    } finally {
+      setDisplayModalBusyKind(null)
+    }
+  }
+
+  const onAdminClearPhoto = async () => {
+    if (!displayModalUser || !actor) return
+    setDisplayModalBusyKind('clear')
+    try {
+      await runBusy(displayModalUser.uid, async () => {
+        await adminClearUserProfilePhoto(actor, displayModalUser.uid)
+      })
+      toast.success('تمت إزالة رابط الصورة من المستند.', 'تم')
+      setDisplayModalUser(null)
+    } catch {
+      toast.warning('تعذّر التحديث.', 'تنبيه')
+    } finally {
+      setDisplayModalBusyKind(null)
     }
   }
 
@@ -170,8 +208,9 @@ export default function AdminUsersPage() {
           الدور من لوحة «أنواع المستخدمين». الدور «ادمن» يفرّغ <code className="rh-admin-users__code">permissionProfileId</code>.
           يمكنك أيضاً ضبط نوع الصلاحيات يدوياً دون تغيير الدور؛ أي تغيير لاحق للدور يعيد الإسناد التلقائي. الحسابات
           الجديدة تُنشأ بدور طالب وحقل <code className="rh-admin-users__code">starterAccess</code> حتى يروا صفحتي البداية
-          والإعدادات فقط إلى أن تُسنَد لهم صلاحيات أو يُختار «وصول كامل» من نوع الصلاحيات. يمكنك تعديل الاسم وصورة
-          العرض (رابط) لأي مستخدم من زر «الاسم والصورة» — يُخزَّن في Firestore ولا يغيّر حساب Google. أيقونة المنزل
+          والإعدادات فقط إلى أن تُسنَد لهم صلاحيات أو يُختار «وصول كامل» من نوع الصلاحيات. يمكنك تعديل الاسم كنص ورفع
+          صورة للملف الشخصي إلى التخزين لأي مستخدم من زر «الاسم والصورة» — يُخزَّن في Firestore والتخزين ولا يغيّر حساب
+          Google. أيقونة المنزل
           تفتح رئيسيته، وأيقونة العين صفحة خططه.
         </p>
         <CrossNav items={adminCrossItems} className="rh-admin-users__cross" />
@@ -301,43 +340,71 @@ export default function AdminUsersPage() {
         open={Boolean(displayModalUser)}
         title={displayModalUser ? `الاسم والصورة — ${displayModalUser.displayName?.trim() || displayModalUser.email || displayModalUser.uid}` : 'الاسم والصورة'}
         onClose={() => {
-          if (displayModalUser && busyUid === displayModalUser.uid) return
+          if (displayModalUser && (busyUid === displayModalUser.uid || displayModalBusyKind)) return
           setDisplayModalUser(null)
         }}
         size="sm"
-        closeOnBackdrop={!(displayModalUser && busyUid === displayModalUser?.uid)}
-        closeOnEsc={!(displayModalUser && busyUid === displayModalUser?.uid)}
-        showClose={!(displayModalUser && busyUid === displayModalUser?.uid)}
+        closeOnBackdrop={!(displayModalUser && (busyUid === displayModalUser?.uid || displayModalBusyKind))}
+        closeOnEsc={!(displayModalUser && (busyUid === displayModalUser?.uid || displayModalBusyKind))}
+        showClose={!(displayModalUser && (busyUid === displayModalUser?.uid || displayModalBusyKind))}
       >
         <p className="rh-admin-users__profile-meta">
-          يُحدَّث مستند المستخدم في Firestore فقط. حساب Google يبقى كما هو؛ المستخدم يرى الاسم والصورة الجديدة داخل
-          المنصة بعد تحديث الصفحة.
+          الاسم يُحدَّث في Firestore فقط. الصورة تُرفع إلى التخزين ثم يُحفظ الرابط في المستند. حساب Google يبقى كما هو؛
+          المستخدم يرى التغييرات داخل المنصة بعد التحديث.
         </p>
         <TextField
           label="الاسم المعروض"
           value={editDisplayName}
           onChange={(e) => setEditDisplayName(e.target.value)}
+          hint="احفظ الاسم بزر «حفظ الاسم» منفصلاً عن رفع الصورة."
           autoComplete="off"
         />
-        <TextField
-          label="رابط صورة العرض (اختياري)"
-          value={editDisplayPhoto}
-          onChange={(e) => setEditDisplayPhoto(e.target.value)}
-          placeholder="https://…"
+        <p className="rh-admin-users__profile-meta rh-admin-users__profile-meta--compact">
+          صورة الملف الشخصي: ملف حتى 2 ميجابايت (‎JPEG / PNG / WebP / GIF).
+        </p>
+        <input
+          ref={adminPhotoInputRef}
+          type="file"
+          accept="image/jpeg,image/png,image/webp,image/gif"
+          className="rh-admin-users__hidden-file"
+          onChange={onAdminPhotoSelected}
         />
-        <div className="rh-admin-users__modal-actions">
+        <div className="rh-admin-users__modal-actions rh-admin-users__modal-actions--wrap">
           <Button
             type="button"
             variant="primary"
-            loading={Boolean(displayModalUser) && busyUid === displayModalUser?.uid}
-            onClick={saveDisplayEdit}
+            loading={displayModalBusyKind === 'name'}
+            disabled={Boolean(displayModalBusyKind) && displayModalBusyKind !== 'name'}
+            onClick={saveDisplayName}
           >
-            حفظ
+            حفظ الاسم
+          </Button>
+          <Button
+            type="button"
+            variant="secondary"
+            loading={displayModalBusyKind === 'photo'}
+            disabled={Boolean(displayModalBusyKind) && displayModalBusyKind !== 'photo'}
+            onClick={() => adminPhotoInputRef.current?.click()}
+          >
+            رفع صورة
           </Button>
           <Button
             type="button"
             variant="ghost"
-            disabled={Boolean(displayModalUser) && busyUid === displayModalUser?.uid}
+            loading={displayModalBusyKind === 'clear'}
+            disabled={
+              (Boolean(displayModalBusyKind) && displayModalBusyKind !== 'clear') || !displayModalUser?.photoURL
+            }
+            onClick={onAdminClearPhoto}
+          >
+            إزالة الصورة من المستند
+          </Button>
+        </div>
+        <div className="rh-admin-users__modal-actions">
+          <Button
+            type="button"
+            variant="ghost"
+            disabled={Boolean(displayModalBusyKind)}
             onClick={() => setDisplayModalUser(null)}
           >
             إلغاء
