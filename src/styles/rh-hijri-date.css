@@ -1,0 +1,154 @@
+/* حقل التاريخ الهجري (أم القرى) — يتبع tokens */
+
+.rh-hijri-date__trigger {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  text-align: start;
+  width: 100%;
+  cursor: pointer;
+}
+
+.rh-hijri-date__trigger:disabled {
+  cursor: not-allowed;
+  opacity: 0.65;
+}
+
+.rh-hijri-date__value {
+  color: var(--rh-text);
+}
+
+.rh-hijri-date__placeholder {
+  color: var(--rh-text-placeholder);
+}
+
+.rh-hijri-date__popover {
+  position: absolute;
+  z-index: 12000;
+  inset-inline-start: 0;
+  top: calc(100% + 4px);
+  min-width: min(100%, 19rem);
+  padding: var(--rh-space-3);
+  background: var(--rh-surface);
+  border: 1px solid var(--rh-border-strong);
+  border-radius: var(--rh-radius-lg);
+  box-shadow: var(--rh-shadow-popover);
+  color: var(--rh-text);
+  color-scheme: light dark;
+}
+
+html[data-theme='dark'] .rh-hijri-date__popover {
+  color-scheme: dark;
+}
+
+.rh-hijri-date .ui-date-field__wrap {
+  position: relative;
+}
+
+.rh-hijri-date__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--rh-space-2);
+  margin-bottom: var(--rh-space-2);
+}
+
+.rh-hijri-date__month-title {
+  font-weight: 700;
+  font-size: var(--rh-text-sm);
+  text-align: center;
+  flex: 1;
+  line-height: var(--rh-leading-tight);
+}
+
+.rh-hijri-date__nav {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  border: none;
+  border-radius: var(--rh-radius-md);
+  background: var(--rh-surface-tint);
+  color: var(--rh-text);
+  cursor: pointer;
+}
+
+.rh-hijri-date__nav:hover {
+  background: var(--rh-primary-muted);
+  color: var(--rh-primary);
+}
+
+.rh-hijri-date__weekdays {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 2px;
+  margin-bottom: var(--rh-space-2);
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: var(--rh-text-muted);
+  text-align: center;
+}
+
+.rh-hijri-date__grid {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.rh-hijri-date__row {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 2px;
+}
+
+.rh-hijri-date__cell {
+  aspect-ratio: 1;
+  max-height: 2.35rem;
+  border: none;
+  border-radius: var(--rh-radius-md);
+  background: transparent;
+  color: var(--rh-text);
+  font: inherit;
+  font-size: var(--rh-text-sm);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.rh-hijri-date__cell:hover:not(:disabled) {
+  background: var(--rh-primary-muted);
+}
+
+.rh-hijri-date__cell--selected {
+  background: var(--rh-primary) !important;
+  color: var(--rh-on-primary) !important;
+}
+
+.rh-hijri-date__cell--disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.rh-hijri-date__cell--muted {
+  opacity: 0.38;
+}
+
+.rh-hijri-date__foot {
+  margin-top: var(--rh-space-2);
+  font-size: var(--rh-text-xs);
+  color: var(--rh-text-muted);
+  text-align: center;
+}
+
+.rh-datetime-field__pair {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--rh-space-3);
+  align-items: flex-start;
+}
+
+@media (max-width: 520px) {
+  .rh-datetime-field__pair {
+    grid-template-columns: 1fr;
+  }
+}

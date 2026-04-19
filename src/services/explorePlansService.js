@@ -1,4 +1,5 @@
 import { getDocs, onSnapshot, query, where } from 'firebase/firestore'
+import { normalizePlanCalendarDays } from '../utils/hijriDates.js'
 import { firestoreApi } from './firestoreApi.js'
 
 function timestampMs(v) {
@@ -45,7 +46,7 @@ export async function enrichPublicPlanDocs(docs) {
       const ownerUid = p.ownerUid || ''
       const creator = creatorByUid[ownerUid] || {}
       const memberCount = await resolveMemberCount(p.id, p.memberCount)
-      return {
+      return normalizePlanCalendarDays({
         ...p,
         memberCount,
         creatorUid: ownerUid,
@@ -53,7 +54,7 @@ export async function enrichPublicPlanDocs(docs) {
           creator.displayName || creator.createdByName || p.createdByName || '—',
         creatorEmail: (creator.email || '').toString(),
         creatorPhoto: creator.photoURL || creator.createdByImageUrl || p.createdByImageUrl || '',
-      }
+      })
     }),
   )
 }

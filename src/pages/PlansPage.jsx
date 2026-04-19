@@ -31,6 +31,7 @@ import {
   Button,
   Modal,
   NumberStepField,
+  parseYmdToLocalNoon,
   RhDatePickerField,
   RhTimePickerField,
   ScrollArea,
@@ -1102,7 +1103,7 @@ export default function PlansPage() {
               label="إلى"
               value={dateEnd}
               onChange={setDateEnd}
-              minDate={dateStart ? new Date(`${dateStart}T12:00:00`) : undefined}
+              minDate={dateStart ? parseYmdToLocalNoon(dateStart) ?? undefined : undefined}
             />
           </div>
         )}

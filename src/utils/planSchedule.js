@@ -1,27 +1,26 @@
-/** عدد الأيام ضمن الفترة (شامل) مع تصفية أيام الأسبوع إن وُجدت */
+import { formatHijriYmd, hijriYmdToLocalNoonDate, parseHijriYmdString } from './hijriDates.js'
+
+/** عدد الأيام ضمن الفترة الهجرية (شامل) مع تصفية أيام الأسبوع المحلية إن وُجدت */
 export function countDaysInRange(startStr, endStr, weekdayFilter) {
   if (!startStr || !endStr) return 0
-  const start = parseLocalDate(startStr)
-  const end = parseLocalDate(endStr)
-  if (!start || !end || end < start) return 0
+  const start = parseHijriYmdString(startStr)
+  const end = parseHijriYmdString(endStr)
+  if (!start || !end || start.compare(end) > 0) return 0
 
   const useFilter = Array.isArray(weekdayFilter) && weekdayFilter.length > 0 && weekdayFilter.length < 7
   const allow = useFilter ? new Set(weekdayFilter) : null
 
   let n = 0
-  const d = new Date(start)
-  while (d <= end) {
-    const wd = d.getDay()
+  let cur = start
+  let guard = 0
+  while (cur.compare(end) <= 0 && guard < 4000) {
+    const noon = hijriYmdToLocalNoonDate(formatHijriYmd(cur))
+    const wd = noon && !Number.isNaN(noon.getTime()) ? noon.getDay() : 0
     if (!allow || allow.has(wd)) n++
-    d.setDate(d.getDate() + 1)
+    cur = cur.add({ days: 1 })
+    guard += 1
   }
   return n
-}
-
-function parseLocalDate(ymd) {
-  const [y, m, day] = ymd.split('-').map(Number)
-  if (!y || !m || !day) return null
-  return new Date(y, m - 1, day, 12, 0, 0)
 }
 
 export function sessionsNeeded(totalPages, dailyPages) {

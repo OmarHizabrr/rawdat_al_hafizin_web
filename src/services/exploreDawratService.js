@@ -1,4 +1,5 @@
 import { getDocs, onSnapshot, query, where } from 'firebase/firestore'
+import { normalizeDawraCalendarDays } from '../utils/hijriDates.js'
 import { firestoreApi } from './firestoreApi.js'
 import { EXPLORE_SORT_OPTIONS, sortPublicPlans } from './explorePlansService.js'
 
@@ -28,7 +29,7 @@ export async function enrichPublicDawratDocs(docs) {
       const ownerUid = p.ownerUid || ''
       const creator = creatorByUid[ownerUid] || {}
       const memberCount = await resolveMemberCount(p.id, p.memberCount)
-      return {
+      return normalizeDawraCalendarDays({
         ...p,
         memberCount,
         creatorUid: ownerUid,
@@ -36,7 +37,7 @@ export async function enrichPublicDawratDocs(docs) {
           creator.displayName || creator.createdByName || p.createdByName || '—',
         creatorEmail: (creator.email || '').toString(),
         creatorPhoto: creator.photoURL || creator.createdByImageUrl || p.createdByImageUrl || '',
-      }
+      })
     }),
   )
 }

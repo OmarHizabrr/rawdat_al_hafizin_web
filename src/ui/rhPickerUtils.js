@@ -1,17 +1,14 @@
-/** @param {string} ymd */
+import { hijriYmdToLocalNoonDate, localHijriYmd } from '../utils/hijriDates.js'
+
+/** @param {string} ymd هجري YYYY-MM-DD */
 export function parseYmdToLocalNoon(ymd) {
-  if (!ymd || typeof ymd !== 'string') return null
-  const d = new Date(`${ymd.trim()}T12:00:00`)
-  return Number.isNaN(d.getTime()) ? null : d
+  return hijriYmdToLocalNoonDate(ymd)
 }
 
 /** @param {Date} d */
 export function formatYmd(d) {
   if (!d || !(d instanceof Date) || Number.isNaN(d.getTime())) return ''
-  const y = d.getFullYear()
-  const m = String(d.getMonth() + 1).padStart(2, '0')
-  const day = String(d.getDate()).padStart(2, '0')
-  return `${y}-${m}-${day}`
+  return localHijriYmd(d)
 }
 
 /** @param {string} hhmm */

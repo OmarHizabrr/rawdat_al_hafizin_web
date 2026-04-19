@@ -1,11 +1,21 @@
-/** فرق أيام بين تاريخين YYYY-MM-DD (شامل البداية والنهاية تقريباً كمدة تقويمية) */
+import { parseHijriYmdString } from './hijriDates.js'
+
+/** فرق أيام بين تاريخين هجريين YYYY-MM-DD (أم القرى)، شامل البداية والنهاية */
 export function daysInclusiveYmd(startYmd, endYmd) {
   if (!startYmd || !endYmd || typeof startYmd !== 'string' || typeof endYmd !== 'string') return null
-  const a = new Date(`${startYmd}T12:00:00`)
-  const b = new Date(`${endYmd}T12:00:00`)
-  if (Number.isNaN(a.getTime()) || Number.isNaN(b.getTime())) return null
-  const diff = Math.round((b - a) / 86400000)
-  return diff < 0 ? null : diff + 1
+  const a = parseHijriYmdString(startYmd)
+  const b = parseHijriYmdString(endYmd)
+  if (!a || !b) return null
+  if (a.compare(b) > 0) return null
+  let n = 1
+  let cur = a
+  let guard = 0
+  while (cur.compare(b) < 0 && guard < 4000) {
+    cur = cur.add({ days: 1 })
+    n += 1
+    guard += 1
+  }
+  return n
 }
 
 /** مدة جلسة من وقتي HH:mm في نفس اليوم */

@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react'
 import { loadPlans } from '../utils/plansStorage.js'
 import { useToast } from '../ui/useToast.js'
+import { localYmd } from '../utils/planDailyQuota.js'
 
 const TICK_MS = 30_000
 const FIRED_PREFIX = 'rh.reminderFired'
@@ -50,7 +51,7 @@ export function usePlanReminders(user, { iconSrc } = {}) {
 
     const tick = async () => {
       const hm = nowHm()
-      const day = todayIso()
+      const day = localYmd()
       let plans
       try {
         plans = await loadPlans(userId)

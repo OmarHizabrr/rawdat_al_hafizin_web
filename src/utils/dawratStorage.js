@@ -1,4 +1,5 @@
 import { firestoreApi } from '../services/firestoreApi.js'
+import { normalizeDawraCalendarDays } from './hijriDates.js'
 
 export const DAWRA_MEMBER_ROLES = {
   OWNER: 'owner',
@@ -58,11 +59,13 @@ async function mergeMirrorDocs(mirrorDocs) {
     const role = mirrorData.role || DAWRA_MEMBER_ROLES.MEMBER
     const canonical = await firestoreApi.getData(canonicalRef(dawraId))
     if (!canonical) continue
-    out.push({
-      id: dawraId,
-      ...canonical,
-      dawraRole: role,
-    })
+    out.push(
+      normalizeDawraCalendarDays({
+        id: dawraId,
+        ...canonical,
+        dawraRole: role,
+      }),
+    )
   }
   return out.sort(
     (a, b) =>

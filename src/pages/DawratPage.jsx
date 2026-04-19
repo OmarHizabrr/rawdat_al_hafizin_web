@@ -26,6 +26,7 @@ import { getImpersonateUid, withImpersonationQuery } from '../utils/impersonatio
 import {
   Button,
   Modal,
+  parseYmdToLocalNoon,
   RhDatePickerField,
   ScrollArea,
   SearchField,
@@ -556,7 +557,7 @@ export default function DawratPage() {
               label="نهاية التسجيل"
               value={registrationEnd}
               onChange={setRegistrationEnd}
-              minDate={registrationStart ? new Date(`${registrationStart}T12:00:00`) : undefined}
+              minDate={registrationStart ? parseYmdToLocalNoon(registrationStart) ?? undefined : undefined}
             />
           </div>
           {regDays != null && (
@@ -571,7 +572,7 @@ export default function DawratPage() {
               label="نهاية الدورة"
               value={courseEnd}
               onChange={setCourseEnd}
-              minDate={courseStart ? new Date(`${courseStart}T12:00:00`) : undefined}
+              minDate={courseStart ? parseYmdToLocalNoon(courseStart) ?? undefined : undefined}
             />
           </div>
           {courseDays != null && <p className="ui-field__hint">مدة الدورة: {courseDays} يوماً (شاملة)</p>}

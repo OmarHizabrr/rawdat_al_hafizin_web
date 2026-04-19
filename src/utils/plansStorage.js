@@ -1,4 +1,5 @@
 import { firestoreApi } from '../services/firestoreApi.js'
+import { normalizePlanCalendarDays } from './hijriDates.js'
 
 /** أدوار عضو الخطة (مطابقة لحقل role في members/{planId}/members/{uid}) */
 export const PLAN_MEMBER_ROLES = {
@@ -61,11 +62,13 @@ async function mergeMirrorDocs(mirrorDocs) {
     const role = mirrorData.role || PLAN_MEMBER_ROLES.MEMBER
     const canonical = await firestoreApi.getData(canonicalRef(planId))
     if (!canonical) continue
-    out.push({
-      id: planId,
-      ...canonical,
-      planRole: role,
-    })
+    out.push(
+      normalizePlanCalendarDays({
+        id: planId,
+        ...canonical,
+        planRole: role,
+      }),
+    )
   }
   return out.sort(
     (a, b) =>
