@@ -9,6 +9,11 @@ import { useAuth } from '../context/useAuth.js'
 import { usePermissions } from '../context/usePermissions.js'
 import { useSiteContent } from '../context/useSiteContent.js'
 import { auth } from '../firebase.js'
+import {
+  FEELINGS_FLIGHT_MODE,
+  readFeelingsFlightMode,
+  writeFeelingsFlightMode,
+} from '../utils/feelingsFlightPrefs.js'
 import { messageForProfilePhotoError } from '../services/profilePhotoStorage.js'
 import {
   clearMyProfilePhoto,
@@ -29,6 +34,7 @@ export default function SettingsPage() {
   const [savingName, setSavingName] = useState(false)
   const [uploadingPhoto, setUploadingPhoto] = useState(false)
   const [clearingPhoto, setClearingPhoto] = useState(false)
+  const [feelingsFlightMode, setFeelingsFlightMode] = useState(() => readFeelingsFlightMode())
   const photoInputRef = useRef(null)
 
   const settingsCrossItems = useMemo(() => {
@@ -120,6 +126,11 @@ export default function SettingsPage() {
     }
   }
 
+  const onChangeFeelingsFlightMode = (mode) => {
+    setFeelingsFlightMode(mode)
+    writeFeelingsFlightMode(mode)
+  }
+
   return (
     <div className="rh-settings">
       <header className="rh-settings-header">
@@ -152,7 +163,50 @@ export default function SettingsPage() {
           <p className="rh-settings-card__subtitle">اختر وضع الألوان المناسب لك أو اتركه يتبع النظام.</p>
         </div>
         {can(PS, 'settings_theme') ? (
-          <ThemeModePicker />
+          <>
+            <ThemeModePicker />
+            <div className="rh-settings-card__head" style={{ marginTop: 'var(--rh-space-4)' }}>
+              <h3 className="rh-settings-card__title">حركة طيور المشاعر</h3>
+              <p className="rh-settings-card__subtitle">
+                تتحكم بحركة الرسائل الطائرة في الصفحة الرئيسية: تعطيل كامل، حركة هادئة، أو حركة أسرع.
+              </p>
+            </div>
+            <div className="rh-segment" role="radiogroup" aria-label="وضع حركة طيور المشاعر">
+              <button
+                type="button"
+                className={['rh-segment__btn', feelingsFlightMode === FEELINGS_FLIGHT_MODE.OFF ? 'rh-segment__btn--active' : '']
+                  .filter(Boolean)
+                  .join(' ')}
+                onClick={() => onChangeFeelingsFlightMode(FEELINGS_FLIGHT_MODE.OFF)}
+                aria-pressed={feelingsFlightMode === FEELINGS_FLIGHT_MODE.OFF}
+              >
+                <span className="rh-segment__label">تعطيل</span>
+                <span className="rh-segment__hint">إخفاء الطيور المتحركة من الرئيسية</span>
+              </button>
+              <button
+                type="button"
+                className={['rh-segment__btn', feelingsFlightMode === FEELINGS_FLIGHT_MODE.CALM ? 'rh-segment__btn--active' : '']
+                  .filter(Boolean)
+                  .join(' ')}
+                onClick={() => onChangeFeelingsFlightMode(FEELINGS_FLIGHT_MODE.CALM)}
+                aria-pressed={feelingsFlightMode === FEELINGS_FLIGHT_MODE.CALM}
+              >
+                <span className="rh-segment__label">تخفيف</span>
+                <span className="rh-segment__hint">عدد أقل وسرعة أهدأ</span>
+              </button>
+              <button
+                type="button"
+                className={['rh-segment__btn', feelingsFlightMode === FEELINGS_FLIGHT_MODE.FAST ? 'rh-segment__btn--active' : '']
+                  .filter(Boolean)
+                  .join(' ')}
+                onClick={() => onChangeFeelingsFlightMode(FEELINGS_FLIGHT_MODE.FAST)}
+                aria-pressed={feelingsFlightMode === FEELINGS_FLIGHT_MODE.FAST}
+              >
+                <span className="rh-segment__label">تسريع</span>
+                <span className="rh-segment__hint">حركة أسرع وكثافة أعلى</span>
+              </button>
+            </div>
+          </>
         ) : (
           <p className="rh-settings-footnote">تغيير المظهر غير مفعّل لصلاحيات حسابك.</p>
         )}

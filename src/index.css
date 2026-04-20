@@ -6043,6 +6043,14 @@ a.rh-peek-btn {
   overflow: hidden;
 }
 
+.rh-home-feelings-birds__overlay--calm .rh-home-feelings-birds__bird-card {
+  opacity: 0.82;
+}
+
+.rh-home-feelings-birds__overlay--fast .rh-home-feelings-birds__bird-card {
+  opacity: 0.95;
+}
+
 .rh-home-feelings-birds__flight {
   position: absolute;
   inset-inline-start: -20%;
@@ -6176,6 +6184,14 @@ a.rh-peek-btn {
   }
   50% {
     translate: 0 -3px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rh-home-feelings-birds__flight,
+  .rh-home-feelings-birds__bird-card {
+    animation: none !important;
+    transform: none !important;
   }
 }
 

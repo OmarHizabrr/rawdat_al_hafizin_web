@@ -30,6 +30,7 @@ import {
 import { localYmd } from '../utils/planDailyQuota.js'
 import { computePlanProgress } from '../utils/planProgress.js'
 import { getImpersonateUid, withImpersonationQuery } from '../utils/impersonation.js'
+import { FEELINGS_FLIGHT_MODE, readFeelingsFlightMode } from '../utils/feelingsFlightPrefs.js'
 import { RhIcon, RH_ICON_STROKE } from '../ui/RhIcon.jsx'
 
 const PH = PERMISSION_PAGE_IDS.home
@@ -67,9 +68,15 @@ function hashSeed(text) {
   return h
 }
 
-function flightStyleFromFeeling(feeling, idx) {
+function flightStyleFromFeeling(feeling, idx, mode) {
   const seed = hashSeed(`${feeling?.id || ''}:${feeling?.ownerUid || ''}:${idx}`)
-  const duration = 16 + (seed % 11)
+  const baseDuration = 16 + (seed % 11)
+  const duration =
+    mode === FEELINGS_FLIGHT_MODE.FAST
+      ? Math.max(8, baseDuration * 0.68)
+      : mode === FEELINGS_FLIGHT_MODE.CALM
+        ? baseDuration * 1.45
+        : baseDuration
   const delay = -1 * (seed % 13)
   const y1 = -10 - (seed % 18)
   const y2 = 8 + ((seed >> 2) % 26)
@@ -118,6 +125,7 @@ export default function AppHomePage() {
   const [homeWirdCheckInOpen, setHomeWirdCheckInOpen] = useState(false)
   const [homeNow, setHomeNow] = useState(() => new Date())
   const [recentFeelings, setRecentFeelings] = useState([])
+  const [feelingsFlightMode, setFeelingsFlightMode] = useState(() => readFeelingsFlightMode())
   const prevShouldOfferCheckInRef = useRef(false)
 
   useOnClickOutside(planMenuRef, () => setPlanMenuOpen(false), planMenuOpen)
@@ -273,6 +281,32 @@ export default function AppHomePage() {
 
   const awradHref = appPath(`/app/awrad?plan=${encodeURIComponent(activePlan?.id || '')}`)
   const canVisitFeelings = canAccessPage('feelings')
+  const canRenderFlights =
+    canVisitFeelings &&
+    recentFeelings.length > 0 &&
+    feelingsFlightMode !== FEELINGS_FLIGHT_MODE.OFF
+  const flyingFeelings = useMemo(
+    () => recentFeelings.slice(0, feelingsFlightMode === FEELINGS_FLIGHT_MODE.CALM ? 5 : 8),
+    [recentFeelings, feelingsFlightMode],
+  )
+
+  useEffect(() => {
+    const onStorage = (e) => {
+      if (e?.key && e.key !== 'rh.feelingsFlightMode') return
+      setFeelingsFlightMode(readFeelingsFlightMode())
+    }
+    const onCustom = (e) => {
+      const next = e?.detail
+      if (next === 'off' || next === 'calm' || next === 'fast') setFeelingsFlightMode(next)
+      else setFeelingsFlightMode(readFeelingsFlightMode())
+    }
+    window.addEventListener('storage', onStorage)
+    window.addEventListener('rh:feelings-flight-mode', onCustom)
+    return () => {
+      window.removeEventListener('storage', onStorage)
+      window.removeEventListener('rh:feelings-flight-mode', onCustom)
+    }
+  }, [])
 
   return (
     <div className="rh-app-home rh-app-home--dash">
@@ -307,13 +341,16 @@ export default function AppHomePage() {
         )}
       </header>
 
-      {canVisitFeelings && recentFeelings.length > 0 ? (
-        <ul className="rh-home-feelings-birds__overlay" aria-label="طيور المشاعر المتدفقة">
-            {recentFeelings.slice(0, 8).map((f, i) => (
+      {canRenderFlights ? (
+        <ul
+          className={['rh-home-feelings-birds__overlay', `rh-home-feelings-birds__overlay--${feelingsFlightMode}`].join(' ')}
+          aria-label="طيور المشاعر المتدفقة"
+        >
+            {flyingFeelings.map((f, i) => (
               <li
                 key={`${f.ownerUid}-${f.id}`}
                 className="rh-home-feelings-birds__flight"
-                style={flightStyleFromFeeling(f, i)}
+                style={flightStyleFromFeeling(f, i, feelingsFlightMode)}
               >
                 <article className="rh-home-feelings-birds__bird-card">
                   <span className="rh-home-feelings-birds__bird" aria-hidden>
