@@ -1,43 +1,33 @@
 import {
-  Bird,
   BookOpen,
   CheckCircle2,
   ChevronDown,
   Coffee,
   Flame,
   Loader2,
+  NotebookPen,
   Sparkles,
   Sunrise,
+  Bird,
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link, useLocation, useSearchParams } from "react-router-dom";
+import { useSiteContent } from "../context/useSiteContent.js";
 import { HomeWirdCheckInModal } from "../components/HomeWirdCheckInModal.jsx";
 import { HomeWirdModal } from "../components/HomeWirdModal.jsx";
+import { pickHomeMotivationQuote } from "../data/homeMotivationQuotes.js";
 import { PERMISSION_PAGE_IDS } from "../config/permissionRegistry.js";
 import { isAdmin } from "../config/roles.js";
 import { useAuth } from "../context/useAuth.js";
 import { usePermissions } from "../context/usePermissions.js";
-import { useSiteContent } from "../context/useSiteContent.js";
-import { pickHomeMotivationQuote } from "../data/homeMotivationQuotes.js";
 import { firestoreApi } from "../services/firestoreApi.js";
 import { loadRecentStudentFeelings } from "../services/studentFeelingsService.js";
 import { setUserDefaultPlanId } from "../services/userService.js";
+import { addWird } from "../utils/awradStorage.js";
 import { useOnClickOutside } from "../ui/hooks/useOnClickOutside.js";
-import { useToast } from "../ui/index.js";
-import { RH_ICON_STROKE, RhIcon } from "../ui/RhIcon.jsx";
+import { loadPlans, subscribePlans } from "../utils/plansStorage.js";
+import { subscribeAwrad } from "../utils/awradStorage.js";
 import { buildAutoDefaultWirdAddRequest } from "../utils/autoLogDefaultWird.js";
-import { addWird, subscribeAwrad } from "../utils/awradStorage.js";
-import {
-  FEELINGS_FLIGHT_MODE,
-  readFeelingsFlightMode,
-} from "../utils/feelingsFlightPrefs.js";
-import { prevHijriYmd } from "../utils/hijriDates.js";
-import {
-  isCheckinDismissedForDay,
-  isCheckinSnoozed,
-  setCheckinDismissNo,
-  setCheckinSnooze,
-} from "../utils/homeWirdCheckinStorage.js";
 import {
   getHomeWirdDashboardInsight,
   getHomeWirdDayStatus,
@@ -45,17 +35,29 @@ import {
   shouldShowHomeLogWirdCumulative,
 } from "../utils/homeWirdStatus.js";
 import {
-  getImpersonateUid,
-  withImpersonationQuery,
-} from "../utils/impersonation.js";
+  isCheckinDismissedForDay,
+  isCheckinSnoozed,
+  setCheckinDismissNo,
+  setCheckinSnooze,
+} from "../utils/homeWirdCheckinStorage.js";
+import { localYmd } from "../utils/planDailyQuota.js";
+import { computePlanProgress } from "../utils/planProgress.js";
+import { prevHijriYmd } from "../utils/hijriDates.js";
 import {
   isoFromLocalYmd,
-  localYmd,
   maxAdditionalPagesForRecordingDay,
   planAppliesToYmd,
 } from "../utils/planDailyQuota.js";
-import { computePlanProgress } from "../utils/planProgress.js";
-import { loadPlans, subscribePlans } from "../utils/plansStorage.js";
+import {
+  getImpersonateUid,
+  withImpersonationQuery,
+} from "../utils/impersonation.js";
+import { useToast } from "../ui/index.js";
+import {
+  FEELINGS_FLIGHT_MODE,
+  readFeelingsFlightMode,
+} from "../utils/feelingsFlightPrefs.js";
+import { RhIcon, RH_ICON_STROKE } from "../ui/RhIcon.jsx";
 
 const PH = PERMISSION_PAGE_IDS.home;
 
@@ -862,15 +864,25 @@ export default function AppHomePage() {
                   <button
                     key={d.ymd}
                     type="button"
-                    className="rh-home-dash__backlog-item"
+                    className={[
+                      "rh-home-dash__backlog-item",
+                      backfillBusyYmd === d.ymd
+                        ? "rh-home-dash__backlog-item--busy"
+                        : "",
+                    ]
+                      .filter(Boolean)
+                      .join(" ")}
                     onClick={() => markBacklogDone(d.ymd)}
                     disabled={
                       backfillBusyYmd !== "" && backfillBusyYmd !== d.ymd
                     }
                   >
-                    <strong>{d.ymd}</strong>
-                    <span>المتبقي: {d.missing} صفحة</span>
-                    <span>
+                    <span className="rh-home-dash__backlog-date">{d.ymd}</span>
+                    <span className="rh-home-dash__backlog-missing">
+                      المتبقي: {d.missing} صفحة
+                    </span>
+                    <span className="rh-home-dash__backlog-cta">
+                      <CheckCircle2 size={15} strokeWidth={2} />
                       {backfillBusyYmd === d.ymd
                         ? "جارٍ التسجيل…"
                         : "تم الإنجاز"}
@@ -929,18 +941,7 @@ export default function AppHomePage() {
           </p>
 
           <div className="rh-home-dash__actions">
-            {can(PH, "home_log_wird") && showHomeLogWirdCumulative
-              ? {
-                  /* <button
-                type="button"
-                className="rh-home-dash__btn rh-home-dash__btn--primary rh-home-dash__btn--pulse-hint"
-                onClick={() => setHomeWirdOpen(true)}
-              >
-                <NotebookPen size={22} strokeWidth={1.75} />
-                تسجيل الورد السريع
-              </button> */
-                }
-              : null}
+            {/* تم إخفاء زر تسجيل الورد السريع مؤقتاً حسب الطلب */}
             <Link
               className="rh-home-dash__btn rh-home-dash__btn--secondary"
               to={awradHref}

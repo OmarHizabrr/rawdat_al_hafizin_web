@@ -276,6 +276,14 @@
     inset-inline-end: max(0.625rem, env(safe-area-inset-right, 0px));
     bottom: max(0.625rem, env(safe-area-inset-bottom, 0px));
   }
+
+  .rh-home-dash__backlog {
+    padding: var(--rh-space-2);
+  }
+
+  .rh-home-dash__backlog-list {
+    grid-template-columns: 1fr;
+  }
 }
 
 @media (max-width: 520px) {

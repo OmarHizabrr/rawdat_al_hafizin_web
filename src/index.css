@@ -1555,21 +1555,27 @@ a.rh-sidebar__brand-link.rh-sidebar__brand-link--active {
 
 .rh-home-dash__backlog {
   margin-top: var(--rh-space-3);
-  border: 1px dashed var(--rh-border);
-  border-radius: var(--rh-radius-md);
-  padding: var(--rh-space-2);
-  background: color-mix(in srgb, var(--rh-surface-tint) 70%, transparent);
+  border: 1px solid color-mix(in srgb, var(--rh-primary) 22%, var(--rh-border));
+  border-radius: var(--rh-radius-lg);
+  padding: var(--rh-space-3);
+  background:
+    linear-gradient(
+      145deg,
+      color-mix(in srgb, var(--rh-primary-muted) 32%, var(--rh-surface)),
+      color-mix(in srgb, var(--rh-surface-tint) 90%, var(--rh-surface))
+    );
 }
 
 .rh-home-dash__backlog-title {
   margin: 0 0 var(--rh-space-2);
   font-size: var(--rh-text-sm);
-  color: var(--rh-text-muted);
+  color: var(--rh-text);
+  font-weight: 700;
 }
 
 .rh-home-dash__backlog-list {
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(165px, 1fr));
   gap: var(--rh-space-2);
 }
 
@@ -1577,23 +1583,54 @@ a.rh-sidebar__brand-link.rh-sidebar__brand-link--active {
   border: 1px solid var(--rh-border);
   border-radius: var(--rh-radius-md);
   background: var(--rh-surface);
-  padding: 0.45rem 0.65rem;
-  display: inline-flex;
+  padding: 0.55rem 0.7rem;
+  display: flex;
   flex-direction: column;
   align-items: flex-start;
-  gap: 0.1rem;
+  gap: 0.18rem;
   cursor: pointer;
   font: inherit;
   text-align: start;
+  transition:
+    transform 0.12s ease,
+    box-shadow 0.15s ease,
+    border-color 0.15s ease;
 }
 
 .rh-home-dash__backlog-item:hover:not(:disabled) {
   border-color: var(--rh-primary);
+  transform: translateY(-1px);
+  box-shadow: var(--rh-shadow-sm);
 }
 
 .rh-home-dash__backlog-item:disabled {
   opacity: 0.6;
   cursor: not-allowed;
+}
+
+.rh-home-dash__backlog-item--busy {
+  border-color: var(--rh-primary);
+  box-shadow: var(--rh-focus-ring);
+}
+
+.rh-home-dash__backlog-date {
+  font-weight: 700;
+  color: var(--rh-text);
+}
+
+.rh-home-dash__backlog-missing {
+  font-size: var(--rh-text-xs);
+  color: var(--rh-text-muted);
+}
+
+.rh-home-dash__backlog-cta {
+  margin-top: 0.2rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-size: var(--rh-text-xs);
+  color: var(--rh-primary);
+  font-weight: 700;
 }
 
 .rh-home-dash__btn {
