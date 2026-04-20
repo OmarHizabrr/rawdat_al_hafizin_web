@@ -1553,6 +1553,49 @@ a.rh-sidebar__brand-link.rh-sidebar__brand-link--active {
   gap: var(--rh-space-2);
 }
 
+.rh-home-dash__backlog {
+  margin-top: var(--rh-space-3);
+  border: 1px dashed var(--rh-border);
+  border-radius: var(--rh-radius-md);
+  padding: var(--rh-space-2);
+  background: color-mix(in srgb, var(--rh-surface-tint) 70%, transparent);
+}
+
+.rh-home-dash__backlog-title {
+  margin: 0 0 var(--rh-space-2);
+  font-size: var(--rh-text-sm);
+  color: var(--rh-text-muted);
+}
+
+.rh-home-dash__backlog-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--rh-space-2);
+}
+
+.rh-home-dash__backlog-item {
+  border: 1px solid var(--rh-border);
+  border-radius: var(--rh-radius-md);
+  background: var(--rh-surface);
+  padding: 0.45rem 0.65rem;
+  display: inline-flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.1rem;
+  cursor: pointer;
+  font: inherit;
+  text-align: start;
+}
+
+.rh-home-dash__backlog-item:hover:not(:disabled) {
+  border-color: var(--rh-primary);
+}
+
+.rh-home-dash__backlog-item:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
 .rh-home-dash__btn {
   display: inline-flex;
   align-items: center;

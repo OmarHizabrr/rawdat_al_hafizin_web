@@ -12,6 +12,7 @@ import { usePermissions } from '../context/usePermissions.js'
 import { firestoreApi } from '../services/firestoreApi.js'
 import { loadRecentStudentFeelings } from '../services/studentFeelingsService.js'
 import { setUserDefaultPlanId } from '../services/userService.js'
+import { addWird } from '../utils/awradStorage.js'
 import { useOnClickOutside } from '../ui/hooks/useOnClickOutside.js'
 import { loadPlans, subscribePlans } from '../utils/plansStorage.js'
 import { subscribeAwrad } from '../utils/awradStorage.js'
@@ -19,6 +20,7 @@ import { buildAutoDefaultWirdAddRequest } from '../utils/autoLogDefaultWird.js'
 import {
   getHomeWirdDashboardInsight,
   getHomeWirdDayStatus,
+  getPagesLoggedOnPlanDay,
   shouldShowHomeLogWirdCumulative,
 } from '../utils/homeWirdStatus.js'
 import {
@@ -29,7 +31,10 @@ import {
 } from '../utils/homeWirdCheckinStorage.js'
 import { localYmd } from '../utils/planDailyQuota.js'
 import { computePlanProgress } from '../utils/planProgress.js'
+import { prevHijriYmd } from '../utils/hijriDates.js'
+import { isoFromLocalYmd, maxAdditionalPagesForRecordingDay, planAppliesToYmd } from '../utils/planDailyQuota.js'
 import { getImpersonateUid, withImpersonationQuery } from '../utils/impersonation.js'
+import { useToast } from '../ui/index.js'
 import { FEELINGS_FLIGHT_MODE, readFeelingsFlightMode } from '../utils/feelingsFlightPrefs.js'
 import { RhIcon, RH_ICON_STROKE } from '../ui/RhIcon.jsx'
 
@@ -102,6 +107,23 @@ function flightClassFromFeeling(feeling, idx) {
   return ((seed >> 3) % 2) === 1
     ? 'rh-home-feelings-birds__flight rh-home-feelings-birds__flight--reverse'
     : 'rh-home-feelings-birds__flight'
+}
+
+function buildBacklogDays(plan, awrad, todayYmd, maxDays = 21) {
+  if (!plan?.id || !todayYmd) return []
+  const daily = Math.max(1, Number(plan.dailyPages) || 1)
+  const out = []
+  let d = prevHijriYmd(todayYmd)
+  for (let i = 0; i < maxDays; i += 1) {
+    if (!d) break
+    if (planAppliesToYmd(plan, d)) {
+      const logged = getPagesLoggedOnPlanDay(plan, awrad, d)
+      const missing = Math.max(0, daily - logged)
+      if (missing > 0) out.push({ ymd: d, logged, missing })
+    }
+    d = prevHijriYmd(d)
+  }
+  return out
 }
 
 function FlyingFeelingBird({ feeling, idx, mode, paused, onSingleClick }) {
@@ -177,6 +199,7 @@ function FlyingFeelingBird({ feeling, idx, mode, paused, onSingleClick }) {
 
 export default function AppHomePage() {
   const { user } = useAuth()
+  const toast = useToast()
   const { can, canAccessPage } = usePermissions()
   const { typeLabel, branding, str } = useSiteContent()
   const { search } = useLocation()
@@ -209,6 +232,7 @@ export default function AppHomePage() {
   const [homeNow, setHomeNow] = useState(() => new Date())
   const [recentFeelings, setRecentFeelings] = useState([])
   const [feelingsFlightMode, setFeelingsFlightMode] = useState(() => readFeelingsFlightMode())
+  const [backfillBusyYmd, setBackfillBusyYmd] = useState('')
   const [pausedBirdIds, setPausedBirdIds] = useState({})
   const [activeFeelingDetail, setActiveFeelingDetail] = useState(null)
   const prevShouldOfferCheckInRef = useRef(false)
@@ -392,6 +416,54 @@ export default function AppHomePage() {
       window.removeEventListener('rh:feelings-flight-mode', onCustom)
     }
   }, [])
+
+  const backlogDays = useMemo(
+    () => buildBacklogDays(activePlan, awrad, homeWirdStatus.todayYmd, 21),
+    [activePlan, awrad, homeWirdStatus.todayYmd],
+  )
+
+  const markBacklogDone = useCallback(
+    async (targetYmd) => {
+      if (!activePlan?.id || !contextUserId || !user || !targetYmd || backfillBusyYmd) return
+      const daily = Math.max(1, Number(activePlan.dailyPages) || 1)
+      const logged = getPagesLoggedOnPlanDay(activePlan, awrad, targetYmd)
+      const missing = Math.max(0, daily - logged)
+      if (missing <= 0) {
+        toast.success('هذا اليوم مكتمل بالفعل.', 'تم')
+        return
+      }
+      const maxExtra = maxAdditionalPagesForRecordingDay(activePlan, awrad, targetYmd, {})
+      const pagesToAdd = Math.min(missing, maxExtra)
+      if (pagesToAdd <= 0) {
+        toast.warning('لا يمكن تسجيل هذا اليوم الآن لأن التعويض التراكمي مكتمل عبر الأيام التالية.', 'تنبيه')
+        return
+      }
+      setBackfillBusyYmd(targetYmd)
+      try {
+        const nextFrom = (computePlanProgress(activePlan, awrad)?.nextFromPage ?? 1)
+        await addWird(
+          contextUserId,
+          {
+            planId: activePlan.id,
+            planName: activePlan.name,
+            mode: 'count',
+            pagesCount: pagesToAdd,
+            fromPage: nextFrom,
+            toPage: nextFrom + pagesToAdd - 1,
+            recordedAt: isoFromLocalYmd(targetYmd),
+          },
+          user,
+          { allowCustomRecordedAt: true },
+        )
+        toast.success(`تم تسجيل إنجاز يوم ${targetYmd} (${pagesToAdd} صفحة).`, 'بارك الله فيك')
+      } catch {
+        toast.warning('تعذّر تسجيل إنجاز اليوم السابق. حاول مرة أخرى.', 'تنبيه')
+      } finally {
+        setBackfillBusyYmd('')
+      }
+    },
+    [activePlan, contextUserId, user, backfillBusyYmd, awrad, toast],
+  )
 
   const onBirdSingleClick = useCallback((feeling) => {
     const key = `${feeling.ownerUid || 'u'}:${feeling.id}`
@@ -614,6 +686,27 @@ export default function AppHomePage() {
               ) : null}
             </div>
           )}
+
+          {backlogDays.length > 0 ? (
+            <div className="rh-home-dash__backlog">
+              <p className="rh-home-dash__backlog-title">أيام تحتاج تعويض — اضغط (تم الإنجاز)</p>
+              <div className="rh-home-dash__backlog-list">
+                {backlogDays.slice(0, 8).map((d) => (
+                  <button
+                    key={d.ymd}
+                    type="button"
+                    className="rh-home-dash__backlog-item"
+                    onClick={() => markBacklogDone(d.ymd)}
+                    disabled={backfillBusyYmd !== '' && backfillBusyYmd !== d.ymd}
+                  >
+                    <strong>{d.ymd}</strong>
+                    <span>المتبقي: {d.missing} صفحة</span>
+                    <span>{backfillBusyYmd === d.ymd ? 'جارٍ التسجيل…' : 'تم الإنجاز'}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          ) : null}
 
           <div className="rh-home-dash__progress">
             <div className="rh-home-dash__progress-head">
