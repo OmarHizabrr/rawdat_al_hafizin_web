@@ -1372,6 +1372,14 @@ a.rh-sidebar__brand-link.rh-sidebar__brand-link--active {
   color: var(--rh-text-muted);
 }
 
+.rh-home-dash__metric-since {
+  display: block;
+  margin-top: 0.35rem;
+  font-size: var(--rh-text-xs);
+  font-weight: 700;
+  color: color-mix(in srgb, var(--rh-danger) 82%, #7f1d1d);
+}
+
 .rh-home-dash__title {
   margin: var(--rh-space-3) 0 var(--rh-space-2);
   font-size: clamp(1.15rem, 3.8vw, 1.35rem);

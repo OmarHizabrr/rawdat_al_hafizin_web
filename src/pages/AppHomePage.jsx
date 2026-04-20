@@ -598,6 +598,11 @@ export default function AppHomePage() {
     () => backlogDays.find((d) => d.ymd === backlogConfirmYmd) || null,
     [backlogDays, backlogConfirmYmd],
   );
+  const overdueSinceDay = useMemo(() => {
+    const pastDelayed = backlogDays.filter((d) => !d.isToday);
+    if (pastDelayed.length === 0) return null;
+    return pastDelayed[pastDelayed.length - 1];
+  }, [backlogDays]);
 
   return (
     <div className="rh-app-home rh-app-home--dash">
@@ -847,6 +852,12 @@ export default function AppHomePage() {
                   <span className="rh-home-dash__metric-label">
                     صفحة متأخرة تراكمياً
                   </span>
+                  {overdueSinceDay ? (
+                    <span className="rh-home-dash__metric-since">
+                      متأخر منذ: {overdueSinceDay.weekdayLabel} —{" "}
+                      {overdueSinceDay.ymd}
+                    </span>
+                  ) : null}
                 </div>
               )}
               <h2 className="rh-home-dash__title">{dashInsight.headline}</h2>
