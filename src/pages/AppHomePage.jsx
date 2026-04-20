@@ -42,7 +42,7 @@ import {
 } from "../utils/homeWirdCheckinStorage.js";
 import { localYmd } from "../utils/planDailyQuota.js";
 import { computePlanProgress } from "../utils/planProgress.js";
-import { prevHijriYmd } from "../utils/hijriDates.js";
+import { hijriYmdToLocalNoonDate, prevHijriYmd } from "../utils/hijriDates.js";
 import {
   isoFromLocalYmd,
   maxAdditionalPagesForRecordingDay,
@@ -52,7 +52,7 @@ import {
   getImpersonateUid,
   withImpersonationQuery,
 } from "../utils/impersonation.js";
-import { useToast } from "../ui/index.js";
+import { Button, Modal, useToast } from "../ui/index.js";
 import {
   FEELINGS_FLIGHT_MODE,
   readFeelingsFlightMode,
@@ -60,6 +60,15 @@ import {
 import { RhIcon, RH_ICON_STROKE } from "../ui/RhIcon.jsx";
 
 const PH = PERMISSION_PAGE_IDS.home;
+const WEEKDAY_NAMES_AR = [
+  "الأحد",
+  "الإثنين",
+  "الثلاثاء",
+  "الأربعاء",
+  "الخميس",
+  "الجمعة",
+  "السبت",
+];
 
 const MOOD_BADGE_LABEL = {
   rest: "يوم راحة",
@@ -134,6 +143,12 @@ function flightClassFromFeeling(feeling, idx) {
     : "rh-home-feelings-birds__flight";
 }
 
+function weekdayLabelFromHijriYmd(ymd) {
+  const d = hijriYmdToLocalNoonDate(ymd);
+  if (!d || Number.isNaN(d.getTime())) return "—";
+  return WEEKDAY_NAMES_AR[d.getDay()] || "—";
+}
+
 function buildBacklogDays(plan, awrad, todayYmd, maxDays = 21) {
   if (!plan?.id || !todayYmd) return [];
   const daily = Math.max(1, Number(plan.dailyPages) || 1);
@@ -144,7 +159,13 @@ function buildBacklogDays(plan, awrad, todayYmd, maxDays = 21) {
     if (planAppliesToYmd(plan, d)) {
       const logged = getPagesLoggedOnPlanDay(plan, awrad, d);
       const missing = Math.max(0, daily - logged);
-      if (missing > 0) out.push({ ymd: d, logged, missing });
+      if (missing > 0)
+        out.push({
+          ymd: d,
+          logged,
+          missing,
+          weekdayLabel: weekdayLabelFromHijriYmd(d),
+        });
     }
     d = prevHijriYmd(d);
   }
@@ -280,6 +301,7 @@ export default function AppHomePage() {
     readFeelingsFlightMode(),
   );
   const [backfillBusyYmd, setBackfillBusyYmd] = useState("");
+  const [backlogConfirmYmd, setBacklogConfirmYmd] = useState("");
   const [pausedBirdIds, setPausedBirdIds] = useState({});
   const [activeFeelingDetail, setActiveFeelingDetail] = useState(null);
   const prevShouldOfferCheckInRef = useRef(false);
@@ -503,10 +525,6 @@ export default function AppHomePage() {
         backfillBusyYmd
       )
         return;
-      const confirmed = window.confirm(
-        `هل أنت متأكد أنك أنجزت ورد يوم ${targetYmd}؟\nسيتم تسجيل الإنجاز مباشرة.`,
-      );
-      if (!confirmed) return;
       const daily = Math.max(1, Number(activePlan.dailyPages) || 1);
       const logged = getPagesLoggedOnPlanDay(activePlan, awrad, targetYmd);
       const missing = Math.max(0, daily - logged);
@@ -574,6 +592,11 @@ export default function AppHomePage() {
       });
     }, 3000);
   }, []);
+
+  const pendingBacklogDay = useMemo(
+    () => backlogDays.find((d) => d.ymd === backlogConfirmYmd) || null,
+    [backlogDays, backlogConfirmYmd],
+  );
 
   return (
     <div className="rh-app-home rh-app-home--dash">
@@ -870,18 +893,21 @@ export default function AppHomePage() {
                     type="button"
                     className={[
                       "rh-home-dash__backlog-item",
+                      d.missing > 0 ? "rh-home-dash__backlog-item--pending" : "",
                       backfillBusyYmd === d.ymd
                         ? "rh-home-dash__backlog-item--busy"
                         : "",
                     ]
                       .filter(Boolean)
                       .join(" ")}
-                    onClick={() => markBacklogDone(d.ymd)}
+                    onClick={() => setBacklogConfirmYmd(d.ymd)}
                     disabled={
                       backfillBusyYmd !== "" && backfillBusyYmd !== d.ymd
                     }
                   >
-                    <span className="rh-home-dash__backlog-date">{d.ymd}</span>
+                    <span className="rh-home-dash__backlog-date">
+                      {d.weekdayLabel} — {d.ymd}
+                    </span>
                     <span className="rh-home-dash__backlog-missing">
                       المتبقي: {d.missing} صفحة
                     </span>
@@ -995,6 +1021,50 @@ export default function AppHomePage() {
             contextUserId={contextUserId}
             user={user}
           />
+          <Modal
+            open={Boolean(backlogConfirmYmd)}
+            onClose={() => {
+              if (!backfillBusyYmd) setBacklogConfirmYmd("");
+            }}
+            title="تأكيد إنجاز الورد"
+            size="md"
+            className="rh-home-backlog-confirm"
+          >
+            <div className="rh-home-backlog-confirm__body">
+              <p className="rh-home-backlog-confirm__text">
+                هل أنت متأكد أنك أنجزت ورد يوم{" "}
+                <strong>
+                  {pendingBacklogDay?.weekdayLabel} — {pendingBacklogDay?.ymd}
+                </strong>
+                ؟
+              </p>
+              <p className="rh-home-backlog-confirm__hint">
+                سيتم تسجيل الإنجاز مباشرة في هذا التاريخ.
+              </p>
+              <div className="rh-home-backlog-confirm__actions">
+                <Button
+                  type="button"
+                  onClick={async () => {
+                    if (!pendingBacklogDay?.ymd) return;
+                    await markBacklogDone(pendingBacklogDay.ymd);
+                    setBacklogConfirmYmd("");
+                  }}
+                  disabled={Boolean(backfillBusyYmd)}
+                  loading={Boolean(backfillBusyYmd)}
+                >
+                  تأكيد الإنجاز
+                </Button>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  onClick={() => setBacklogConfirmYmd("")}
+                  disabled={Boolean(backfillBusyYmd)}
+                >
+                  إلغاء
+                </Button>
+              </div>
+            </div>
+          </Modal>
           <HomeWirdCheckInModal
             open={
               homeWirdCheckInOpen &&

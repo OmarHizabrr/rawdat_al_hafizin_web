@@ -1613,6 +1613,21 @@ a.rh-sidebar__brand-link.rh-sidebar__brand-link--active {
   box-shadow: var(--rh-focus-ring);
 }
 
+.rh-home-dash__backlog-item--pending {
+  border-color: color-mix(in srgb, var(--rh-danger) 70%, #7f1d1d);
+  background: linear-gradient(
+    145deg,
+    color-mix(in srgb, var(--rh-danger) 88%, #ffffff 12%),
+    color-mix(in srgb, #7f1d1d 82%, var(--rh-danger))
+  );
+  box-shadow: 0 8px 22px color-mix(in srgb, var(--rh-danger) 28%, transparent);
+}
+
+.rh-home-dash__backlog-item--pending:hover:not(:disabled) {
+  border-color: color-mix(in srgb, var(--rh-danger) 80%, #5f1111);
+  box-shadow: 0 12px 28px color-mix(in srgb, var(--rh-danger) 36%, transparent);
+}
+
 .rh-home-dash__backlog-date {
   font-weight: 700;
   color: var(--rh-text);
@@ -1637,6 +1652,46 @@ a.rh-sidebar__brand-link.rh-sidebar__brand-link--active {
   font-size: var(--rh-text-xs);
   color: var(--rh-primary);
   font-weight: 700;
+}
+
+.rh-home-dash__backlog-item--pending .rh-home-dash__backlog-date,
+.rh-home-dash__backlog-item--pending .rh-home-dash__backlog-missing,
+.rh-home-dash__backlog-item--pending .rh-home-dash__backlog-state,
+.rh-home-dash__backlog-item--pending .rh-home-dash__backlog-cta {
+  color: #fff;
+}
+
+.rh-home-dash__backlog-item--pending .rh-home-dash__backlog-state {
+  color: #ffe5e5;
+}
+
+.rh-home-backlog-confirm .ui-modal__content {
+  border-color: color-mix(in srgb, var(--rh-danger) 30%, var(--rh-border));
+}
+
+.rh-home-backlog-confirm__body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--rh-space-2);
+}
+
+.rh-home-backlog-confirm__text {
+  margin: 0;
+  color: var(--rh-text);
+  line-height: 1.8;
+}
+
+.rh-home-backlog-confirm__hint {
+  margin: 0;
+  font-size: var(--rh-text-xs);
+  color: var(--rh-text-muted);
+}
+
+.rh-home-backlog-confirm__actions {
+  margin-top: var(--rh-space-2);
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--rh-space-2);
 }
 
 .rh-home-dash__btn {
