@@ -33,6 +33,14 @@ import { RhIcon, RH_ICON_STROKE } from '../ui/RhIcon.jsx'
 
 const PH = PERMISSION_PAGE_IDS.home
 
+const MOOD_BADGE_LABEL = {
+  rest: 'يوم راحة',
+  done: 'ممتاز!',
+  steady: 'ثابت',
+  catchup: 'لنلحق التأخر',
+  late: 'حان التعويض',
+}
+
 function HomeDashMoodIcon({ mood }) {
   const common = { size: 36, strokeWidth: 1.65 }
   switch (mood) {
@@ -224,7 +232,7 @@ export default function AppHomePage() {
 
   return (
     <div className="rh-app-home rh-app-home--dash">
-      <header className="rh-home-dash__top card">
+      <header className="rh-home-dash__top rh-home-dash__top--app card">
         <div className="rh-home-dash__top-row">
           <div>
             <p className="rh-home-dash__hello">
@@ -256,8 +264,9 @@ export default function AppHomePage() {
       </header>
 
       {activePlan && progress ? (
-        <section className={`rh-home-dash card rh-home-dash--mood-${dashInsight.mood}`}>
+        <section className={`rh-home-dash rh-home-dash--app card rh-home-dash--mood-${dashInsight.mood}`}>
           <div className="rh-home-dash__glow" aria-hidden />
+          <div className="rh-home-dash__sparkles" aria-hidden />
 
           <div className="rh-home-dash__head">
             <p className="rh-home-dash__eyebrow">{actingAsUser ? str('app.home_plan_now_other') : str('app.home_plan_now_you')}</p>
@@ -322,10 +331,16 @@ export default function AppHomePage() {
           </div>
 
           <div className="rh-home-dash__hero">
-            <div className="rh-home-dash__hero-icon" aria-hidden>
-              <HomeDashMoodIcon mood={dashInsight.mood} />
+            <div className="rh-home-dash__hero-icon-wrap">
+              <span className="rh-home-dash__hero-ring" aria-hidden />
+              <div className="rh-home-dash__hero-icon" aria-hidden>
+                <HomeDashMoodIcon mood={dashInsight.mood} />
+              </div>
             </div>
             <div className="rh-home-dash__hero-body">
+              <span className={`rh-home-dash__mood-badge rh-home-dash__mood-badge--${dashInsight.mood}`}>
+                {MOOD_BADGE_LABEL[dashInsight.mood]}
+              </span>
               {dashInsight.mood === 'rest' || dashInsight.owedPages <= 0 ? (
                 <div className="rh-home-dash__metric rh-home-dash__metric--soft">
                   <span className="rh-home-dash__metric-val">{pct.toFixed(0)}%</span>
@@ -414,7 +429,7 @@ export default function AppHomePage() {
             {can(PH, 'home_log_wird') && showHomeLogWirdCumulative ? (
               <button
                 type="button"
-                className="rh-home-dash__btn rh-home-dash__btn--primary"
+                className="rh-home-dash__btn rh-home-dash__btn--primary rh-home-dash__btn--pulse-hint"
                 onClick={() => setHomeWirdOpen(true)}
               >
                 <NotebookPen size={22} strokeWidth={1.75} />
@@ -455,7 +470,7 @@ export default function AppHomePage() {
           />
         </section>
       ) : (
-        <section className="card rh-home-dash-empty">
+        <section className="card rh-home-dash-empty rh-home-dash-empty--app">
           <div className="rh-home-dash-empty__inner">
             <h2 className="rh-home-dash-empty__title">ابدأ بخطة ورد</h2>
             <p className="rh-home-dash-empty__text">
