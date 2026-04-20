@@ -923,9 +923,9 @@ a.rh-sidebar__brand-link.rh-sidebar__brand-link--active {
   );
 }
 
+/* تنسيقات «تطبيق الموبايل» تُفعَّل فقط ضمن @media (max-width: 899px) أدناه */
 .rh-home-dash__top--app {
-  border-radius: 1.15rem;
-  box-shadow: 0 10px 36px color-mix(in srgb, var(--rh-text) 6%, transparent);
+  border-radius: var(--rh-radius-lg);
 }
 
 .rh-home-dash__top-row {
@@ -965,11 +965,9 @@ a.rh-sidebar__brand-link.rh-sidebar__brand-link--active {
   overflow: visible;
   isolation: isolate;
   padding: var(--rh-space-4);
-  border-radius: 1.35rem;
+  border-radius: var(--rh-radius-lg);
   border: 1px solid var(--rh-border);
-  box-shadow:
-    0 4px 24px color-mix(in srgb, var(--rh-text) 8%, transparent),
-    0 0 0 1px color-mix(in srgb, var(--rh-primary) 12%, transparent);
+  box-shadow: var(--rh-shadow-md);
 }
 
 .rh-home-dash__glow {
@@ -985,7 +983,9 @@ a.rh-sidebar__brand-link.rh-sidebar__brand-link--active {
   opacity: 0.85;
 }
 
+/* بقع الضوء — للموبايل فقط */
 .rh-home-dash__sparkles {
+  display: none;
   pointer-events: none;
   position: absolute;
   inset: 0;
@@ -998,48 +998,44 @@ a.rh-sidebar__brand-link.rh-sidebar__brand-link--active {
     radial-gradient(circle at 72% 88%, color-mix(in srgb, var(--rh-primary) 26%, transparent) 0%, transparent 38%);
 }
 
+/* تدرجات هادئة — سطح المكتب واللابتوب */
 .rh-home-dash--mood-rest {
   background: linear-gradient(
-    160deg,
-    color-mix(in srgb, var(--rh-text-muted) 12%, var(--rh-surface)) 0%,
-    var(--rh-surface) 52%,
-    color-mix(in srgb, var(--rh-primary) 10%, var(--rh-surface)) 100%
+    165deg,
+    color-mix(in srgb, var(--rh-text-muted) 5%, var(--rh-surface)) 0%,
+    var(--rh-surface) 100%
   );
 }
 
 .rh-home-dash--mood-done {
   background: linear-gradient(
-    155deg,
-    color-mix(in srgb, var(--rh-forest-600) 22%, var(--rh-surface)) 0%,
-    var(--rh-surface) 48%,
-    color-mix(in srgb, var(--rh-primary) 14%, var(--rh-surface)) 100%
+    165deg,
+    color-mix(in srgb, var(--rh-forest-600) 7%, var(--rh-surface)) 0%,
+    var(--rh-surface) 100%
   );
 }
 
 .rh-home-dash--mood-steady {
   background: linear-gradient(
-    155deg,
-    color-mix(in srgb, var(--rh-primary) 16%, var(--rh-surface)) 0%,
-    var(--rh-surface) 50%,
-    color-mix(in srgb, var(--rh-forest-600) 8%, var(--rh-surface)) 100%
+    165deg,
+    color-mix(in srgb, var(--rh-primary) 6%, var(--rh-surface)) 0%,
+    var(--rh-surface) 100%
   );
 }
 
 .rh-home-dash--mood-catchup {
   background: linear-gradient(
-    155deg,
-    color-mix(in srgb, var(--rh-primary) 24%, var(--rh-surface)) 0%,
-    var(--rh-surface) 42%,
-    color-mix(in srgb, var(--rh-forest-600) 16%, var(--rh-surface)) 100%
+    165deg,
+    color-mix(in srgb, var(--rh-primary) 9%, var(--rh-surface)) 0%,
+    var(--rh-surface) 100%
   );
 }
 
 .rh-home-dash--mood-late {
   background: linear-gradient(
-    155deg,
-    color-mix(in srgb, #ea580c 26%, var(--rh-surface)) 0%,
-    var(--rh-surface) 40%,
-    color-mix(in srgb, var(--rh-primary) 16%, var(--rh-surface)) 100%
+    165deg,
+    color-mix(in srgb, #c2410c 8%, var(--rh-surface)) 0%,
+    var(--rh-surface) 100%
   );
 }
 
@@ -1205,13 +1201,13 @@ a.rh-sidebar__brand-link.rh-sidebar__brand-link--active {
   position: absolute;
   inset: 0;
   border-radius: 1.35rem;
-  border: 2px solid color-mix(in srgb, var(--rh-primary) 50%, transparent);
-  animation: rh-home-dash-ring 3s ease-in-out infinite;
+  border: 1px solid color-mix(in srgb, var(--rh-primary) 28%, var(--rh-border));
+  animation: none;
+  opacity: 0.65;
 }
 
 .rh-home-dash--mood-late .rh-home-dash__hero-ring {
-  border-color: color-mix(in srgb, #fb923c 65%, transparent);
-  animation-duration: 2s;
+  border-color: color-mix(in srgb, #c2410c 35%, var(--rh-border));
 }
 
 .rh-home-dash--mood-done .rh-home-dash__hero-ring {
@@ -1237,14 +1233,12 @@ a.rh-sidebar__brand-link.rh-sidebar__brand-link--active {
   justify-content: center;
   width: 4.5rem;
   height: 4.5rem;
-  border-radius: 1.1rem;
+  border-radius: var(--rh-radius-lg);
   background: color-mix(in srgb, var(--rh-surface) 55%, var(--rh-primary-muted));
   border: 1px solid color-mix(in srgb, var(--rh-primary) 25%, var(--rh-border));
   color: var(--rh-primary);
-  box-shadow:
-    0 8px 28px color-mix(in srgb, var(--rh-text) 10%, transparent),
-    inset 0 1px 0 color-mix(in srgb, #fff 35%, transparent);
-  animation: rh-home-dash-icon-float 4.5s ease-in-out infinite;
+  box-shadow: 0 4px 16px color-mix(in srgb, var(--rh-text) 7%, transparent);
+  animation: none;
 }
 
 @keyframes rh-home-dash-icon-float {
@@ -1260,45 +1254,49 @@ a.rh-sidebar__brand-link.rh-sidebar__brand-link--active {
 .rh-home-dash__mood-badge {
   display: inline-block;
   margin-bottom: var(--rh-space-2);
-  padding: 0.32rem 0.85rem;
+  padding: 0.25rem 0.65rem;
   border-radius: var(--rh-radius-pill);
-  font-size: 0.68rem;
-  font-weight: 800;
-  letter-spacing: 0.07em;
-  text-transform: uppercase;
-  box-shadow: 0 4px 14px color-mix(in srgb, var(--rh-text) 12%, transparent);
+  font-size: var(--rh-text-xs);
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  text-transform: none;
+  box-shadow: none;
 }
 
 .rh-home-dash__mood-badge--rest {
-  background: color-mix(in srgb, var(--rh-text-muted) 18%, var(--rh-surface));
-  color: var(--rh-text);
+  background: var(--rh-surface-tint);
+  color: var(--rh-text-muted);
+  border: 1px solid var(--rh-border);
 }
 
 .rh-home-dash__mood-badge--done {
-  background: linear-gradient(135deg, var(--rh-forest-600), color-mix(in srgb, var(--rh-forest-600) 70%, #22c55e));
-  color: #fff;
+  background: color-mix(in srgb, var(--rh-forest-600) 14%, var(--rh-surface));
+  color: var(--rh-forest-600);
+  border: 1px solid color-mix(in srgb, var(--rh-forest-600) 28%, var(--rh-border));
 }
 
 .rh-home-dash__mood-badge--steady {
-  background: linear-gradient(135deg, var(--rh-primary), color-mix(in srgb, var(--rh-primary) 75%, var(--rh-forest-600)));
-  color: var(--rh-primary-contrast, #fff);
+  background: var(--rh-primary-muted);
+  color: var(--rh-primary);
+  border: 1px solid color-mix(in srgb, var(--rh-primary) 22%, var(--rh-border));
 }
 
 .rh-home-dash__mood-badge--catchup {
-  background: linear-gradient(135deg, color-mix(in srgb, var(--rh-primary) 90%, #fff), var(--rh-forest-600));
-  color: #fff;
+  background: color-mix(in srgb, var(--rh-primary) 12%, var(--rh-surface));
+  color: var(--rh-primary);
+  border: 1px solid color-mix(in srgb, var(--rh-primary) 25%, var(--rh-border));
 }
 
 .rh-home-dash__mood-badge--late {
-  background: linear-gradient(135deg, #c2410c, #ea580c);
-  color: #fff;
-  box-shadow: 0 6px 22px color-mix(in srgb, #ea580c 50%, transparent);
+  background: color-mix(in srgb, #c2410c 12%, var(--rh-surface));
+  color: #9a3412;
+  border: 1px solid color-mix(in srgb, #c2410c 30%, var(--rh-border));
 }
 
 .rh-home-dash--mood-late .rh-home-dash__hero-icon {
   color: #c2410c;
   border-color: color-mix(in srgb, #c2410c 35%, var(--rh-border));
-  background: color-mix(in srgb, #ffedd5 75%, var(--rh-surface));
+  background: color-mix(in srgb, #ffedd5 45%, var(--rh-surface));
 }
 
 .rh-home-dash--mood-done .rh-home-dash__hero-icon {
@@ -1321,16 +1319,16 @@ a.rh-sidebar__brand-link.rh-sidebar__brand-link--active {
   line-height: 1;
   letter-spacing: -0.03em;
   color: var(--rh-primary);
-  text-shadow: 0 2px 18px color-mix(in srgb, var(--rh-primary) 35%, transparent);
+  text-shadow: none;
 }
 
 .rh-home-dash--mood-late .rh-home-dash__metric-val {
   color: #c2410c;
-  text-shadow: 0 2px 20px color-mix(in srgb, #c2410c 40%, transparent);
+  text-shadow: none;
 }
 
 .rh-home-dash__metric--pulse .rh-home-dash__metric-val {
-  animation: rh-home-dash-pulse 2.2s ease-in-out infinite;
+  animation: none;
 }
 
 @keyframes rh-home-dash-pulse {
@@ -1471,6 +1469,7 @@ a.rh-sidebar__brand-link.rh-sidebar__brand-link--active {
   content: '';
   position: absolute;
   inset: 0;
+  display: none;
   background: linear-gradient(
     105deg,
     transparent 0%,
@@ -1558,9 +1557,9 @@ a.rh-sidebar__brand-link.rh-sidebar__brand-link--active {
 
 .rh-home-dash__btn--primary {
   border: none;
-  background: linear-gradient(135deg, var(--rh-primary) 0%, color-mix(in srgb, var(--rh-primary) 75%, #0f172a) 100%);
+  background: linear-gradient(135deg, var(--rh-primary) 0%, color-mix(in srgb, var(--rh-primary) 82%, #0f172a) 100%);
   color: var(--rh-primary-contrast, #fff);
-  box-shadow: 0 6px 22px color-mix(in srgb, var(--rh-primary) 45%, transparent);
+  box-shadow: var(--rh-shadow-sm);
 }
 
 .rh-home-dash__btn--primary:hover {
@@ -1681,6 +1680,140 @@ a.rh-sidebar__brand-link.rh-sidebar__brand-link--active {
       0 0 0 1px color-mix(in srgb, var(--rh-primary) 16%, transparent);
   }
 
+  .rh-home-dash__sparkles {
+    display: block;
+  }
+
+  /* خلفيات أوضح على شاشة الهاتف فقط */
+  .rh-home-dash--mood-rest {
+    background: linear-gradient(
+      160deg,
+      color-mix(in srgb, var(--rh-text-muted) 12%, var(--rh-surface)) 0%,
+      var(--rh-surface) 52%,
+      color-mix(in srgb, var(--rh-primary) 10%, var(--rh-surface)) 100%
+    );
+  }
+
+  .rh-home-dash--mood-done {
+    background: linear-gradient(
+      155deg,
+      color-mix(in srgb, var(--rh-forest-600) 22%, var(--rh-surface)) 0%,
+      var(--rh-surface) 48%,
+      color-mix(in srgb, var(--rh-primary) 14%, var(--rh-surface)) 100%
+    );
+  }
+
+  .rh-home-dash--mood-steady {
+    background: linear-gradient(
+      155deg,
+      color-mix(in srgb, var(--rh-primary) 16%, var(--rh-surface)) 0%,
+      var(--rh-surface) 50%,
+      color-mix(in srgb, var(--rh-forest-600) 8%, var(--rh-surface)) 100%
+    );
+  }
+
+  .rh-home-dash--mood-catchup {
+    background: linear-gradient(
+      155deg,
+      color-mix(in srgb, var(--rh-primary) 24%, var(--rh-surface)) 0%,
+      var(--rh-surface) 42%,
+      color-mix(in srgb, var(--rh-forest-600) 16%, var(--rh-surface)) 100%
+    );
+  }
+
+  .rh-home-dash--mood-late {
+    background: linear-gradient(
+      155deg,
+      color-mix(in srgb, #ea580c 26%, var(--rh-surface)) 0%,
+      var(--rh-surface) 40%,
+      color-mix(in srgb, var(--rh-primary) 16%, var(--rh-surface)) 100%
+    );
+  }
+
+  .rh-home-dash__hero-ring {
+    border-width: 2px;
+    border-color: color-mix(in srgb, var(--rh-primary) 50%, transparent);
+    opacity: 0.88;
+    animation: rh-home-dash-ring 3s ease-in-out infinite;
+  }
+
+  .rh-home-dash--mood-late .rh-home-dash__hero-ring {
+    border-color: color-mix(in srgb, #fb923c 65%, transparent);
+    animation-duration: 2s;
+  }
+
+  .rh-home-dash--mood-done .rh-home-dash__hero-ring {
+    border-color: color-mix(in srgb, var(--rh-forest-600) 45%, transparent);
+  }
+
+  .rh-home-dash__hero-icon {
+    border-radius: 1.1rem;
+    box-shadow:
+      0 8px 28px color-mix(in srgb, var(--rh-text) 10%, transparent),
+      inset 0 1px 0 color-mix(in srgb, #fff 35%, transparent);
+    animation: rh-home-dash-icon-float 4.5s ease-in-out infinite;
+  }
+
+  .rh-home-dash--mood-late .rh-home-dash__hero-icon {
+    background: color-mix(in srgb, #ffedd5 75%, var(--rh-surface));
+  }
+
+  .rh-home-dash__mood-badge {
+    padding: 0.32rem 0.85rem;
+    font-size: 0.68rem;
+    font-weight: 800;
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+    box-shadow: 0 4px 14px color-mix(in srgb, var(--rh-text) 12%, transparent);
+    border: none;
+  }
+
+  .rh-home-dash__mood-badge--rest {
+    background: color-mix(in srgb, var(--rh-text-muted) 18%, var(--rh-surface));
+    color: var(--rh-text);
+  }
+
+  .rh-home-dash__mood-badge--done {
+    background: linear-gradient(135deg, var(--rh-forest-600), color-mix(in srgb, var(--rh-forest-600) 70%, #22c55e));
+    color: #fff;
+  }
+
+  .rh-home-dash__mood-badge--steady {
+    background: linear-gradient(135deg, var(--rh-primary), color-mix(in srgb, var(--rh-primary) 75%, var(--rh-forest-600)));
+    color: var(--rh-primary-contrast, #fff);
+  }
+
+  .rh-home-dash__mood-badge--catchup {
+    background: linear-gradient(135deg, color-mix(in srgb, var(--rh-primary) 90%, #fff), var(--rh-forest-600));
+    color: #fff;
+  }
+
+  .rh-home-dash__mood-badge--late {
+    background: linear-gradient(135deg, #c2410c, #ea580c);
+    color: #fff;
+    box-shadow: 0 6px 22px color-mix(in srgb, #ea580c 50%, transparent);
+  }
+
+  .rh-home-dash__metric-val {
+    text-shadow: 0 2px 18px color-mix(in srgb, var(--rh-primary) 35%, transparent);
+  }
+
+  .rh-home-dash--mood-late .rh-home-dash__metric-val {
+    text-shadow: 0 2px 20px color-mix(in srgb, #c2410c 40%, transparent);
+  }
+
+  .rh-home-dash__metric--pulse .rh-home-dash__metric-val {
+    animation: rh-home-dash-pulse 2.2s ease-in-out infinite;
+  }
+
+  .rh-home-dash__bar-fill::after {
+    display: block;
+  }
+
+  .rh-home-dash__btn--primary {
+    box-shadow: 0 6px 22px color-mix(in srgb, var(--rh-primary) 45%, transparent);
+  }
+
   .rh-home-dash__hello {
     font-size: 1.38rem;
     letter-spacing: -0.02em;
@@ -1772,6 +1905,50 @@ a.rh-sidebar__brand-link.rh-sidebar__brand-link--active {
     border-radius: 1.35rem;
     border: none;
     box-shadow: 0 18px 44px color-mix(in srgb, var(--rh-text) 9%, transparent);
+  }
+}
+
+/* رئيسية — لابتوب وسطح مكتب (عرض مريح، بلا سلوك التطبيق) */
+@media (min-width: 900px) {
+  .rh-app-home--dash {
+    max-width: min(44rem, 100%);
+    gap: var(--rh-space-4);
+  }
+
+  .rh-home-dash__glow {
+    opacity: 0.5;
+  }
+
+  .rh-home-dash__actions {
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: stretch;
+    gap: var(--rh-space-3);
+  }
+
+  .rh-home-dash__btn {
+    width: auto;
+    min-height: 2.75rem;
+    flex: 1 1 auto;
+    min-width: 11rem;
+    justify-content: center;
+  }
+
+  .rh-home-dash__btn--primary {
+    flex: 1 1 13rem;
+  }
+
+  .rh-home-dash__link-quiet {
+    flex: 1 1 100%;
+    padding-top: var(--rh-space-1);
+  }
+
+  .rh-home-dash__progress-pct {
+    font-size: 1.45rem;
+  }
+
+  .rh-home-dash__title {
+    font-size: 1.2rem;
   }
 }
 
