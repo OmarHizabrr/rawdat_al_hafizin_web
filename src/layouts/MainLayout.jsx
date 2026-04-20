@@ -19,12 +19,14 @@ import {
   UsersRound,
 } from 'lucide-react'
 import { NavLink, Outlet, useLocation } from 'react-router-dom'
+import { UserNotificationsMenu } from '../components/UserNotificationsMenu.jsx'
 import { UserMenu } from '../components/UserMenu.jsx'
 import { isAdmin } from '../config/roles.js'
 import { useAuth } from '../context/useAuth.js'
 import { usePermissions } from '../context/usePermissions.js'
 import { useSiteContent } from '../context/useSiteContent.js'
 import { usePlanReminders } from '../hooks/usePlanReminders.js'
+import { upsertUserNotification } from '../services/userNotificationsService.js'
 import { getImpersonateUid, withImpersonationQuery } from '../utils/impersonation.js'
 import { RhIcon, RH_ICON_STROKE } from '../ui/RhIcon.jsx'
 
@@ -104,6 +106,56 @@ export function MainLayout() {
     window.addEventListener('resize', onResize)
     return () => window.removeEventListener('resize', onResize)
   }, [mobileOpen])
+
+  useEffect(() => {
+    if (typeof window === 'undefined' || impersonateUid) return undefined
+    const askPermission = () => {
+      if (!('Notification' in window)) return
+      if (Notification.permission !== 'default') return
+      Notification.requestPermission().catch(() => {})
+    }
+    const onInstalled = () => {
+      try {
+        const key = 'rh.notifications.installPermissionAsked'
+        if (localStorage.getItem(key)) return
+        localStorage.setItem(key, '1')
+      } catch {
+        /* ignore */
+      }
+      askPermission()
+    }
+    window.addEventListener('appinstalled', onInstalled)
+    return () => window.removeEventListener('appinstalled', onInstalled)
+  }, [impersonateUid])
+
+  useEffect(() => {
+    if (!user?.uid || impersonateUid) return undefined
+    const onOverdue = (e) => {
+      const detail = e?.detail || {}
+      const planId = String(detail.planId || '').trim()
+      const day = String(detail.day || '').trim()
+      if (!planId || !day) return
+      const dawraId = `notification-overdue-${planId}-${day}`
+      const title = 'تنبيه تأخر الورد'
+      const body = detail.overdueSinceYmd
+        ? `يوجد تأخر في الخطة (${detail.planName || planId}) منذ ${detail.overdueSinceYmd}. المتبقي: ${detail.owedPages || 0} صفحة.`
+        : `يوجد تأخر في الخطة (${detail.planName || planId}). المتبقي: ${detail.owedPages || 0} صفحة.`
+      upsertUserNotification({
+        userId: user.uid,
+        dawraId,
+        title,
+        body,
+        notificationType: 'wird_overdue',
+        planId,
+        ymd: day,
+        overdueSinceYmd: detail.overdueSinceYmd || '',
+        owedPages: detail.owedPages || 0,
+        userData: user,
+      }).catch(() => {})
+    }
+    window.addEventListener('rh:wird-overdue-detected', onOverdue)
+    return () => window.removeEventListener('rh:wird-overdue-detected', onOverdue)
+  }, [user, impersonateUid])
 
   const CollapseIcon = collapsed ? ChevronsLeft : ChevronsRight
 
@@ -188,6 +240,7 @@ export function MainLayout() {
             </NavLink>
           </h1>
           <div className="rh-topbar__spacer" />
+          {user && <UserNotificationsMenu user={user} />}
           {user && <UserMenu user={user} />}
         </header>
 
