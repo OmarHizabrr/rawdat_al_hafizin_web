@@ -307,16 +307,8 @@ export default function AppHomePage() {
         )}
       </header>
 
-      {canVisitFeelings ? (
-      <section className="card rh-home-feelings-birds">
-        <div className="rh-home-feelings-birds__head">
-          <h2>طيور المشاعر</h2>
-          <Link className="rh-home-feelings-birds__link" to={appPath('/app/feelings')}>
-            صفحة مشاعر الطلاب
-          </Link>
-        </div>
-        {recentFeelings.length > 0 ? (
-          <ul className="rh-home-feelings-birds__sky" aria-label="آخر مشاعر الطلاب">
+      {canVisitFeelings && recentFeelings.length > 0 ? (
+        <ul className="rh-home-feelings-birds__overlay" aria-label="طيور المشاعر المتدفقة">
             {recentFeelings.slice(0, 8).map((f, i) => (
               <li
                 key={`${f.ownerUid}-${f.id}`}
@@ -348,15 +340,7 @@ export default function AppHomePage() {
                 </article>
               </li>
             ))}
-          </ul>
-        ) : (
-          <p className="rh-home-feelings-birds__empty">
-            أضفوا مشاعركم الجميلة لتظهر هنا كطيور لطيفة.
-            {' '}
-            <Link to={appPath('/app/feelings')}>اكتب أول شعور</Link>
-          </p>
-        )}
-      </section>
+        </ul>
       ) : null}
 
       {activePlan && progress ? (
