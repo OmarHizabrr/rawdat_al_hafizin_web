@@ -21,6 +21,9 @@ function normalizeNotificationDoc(docSnap) {
     ymd: raw.ymd || '',
     overdueSinceYmd: raw.overdueSinceYmd || '',
     owedPages: Math.max(0, Number(raw.owedPages) || 0),
+    creatorUid: raw.creatorUid || '',
+    creatorDisplayName: raw.creatorDisplayName || raw.createdByName || '',
+    creatorPhotoURL: raw.creatorPhotoURL || raw.createdByImageUrl || '',
     isRead: Boolean(raw.isRead),
     readAt: raw.readAt || null,
     createdAt: raw.createdAt || null,
@@ -55,6 +58,12 @@ export async function upsertUserNotification({
   if (!userId || !notificationId) return
   const ref = firestoreApi.getUserNotificationDoc(userId, notificationId)
   const nowIso = new Date().toISOString()
+  const creatorDisplayName =
+    String(userData?.displayName || '').trim() ||
+    String(userData?.createdByName || '').trim()
+  const creatorPhotoURL =
+    String(userData?.photoURL || '').trim() ||
+    String(userData?.createdByImageUrl || '').trim()
   await firestoreApi.setData({
     docRef: ref,
     data: {
@@ -68,6 +77,9 @@ export async function upsertUserNotification({
       ymd: ymd || '',
       overdueSinceYmd: overdueSinceYmd || '',
       owedPages: Math.max(0, Number(owedPages) || 0),
+      creatorUid: String(userData?.uid || '').trim(),
+      creatorDisplayName,
+      creatorPhotoURL,
       isRead: false,
       readAt: null,
       updatedAt: nowIso,

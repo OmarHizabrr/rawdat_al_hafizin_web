@@ -704,6 +704,36 @@ a.rh-sidebar__brand-link.rh-sidebar__brand-link--active {
   color: var(--rh-text);
 }
 
+.rh-notify__creator {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin-bottom: 0.28rem;
+}
+
+.rh-notify__creator-avatar {
+  width: 1.7rem;
+  height: 1.7rem;
+  border-radius: 999px;
+  object-fit: cover;
+  border: 1px solid var(--rh-border);
+}
+
+.rh-notify__creator-avatar--fallback {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--rh-primary-muted);
+  color: var(--rh-primary);
+  font-weight: 800;
+}
+
+.rh-notify__creator-name {
+  font-size: 0.71rem;
+  font-weight: 700;
+  color: var(--rh-text-muted);
+}
+
 .rh-notify__body {
   margin: 0;
   font-size: var(--rh-text-xs);

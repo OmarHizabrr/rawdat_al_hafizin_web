@@ -68,6 +68,16 @@ export function UserNotificationsMenu({ user }) {
             ) : (
               items.slice(0, 30).map((n) => (
                 <article key={n.id} className={['rh-notify__item', n.isRead ? 'is-read' : ''].filter(Boolean).join(' ')}>
+                  <div className="rh-notify__creator">
+                    {n.creatorPhotoURL ? (
+                      <img src={n.creatorPhotoURL} alt="" width={28} height={28} className="rh-notify__creator-avatar" />
+                    ) : (
+                      <span className="rh-notify__creator-avatar rh-notify__creator-avatar--fallback">
+                        {(n.creatorDisplayName || 'م').charAt(0)}
+                      </span>
+                    )}
+                    <span className="rh-notify__creator-name">{n.creatorDisplayName || 'منشئ الإشعار'}</span>
+                  </div>
                   <p className="rh-notify__title">{n.title || 'إشعار'}</p>
                   {n.body ? <p className="rh-notify__body">{n.body}</p> : null}
                   <div className="rh-notify__meta">
