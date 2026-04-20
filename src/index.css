@@ -1665,6 +1665,32 @@ a.rh-sidebar__brand-link.rh-sidebar__brand-link--active {
   color: #ffe5e5;
 }
 
+.rh-home-dash__backlog-item--waiting {
+  border-color: color-mix(in srgb, var(--rh-warning, #f59e0b) 64%, #7a4a00);
+  background: linear-gradient(
+    145deg,
+    color-mix(in srgb, var(--rh-warning, #f59e0b) 88%, #fff 12%),
+    color-mix(in srgb, #7a4a00 72%, var(--rh-warning, #f59e0b))
+  );
+  box-shadow: 0 8px 22px color-mix(in srgb, var(--rh-warning, #f59e0b) 26%, transparent);
+}
+
+.rh-home-dash__backlog-item--waiting:hover:not(:disabled) {
+  border-color: color-mix(in srgb, var(--rh-warning, #f59e0b) 76%, #6b3f00);
+  box-shadow: 0 12px 28px color-mix(in srgb, var(--rh-warning, #f59e0b) 34%, transparent);
+}
+
+.rh-home-dash__backlog-item--waiting .rh-home-dash__backlog-date,
+.rh-home-dash__backlog-item--waiting .rh-home-dash__backlog-missing,
+.rh-home-dash__backlog-item--waiting .rh-home-dash__backlog-state,
+.rh-home-dash__backlog-item--waiting .rh-home-dash__backlog-cta {
+  color: #fff;
+}
+
+.rh-home-dash__backlog-item--waiting .rh-home-dash__backlog-state {
+  color: #fff6da;
+}
+
 .rh-home-backlog-confirm .ui-modal__content {
   border-color: color-mix(in srgb, var(--rh-danger) 30%, var(--rh-border));
 }

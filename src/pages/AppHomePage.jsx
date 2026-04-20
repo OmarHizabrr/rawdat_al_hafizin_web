@@ -153,7 +153,7 @@ function buildBacklogDays(plan, awrad, todayYmd, maxDays = 21) {
   if (!plan?.id || !todayYmd) return [];
   const daily = Math.max(1, Number(plan.dailyPages) || 1);
   const out = [];
-  let d = prevHijriYmd(todayYmd);
+  let d = todayYmd;
   for (let i = 0; i < maxDays; i += 1) {
     if (!d) break;
     if (planAppliesToYmd(plan, d)) {
@@ -164,6 +164,7 @@ function buildBacklogDays(plan, awrad, todayYmd, maxDays = 21) {
           ymd: d,
           logged,
           missing,
+          isToday: d === todayYmd,
           weekdayLabel: weekdayLabelFromHijriYmd(d),
         });
     }
@@ -884,7 +885,7 @@ export default function AppHomePage() {
           {backlogDays.length > 0 ? (
             <div className="rh-home-dash__backlog">
               <p className="rh-home-dash__backlog-title">
-                أيام تحتاج تعويض — اضغط (تم الإنجاز)
+                أيام تحتاج إنجاز/تعويض — اضغط (تأكيد الإنجاز)
               </p>
               <div className="rh-home-dash__backlog-list">
                 {backlogDays.slice(0, 8).map((d) => (
@@ -893,7 +894,11 @@ export default function AppHomePage() {
                     type="button"
                     className={[
                       "rh-home-dash__backlog-item",
-                      d.missing > 0 ? "rh-home-dash__backlog-item--pending" : "",
+                      d.isToday
+                        ? "rh-home-dash__backlog-item--waiting"
+                        : d.missing > 0
+                          ? "rh-home-dash__backlog-item--pending"
+                          : "",
                       backfillBusyYmd === d.ymd
                         ? "rh-home-dash__backlog-item--busy"
                         : "",
@@ -912,13 +917,15 @@ export default function AppHomePage() {
                       المتبقي: {d.missing} صفحة
                     </span>
                     <span className="rh-home-dash__backlog-state">
-                      {d.missing > 0 ? "لم يُنجز بعد" : "مكتمل"}
+                      {d.isToday ? "بانتظار إكمال اليوم" : d.missing > 0 ? "متأخر — لم يُنجز بعد" : "مكتمل"}
                     </span>
                     <span className="rh-home-dash__backlog-cta">
                       <CheckCircle2 size={15} strokeWidth={2} />
                       {backfillBusyYmd === d.ymd
                         ? "جارٍ التسجيل…"
-                        : "تأكيد الإنجاز"}
+                        : d.isToday
+                          ? "إكمال ورد اليوم"
+                          : "تأكيد الإنجاز"}
                     </span>
                   </button>
                 ))}
