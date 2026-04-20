@@ -1623,6 +1623,12 @@ a.rh-sidebar__brand-link.rh-sidebar__brand-link--active {
   color: var(--rh-text-muted);
 }
 
+.rh-home-dash__backlog-state {
+  font-size: 0.73rem;
+  font-weight: 700;
+  color: var(--rh-danger);
+}
+
 .rh-home-dash__backlog-cta {
   margin-top: 0.2rem;
   display: inline-flex;

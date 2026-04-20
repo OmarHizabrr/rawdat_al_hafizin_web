@@ -503,6 +503,10 @@ export default function AppHomePage() {
         backfillBusyYmd
       )
         return;
+      const confirmed = window.confirm(
+        `هل أنت متأكد أنك أنجزت ورد يوم ${targetYmd}؟\nسيتم تسجيل الإنجاز مباشرة.`,
+      );
+      if (!confirmed) return;
       const daily = Math.max(1, Number(activePlan.dailyPages) || 1);
       const logged = getPagesLoggedOnPlanDay(activePlan, awrad, targetYmd);
       const missing = Math.max(0, daily - logged);
@@ -881,11 +885,14 @@ export default function AppHomePage() {
                     <span className="rh-home-dash__backlog-missing">
                       المتبقي: {d.missing} صفحة
                     </span>
+                    <span className="rh-home-dash__backlog-state">
+                      {d.missing > 0 ? "لم يُنجز بعد" : "مكتمل"}
+                    </span>
                     <span className="rh-home-dash__backlog-cta">
                       <CheckCircle2 size={15} strokeWidth={2} />
                       {backfillBusyYmd === d.ymd
                         ? "جارٍ التسجيل…"
-                        : "تم الإنجاز"}
+                        : "تأكيد الإنجاز"}
                     </span>
                   </button>
                 ))}
@@ -941,7 +948,16 @@ export default function AppHomePage() {
           </p>
 
           <div className="rh-home-dash__actions">
-            {/* تم إخفاء زر تسجيل الورد السريع مؤقتاً حسب الطلب */}
+            {/*
+            <button
+              type="button"
+              className="rh-home-dash__btn rh-home-dash__btn--primary rh-home-dash__btn--pulse-hint"
+              onClick={() => setHomeWirdOpen(true)}
+            >
+              <NotebookPen size={22} strokeWidth={1.75} />
+              تسجيل الورد السريع
+            </button>
+            */}
             <Link
               className="rh-home-dash__btn rh-home-dash__btn--secondary"
               to={awradHref}
