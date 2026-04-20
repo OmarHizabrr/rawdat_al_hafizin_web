@@ -6038,7 +6038,7 @@ a.rh-peek-btn {
   padding: 0;
   position: fixed;
   inset: 0;
-  z-index: 6;
+  z-index: 70;
   pointer-events: none;
   overflow: hidden;
 }
@@ -6053,8 +6053,8 @@ a.rh-peek-btn {
 
 .rh-home-feelings-birds__flight {
   position: absolute;
-  inset-inline-start: -20%;
-  top: 14%;
+  inset-inline-start: 0;
+  top: var(--flight-top, 14%);
   width: min(16.5rem, 70vw);
   animation: rh-bird-flight var(--flight-duration, 18s) linear infinite;
   animation-delay: var(--flight-delay, 0s);
@@ -6062,16 +6062,16 @@ a.rh-peek-btn {
   z-index: 1;
 }
 
-.rh-home-feelings-birds__flight:nth-child(2n) {
-  top: 30%;
+.rh-home-feelings-birds__flight--reverse {
+  animation-name: rh-bird-flight-rev;
 }
 
-.rh-home-feelings-birds__flight:nth-child(3n) {
-  top: 50%;
+.rh-home-feelings-birds__flight--paused {
+  animation-play-state: paused !important;
 }
 
-.rh-home-feelings-birds__flight:nth-child(4n) {
-  top: 68%;
+.rh-home-feelings-birds__flight--paused .rh-home-feelings-birds__bird-card {
+  animation-play-state: paused !important;
 }
 
 .rh-home-feelings-birds__bird-card {
@@ -6084,6 +6084,14 @@ a.rh-peek-btn {
   transform: scale(var(--bird-scale, 1));
   animation: rh-bird-flap 2.8s ease-in-out infinite;
   backdrop-filter: blur(2px);
+  cursor: grab;
+  pointer-events: auto;
+  touch-action: none;
+}
+
+.rh-home-feelings-birds__bird-card--dragging {
+  cursor: grabbing;
+  box-shadow: 0 14px 32px rgba(0, 0, 0, 0.14);
 }
 
 .rh-home-feelings-birds__bird-card::before {
@@ -6161,19 +6169,37 @@ a.rh-peek-btn {
 
 @keyframes rh-bird-flight {
   0% {
-    transform: translate(-12%, 0) rotate(-2deg);
+    transform: translateX(var(--flight-from, -22vw)) rotate(-2deg);
   }
   25% {
-    transform: translate(26vw, var(--flight-y1, -12px)) rotate(1deg);
+    transform: translateX(calc(var(--flight-from, -22vw) + 30vw)) translateY(var(--flight-y1, -12px)) rotate(1deg);
   }
   52% {
-    transform: translate(56vw, var(--flight-y2, 10px)) rotate(-1deg);
+    transform: translateX(calc(var(--flight-from, -22vw) + 60vw)) translateY(var(--flight-y2, 10px)) rotate(-1deg);
   }
   76% {
-    transform: translate(83vw, var(--flight-y3, -14px)) rotate(2deg);
+    transform: translateX(calc(var(--flight-from, -22vw) + 88vw)) translateY(var(--flight-y3, -14px)) rotate(2deg);
   }
   100% {
-    transform: translate(126vw, 0) rotate(-2deg);
+    transform: translateX(var(--flight-to, 122vw)) rotate(-2deg);
+  }
+}
+
+@keyframes rh-bird-flight-rev {
+  0% {
+    transform: translateX(var(--flight-from, 112vw)) rotate(2deg);
+  }
+  25% {
+    transform: translateX(calc(var(--flight-from, 112vw) - 30vw)) translateY(var(--flight-y1, -12px)) rotate(-1deg);
+  }
+  52% {
+    transform: translateX(calc(var(--flight-from, 112vw) - 60vw)) translateY(var(--flight-y2, 10px)) rotate(1deg);
+  }
+  76% {
+    transform: translateX(calc(var(--flight-from, 112vw) - 88vw)) translateY(var(--flight-y3, -14px)) rotate(-2deg);
+  }
+  100% {
+    transform: translateX(var(--flight-to, -30vw)) rotate(2deg);
   }
 }
 
@@ -6198,4 +6224,53 @@ a.rh-peek-btn {
 .rh-home-feelings-birds__empty {
   margin: 0;
   color: var(--rh-text-muted);
+}
+
+.rh-home-feelings-birds__detail {
+  position: fixed;
+  z-index: 71;
+  inset-inline-end: max(1rem, env(safe-area-inset-right, 0px));
+  bottom: max(1rem, env(safe-area-inset-bottom, 0px));
+  width: min(20rem, calc(100vw - 2rem));
+  border: 1px solid var(--rh-border);
+  border-radius: var(--rh-radius-lg);
+  background: var(--rh-surface);
+  box-shadow: var(--rh-shadow-lg);
+  padding: var(--rh-space-3);
+}
+
+.rh-home-feelings-birds__detail-close {
+  position: absolute;
+  inset-inline-end: 0.45rem;
+  top: 0.35rem;
+  border: none;
+  background: transparent;
+  font-size: 1.35rem;
+  line-height: 1;
+  color: var(--rh-text-muted);
+  cursor: pointer;
+}
+
+.rh-home-feelings-birds__detail-head {
+  display: flex;
+  align-items: center;
+  gap: var(--rh-space-2);
+  margin-bottom: var(--rh-space-2);
+}
+
+.rh-home-feelings-birds__detail-text {
+  margin: 0 0 var(--rh-space-2);
+  line-height: 1.7;
+}
+
+.rh-home-feelings-birds__detail-link {
+  display: inline-block;
+  margin-top: var(--rh-space-2);
+  color: var(--rh-primary);
+  text-decoration: none;
+  font-weight: 600;
+}
+
+.rh-home-feelings-birds__detail-link:hover {
+  text-decoration: underline;
 }

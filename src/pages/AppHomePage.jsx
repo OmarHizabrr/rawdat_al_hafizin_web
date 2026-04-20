@@ -82,6 +82,8 @@ function flightStyleFromFeeling(feeling, idx, mode) {
   const y2 = 8 + ((seed >> 2) % 26)
   const y3 = -12 - ((seed >> 4) % 22)
   const scale = 0.92 + ((seed % 16) / 100)
+  const top = 8 + ((seed >> 1) % 78)
+  const reverse = ((seed >> 3) % 2) === 1
   return {
     '--flight-duration': `${duration}s`,
     '--flight-delay': `${delay}s`,
@@ -89,7 +91,88 @@ function flightStyleFromFeeling(feeling, idx, mode) {
     '--flight-y2': `${y2}px`,
     '--flight-y3': `${y3}px`,
     '--bird-scale': `${scale.toFixed(2)}`,
+    '--flight-top': `${top}%`,
+    '--flight-from': reverse ? '112vw' : '-22vw',
+    '--flight-to': reverse ? '-30vw' : '122vw',
   }
+}
+
+function flightClassFromFeeling(feeling, idx) {
+  const seed = hashSeed(`${feeling?.id || ''}:${feeling?.ownerUid || ''}:${idx}`)
+  return ((seed >> 3) % 2) === 1
+    ? 'rh-home-feelings-birds__flight rh-home-feelings-birds__flight--reverse'
+    : 'rh-home-feelings-birds__flight'
+}
+
+function FlyingFeelingBird({ feeling, idx, mode, paused, onSingleClick }) {
+  const [dragging, setDragging] = useState(false)
+  const [dx, setDx] = useState(0)
+  const [dy, setDy] = useState(0)
+  const dragRef = useRef({ active: false, x: 0, y: 0, moved: false })
+
+  const onPointerDown = (e) => {
+    dragRef.current = { active: true, x: e.clientX, y: e.clientY, moved: false }
+    e.currentTarget.setPointerCapture?.(e.pointerId)
+  }
+
+  const onPointerMove = (e) => {
+    if (!dragRef.current.active) return
+    const nx = e.clientX - dragRef.current.x
+    const ny = e.clientY - dragRef.current.y
+    if (Math.abs(nx) > 3 || Math.abs(ny) > 3) dragRef.current.moved = true
+    setDragging(true)
+    setDx(nx)
+    setDy(ny)
+  }
+
+  const finishPointer = () => {
+    if (!dragRef.current.active) return
+    const moved = dragRef.current.moved
+    dragRef.current.active = false
+    setDragging(false)
+    setDx(0)
+    setDy(0)
+    if (!moved) onSingleClick?.(feeling)
+  }
+
+  return (
+    <li
+      className={[
+        flightClassFromFeeling(feeling, idx),
+        paused ? 'rh-home-feelings-birds__flight--paused' : '',
+      ]
+        .filter(Boolean)
+        .join(' ')}
+      style={flightStyleFromFeeling(feeling, idx, mode)}
+    >
+      <article
+        className={['rh-home-feelings-birds__bird-card', dragging ? 'rh-home-feelings-birds__bird-card--dragging' : '']
+          .filter(Boolean)
+          .join(' ')}
+        style={{ transform: `translate(${dx}px, ${dy}px) scale(var(--bird-scale, 1))` }}
+        onPointerDown={onPointerDown}
+        onPointerMove={onPointerMove}
+        onPointerUp={finishPointer}
+        onPointerCancel={finishPointer}
+      >
+        <span className="rh-home-feelings-birds__bird" aria-hidden>
+          {feeling.bird || '🐦'}
+        </span>
+        <header className="rh-home-feelings-birds__who">
+          {feeling.photoURL ? (
+            <img src={feeling.photoURL} alt="" width={28} height={28} className="rh-home-feelings-birds__avatar" />
+          ) : (
+            <span className="rh-home-feelings-birds__avatar rh-home-feelings-birds__avatar--fallback">
+              {(feeling.displayName || 'ط').charAt(0)}
+            </span>
+          )}
+          <strong>{feeling.displayName || 'طالب'}</strong>
+        </header>
+        <p className="rh-home-feelings-birds__text">{feeling.text}</p>
+        <span className="rh-home-feelings-birds__meta">{'★'.repeat(Math.max(1, feeling.rating || 1))}</span>
+      </article>
+    </li>
+  )
 }
 
 export default function AppHomePage() {
@@ -126,6 +209,8 @@ export default function AppHomePage() {
   const [homeNow, setHomeNow] = useState(() => new Date())
   const [recentFeelings, setRecentFeelings] = useState([])
   const [feelingsFlightMode, setFeelingsFlightMode] = useState(() => readFeelingsFlightMode())
+  const [pausedBirdIds, setPausedBirdIds] = useState({})
+  const [activeFeelingDetail, setActiveFeelingDetail] = useState(null)
   const prevShouldOfferCheckInRef = useRef(false)
 
   useOnClickOutside(planMenuRef, () => setPlanMenuOpen(false), planMenuOpen)
@@ -308,6 +393,19 @@ export default function AppHomePage() {
     }
   }, [])
 
+  const onBirdSingleClick = useCallback((feeling) => {
+    const key = `${feeling.ownerUid || 'u'}:${feeling.id}`
+    setPausedBirdIds((prev) => ({ ...prev, [key]: true }))
+    setActiveFeelingDetail(feeling)
+    window.setTimeout(() => {
+      setPausedBirdIds((prev) => {
+        const next = { ...prev }
+        delete next[key]
+        return next
+      })
+    }, 3000)
+  }, [])
+
   return (
     <div className="rh-app-home rh-app-home--dash">
       <header className="rh-home-dash__top rh-home-dash__top--app card">
@@ -346,38 +444,47 @@ export default function AppHomePage() {
           className={['rh-home-feelings-birds__overlay', `rh-home-feelings-birds__overlay--${feelingsFlightMode}`].join(' ')}
           aria-label="طيور المشاعر المتدفقة"
         >
-            {flyingFeelings.map((f, i) => (
-              <li
-                key={`${f.ownerUid}-${f.id}`}
-                className="rh-home-feelings-birds__flight"
-                style={flightStyleFromFeeling(f, i, feelingsFlightMode)}
-              >
-                <article className="rh-home-feelings-birds__bird-card">
-                  <span className="rh-home-feelings-birds__bird" aria-hidden>
-                    {f.bird || '🐦'}
-                  </span>
-                  <header className="rh-home-feelings-birds__who">
-                    {f.photoURL ? (
-                      <img
-                        src={f.photoURL}
-                        alt=""
-                        width={28}
-                        height={28}
-                        className="rh-home-feelings-birds__avatar"
-                      />
-                    ) : (
-                      <span className="rh-home-feelings-birds__avatar rh-home-feelings-birds__avatar--fallback">
-                        {(f.displayName || 'ط').charAt(0)}
-                      </span>
-                    )}
-                    <strong>{f.displayName || 'طالب'}</strong>
-                  </header>
-                  <p className="rh-home-feelings-birds__text">{f.text}</p>
-                  <span className="rh-home-feelings-birds__meta">{'★'.repeat(Math.max(1, f.rating || 1))}</span>
-                </article>
-              </li>
-            ))}
+            {flyingFeelings.map((f, i) => {
+              const key = `${f.ownerUid || 'u'}:${f.id}`
+              return (
+                <FlyingFeelingBird
+                  key={key}
+                  feeling={f}
+                  idx={i}
+                  mode={feelingsFlightMode}
+                  paused={pausedBirdIds[key] === true}
+                  onSingleClick={onBirdSingleClick}
+                />
+              )
+            })}
         </ul>
+      ) : null}
+      {activeFeelingDetail ? (
+        <div className="rh-home-feelings-birds__detail" role="dialog" aria-label="تفاصيل المشاعر">
+          <button
+            type="button"
+            className="rh-home-feelings-birds__detail-close"
+            onClick={() => setActiveFeelingDetail(null)}
+            aria-label="إغلاق التفاصيل"
+          >
+            ×
+          </button>
+          <div className="rh-home-feelings-birds__detail-head">
+            {activeFeelingDetail.photoURL ? (
+              <img src={activeFeelingDetail.photoURL} alt="" width={36} height={36} className="rh-home-feelings-birds__avatar" />
+            ) : (
+              <span className="rh-home-feelings-birds__avatar rh-home-feelings-birds__avatar--fallback">
+                {(activeFeelingDetail.displayName || 'ط').charAt(0)}
+              </span>
+            )}
+            <strong>{activeFeelingDetail.displayName || 'طالب'}</strong>
+          </div>
+          <p className="rh-home-feelings-birds__detail-text">{activeFeelingDetail.text}</p>
+          <span className="rh-home-feelings-birds__meta">{'★'.repeat(Math.max(1, activeFeelingDetail.rating || 1))}</span>
+          <Link className="rh-home-feelings-birds__detail-link" to={appPath('/app/feelings')}>
+            فتح صفحة المشاعر
+          </Link>
+        </div>
       ) : null}
 
       {activePlan && progress ? (

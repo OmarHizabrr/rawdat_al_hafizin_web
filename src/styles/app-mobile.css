@@ -270,6 +270,12 @@
   .rh-home-feelings-birds__flight {
     width: min(15rem, 84vw);
   }
+
+  .rh-home-feelings-birds__detail {
+    width: min(18rem, calc(100vw - 1.25rem));
+    inset-inline-end: max(0.625rem, env(safe-area-inset-right, 0px));
+    bottom: max(0.625rem, env(safe-area-inset-bottom, 0px));
+  }
 }
 
 @media (max-width: 520px) {
