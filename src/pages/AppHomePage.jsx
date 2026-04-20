@@ -1027,8 +1027,9 @@ export default function AppHomePage() {
               if (!backfillBusyYmd) setBacklogConfirmYmd("");
             }}
             title="تأكيد إنجاز الورد"
-            size="md"
+            size="sm"
             className="rh-home-backlog-confirm"
+            contentClassName="rh-home-backlog-confirm__sheet"
           >
             <div className="rh-home-backlog-confirm__body">
               <p className="rh-home-backlog-confirm__text">

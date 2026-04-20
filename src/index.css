@@ -1669,6 +1669,18 @@ a.rh-sidebar__brand-link.rh-sidebar__brand-link--active {
   border-color: color-mix(in srgb, var(--rh-danger) 30%, var(--rh-border));
 }
 
+.rh-home-backlog-confirm.ui-modal {
+  z-index: 1300;
+}
+
+.rh-home-backlog-confirm .ui-modal__backdrop {
+  background: rgba(8, 10, 18, 0.72);
+}
+
+.rh-home-backlog-confirm__sheet {
+  width: min(30rem, calc(100vw - 1.25rem)) !important;
+}
+
 .rh-home-backlog-confirm__body {
   display: flex;
   flex-direction: column;
@@ -1692,6 +1704,21 @@ a.rh-sidebar__brand-link.rh-sidebar__brand-link--active {
   display: flex;
   justify-content: flex-end;
   gap: var(--rh-space-2);
+  flex-wrap: wrap;
+}
+
+@media (max-width: 520px) {
+  .rh-home-backlog-confirm__sheet {
+    width: min(30rem, calc(100vw - 0.75rem)) !important;
+  }
+
+  .rh-home-backlog-confirm__actions {
+    justify-content: stretch;
+  }
+
+  .rh-home-backlog-confirm__actions .ui-btn {
+    flex: 1 1 100%;
+  }
 }
 
 .rh-home-dash__btn {
