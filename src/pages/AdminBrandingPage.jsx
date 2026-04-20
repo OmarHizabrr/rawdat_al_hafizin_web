@@ -259,8 +259,8 @@ export default function AdminBrandingPage() {
       <section className="rh-admin-branding__form card">
         <h2 className="rh-admin-branding__step-title">أرقام التواصل العامة</h2>
         <p className="rh-admin-branding__step-desc">
-          تظهر في الإعدادات وفي صفحتي «طلب إجازة» و«الشهادات». يفضّل إدخال الرقم بصيغة دولية أو بداية ٠٥ للسعودية. زر
-          واتساب يفتح المحادثة، وزر الرسائل النصية بديل عند عدم توفر التطبيق.
+          تظهر في الإعدادات وفي صفحتي «طلب إجازة» و«الشهادات». أدخل رقماً للجوال (واتساب ورسائل نصية) و/أو تيليجرام
+          (اسم مستخدم أو رقم دولي). يكفي أحدهما لحفظ الصف؛ يمكن الجمع بينهما لنفس الجهة.
         </p>
         <ul className="rh-admin-contact-phones-edit">
           {contactPhonesDraft.map((row) => (
@@ -275,12 +275,22 @@ export default function AdminBrandingPage() {
                 }}
               />
               <TextField
-                label="رقم الجوال"
-                hint="مثال: 0501234567 أو +966501234567"
+                label="رقم الجوال (اختياري)"
+                hint="للواتساب والرسائل النصية — مثال: 0501234567 أو +966501234567"
                 value={row.phone}
                 onChange={(e) => {
                   const v = e.target.value
                   setContactPhonesDraft((prev) => prev.map((r) => (r.id === row.id ? { ...r, phone: v } : r)))
+                }}
+                dir="ltr"
+              />
+              <TextField
+                label="تيليجرام (اختياري)"
+                hint="اسم المستخدم بدون @ أو رقم بصيغة دولية — مثال: rawdah_support أو +966501234567"
+                value={row.telegram ?? ''}
+                onChange={(e) => {
+                  const v = e.target.value
+                  setContactPhonesDraft((prev) => prev.map((r) => (r.id === row.id ? { ...r, telegram: v } : r)))
                 }}
                 dir="ltr"
               />
@@ -300,7 +310,7 @@ export default function AdminBrandingPage() {
           onClick={() =>
             setContactPhonesDraft((prev) => [
               ...prev,
-              { id: firestoreApi.getNewId('cphone'), label: '', phone: '' },
+              { id: firestoreApi.getNewId('cphone'), label: '', phone: '', telegram: '' },
             ])
           }
         >

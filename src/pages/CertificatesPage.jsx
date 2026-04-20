@@ -2,6 +2,7 @@ import { ScrollText } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useLocation } from 'react-router-dom'
 import { CrossNav } from '../components/CrossNav.jsx'
+import { ContactPhonesBulkSend } from '../components/ContactPhonesBulkSend.jsx'
 import { ContactPhonesSection } from '../components/ContactPhonesSection.jsx'
 import { ServicePageImpersonationBanner } from '../components/ServicePageImpersonationBanner.jsx'
 import { isAdmin } from '../config/roles.js'
@@ -88,8 +89,8 @@ export default function CertificatesPage() {
         <div>
           <h1 className="rh-service-page__title">الشهادات والوثائق</h1>
           <p className="rh-service-page__lead">
-            سجّل بياناتك ونوع الطلب، ثم تواصل مع الإدارة عبر الأزرار أدناه. تُنسَّق رسالة جاهزة تحمل ما أدخلته لتسهيل
-            المراسلة.
+            سجّل بياناتك ونوع الطلب، ثم تواصل مع الإدارة عبر واتساب أو تيليجرام أو الرسائل. استخدم الأسفل لإرسال الطلب
+            إلى عدة جهات وعدة وسائل دفعة واحدة.
           </p>
           <CrossNav items={crossItems} className="rh-service-page__cross" />
         </div>
@@ -128,8 +129,8 @@ export default function CertificatesPage() {
           {contactPhones.length > 0 ? (
             <ContactPhonesSection
               phones={contactPhones}
-              title="مراسلة الإدارة"
-              subtitle="واتساب يفتح المحادثة مع نص جاهز؛ الرسائل النصية للبديل."
+              title="مراسلة الإدارة — وسيلة واحدة"
+              subtitle="اختصار لكل جهة. للإرسال الجماعي استخدم المربع في أسفل الصفحة."
               prefillBody={messageBody}
               className="rh-service-page__contacts"
             />
@@ -142,6 +143,14 @@ export default function CertificatesPage() {
           )}
         </aside>
       </div>
+
+      {contactPhones.length > 0 ? (
+        <ContactPhonesBulkSend
+          className="card rh-service-page__bulk"
+          phones={contactPhones}
+          messageBody={messageBody}
+        />
+      ) : null}
     </div>
   )
 }

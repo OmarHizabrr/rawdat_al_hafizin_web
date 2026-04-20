@@ -1,5 +1,10 @@
-import { MessageCircle, Phone } from 'lucide-react'
-import { normalizeContactPhones, smsHref, whatsappSendUrl } from '../utils/contactPhones.js'
+import { MessageCircle, Phone, Send } from 'lucide-react'
+import {
+  normalizeContactPhones,
+  smsHref,
+  telegramSendUrl,
+  whatsappSendUrl,
+} from '../utils/contactPhones.js'
 import { RhIcon, RH_ICON_STROKE } from '../ui/RhIcon.jsx'
 
 /**
@@ -13,7 +18,7 @@ import { RhIcon, RH_ICON_STROKE } from '../ui/RhIcon.jsx'
 export function ContactPhonesSection({
   phones,
   title = 'أرقام التواصل',
-  subtitle = 'واتساب مباشرة، أو رسالة نصية إن لم يتوفر التطبيق.',
+  subtitle = 'واتساب أو تيليجرام أو رسالة نصية — حسب ما يتوفر لكل جهة.',
   prefillBody = '',
   className = '',
 }) {
@@ -28,22 +33,46 @@ export function ContactPhonesSection({
       </div>
       <ul className="rh-contact-phones__list">
         {rows.map((row) => {
-          const wa = whatsappSendUrl(row.phone, prefillBody)
-          const sms = smsHref(row.phone, prefillBody)
+          const wa = row.phone ? whatsappSendUrl(row.phone, prefillBody) : ''
+          const sms = row.phone ? smsHref(row.phone, prefillBody) : ''
+          const tg = row.telegram ? telegramSendUrl(row.telegram, prefillBody) : ''
           const label = row.label?.trim() || 'تواصل'
           return (
             <li key={row.id} className="rh-contact-phones__card">
               <div className="rh-contact-phones__card-main">
                 <span className="rh-contact-phones__label">{label}</span>
-                <span className="rh-contact-phones__number" dir="ltr">
-                  {row.phone}
-                </span>
+                {row.phone ? (
+                  <span className="rh-contact-phones__number" dir="ltr">
+                    {row.phone}
+                  </span>
+                ) : null}
+                {row.telegram ? (
+                  <span className="rh-contact-phones__telegram" dir="ltr">
+                    تيليجرام: {row.telegram.startsWith('@') ? row.telegram : `@${row.telegram}`}
+                  </span>
+                ) : null}
               </div>
               <div className="rh-contact-phones__actions">
                 {wa ? (
-                  <a className="rh-contact-phones__btn rh-contact-phones__btn--wa" href={wa} target="_blank" rel="noopener noreferrer">
+                  <a
+                    className="rh-contact-phones__btn rh-contact-phones__btn--wa"
+                    href={wa}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
                     <RhIcon as={MessageCircle} size={18} strokeWidth={RH_ICON_STROKE} />
                     واتساب
+                  </a>
+                ) : null}
+                {tg ? (
+                  <a
+                    className="rh-contact-phones__btn rh-contact-phones__btn--tg"
+                    href={tg}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    <RhIcon as={Send} size={18} strokeWidth={RH_ICON_STROKE} />
+                    تيليجرام
                   </a>
                 ) : null}
                 {sms ? (

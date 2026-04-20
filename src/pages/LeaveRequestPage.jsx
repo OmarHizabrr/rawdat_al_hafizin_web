@@ -2,6 +2,7 @@ import { CalendarClock } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useLocation } from 'react-router-dom'
 import { CrossNav } from '../components/CrossNav.jsx'
+import { ContactPhonesBulkSend } from '../components/ContactPhonesBulkSend.jsx'
 import { ContactPhonesSection } from '../components/ContactPhonesSection.jsx'
 import { ServicePageImpersonationBanner } from '../components/ServicePageImpersonationBanner.jsx'
 import { isAdmin } from '../config/roles.js'
@@ -86,8 +87,8 @@ export default function LeaveRequestPage() {
         <div>
           <h1 className="rh-service-page__title">طلب إجازة</h1>
           <p className="rh-service-page__lead">
-            املأ الاسم الرباعي ووضّح طلبك، ثم أرسله عبر واتساب أو الرسائل النصية من أرقام التواصل أدناه — تُعبَّأ
-            الرسالة تلقائياً بما كتبته.
+            املأ الاسم الرباعي ووضّح طلبك، ثم أرسله عبر واتساب أو تيليجرام أو الرسائل النصية — تُعبَّأ الرسالة
+            تلقائياً. يمكنك استخدام الأزرار السريعة أو «إرسال الطلب دفعة واحدة» في أسفل الصفحة لعدة جهات وعدة وسائل.
           </p>
           <CrossNav items={crossItems} className="rh-service-page__cross" />
         </div>
@@ -121,8 +122,8 @@ export default function LeaveRequestPage() {
           {contactPhones.length > 0 ? (
             <ContactPhonesSection
               phones={contactPhones}
-              title="أرسل الطلب"
-              subtitle="يُفضَّل واتساب؛ استخدم الرسالة النصية إن لم يتوفر التطبيق."
+              title="أرسل الطلب — وسيلة واحدة"
+              subtitle="اختصار لكل جهة. للإرسال لعدة جهات معاً استخدم المربع في أسفل الصفحة."
               prefillBody={messageBody}
               className="rh-service-page__contacts"
             />
@@ -135,6 +136,14 @@ export default function LeaveRequestPage() {
           )}
         </aside>
       </div>
+
+      {contactPhones.length > 0 ? (
+        <ContactPhonesBulkSend
+          className="card rh-service-page__bulk"
+          phones={contactPhones}
+          messageBody={messageBody}
+        />
+      ) : null}
     </div>
   )
 }

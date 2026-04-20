@@ -131,7 +131,7 @@ export default function SettingsPage() {
         <ContactPhonesSection
           phones={contactPhones}
           title="أرقام التواصل"
-          subtitle="واتساب يفتح المحادثة مباشرة؛ استخدم «رسالة نصية» إن لم يتوفر واتساب."
+          subtitle="واتساب أو تيليجرام أو رسالة نصية — حسب ما ضبطه المشرف لكل جهة."
           className="rh-settings__contacts"
         />
       ) : (
