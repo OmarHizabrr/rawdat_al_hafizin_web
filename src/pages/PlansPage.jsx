@@ -667,8 +667,11 @@ export default function PlansPage() {
     }
   }
 
-  const volumeSummary = (n) =>
-    n === 0 ? 'اختر المجلدات…' : n === 1 ? 'مجلد واحد مختار' : `${n} مجلدات مختارة`
+  const volumeSummary = useCallback((selectedIds, opts) => {
+    if (!selectedIds?.length) return 'اختر المجلدات…'
+    const labels = selectedIds.map((id) => opts.find((o) => o.value === id)?.label ?? id)
+    return labels.join('، ')
+  }, [])
   const displayedPlans = viewUserId ? savedPlans : []
   const homeDefaultId = actingAsUser ? viewedDefaultPlanId : user?.defaultPlanId
 
@@ -1107,6 +1110,15 @@ export default function PlansPage() {
             )
           }}
         />
+        {selectedVolumeIds.length > 0 ? (
+          <ul className="rh-plans__volume-picks" aria-label="المجلدات المختارة (بالترتيب)">
+            {selectedVolumeIds.map((id) => (
+              <li key={id} className="rh-plans__volume-picks__item">
+                {VOLUME_BY_ID[id]?.label ?? id}
+              </li>
+            ))}
+          </ul>
+        ) : null}
             </section>
 
             <section className="rh-settings-card rh-plans__section">

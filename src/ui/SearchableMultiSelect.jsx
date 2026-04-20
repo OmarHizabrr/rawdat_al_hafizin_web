@@ -1,5 +1,6 @@
 import { Check, ChevronDown } from 'lucide-react'
-import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
+import { startTransition, useCallback, useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { useOnClickOutside } from './hooks/useOnClickOutside.js'
 import { RhIcon, RH_ICON_STROKE } from './RhIcon.jsx'
 import { SearchField } from './SearchField.jsx'
@@ -10,6 +11,7 @@ import { SearchField } from './SearchField.jsx'
  * @param {(next: string[]) => void} onChange
  * @param {{ value: string, label: string, secondary?: string }[]} options
  * @param {(option) => import('react').ReactNode} [itemAddon] - محتوى إضافي لكل صف عند التحديد (مثل حقل رقم)
+ * @param {(count: number) => import('react').ReactNode} [summaryLabel] - ملخص بعدد العناصر، أو (selectedValues, options) => node إن وُجدت معاملين
  */
 export function SearchableMultiSelect({
   label,
@@ -35,10 +37,13 @@ export function SearchableMultiSelect({
   const hintId = `${id}-hint`
 
   const rootRef = useRef(null)
+  const portalLayerRef = useRef(null)
   const searchRef = useRef(null)
   const [open, setOpen] = useState(false)
   const [query, setQuery] = useState('')
   const [highlight, setHighlight] = useState(0)
+  /** غير null = عرض القائمة عبر portal على document.body (داخل .ui-modal) */
+  const [portalSpec, setPortalSpec] = useState(null)
 
   const selectedSet = useMemo(() => new Set(value), [value])
 
@@ -59,8 +64,59 @@ export function SearchableMultiSelect({
       setOpen(false)
       setQuery('')
     },
-    open,
+    open && !portalSpec,
   )
+
+  useLayoutEffect(() => {
+    if (!open) {
+      startTransition(() => setPortalSpec(null))
+      return
+    }
+    const root = rootRef.current
+    if (!root?.closest('.ui-modal')) {
+      startTransition(() => setPortalSpec(null))
+      return
+    }
+    const update = () => {
+      const r = root.getBoundingClientRect()
+      const mobile = window.matchMedia('(max-width: 899px)').matches
+      if (mobile) setPortalSpec({ mobile: true })
+      else
+        setPortalSpec({
+          mobile: false,
+          top: r.bottom + 8,
+          left: r.left,
+          width: r.width,
+        })
+    }
+    update()
+    window.addEventListener('resize', update)
+    document.addEventListener('scroll', update, true)
+    return () => {
+      window.removeEventListener('resize', update)
+      document.removeEventListener('scroll', update, true)
+    }
+  }, [open])
+
+  useEffect(() => {
+    if (!open || !portalSpec) return
+    const close = () => {
+      setOpen(false)
+      setQuery('')
+    }
+    const onPointer = (e) => {
+      const t = e.target
+      if (rootRef.current?.contains(t)) return
+      if (portalLayerRef.current?.contains(t)) return
+      close()
+    }
+    document.addEventListener('mousedown', onPointer)
+    document.addEventListener('touchstart', onPointer)
+    return () => {
+      document.removeEventListener('mousedown', onPointer)
+      document.removeEventListener('touchstart', onPointer)
+    }
+  }, [open, portalSpec])
 
   useEffect(() => {
     if (!open) return
@@ -139,9 +195,111 @@ export function SearchableMultiSelect({
     [open, filtered, effectiveHighlight, maxIdx, toggleValue],
   )
 
-  const summary =
-    summaryLabel?.(value.length) ??
-    (value.length === 0 ? placeholder : value.length === 1 ? 'عنصر واحد مختار' : `${value.length} عناصر مختارة`)
+  const summary = useMemo(() => {
+    if (typeof summaryLabel === 'function') {
+      if (summaryLabel.length >= 2) return summaryLabel(value, options)
+      return summaryLabel(value.length)
+    }
+    if (value.length === 0) return placeholder
+    if (value.length === 1) return 'عنصر واحد مختار'
+    return `${value.length} عناصر مختارة`
+  }, [summaryLabel, value, options, placeholder])
+
+  const portalPanelStyle = useMemo(() => {
+    if (!portalSpec || portalSpec.mobile) return undefined
+    const top = portalSpec.top
+    const maxH = Math.max(120, typeof window !== 'undefined' ? window.innerHeight - top - 16 : 320)
+    return {
+      position: 'fixed',
+      top,
+      left: portalSpec.left,
+      width: portalSpec.width,
+      maxHeight: `min(22rem, ${maxH}px)`,
+    }
+  }, [portalSpec])
+
+  const renderDropdown = (portal) => (
+    <>
+      <button
+        type="button"
+        className={['ui-multi__backdrop', portal ? 'ui-multi__backdrop--portal' : ''].filter(Boolean).join(' ')}
+        aria-label="إغلاق القائمة"
+        tabIndex={-1}
+        onClick={() => {
+          setOpen(false)
+          setQuery('')
+        }}
+      />
+      <div
+        className={['ui-multi__panel', portal ? 'ui-multi__panel--portal' : ''].filter(Boolean).join(' ')}
+        style={portal ? portalPanelStyle : undefined}
+        role="presentation"
+      >
+        <div className="ui-multi__search">
+          <SearchField
+            ref={searchRef}
+            placeholder={searchPlaceholder}
+            value={query}
+            onChange={(e) => {
+              setQuery(e.target.value)
+              setHighlight(0)
+            }}
+            onClear={() => setQuery('')}
+            className="ui-multi__search-field"
+          />
+        </div>
+        <div className="ui-multi__toolbar">
+          <button type="button" className="ui-multi__toolbar-btn" onClick={selectAllFiltered}>
+            تحديد الظاهر
+          </button>
+          <button type="button" className="ui-multi__toolbar-btn" onClick={clearAllFiltered}>
+            إلغاء الظاهر
+          </button>
+        </div>
+        <ul id={listId} className="ui-multi__list" role="listbox" aria-label={label ?? placeholder} aria-multiselectable="true">
+          {filtered.length === 0 ? (
+            <li className="ui-multi__empty" role="presentation">
+              {emptyText}
+            </li>
+          ) : (
+            filtered.map((opt, i) => {
+              const sel = selectedSet.has(opt.value)
+              return (
+                <li key={String(opt.value)} role="presentation" className="ui-multi__row-wrap">
+                  <button
+                    type="button"
+                    role="option"
+                    aria-selected={sel}
+                    className={[
+                      'ui-multi__row',
+                      i === effectiveHighlight ? 'ui-multi__row--highlight' : '',
+                      sel ? 'ui-multi__row--selected' : '',
+                    ]
+                      .filter(Boolean)
+                      .join(' ')}
+                    onMouseEnter={() => setHighlight(i)}
+                    onClick={() => toggleValue(opt.value)}
+                  >
+                    <span className={['ui-multi__check', sel ? 'ui-multi__check--on' : ''].filter(Boolean).join(' ')} aria-hidden>
+                      {sel && <RhIcon as={Check} size={14} strokeWidth={2.5} />}
+                    </span>
+                    <span className="ui-multi__row-body">
+                      <span className="ui-multi__row-label">{opt.label}</span>
+                      {opt.secondary && <span className="ui-multi__row-secondary">{opt.secondary}</span>}
+                    </span>
+                  </button>
+                  {sel && itemAddon?.(opt)}
+                </li>
+              )
+            })
+          )}
+        </ul>
+      </div>
+    </>
+  )
+
+  const showPortalLayer = open && portalSpec
+  const showInlineLayer = open && !portalSpec
 
   return (
     <div
@@ -179,6 +337,7 @@ export function SearchableMultiSelect({
           className={[
             'ui-multi__trigger-text',
             value.length === 0 ? 'ui-multi__trigger-text--placeholder' : '',
+            value.length > 1 ? 'ui-multi__trigger-text--wrap' : '',
           ]
             .filter(Boolean)
             .join(' ')}
@@ -190,80 +349,12 @@ export function SearchableMultiSelect({
         </span>
       </button>
 
-      {open && (
-        <>
-          <button
-            type="button"
-            className="ui-multi__backdrop"
-            aria-label="إغلاق القائمة"
-            tabIndex={-1}
-            onClick={() => {
-              setOpen(false)
-              setQuery('')
-            }}
-          />
-          <div className="ui-multi__panel" role="presentation">
-          <div className="ui-multi__search">
-            <SearchField
-              ref={searchRef}
-              placeholder={searchPlaceholder}
-              value={query}
-              onChange={(e) => {
-                setQuery(e.target.value)
-                setHighlight(0)
-              }}
-              onClear={() => setQuery('')}
-              className="ui-multi__search-field"
-            />
-          </div>
-          <div className="ui-multi__toolbar">
-            <button type="button" className="ui-multi__toolbar-btn" onClick={selectAllFiltered}>
-              تحديد الظاهر
-            </button>
-            <button type="button" className="ui-multi__toolbar-btn" onClick={clearAllFiltered}>
-              إلغاء الظاهر
-            </button>
-          </div>
-          <ul id={listId} className="ui-multi__list" role="listbox" aria-label={label ?? placeholder} aria-multiselectable="true">
-            {filtered.length === 0 ? (
-              <li className="ui-multi__empty" role="presentation">
-                {emptyText}
-              </li>
-            ) : (
-              filtered.map((opt, i) => {
-                const sel = selectedSet.has(opt.value)
-                return (
-                  <li key={String(opt.value)} role="presentation" className="ui-multi__row-wrap">
-                    <button
-                      type="button"
-                      role="option"
-                      aria-selected={sel}
-                      className={[
-                        'ui-multi__row',
-                        i === effectiveHighlight ? 'ui-multi__row--highlight' : '',
-                        sel ? 'ui-multi__row--selected' : '',
-                      ]
-                        .filter(Boolean)
-                        .join(' ')}
-                      onMouseEnter={() => setHighlight(i)}
-                      onClick={() => toggleValue(opt.value)}
-                    >
-                      <span className={['ui-multi__check', sel ? 'ui-multi__check--on' : ''].filter(Boolean).join(' ')} aria-hidden>
-                        {sel && <RhIcon as={Check} size={14} strokeWidth={2.5} />}
-                      </span>
-                      <span className="ui-multi__row-body">
-                        <span className="ui-multi__row-label">{opt.label}</span>
-                        {opt.secondary && <span className="ui-multi__row-secondary">{opt.secondary}</span>}
-                      </span>
-                    </button>
-                    {sel && itemAddon?.(opt)}
-                  </li>
-                )
-              })
-            )}
-          </ul>
-        </div>
-        </>
+      {showInlineLayer && renderDropdown(false)}
+      {showPortalLayer && createPortal(
+        <div ref={portalLayerRef} className="ui-multi__portal-layer">
+          {renderDropdown(true)}
+        </div>,
+        document.body,
       )}
 
       {hint && !error && (

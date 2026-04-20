@@ -4321,7 +4321,29 @@ button.rh-home-quick-icon {
 }
 
 .rh-plans__editor-scroll {
-  max-height: min(76dvh, 760px);
+  /* تمرير واحد في محتوى النافذة فقط — يمنع قصّ القائمة المنبثقة للمجلدات على الهاتف */
+  max-height: none;
+  overflow: visible;
+}
+
+.rh-plans__volume-picks {
+  list-style: none;
+  margin: var(--rh-space-2) 0 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--rh-space-2);
+}
+
+.rh-plans__volume-picks__item {
+  margin: 0;
+  padding: 0.2rem 0.55rem;
+  border-radius: var(--rh-radius-pill);
+  font-size: var(--rh-text-xs);
+  font-weight: 600;
+  color: var(--rh-primary);
+  background: var(--rh-primary-muted);
+  border: 1px solid color-mix(in srgb, var(--rh-primary) 28%, var(--rh-border));
 }
 
 .rh-plans__warn--confirm {
@@ -4982,10 +5004,6 @@ a.rh-peek-btn {
 
   .rh-plans__add-btn {
     width: 100%;
-  }
-
-  .rh-plans__editor-scroll {
-    max-height: min(80dvh, 100%);
   }
 
   .rh-plans__card-actions .ui-btn {

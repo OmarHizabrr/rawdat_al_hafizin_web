@@ -1212,6 +1212,15 @@ html[data-theme='dark'] .rh-themed-scroll::-webkit-scrollbar-thumb:hover {
   color: var(--rh-text-placeholder);
 }
 
+.ui-multi__trigger-text--wrap {
+  white-space: normal;
+  line-height: var(--rh-leading-tight);
+  display: -webkit-box;
+  -webkit-line-clamp: 4;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
 .ui-multi__chevron {
   flex-shrink: 0;
   display: inline-flex;
@@ -1413,6 +1422,56 @@ html[data-theme='dark'] .rh-themed-scroll::-webkit-scrollbar-thumb:hover {
 
 .ui-multi__backdrop {
   display: none;
+}
+
+/* طبقة منفصلة على document.body داخل نافذة منبثقة — يتجاوز قصّ overflow */
+.ui-multi__portal-layer {
+  position: relative;
+  z-index: 1305;
+  pointer-events: none;
+}
+
+.ui-multi__portal-layer .ui-multi__backdrop--portal,
+.ui-multi__portal-layer .ui-multi__panel--portal {
+  pointer-events: auto;
+}
+
+.ui-multi__backdrop--portal {
+  display: block !important;
+  position: fixed;
+  z-index: 1304;
+  inset: 0;
+  margin: 0;
+  padding: 0;
+  border: none;
+  background: rgba(0, 0, 0, 0.35);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.ui-multi__panel--portal.ui-multi__panel {
+  z-index: 1305;
+}
+
+@media (max-width: 899px) {
+  .ui-multi__panel--portal.ui-multi__panel {
+    position: fixed;
+    inset-inline: max(var(--rh-space-3), env(safe-area-inset-left, 0px))
+      max(var(--rh-space-3), env(safe-area-inset-right, 0px));
+    inset-block: auto max(var(--rh-space-3), env(safe-area-inset-bottom, 0px));
+    top: auto;
+    max-height: min(72dvh, 32rem);
+    width: auto;
+    left: auto;
+  }
+}
+
+@media (max-width: 520px) {
+  .ui-multi__panel--portal.ui-multi__panel {
+    inset-inline: max(var(--rh-space-2), env(safe-area-inset-left, 0px))
+      max(var(--rh-space-2), env(safe-area-inset-right, 0px));
+    max-height: min(76dvh, 28rem);
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
