@@ -298,13 +298,30 @@ export default function PlansPage() {
 
   const neededSessions = useMemo(() => sessionsNeeded(totalTargetPages, dailyPages), [totalTargetPages, dailyPages])
 
+  /** أقصى صفحات يمكن «استيعابها» تقريباً إذا التزمنا بكل يوم جدولة بمقدار الورد اليومي */
+  const rangeCapacityPages = useMemo(() => {
+    if (!useDateRange || availableDaysInRange == null || !dailyPages || dailyPages < 1) return null
+    return availableDaysInRange * dailyPages
+  }, [useDateRange, availableDaysInRange, dailyPages])
+
   const rangeWarning = useMemo(() => {
     if (!useDateRange || availableDaysInRange == null || neededSessions === Infinity) return null
     if (availableDaysInRange > 0 && neededSessions > availableDaysInRange) {
-      return `عدد أيام الجدولة في الفترة (${availableDaysInRange}) أقل من عدد جلسات الورد المطلوبة تقريباً (${neededSessions}). زد الفترة أو الورد اليومي أو خفّف الصفحات.`
+      const cap =
+        rangeCapacityPages != null
+          ? ` سعة الفترة التقريبية (أيام الجدولة × الورد اليومي) = ${rangeCapacityPages} صفحة، وهي أقل من إجمالي الصفحات المستهدفة (${totalTargetPages}).`
+          : ''
+      return `جلسات الورد هنا تُحسب كـ ⌈إجمالي الصفحات ÷ الورد اليومي⌉ = ⌈${totalTargetPages} ÷ ${dailyPages}⌉ = ${neededSessions} جلسة، وتُقارَن بعدد أيام الجدولة في الفترة (${availableDaysInRange} يوماً).${cap} زد الفترة، أو رفع «الورد اليومي» ليطابق صفحات يوم الحفظ في خطتك، أو خفّض إجمالي الصفحات.`
     }
     return null
-  }, [useDateRange, availableDaysInRange, neededSessions])
+  }, [
+    useDateRange,
+    availableDaysInRange,
+    neededSessions,
+    rangeCapacityPages,
+    totalTargetPages,
+    dailyPages,
+  ])
 
   useEffect(() => {
     if (!useDateRange) return
@@ -1324,13 +1341,27 @@ export default function PlansPage() {
               {availableDaysInRange ?? '—'}
             </li>
           )}
+          {useDateRange && rangeCapacityPages != null && (
+            <li>
+              <strong>سعة الفترة التقريبية:</strong> {rangeCapacityPages} صفحة (= أيام الجدولة × الورد اليومي). إن كان
+              إجمالي الصفحات أعلى منها فالفترة/الورد لا يتسعان لهذا الاحتساب.
+            </li>
+          )}
           {reminderTime.trim() && (
             <li>
               <strong>وقت التذكير:</strong> {formatReminderAr(reminderTime.trim())}
             </li>
           )}
         </ul>
-        {rangeWarning && <p className="rh-plans__warn">{rangeWarning}</p>}
+        {rangeWarning && (
+          <>
+            <p className="rh-plans__warn">{rangeWarning}</p>
+            <p className="rh-plans__warn-footnote">
+              الحفظ غير ممنوع — التنبيه إرشادي. الخطة الورقية التي فيها أيام مراجعة فقط: فعّل «تقييد أيام الأسبوع»
+              واختر أيام الحفظ فقط (دون أيام المراجعة)، واضبط «الورد اليومي» ليساوي عدد الصفحات في يوم الحفظ (مثلاً ٦).
+            </p>
+          </>
+        )}
         <div className="rh-plans__actions">
           <Button type="button" variant="primary" onClick={handleSavePlan} loading={savePlanSubmitting}>
             {editingPlanId ? 'حفظ التعديلات' : 'حفظ الخطة'}

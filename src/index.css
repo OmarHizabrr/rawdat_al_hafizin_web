@@ -4169,6 +4169,14 @@ button.rh-home-quick-icon {
   line-height: var(--rh-leading-tight);
 }
 
+.rh-plans__warn-footnote {
+  font-size: var(--rh-text-xs);
+  color: var(--rh-text-muted);
+  line-height: var(--rh-leading-normal);
+  margin: calc(-1 * var(--rh-space-2)) 0 var(--rh-space-4);
+  padding: 0 var(--rh-space-1);
+}
+
 .rh-plans__actions {
   display: flex;
   flex-wrap: wrap;
