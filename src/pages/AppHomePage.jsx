@@ -58,6 +58,33 @@ function HomeDashMoodIcon({ mood }) {
   }
 }
 
+function hashSeed(text) {
+  let h = 0
+  const s = String(text || '')
+  for (let i = 0; i < s.length; i += 1) {
+    h = (h * 33 + s.charCodeAt(i)) % 1000003
+  }
+  return h
+}
+
+function flightStyleFromFeeling(feeling, idx) {
+  const seed = hashSeed(`${feeling?.id || ''}:${feeling?.ownerUid || ''}:${idx}`)
+  const duration = 16 + (seed % 11)
+  const delay = -1 * (seed % 13)
+  const y1 = -10 - (seed % 18)
+  const y2 = 8 + ((seed >> 2) % 26)
+  const y3 = -12 - ((seed >> 4) % 22)
+  const scale = 0.92 + ((seed % 16) / 100)
+  return {
+    '--flight-duration': `${duration}s`,
+    '--flight-delay': `${delay}s`,
+    '--flight-y1': `${y1}px`,
+    '--flight-y2': `${y2}px`,
+    '--flight-y3': `${y3}px`,
+    '--bird-scale': `${scale.toFixed(2)}`,
+  }
+}
+
 export default function AppHomePage() {
   const { user } = useAuth()
   const { can, canAccessPage } = usePermissions()
@@ -289,16 +316,36 @@ export default function AppHomePage() {
           </Link>
         </div>
         {recentFeelings.length > 0 ? (
-          <ul className="rh-home-feelings-birds__list" aria-label="آخر مشاعر الطلاب">
-            {recentFeelings.slice(0, 8).map((f) => (
-              <li key={`${f.ownerUid}-${f.id}`} className="rh-home-feelings-birds__item">
-                <span className="rh-home-feelings-birds__bird" aria-hidden>
-                  {f.bird || '🐦'}
-                </span>
-                <p className="rh-home-feelings-birds__text">{f.text}</p>
-                <span className="rh-home-feelings-birds__meta">
-                  {f.displayName || 'طالب'} · {'★'.repeat(Math.max(1, f.rating || 1))}
-                </span>
+          <ul className="rh-home-feelings-birds__sky" aria-label="آخر مشاعر الطلاب">
+            {recentFeelings.slice(0, 8).map((f, i) => (
+              <li
+                key={`${f.ownerUid}-${f.id}`}
+                className="rh-home-feelings-birds__flight"
+                style={flightStyleFromFeeling(f, i)}
+              >
+                <article className="rh-home-feelings-birds__bird-card">
+                  <span className="rh-home-feelings-birds__bird" aria-hidden>
+                    {f.bird || '🐦'}
+                  </span>
+                  <header className="rh-home-feelings-birds__who">
+                    {f.photoURL ? (
+                      <img
+                        src={f.photoURL}
+                        alt=""
+                        width={28}
+                        height={28}
+                        className="rh-home-feelings-birds__avatar"
+                      />
+                    ) : (
+                      <span className="rh-home-feelings-birds__avatar rh-home-feelings-birds__avatar--fallback">
+                        {(f.displayName || 'ط').charAt(0)}
+                      </span>
+                    )}
+                    <strong>{f.displayName || 'طالب'}</strong>
+                  </header>
+                  <p className="rh-home-feelings-birds__text">{f.text}</p>
+                  <span className="rh-home-feelings-birds__meta">{'★'.repeat(Math.max(1, f.rating || 1))}</span>
+                </article>
               </li>
             ))}
           </ul>

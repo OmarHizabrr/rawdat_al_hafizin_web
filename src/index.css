@@ -6055,44 +6055,154 @@ a.rh-peek-btn {
   text-decoration: underline;
 }
 
-.rh-home-feelings-birds__list {
+.rh-home-feelings-birds__sky {
   list-style: none;
   margin: 0;
   padding: 0;
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
-  gap: var(--rh-space-2);
+  position: relative;
+  min-height: 21rem;
+  overflow: hidden;
+  border-radius: var(--rh-radius-xl);
+  border: 1px solid var(--rh-border);
+  background:
+    radial-gradient(circle at 12% 18%, color-mix(in srgb, var(--rh-primary) 11%, transparent), transparent 34%),
+    radial-gradient(circle at 74% 22%, color-mix(in srgb, var(--rh-primary) 8%, transparent), transparent 28%),
+    linear-gradient(165deg, color-mix(in srgb, var(--rh-primary-muted) 45%, var(--rh-surface)), var(--rh-surface));
 }
 
-.rh-home-feelings-birds__item {
+.rh-home-feelings-birds__sky::after {
+  content: '';
+  position: absolute;
+  inset: auto 0 0;
+  height: 22%;
+  background: linear-gradient(
+    to top,
+    color-mix(in srgb, var(--rh-primary-muted) 34%, transparent),
+    transparent
+  );
+  pointer-events: none;
+}
+
+.rh-home-feelings-birds__flight {
+  position: absolute;
+  inset-inline-start: -20%;
+  top: 12%;
+  width: min(16.5rem, 70vw);
+  animation: rh-bird-flight var(--flight-duration, 18s) linear infinite;
+  animation-delay: var(--flight-delay, 0s);
+  transform-origin: center;
+  z-index: 1;
+}
+
+.rh-home-feelings-birds__flight:nth-child(2n) {
+  top: 30%;
+}
+
+.rh-home-feelings-birds__flight:nth-child(3n) {
+  top: 50%;
+}
+
+.rh-home-feelings-birds__flight:nth-child(4n) {
+  top: 68%;
+}
+
+.rh-home-feelings-birds__bird-card {
+  position: relative;
   border: 1px solid var(--rh-border);
-  border-radius: var(--rh-radius-md);
+  border-radius: 1.05rem 1.05rem 1.2rem 1.2rem;
+  background: color-mix(in srgb, var(--rh-surface) 92%, var(--rh-primary-muted));
+  padding: 0.6rem 0.7rem 0.55rem;
+  box-shadow: var(--rh-shadow-sm);
+  transform: scale(var(--bird-scale, 1));
+  animation: rh-bird-flap 2.8s ease-in-out infinite;
+}
+
+.rh-home-feelings-birds__bird-card::after {
+  content: '';
+  position: absolute;
+  inset-inline-end: -0.38rem;
+  top: 0.95rem;
+  width: 0.72rem;
+  height: 0.72rem;
+  border-radius: 0 0.45rem 0.45rem 0;
+  transform: rotate(36deg);
+  background: color-mix(in srgb, #f3bd68 72%, #e49f31);
+}
+
+.rh-home-feelings-birds__who {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  margin-bottom: 0.25rem;
+}
+
+.rh-home-feelings-birds__avatar {
+  width: 1.75rem;
+  height: 1.75rem;
+  border-radius: var(--rh-radius-pill);
+  object-fit: cover;
+  border: 1px solid var(--rh-border);
+}
+
+.rh-home-feelings-birds__avatar--fallback {
+  display: grid;
+  place-items: center;
   background: var(--rh-surface-tint);
-  padding: var(--rh-space-2);
+  color: var(--rh-primary);
+  font-size: 0.8rem;
+  font-weight: 700;
 }
 
 .rh-home-feelings-birds__bird {
-  display: inline-block;
-  font-size: 1.15rem;
-  margin-bottom: 0.15rem;
+  position: absolute;
+  inset-inline-start: -0.55rem;
+  top: -0.7rem;
+  font-size: 1rem;
 }
 
 .rh-home-feelings-birds__text {
-  margin: 0;
-  font-size: var(--rh-text-sm);
-  line-height: 1.6;
+  margin: 0.2rem 0 0;
+  font-size: var(--rh-text-xs);
+  line-height: 1.45;
   display: -webkit-box;
-  -webkit-line-clamp: 2;
-  line-clamp: 2;
+  -webkit-line-clamp: 3;
+  line-clamp: 3;
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
 
 .rh-home-feelings-birds__meta {
-  display: block;
-  margin-top: 0.35rem;
-  font-size: var(--rh-text-xs);
-  color: var(--rh-text-muted);
+  margin-top: 0.2rem;
+  color: #f2a700;
+  font-size: 0.74rem;
+}
+
+@keyframes rh-bird-flight {
+  0% {
+    transform: translate(-12%, 0) rotate(-2deg);
+  }
+  25% {
+    transform: translate(26vw, var(--flight-y1, -12px)) rotate(1deg);
+  }
+  52% {
+    transform: translate(56vw, var(--flight-y2, 10px)) rotate(-1deg);
+  }
+  76% {
+    transform: translate(83vw, var(--flight-y3, -14px)) rotate(2deg);
+  }
+  100% {
+    transform: translate(126vw, 0) rotate(-2deg);
+  }
+}
+
+@keyframes rh-bird-flap {
+  0%,
+  100% {
+    translate: 0 0;
+  }
+  50% {
+    translate: 0 -3px;
+  }
 }
 
 .rh-home-feelings-birds__empty {

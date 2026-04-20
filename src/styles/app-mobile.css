@@ -272,8 +272,12 @@
     align-items: stretch;
   }
 
-  .rh-home-feelings-birds__list {
-    grid-template-columns: 1fr;
+  .rh-home-feelings-birds__sky {
+    min-height: 18rem;
+  }
+
+  .rh-home-feelings-birds__flight {
+    width: min(15rem, 84vw);
   }
 }
 
@@ -356,5 +360,13 @@
   .rh-feelings-item__actions .ui-btn {
     width: 100%;
     justify-content: center;
+  }
+
+  .rh-home-feelings-birds__sky {
+    min-height: 16.5rem;
+  }
+
+  .rh-home-feelings-birds__bird-card {
+    padding: 0.5rem 0.6rem 0.5rem;
   }
 }
