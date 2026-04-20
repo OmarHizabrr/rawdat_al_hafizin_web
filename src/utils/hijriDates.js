@@ -83,6 +83,13 @@ export function nextHijriYmd(ymdStr) {
   return formatHijriYmd(h.add({ days: 1 }))
 }
 
+/** @param {string} ymdStr */
+export function prevHijriYmd(ymdStr) {
+  const h = parseHijriYmdString(ymdStr)
+  if (!h) return ymdStr
+  return formatHijriYmd(h.subtract({ days: 1 }))
+}
+
 /** طابع ISO من يوم هجري (منتصف النهار المحلي) */
 export function isoFromHijriYmd(ymd) {
   if (!ymd || typeof ymd !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(ymd)) {

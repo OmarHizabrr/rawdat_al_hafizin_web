@@ -1,23 +1,7 @@
-import {
-  BookOpen,
-  CalendarClock,
-  CheckCircle2,
-  ChevronDown,
-  Coffee,
-  Flame,
-  GraduationCap,
-  ListOrdered,
-  Loader2,
-  NotebookPen,
-  ScrollText,
-  Sparkles,
-  Sunrise,
-  UsersRound,
-} from 'lucide-react'
+import { BookOpen, CheckCircle2, ChevronDown, Coffee, Flame, Loader2, NotebookPen, Sparkles, Sunrise } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useLocation, useSearchParams } from 'react-router-dom'
 import { useSiteContent } from '../context/useSiteContent.js'
-import { CrossNav } from '../components/CrossNav.jsx'
 import { HomeWirdCheckInModal } from '../components/HomeWirdCheckInModal.jsx'
 import { HomeWirdModal } from '../components/HomeWirdModal.jsx'
 import { pickHomeMotivationQuote } from '../data/homeMotivationQuotes.js'
@@ -31,7 +15,11 @@ import { useOnClickOutside } from '../ui/hooks/useOnClickOutside.js'
 import { loadPlans, subscribePlans } from '../utils/plansStorage.js'
 import { subscribeAwrad } from '../utils/awradStorage.js'
 import { buildAutoDefaultWirdAddRequest } from '../utils/autoLogDefaultWird.js'
-import { getHomeWirdDayStatus, shouldShowHomeLogWirdCumulative } from '../utils/homeWirdStatus.js'
+import {
+  getHomeWirdDashboardInsight,
+  getHomeWirdDayStatus,
+  shouldShowHomeLogWirdCumulative,
+} from '../utils/homeWirdStatus.js'
 import {
   isCheckinDismissedForDay,
   isCheckinSnoozed,
@@ -45,9 +33,25 @@ import { RhIcon, RH_ICON_STROKE } from '../ui/RhIcon.jsx'
 
 const PH = PERMISSION_PAGE_IDS.home
 
+function HomeDashMoodIcon({ mood }) {
+  const common = { size: 36, strokeWidth: 1.65 }
+  switch (mood) {
+    case 'rest':
+      return <Coffee {...common} />
+    case 'done':
+      return <CheckCircle2 {...common} />
+    case 'late':
+      return <Flame {...common} />
+    case 'catchup':
+      return <Sunrise {...common} />
+    default:
+      return <BookOpen {...common} />
+  }
+}
+
 export default function AppHomePage() {
   const { user } = useAuth()
-  const { can, canAccessPage } = usePermissions()
+  const { can } = usePermissions()
   const { typeLabel, branding, str } = useSiteContent()
   const { search } = useLocation()
   const [searchParams] = useSearchParams()
@@ -103,7 +107,6 @@ export default function AppHomePage() {
     }
   }, [actingAsUser, contextUserId])
 
-  /** لا نقرأ ملف المستخدم المنتحل إلا عند تفعيل النيابة؛ يتفادى الاعتماد على حالة قديمة دون setState داخل التأثير */
   const impersonatedSubject = actingAsUser && contextUserId ? subjectProfile : null
 
   useEffect(() => {
@@ -145,7 +148,7 @@ export default function AppHomePage() {
         }
         setPlanMenuOpen(false)
       } catch {
-        /* يبقى الاختيار السابق؛ يمكن إضافة تنبيه لاحقاً */
+        /* يبقى الاختيار السابق */
       } finally {
         planSwitchBusyRef.current = false
         setSelectPlanLoadingId(null)
@@ -167,19 +170,14 @@ export default function AppHomePage() {
     () => shouldShowHomeLogWirdCumulative(activePlan, awrad, homeWirdStatus.todayYmd),
     [activePlan, awrad, homeWirdStatus.todayYmd],
   )
+  const dashInsight = useMemo(
+    () => getHomeWirdDashboardInsight(activePlan, awrad, homeWirdStatus),
+    [activePlan, awrad, homeWirdStatus],
+  )
   const homeMotivationQuote = useMemo(
     () => pickHomeMotivationQuote(homeWirdStatus.todayYmd),
     [homeWirdStatus.todayYmd],
   )
-
-  const homeStreakTitle = useMemo(() => {
-    if (homeWirdStatus.variant === 'rest' || !homeWirdStatus.appliesToday) {
-      return 'يوم راحة ضمن خطتك — استغلّه بخير'
-    }
-    if (homeWirdStatus.isComplete) return 'أحسنت — ورد اليوم مكتمل'
-    if (homeWirdStatus.variant === 'urgent') return 'تأخّرت قليلاً — سجّل وردك قبل انتهاء اليوم'
-    return 'حان وقت وردك اليوم'
-  }, [homeWirdStatus])
 
   const shouldOfferCheckIn = useMemo(() => {
     homeNow.getTime()
@@ -222,44 +220,24 @@ export default function AppHomePage() {
     return undefined
   }, [shouldOfferCheckIn])
 
-  const homeCrossItems = useMemo(() => {
-    const base = [{ to: appPath('/app/plans'), label: str('app.home_cross_plans') }]
-    if (canAccessPage('halakat')) {
-      base.push({ to: appPath('/app/halakat'), label: str('app.home_cross_halakat') })
-    }
-    if (canAccessPage('dawrat')) {
-      base.push({ to: appPath('/app/dawrat'), label: str('app.home_cross_dawrat') })
-    }
-    base.push(
-      { to: appPath('/app/awrad'), label: str('app.home_cross_awrad') },
-      { to: appPath('/app/welcome'), label: str('app.home_cross_welcome') },
-    )
-    if (canAccessPage('leave_request')) {
-      base.push({ to: appPath('/app/leave-request'), label: str('layout.nav_leave_request') })
-    }
-    if (canAccessPage('certificates')) {
-      base.push({ to: appPath('/app/certificates'), label: str('layout.nav_certificates') })
-    }
-    base.push({ to: appPath('/app/settings'), label: str('app.home_cross_settings') })
-    if (isAdmin(user)) {
-      base.push({ to: '/app/admin', label: str('layout.nav_dashboard') })
-      base.push({ to: '/app/admin/users', label: str('app.home_cross_users') })
-    }
-    return base
-  }, [user, str, appPath, canAccessPage])
+  const awradHref = appPath(`/app/awrad?plan=${encodeURIComponent(activePlan?.id || '')}`)
 
   return (
-    <div className="rh-app-home">
-      <section className="card rh-app-home__hero">
-        <div className="rh-app-home__hero-top">
-          <h2>مرحباً، {name}</h2>
-          <span className="rh-app-home__sparkle" aria-hidden>
-            <Sparkles size={22} strokeWidth={1.75} />
+    <div className="rh-app-home rh-app-home--dash">
+      <header className="rh-home-dash__top card">
+        <div className="rh-home-dash__top-row">
+          <div>
+            <p className="rh-home-dash__hello">
+              مرحباً، <strong>{name}</strong>
+            </p>
+            <p className="rh-home-dash__tagline">
+              {actingAsUser ? str('app.home_lead_impersonate') : str('app.home_lead_normal')}
+            </p>
+          </div>
+          <span className="rh-home-dash__sparkle" aria-hidden>
+            <Sparkles size={24} strokeWidth={1.75} />
           </span>
         </div>
-        <p className="lead rh-app-home__lead">
-          {actingAsUser ? str('app.home_lead_impersonate') : str('app.home_lead_normal')}
-        </p>
         {actingAsUser && (
           <p className="rh-plans__admin-banner rh-app-home__impersonation">
             <Link to="/app/admin/users">{str('app.home_impersonation_users')}</Link>
@@ -275,77 +253,67 @@ export default function AppHomePage() {
             <Link to="/app">{str('app.home_impersonation_my_account')}</Link>
           </p>
         )}
-        <CrossNav items={homeCrossItems} className="rh-app-home__cross" />
-      </section>
+      </header>
 
       {activePlan && progress ? (
-        <section className="rh-home-focus card">
-          <div className="rh-home-focus__head">
-            <p className="rh-home-focus__eyebrow">{actingAsUser ? str('app.home_plan_now_other') : str('app.home_plan_now_you')}</p>
-            <div className="rh-home-focus__picker-wrap" ref={planMenuRef}>
+        <section className={`rh-home-dash card rh-home-dash--mood-${dashInsight.mood}`}>
+          <div className="rh-home-dash__glow" aria-hidden />
+
+          <div className="rh-home-dash__head">
+            <p className="rh-home-dash__eyebrow">{actingAsUser ? str('app.home_plan_now_other') : str('app.home_plan_now_you')}</p>
+            <div className="rh-home-dash__picker-wrap" ref={planMenuRef}>
               {can(PH, 'home_switch_plan') ? (
                 <>
                   <button
                     type="button"
-                    className="rh-home-focus__picker-trigger"
+                    className="rh-home-dash__picker"
                     onClick={() => setPlanMenuOpen((o) => !o)}
                     aria-expanded={planMenuOpen}
                     aria-haspopup="listbox"
                   >
-                    <span className="rh-home-focus__picker-title">{activePlan.name}</span>
-                    <span className="rh-home-focus__picker-meta">
+                    <span className="rh-home-dash__picker-name">{activePlan.name}</span>
+                    <span className="rh-home-dash__picker-meta">
                       {typeLabel(activePlan.planType)} · {activePlan.dailyPages} ص/يوم
                     </span>
                     <ChevronDown
                       size={20}
                       strokeWidth={2}
-                      className={['rh-home-focus__chevron', planMenuOpen ? 'rh-home-focus__chevron--open' : ''].join(
-                        ' ',
-                      )}
+                      className={['rh-home-dash__chevron', planMenuOpen ? 'rh-home-dash__chevron--open' : ''].join(' ')}
                     />
                   </button>
                   {planMenuOpen && (
-                    <ul className="rh-home-focus__menu" role="listbox">
+                    <ul className="rh-home-dash__menu" role="listbox">
                       {plans.map((p) => (
                         <li key={p.id} role="option" aria-selected={p.id === activePlanId}>
-                          <div className="rh-home-focus__menu-row">
-                            <button
-                              type="button"
-                              className={[
-                                'rh-home-focus__menu-item',
-                                p.id === activePlanId ? 'rh-home-focus__menu-item--active' : '',
-                              ]
-                                .filter(Boolean)
-                                .join(' ')}
-                              disabled={selectPlanLoadingId !== null}
-                              aria-busy={selectPlanLoadingId === p.id || undefined}
-                              onClick={() => selectPlan(p.id)}
-                            >
-                              {selectPlanLoadingId === p.id ? (
-                                <RhIcon as={Loader2} size={20} strokeWidth={RH_ICON_STROKE} className="ui-btn__spinner" />
-                              ) : null}
-                              <strong>{p.name}</strong>
-                              <span>
-                                {typeLabel(p.planType)} — {p.totalTargetPages} صفحة
-                              </span>
-                            </button>
-                            <Link
-                              className="rh-home-focus__menu-peek"
-                              to={appPath(`/app/awrad?plan=${encodeURIComponent(p.id)}`)}
-                              onClick={() => setPlanMenuOpen(false)}
-                            >
-                              {str('app.home_menu_awrad_link')}
-                            </Link>
-                          </div>
+                          <button
+                            type="button"
+                            className={[
+                              'rh-home-dash__menu-item',
+                              p.id === activePlanId ? 'rh-home-dash__menu-item--active' : '',
+                            ]
+                              .filter(Boolean)
+                              .join(' ')}
+                            disabled={selectPlanLoadingId !== null}
+                            aria-busy={selectPlanLoadingId === p.id || undefined}
+                            onClick={() => selectPlan(p.id)}
+                          >
+                            {selectPlanLoadingId === p.id ? (
+                              <RhIcon as={Loader2} size={20} strokeWidth={RH_ICON_STROKE} className="ui-btn__spinner" />
+                            ) : null}
+                            <strong>{p.name}</strong>
+                            <span>
+                              {typeLabel(p.planType)} — {p.totalTargetPages} صفحة
+                            </span>
+                          </button>
                         </li>
                       ))}
                     </ul>
                   )}
                 </>
               ) : (
-                <div className="rh-home-focus__picker-trigger rh-home-focus__picker-trigger--static" aria-hidden={false}>
-                  <span className="rh-home-focus__picker-title">{activePlan.name}</span>
-                  <span className="rh-home-focus__picker-meta">
+                <div className="rh-home-dash__picker rh-home-dash__picker--static">
+                  <span className="rh-home-dash__picker-name">{activePlan.name}</span>
+                  <span className="rh-home-dash__picker-meta">
                     {typeLabel(activePlan.planType)} · {activePlan.dailyPages} ص/يوم
                   </span>
                 </div>
@@ -353,131 +321,114 @@ export default function AppHomePage() {
             </div>
           </div>
 
-          <div className="rh-home-focus__progress-block">
-            <div className="rh-home-focus__progress-top">
-              <span className="rh-home-focus__pct">{pct.toFixed(1)}%</span>
-              <span className="rh-home-focus__pct-label">{str('app.home_progress_label')}</span>
+          <div className="rh-home-dash__hero">
+            <div className="rh-home-dash__hero-icon" aria-hidden>
+              <HomeDashMoodIcon mood={dashInsight.mood} />
             </div>
-            <div className="rh-home-focus__bar">
-              <div className="rh-home-focus__bar-fill" style={{ width: `${pct}%` }} />
+            <div className="rh-home-dash__hero-body">
+              {dashInsight.mood === 'rest' || dashInsight.owedPages <= 0 ? (
+                <div className="rh-home-dash__metric rh-home-dash__metric--soft">
+                  <span className="rh-home-dash__metric-val">{pct.toFixed(0)}%</span>
+                  <span className="rh-home-dash__metric-label">إنجاز الخطة الكلي</span>
+                </div>
+              ) : (
+                <div
+                  className={[
+                    'rh-home-dash__metric',
+                    dashInsight.mood === 'late' ? 'rh-home-dash__metric--pulse' : '',
+                  ]
+                    .filter(Boolean)
+                    .join(' ')}
+                >
+                  <span className="rh-home-dash__metric-val">{dashInsight.owedPages}</span>
+                  <span className="rh-home-dash__metric-label">صفحة متأخرة تراكمياً</span>
+                </div>
+              )}
+              <h2 className="rh-home-dash__title">{dashInsight.headline}</h2>
+              {dashInsight.detailLines.length > 0 ? (
+                <ul className="rh-home-dash__bullets">
+                  {dashInsight.detailLines.map((line) => (
+                    <li key={line}>{line}</li>
+                  ))}
+                </ul>
+              ) : null}
             </div>
-            <div className="rh-home-focus__stats">
+          </div>
+
+          {(dashInsight.yesterdayApplies || dashInsight.todayApplies) && (
+            <div className="rh-home-dash__timeline">
+              {dashInsight.yesterdayApplies ? (
+                <div className="rh-home-dash__daychip">
+                  <span className="rh-home-dash__daychip-label">أمس</span>
+                  <span className="rh-home-dash__daychip-val">
+                    {dashInsight.yesterdayLogged} / {dashInsight.dailyPages} صفحة
+                  </span>
+                </div>
+              ) : null}
+              {dashInsight.todayApplies ? (
+                <div className="rh-home-dash__daychip rh-home-dash__daychip--today">
+                  <span className="rh-home-dash__daychip-label">اليوم</span>
+                  <span className="rh-home-dash__daychip-val">
+                    {dashInsight.todayLogged} / {dashInsight.dailyPages} صفحة
+                  </span>
+                </div>
+              ) : null}
+            </div>
+          )}
+
+          <div className="rh-home-dash__progress">
+            <div className="rh-home-dash__progress-head">
+              <span className="rh-home-dash__progress-pct">{pct.toFixed(1)}%</span>
+              <span className="rh-home-dash__progress-label">{str('app.home_progress_label')}</span>
+            </div>
+            <div className="rh-home-dash__bar">
+              <div className="rh-home-dash__bar-fill" style={{ width: `${Math.min(100, pct)}%` }} />
+            </div>
+            <div className="rh-home-dash__stats">
               <div>
-                <span className="rh-home-focus__stat-val">
+                <span className="rh-home-dash__stat-num">
                   {progress.achievedPages} / {progress.targetPages || '—'}
                 </span>
-                <span className="rh-home-focus__stat-key">صفحات منجزة</span>
+                <span className="rh-home-dash__stat-key">منجز</span>
               </div>
               <div>
-                <span className="rh-home-focus__stat-val">{progress.remainingPages}</span>
-                <span className="rh-home-focus__stat-key">متبقية</span>
+                <span className="rh-home-dash__stat-num">{progress.remainingPages}</span>
+                <span className="rh-home-dash__stat-key">متبقٍ</span>
               </div>
               <div>
-                <span className="rh-home-focus__stat-val">{progress.reachedPage || 0}</span>
-                <span className="rh-home-focus__stat-key">آخر صفحة</span>
+                <span className="rh-home-dash__stat-num">{progress.reachedPage || 0}</span>
+                <span className="rh-home-dash__stat-key">آخر صفحة</span>
               </div>
               <div>
-                <span className="rh-home-focus__stat-val">{progress.nextFromPage}</span>
-                <span className="rh-home-focus__stat-key">ابدأ التالي من</span>
+                <span className="rh-home-dash__stat-num">{progress.nextFromPage}</span>
+                <span className="rh-home-dash__stat-key">التالي من</span>
               </div>
             </div>
           </div>
 
-          <div className="rh-home-focus__quick">
-            <div
-              className={[
-                'rh-home-streak',
-                `rh-home-streak--${homeWirdStatus.variant}`,
-              ].join(' ')}
-              role="status"
-              aria-live="polite"
-            >
-              <div className="rh-home-streak__icon" aria-hidden>
-                {homeWirdStatus.variant === 'rest' || !homeWirdStatus.appliesToday ? (
-                  <Coffee size={26} strokeWidth={1.75} />
-                ) : homeWirdStatus.variant === 'ok' ? (
-                  <CheckCircle2 size={26} strokeWidth={1.75} />
-                ) : homeWirdStatus.variant === 'urgent' ? (
-                  <Flame size={26} strokeWidth={1.75} />
-                ) : (
-                  <Sunrise size={26} strokeWidth={1.75} />
-                )}
-              </div>
-              <div className="rh-home-streak__body">
-                <p className="rh-home-streak__title">{homeStreakTitle}</p>
-                <p className="rh-home-streak__quote">{homeMotivationQuote}</p>
-              </div>
-            </div>
+          <p className="rh-home-dash__quote" role="note">
+            «{homeMotivationQuote}»
+          </p>
 
-            <p className="rh-home-focus__quick-label">اختصارات</p>
-            <div className="rh-home-focus__quick-btns">
-              {can(PH, 'home_log_wird') && showHomeLogWirdCumulative && (
-                <button
-                  type="button"
-                  className="rh-home-quick-icon rh-home-quick-icon--primary"
-                  title="تسجيل الورد للخطة الرئيسية"
-                  onClick={() => setHomeWirdOpen(true)}
-                >
-                  <NotebookPen size={22} strokeWidth={1.75} />
-                  <span>تسجيل الورد</span>
-                </button>
-              )}
-              {can(PH, 'home_quick_plans') && (
-                <Link className="rh-home-quick-icon" to={appPath('/app/plans')} title="إدارة الخطط">
-                  <ListOrdered size={22} strokeWidth={1.75} />
-                  <span>الخطط</span>
-                </Link>
-              )}
-              {can(PH, 'home_quick_welcome') && (
-                <Link className="rh-home-quick-icon" to={appPath('/app/welcome')} title="صفحة البداية داخل المنصة">
-                  <BookOpen size={22} strokeWidth={1.75} />
-                  <span>البداية</span>
-                </Link>
-              )}
-              {canAccessPage('halakat') && (
-                <Link className="rh-home-quick-icon" to={appPath('/app/halakat')} title={str('layout.nav_halakat')}>
-                  <UsersRound size={22} strokeWidth={1.75} />
-                  <span>{str('layout.nav_halakat')}</span>
-                </Link>
-              )}
-              {canAccessPage('dawrat') && (
-                <Link className="rh-home-quick-icon" to={appPath('/app/dawrat')} title={str('layout.nav_dawrat')}>
-                  <GraduationCap size={22} strokeWidth={1.75} />
-                  <span>{str('layout.nav_dawrat')}</span>
-                </Link>
-              )}
-              {canAccessPage('leave_request') && (
-                <Link
-                  className="rh-home-quick-icon"
-                  to={appPath('/app/leave-request')}
-                  title={str('layout.nav_leave_request')}
-                >
-                  <CalendarClock size={22} strokeWidth={1.75} />
-                  <span>{str('layout.nav_leave_request')}</span>
-                </Link>
-              )}
-              {canAccessPage('certificates') && (
-                <Link
-                  className="rh-home-quick-icon"
-                  to={appPath('/app/certificates')}
-                  title={str('layout.nav_certificates')}
-                >
-                  <ScrollText size={22} strokeWidth={1.75} />
-                  <span>{str('layout.nav_certificates')}</span>
-                </Link>
-              )}
-            </div>
-            {(can(PH, 'home_footer_awrad_link') || can(PH, 'home_footer_plans_link')) && (
-            <p className="rh-app-home__quick-extra">
-              {can(PH, 'home_footer_awrad_link') && (
-                <Link to={appPath(`/app/awrad?plan=${encodeURIComponent(activePlan.id)}`)}>صفحة الأوراد لهذه الخطة</Link>
-              )}
-              {can(PH, 'home_footer_awrad_link') && can(PH, 'home_footer_plans_link') && ' · '}
-              {can(PH, 'home_footer_plans_link') && (
-                <Link to={appPath('/app/plans')}>تعديل الخطط وتعيين الافتراضية</Link>
-              )}
-            </p>
-            )}
+          <div className="rh-home-dash__actions">
+            {can(PH, 'home_log_wird') && showHomeLogWirdCumulative ? (
+              <button
+                type="button"
+                className="rh-home-dash__btn rh-home-dash__btn--primary"
+                onClick={() => setHomeWirdOpen(true)}
+              >
+                <NotebookPen size={22} strokeWidth={1.75} />
+                تسجيل الورد السريع
+              </button>
+            ) : null}
+            <Link className="rh-home-dash__btn rh-home-dash__btn--secondary" to={awradHref}>
+              صفحة الأوراد — تفاصيل كاملة
+            </Link>
+            {can(PH, 'home_footer_plans_link') ? (
+              <Link className="rh-home-dash__link-quiet" to={appPath('/app/plans')}>
+                إدارة الخطط والافتراضية
+              </Link>
+            ) : null}
           </div>
 
           <HomeWirdModal
@@ -504,54 +455,18 @@ export default function AppHomePage() {
           />
         </section>
       ) : (
-        <section className="card rh-home-empty-focus">
-          <h3 className="rh-home-empty-focus__title">ابدأ بخطة</h3>
-          <p className="rh-home-empty-focus__text">
-            أنشئ خطة حفظ أو مراجعة لتظهر هنا نسبة الإنجاز والورد اليومي، ويمكنك تعيين خطة افتراضية من صفحة
-            الخطط.
-          </p>
-          <div className="rh-home-empty-focus__links">
-            <Link className="rh-home-empty-focus__link" to={appPath('/app/plans')}>
+        <section className="card rh-home-dash-empty">
+          <div className="rh-home-dash-empty__inner">
+            <h2 className="rh-home-dash-empty__title">ابدأ بخطة ورد</h2>
+            <p className="rh-home-dash-empty__text">
+              عند إنشاء خطة حفظ أو مراجعة تظهر هنا لوحة تفاعلية: التأخر التراكمي، أمس واليوم، ونسبة الإنجاز.
+            </p>
+            <Link className="rh-home-dash__btn rh-home-dash__btn--primary" to={appPath('/app/plans')}>
               الانتقال إلى الخطط
             </Link>
-            {canAccessPage('halakat') && (
-              <Link className="rh-home-empty-focus__link" to={appPath('/app/halakat')}>
-                الحلقات
-              </Link>
-            )}
-            {canAccessPage('dawrat') && (
-              <Link className="rh-home-empty-focus__link" to={appPath('/app/dawrat')}>
-                الدورات
-              </Link>
-            )}
-            <Link className="rh-home-empty-focus__link" to={appPath('/app/welcome')}>
-              صفحة البداية
-            </Link>
-            {canAccessPage('leave_request') && (
-              <Link className="rh-home-empty-focus__link" to={appPath('/app/leave-request')}>
-                {str('layout.nav_leave_request')}
-              </Link>
-            )}
-            {canAccessPage('certificates') && (
-              <Link className="rh-home-empty-focus__link" to={appPath('/app/certificates')}>
-                {str('layout.nav_certificates')}
-              </Link>
-            )}
           </div>
-          <CrossNav items={homeCrossItems} className="rh-app-home__cross rh-app-home__cross--empty" />
         </section>
       )}
-
-      <section className="card rh-app-home__hint">
-        <h3 className="rh-app-home__hint-title">لماذا الصفحة الرئيسية؟</h3>
-        <p className="lead rh-app-home__hint-text">
-          لحظة سريعة تذكّرك بما أنجزت وتدفعك للمتابعة — غيّر الخطة المعروضة من القائمة فوق متى شئت؛ الخطة
-          الافتراضية تُحدَّد من صفحة «الخطط» بنجمة الرئيسية. من قائمة الخطط أو أيقونة «أوراد» تنتقل مباشرة
-          لصفحة الأوراد لتلك الخطة دون فقدان الترابط بين الصفحات. أقسام «الحلقات» و«الدورات» تتيح إدارة
-          الحلقات والدورات والانضمام للعام من صفحات الاستكشاف، بنفس أسلوب صلاحيات وأعضاء الخطط. من «طلب إجازة»
-          و«الشهادات» يمكنك مراسلة الإدارة عبر واتساب أو الرسائل النصية إن عُرِّفت أرقام التواصل في الإعدادات.
-        </p>
-      </section>
     </div>
   )
 }
