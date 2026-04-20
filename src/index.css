@@ -5843,3 +5843,259 @@ a.rh-peek-btn {
   color: var(--rh-text-muted);
   line-height: 1.6;
 }
+
+/* ——— مشاعر الطلاب ——— */
+.rh-feelings-page {
+  display: flex;
+  flex-direction: column;
+  gap: var(--rh-space-4);
+  max-width: 980px;
+  margin-inline: auto;
+}
+
+.rh-feelings-page__hero {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: var(--rh-space-3);
+  align-items: start;
+}
+
+.rh-feelings-page__hero-icon {
+  width: 3rem;
+  height: 3rem;
+  border-radius: var(--rh-radius-md);
+  display: grid;
+  place-items: center;
+  background: color-mix(in srgb, var(--rh-primary) 12%, transparent);
+  color: var(--rh-primary);
+}
+
+.rh-feelings-page__title {
+  margin: 0 0 var(--rh-space-2);
+  font-size: var(--rh-text-xl);
+}
+
+.rh-feelings-page__lead {
+  margin: 0;
+  color: var(--rh-text-muted);
+  line-height: 1.7;
+}
+
+.rh-feelings-page__cross {
+  margin-top: var(--rh-space-3);
+}
+
+.rh-feelings__title,
+.rh-feelings-feed__title {
+  margin: 0 0 var(--rh-space-3);
+  font-size: var(--rh-text-lg);
+}
+
+.rh-feelings__grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--rh-space-3);
+}
+
+.rh-feelings__stars {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  margin-top: var(--rh-space-2);
+}
+
+.rh-feelings__star {
+  border: 1px solid var(--rh-border);
+  border-radius: var(--rh-radius-md);
+  width: 2.35rem;
+  height: 2.35rem;
+  display: grid;
+  place-items: center;
+  background: var(--rh-surface);
+  color: var(--rh-text-muted);
+  cursor: pointer;
+}
+
+.rh-feelings__star.is-active {
+  color: #f2a700;
+  border-color: color-mix(in srgb, #f2a700 45%, var(--rh-border));
+  background: color-mix(in srgb, #f2a700 10%, var(--rh-surface));
+}
+
+.rh-feelings__moods {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--rh-space-2);
+  margin-top: var(--rh-space-2);
+}
+
+.rh-feelings__mood {
+  border: 1px solid var(--rh-border);
+  border-radius: var(--rh-radius-pill);
+  padding: 0.35rem 0.7rem;
+  background: var(--rh-surface);
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  cursor: pointer;
+}
+
+.rh-feelings__mood.is-active {
+  border-color: color-mix(in srgb, var(--rh-primary) 45%, var(--rh-border));
+  background: color-mix(in srgb, var(--rh-primary-muted) 55%, var(--rh-surface));
+}
+
+.rh-feelings__actions {
+  margin-top: var(--rh-space-3);
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--rh-space-2);
+}
+
+.rh-feelings-feed__empty {
+  margin: 0;
+  color: var(--rh-text-muted);
+}
+
+.rh-feelings-feed__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--rh-space-3);
+}
+
+.rh-feelings-item {
+  border: 1px solid var(--rh-border);
+  border-radius: var(--rh-radius-md);
+  padding: var(--rh-space-3);
+  background: var(--rh-surface-tint);
+}
+
+.rh-feelings-item__head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: var(--rh-space-2);
+}
+
+.rh-feelings-item__profile {
+  display: flex;
+  gap: var(--rh-space-2);
+}
+
+.rh-feelings-item__profile p {
+  margin: 0.15rem 0 0;
+  color: var(--rh-text-muted);
+  font-size: var(--rh-text-xs);
+}
+
+.rh-feelings-item__avatar {
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: var(--rh-radius-pill);
+  object-fit: cover;
+}
+
+.rh-feelings-item__avatar--fallback {
+  display: grid;
+  place-items: center;
+  background: var(--rh-surface);
+}
+
+.rh-feelings-item__bird {
+  font-size: 1.25rem;
+}
+
+.rh-feelings-item__text {
+  margin: var(--rh-space-2) 0;
+  line-height: 1.75;
+}
+
+.rh-feelings-item__stars {
+  color: #f2a700;
+  font-size: 0.95rem;
+}
+
+.rh-feelings-item__actions {
+  margin-top: var(--rh-space-2);
+  display: flex;
+  gap: var(--rh-space-2);
+  flex-wrap: wrap;
+}
+
+.rh-feelings-feed__hint {
+  margin: var(--rh-space-3) 0 0;
+  font-size: var(--rh-text-sm);
+  color: var(--rh-text-muted);
+}
+
+/* الرئيسية: طيور المشاعر */
+.rh-home-feelings-birds__head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--rh-space-2);
+  margin-bottom: var(--rh-space-3);
+}
+
+.rh-home-feelings-birds__head h2 {
+  margin: 0;
+  font-size: var(--rh-text-lg);
+}
+
+.rh-home-feelings-birds__link {
+  color: var(--rh-primary);
+  text-decoration: none;
+  font-weight: 600;
+}
+
+.rh-home-feelings-birds__link:hover {
+  text-decoration: underline;
+}
+
+.rh-home-feelings-birds__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+  gap: var(--rh-space-2);
+}
+
+.rh-home-feelings-birds__item {
+  border: 1px solid var(--rh-border);
+  border-radius: var(--rh-radius-md);
+  background: var(--rh-surface-tint);
+  padding: var(--rh-space-2);
+}
+
+.rh-home-feelings-birds__bird {
+  display: inline-block;
+  font-size: 1.15rem;
+  margin-bottom: 0.15rem;
+}
+
+.rh-home-feelings-birds__text {
+  margin: 0;
+  font-size: var(--rh-text-sm);
+  line-height: 1.6;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.rh-home-feelings-birds__meta {
+  display: block;
+  margin-top: 0.35rem;
+  font-size: var(--rh-text-xs);
+  color: var(--rh-text-muted);
+}
+
+.rh-home-feelings-birds__empty {
+  margin: 0;
+  color: var(--rh-text-muted);
+}

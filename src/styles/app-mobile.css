@@ -243,6 +243,38 @@
   .rh-live-preview__scroll {
     max-height: min(66dvh, 28rem);
   }
+
+  .rh-feelings-page {
+    max-width: 100%;
+    min-width: 0;
+  }
+
+  .rh-feelings-page__hero {
+    grid-template-columns: 1fr;
+    text-align: center;
+  }
+
+  .rh-feelings-page__hero-icon {
+    justify-self: center;
+  }
+
+  .rh-feelings__grid {
+    grid-template-columns: 1fr;
+  }
+
+  .rh-feelings__actions .ui-btn {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .rh-home-feelings-birds__head {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .rh-home-feelings-birds__list {
+    grid-template-columns: 1fr;
+  }
 }
 
 @media (max-width: 520px) {
@@ -319,5 +351,10 @@
   .rh-settings-title,
   .rh-admin-branding__title {
     font-size: 1.2rem;
+  }
+
+  .rh-feelings-item__actions .ui-btn {
+    width: 100%;
+    justify-content: center;
   }
 }

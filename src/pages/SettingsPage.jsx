@@ -46,6 +46,7 @@ export default function SettingsPage() {
       { to: '/app/awrad', label: str('layout.nav_awrad') },
       { to: '/app/leave-request', label: str('layout.nav_leave_request') },
       { to: '/app/certificates', label: str('layout.nav_certificates') },
+      { to: '/app/feelings', label: str('layout.nav_feelings') },
       { to: '/app/welcome', label: str('layout.nav_welcome') },
     )
     if (isAdmin(user)) {

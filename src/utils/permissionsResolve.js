@@ -26,6 +26,7 @@ export function firstAccessiblePathFromPagesMap(pages) {
 function starterSyntheticPagesMap() {
   return {
     welcome: { actions: {} },
+    feelings: { actions: { feelings_create: true, feelings_edit_own: true, feelings_delete_own: true } },
     settings: { actions: { settings_theme: true, settings_edit_profile: true } },
     leave_request: { actions: {} },
     certificates: { actions: {} },

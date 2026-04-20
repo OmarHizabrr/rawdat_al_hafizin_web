@@ -26,6 +26,7 @@ const AwradPage = lazy(() => import('./pages/AwradPage.jsx'))
 const SettingsPage = lazy(() => import('./pages/SettingsPage.jsx'))
 const LeaveRequestPage = lazy(() => import('./pages/LeaveRequestPage.jsx'))
 const CertificatesPage = lazy(() => import('./pages/CertificatesPage.jsx'))
+const StudentFeelingsPage = lazy(() => import('./pages/StudentFeelingsPage.jsx'))
 const AdminUsersPage = lazy(() => import('./pages/AdminUsersPage.jsx'))
 const AdminDashboardPage = lazy(() => import('./pages/AdminDashboardPage.jsx'))
 const AdminPlanTypesPage = lazy(() => import('./pages/AdminPlanTypesPage.jsx'))
@@ -113,6 +114,14 @@ export default function App() {
                       element={
                         <PageGuard pageId="certificates">
                           <CertificatesPage />
+                        </PageGuard>
+                      }
+                    />
+                    <Route
+                      path="feelings"
+                      element={
+                        <PageGuard pageId="feelings">
+                          <StudentFeelingsPage />
                         </PageGuard>
                       }
                     />

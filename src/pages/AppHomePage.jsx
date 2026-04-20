@@ -1,4 +1,4 @@
-import { BookOpen, CheckCircle2, ChevronDown, Coffee, Flame, Loader2, NotebookPen, Sparkles, Sunrise } from 'lucide-react'
+import { BookOpen, CheckCircle2, ChevronDown, Coffee, Flame, Loader2, NotebookPen, Sparkles, Sunrise, Bird } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useLocation, useSearchParams } from 'react-router-dom'
 import { useSiteContent } from '../context/useSiteContent.js'
@@ -10,6 +10,7 @@ import { isAdmin } from '../config/roles.js'
 import { useAuth } from '../context/useAuth.js'
 import { usePermissions } from '../context/usePermissions.js'
 import { firestoreApi } from '../services/firestoreApi.js'
+import { loadRecentStudentFeelings } from '../services/studentFeelingsService.js'
 import { setUserDefaultPlanId } from '../services/userService.js'
 import { useOnClickOutside } from '../ui/hooks/useOnClickOutside.js'
 import { loadPlans, subscribePlans } from '../utils/plansStorage.js'
@@ -59,7 +60,7 @@ function HomeDashMoodIcon({ mood }) {
 
 export default function AppHomePage() {
   const { user } = useAuth()
-  const { can } = usePermissions()
+  const { can, canAccessPage } = usePermissions()
   const { typeLabel, branding, str } = useSiteContent()
   const { search } = useLocation()
   const [searchParams] = useSearchParams()
@@ -89,6 +90,7 @@ export default function AppHomePage() {
   const [homeWirdOpen, setHomeWirdOpen] = useState(false)
   const [homeWirdCheckInOpen, setHomeWirdCheckInOpen] = useState(false)
   const [homeNow, setHomeNow] = useState(() => new Date())
+  const [recentFeelings, setRecentFeelings] = useState([])
   const prevShouldOfferCheckInRef = useRef(false)
 
   useOnClickOutside(planMenuRef, () => setPlanMenuOpen(false), planMenuOpen)
@@ -114,6 +116,20 @@ export default function AppHomePage() {
       cancelled = true
     }
   }, [actingAsUser, contextUserId])
+
+  useEffect(() => {
+    let cancelled = false
+    loadRecentStudentFeelings(10)
+      .then((rows) => {
+        if (!cancelled) setRecentFeelings(rows)
+      })
+      .catch(() => {
+        if (!cancelled) setRecentFeelings([])
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [awrad.length, plans.length])
 
   const impersonatedSubject = actingAsUser && contextUserId ? subjectProfile : null
 
@@ -229,6 +245,7 @@ export default function AppHomePage() {
   }, [shouldOfferCheckIn])
 
   const awradHref = appPath(`/app/awrad?plan=${encodeURIComponent(activePlan?.id || '')}`)
+  const canVisitFeelings = canAccessPage('feelings')
 
   return (
     <div className="rh-app-home rh-app-home--dash">
@@ -262,6 +279,38 @@ export default function AppHomePage() {
           </p>
         )}
       </header>
+
+      {canVisitFeelings ? (
+      <section className="card rh-home-feelings-birds">
+        <div className="rh-home-feelings-birds__head">
+          <h2>طيور المشاعر</h2>
+          <Link className="rh-home-feelings-birds__link" to={appPath('/app/feelings')}>
+            صفحة مشاعر الطلاب
+          </Link>
+        </div>
+        {recentFeelings.length > 0 ? (
+          <ul className="rh-home-feelings-birds__list" aria-label="آخر مشاعر الطلاب">
+            {recentFeelings.slice(0, 8).map((f) => (
+              <li key={`${f.ownerUid}-${f.id}`} className="rh-home-feelings-birds__item">
+                <span className="rh-home-feelings-birds__bird" aria-hidden>
+                  {f.bird || '🐦'}
+                </span>
+                <p className="rh-home-feelings-birds__text">{f.text}</p>
+                <span className="rh-home-feelings-birds__meta">
+                  {f.displayName || 'طالب'} · {'★'.repeat(Math.max(1, f.rating || 1))}
+                </span>
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <p className="rh-home-feelings-birds__empty">
+            أضفوا مشاعركم الجميلة لتظهر هنا كطيور لطيفة.
+            {' '}
+            <Link to={appPath('/app/feelings')}>اكتب أول شعور</Link>
+          </p>
+        )}
+      </section>
+      ) : null}
 
       {activePlan && progress ? (
         <section className={`rh-home-dash rh-home-dash--app card rh-home-dash--mood-${dashInsight.mood}`}>
@@ -439,6 +488,12 @@ export default function AppHomePage() {
             <Link className="rh-home-dash__btn rh-home-dash__btn--secondary" to={awradHref}>
               صفحة الأوراد — تفاصيل كاملة
             </Link>
+            {canVisitFeelings ? (
+              <Link className="rh-home-dash__btn rh-home-dash__btn--secondary" to={appPath('/app/feelings')}>
+                <Bird size={20} strokeWidth={1.75} />
+                مشاعر الطلاب
+              </Link>
+            ) : null}
             {can(PH, 'home_footer_plans_link') ? (
               <Link className="rh-home-dash__link-quiet" to={appPath('/app/plans')}>
                 إدارة الخطط والافتراضية

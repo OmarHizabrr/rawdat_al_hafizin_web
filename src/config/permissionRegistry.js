@@ -14,6 +14,7 @@ export const PERMISSION_PAGE_IDS = {
   dawrat_explore: 'dawrat_explore',
   awrad: 'awrad',
   settings: 'settings',
+  feelings: 'feelings',
   foundation: 'foundation',
   leave_request: 'leave_request',
   certificates: 'certificates',
@@ -125,6 +126,16 @@ export const PERMISSION_PAGES = [
       { id: 'wird_create', label: 'إضافة ورد' },
       { id: 'wird_edit', label: 'بطاقة السجل: تعديل' },
       { id: 'wird_delete', label: 'بطاقة السجل: حذف' },
+    ],
+  },
+  {
+    id: PERMISSION_PAGE_IDS.feelings,
+    path: '/app/feelings',
+    label: 'مشاعر الطلاب',
+    actions: [
+      { id: 'feelings_create', label: 'إنشاء شعور جديد' },
+      { id: 'feelings_edit_own', label: 'تعديل شعوري' },
+      { id: 'feelings_delete_own', label: 'حذف شعوري' },
     ],
   },
   {

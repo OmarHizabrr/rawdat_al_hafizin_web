@@ -10,6 +10,7 @@ import {
   LayoutDashboard,
   NotebookPen,
   Home,
+  Bird,
   Menu,
   Puzzle,
   ScrollText,
@@ -47,6 +48,7 @@ export function MainLayout() {
       { to: '/app/dawrat', label: str('layout.nav_dawrat'), Icon: GraduationCap, pageId: 'dawrat' },
       { to: '/app/dawrat/explore', label: str('layout.nav_dawrat_explore'), Icon: Compass, pageId: 'dawrat_explore' },
       { to: '/app/awrad', label: str('layout.nav_awrad'), Icon: NotebookPen, pageId: 'awrad' },
+      { to: '/app/feelings', label: str('layout.nav_feelings'), Icon: Bird, pageId: 'feelings' },
       {
         to: '/app/leave-request',
         label: str('layout.nav_leave_request'),

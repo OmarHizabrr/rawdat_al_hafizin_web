@@ -67,6 +67,7 @@ export default function LeaveRequestPage() {
     base.push(
       { to: appLink('/app/awrad'), label: str('layout.nav_awrad') },
       { to: appLink('/app/welcome'), label: str('layout.nav_welcome') },
+      { to: appLink('/app/feelings'), label: str('layout.nav_feelings') },
       { to: appLink('/app/certificates'), label: str('layout.nav_certificates') },
       { to: appLink('/app/settings'), label: str('layout.nav_settings') },
     )

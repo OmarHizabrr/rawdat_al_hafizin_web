@@ -69,6 +69,7 @@ export default function CertificatesPage() {
     base.push(
       { to: appLink('/app/awrad'), label: str('layout.nav_awrad') },
       { to: appLink('/app/welcome'), label: str('layout.nav_welcome') },
+      { to: appLink('/app/feelings'), label: str('layout.nav_feelings') },
       { to: appLink('/app/leave-request'), label: str('layout.nav_leave_request') },
       { to: appLink('/app/settings'), label: str('layout.nav_settings') },
     )

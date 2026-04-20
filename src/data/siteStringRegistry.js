@@ -29,6 +29,7 @@ export const SITE_STRING_REGISTRY = [
     defaultValue: 'استكشاف الدورات',
   },
   { key: 'layout.nav_awrad', group: 'التنقل', label: 'قائمة: الأوراد', defaultValue: 'الأوراد' },
+  { key: 'layout.nav_feelings', group: 'التنقل', label: 'قائمة: مشاعر الطلاب', defaultValue: 'مشاعر الطلاب' },
   { key: 'layout.nav_settings', group: 'التنقل', label: 'قائمة: الإعدادات', defaultValue: 'الإعدادات' },
   { key: 'layout.nav_foundation', group: 'التنقل', label: 'قائمة: أساس الواجهة', defaultValue: 'أساس الواجهة' },
   { key: 'layout.nav_leave_request', group: 'التنقل', label: 'قائمة: طلب إجازة', defaultValue: 'طلب إجازة' },

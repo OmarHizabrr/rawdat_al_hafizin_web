@@ -49,6 +49,7 @@ export default function AdminDashboardPage() {
     { to: '/app', label: 'الرئيسية' },
     { to: '/app/plans', label: 'الخطط' },
     { to: '/app/awrad', label: 'الأوراد' },
+    { to: '/app/feelings', label: 'مشاعر الطلاب' },
     { to: '/app/leave-request', label: 'طلب إجازة' },
     { to: '/app/certificates', label: 'الشهادات' },
     { to: '/app/settings', label: 'الإعدادات' },
