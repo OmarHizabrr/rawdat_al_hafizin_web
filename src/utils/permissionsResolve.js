@@ -22,11 +22,13 @@ export function firstAccessiblePathFromPagesMap(pages) {
   return '/app/settings'
 }
 
-/** صفحات أولية للمستخدم الجديد: البداية + الإعدادات فقط */
+/** صفحات أولية للمستخدم الجديد: البداية والإعدادات وخدمات التواصل */
 function starterSyntheticPagesMap() {
   return {
     welcome: { actions: {} },
     settings: { actions: { settings_theme: true, settings_edit_profile: true } },
+    leave_request: { actions: {} },
+    certificates: { actions: {} },
   }
 }
 

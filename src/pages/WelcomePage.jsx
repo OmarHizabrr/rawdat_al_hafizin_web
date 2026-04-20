@@ -22,10 +22,14 @@ export default function WelcomePage() {
     if (canAccessPage('dawrat')) {
       base.push({ to: '/app/dawrat', label: str('layout.nav_dawrat') })
     }
-    base.push(
-      { to: '/app/awrad', label: str('layout.nav_awrad') },
-      { to: '/app/settings', label: str('layout.nav_settings') },
-    )
+    base.push({ to: '/app/awrad', label: str('layout.nav_awrad') })
+    if (canAccessPage('leave_request')) {
+      base.push({ to: '/app/leave-request', label: str('layout.nav_leave_request') })
+    }
+    if (canAccessPage('certificates')) {
+      base.push({ to: '/app/certificates', label: str('layout.nav_certificates') })
+    }
+    base.push({ to: '/app/settings', label: str('layout.nav_settings') })
     if (isAdmin(user)) {
       base.push({ to: '/app/admin', label: str('layout.nav_dashboard') })
       base.push({ to: '/app/admin/users', label: str('layout.nav_users') })

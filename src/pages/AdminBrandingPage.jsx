@@ -9,7 +9,8 @@ import { BRANDING_THEME_GROUPS } from '../data/brandingThemeFields.js'
 import { useAuth } from '../context/useAuth.js'
 import { useSiteContent } from '../context/useSiteContent.js'
 import { useTheme } from '../theme/useTheme.js'
-import { saveBranding } from '../services/siteConfigService.js'
+import { firestoreApi } from '../services/firestoreApi.js'
+import { saveBranding, saveContactPhones } from '../services/siteConfigService.js'
 import { sanitizeImageUrl } from '../utils/brandingAssets.js'
 import { CrossNav } from '../components/CrossNav.jsx'
 import { Button, Modal, TextAreaField, TextField, useToast } from '../ui/index.js'
@@ -22,7 +23,7 @@ function cloneThemeMap(map) {
 
 export default function AdminBrandingPage() {
   const { user } = useAuth()
-  const { branding } = useSiteContent()
+  const { branding, contactPhones } = useSiteContent()
   const { resolved: appColorScheme } = useTheme()
   const toast = useToast()
   const [siteName, setSiteName] = useState(branding.siteName)
@@ -37,6 +38,7 @@ export default function AdminBrandingPage() {
   const [darkSelectKey, setDarkSelectKey] = useState(0)
   const [previewMode, setPreviewMode] = useState(() => (appColorScheme === 'dark' ? 'dark' : 'light'))
   const [saveSubmitting, setSaveSubmitting] = useState(false)
+  const [contactPhonesDraft, setContactPhonesDraft] = useState([])
 
   const previewLogoSrc = useMemo(() => sanitizeImageUrl(logoUrl) || '/logo.png', [logoUrl])
 
@@ -60,6 +62,12 @@ export default function AdminBrandingPage() {
       setThemeDark(cloneThemeMap(branding.themeDark))
     })
   }, [branding.themeLight, branding.themeDark])
+
+  useEffect(() => {
+    startTransition(() => {
+      setContactPhonesDraft(contactPhones.map((r) => ({ ...r })))
+    })
+  }, [contactPhones])
 
   const setLightVar = useCallback((name, value) => {
     setThemeLight((prev) => {
@@ -124,7 +132,8 @@ export default function AdminBrandingPage() {
         themeLight,
         themeDark,
       })
-      toast.success('تم حفظ هوية الموقع.', 'تم')
+      await saveContactPhones(user, contactPhonesDraft)
+      toast.success('تم حفظ هوية الموقع وأرقام التواصل.', 'تم')
     } catch {
       toast.warning('تعذّر الحفظ.', 'تنبيه')
     } finally {
@@ -135,6 +144,9 @@ export default function AdminBrandingPage() {
   const crossItems = [
     { to: '/app/admin', label: 'لوحة التحكم' },
     { to: '/app', label: 'الرئيسية' },
+    { to: '/app/leave-request', label: 'طلب إجازة' },
+    { to: '/app/certificates', label: 'الشهادات' },
+    { to: '/app/settings', label: 'الإعدادات' },
   ]
 
   const renderThemePanel = (title, description, map, setVar, mode, onPreset, selectKey) => (
@@ -193,8 +205,8 @@ export default function AdminBrandingPage() {
         </div>
         <h1 className="rh-admin-branding__title">هوية الموقع</h1>
         <p className="rh-admin-branding__desc">
-          خطوات بسيطة: النصوص والشعار أولاً، ثم ألوان الوضع الفاتح والداكن عبر قائمة جاهزة أو منتقي الألوان. لا حاجة لفهم أسماء
-          المتغيرات التقنية — استخدم القوائم والألوان. احفظ في النهاية، أو استعد الافتراضي ثم احفظ.
+          خطوات بسيطة: النصوص والشعار وأرقام التواصل العامة أولاً، ثم ألوان الوضع الفاتح والداكن عبر قائمة جاهزة أو منتقي الألوان.
+          لا حاجة لفهم أسماء المتغيرات التقنية — استخدم القوائم والألوان. احفظ في النهاية، أو استعد الافتراضي ثم احفظ.
         </p>
       </header>
 
@@ -242,6 +254,58 @@ export default function AdminBrandingPage() {
           value={ogImagePath}
           onChange={(e) => setOgImagePath(e.target.value)}
         />
+      </section>
+
+      <section className="rh-admin-branding__form card">
+        <h2 className="rh-admin-branding__step-title">أرقام التواصل العامة</h2>
+        <p className="rh-admin-branding__step-desc">
+          تظهر في الإعدادات وفي صفحتي «طلب إجازة» و«الشهادات». يفضّل إدخال الرقم بصيغة دولية أو بداية ٠٥ للسعودية. زر
+          واتساب يفتح المحادثة، وزر الرسائل النصية بديل عند عدم توفر التطبيق.
+        </p>
+        <ul className="rh-admin-contact-phones-edit">
+          {contactPhonesDraft.map((row) => (
+            <li key={row.id} className="rh-admin-contact-phones-edit__row">
+              <TextField
+                label="التسمية (اختياري)"
+                hint="مثال: شؤون الطلاب"
+                value={row.label}
+                onChange={(e) => {
+                  const v = e.target.value
+                  setContactPhonesDraft((prev) => prev.map((r) => (r.id === row.id ? { ...r, label: v } : r)))
+                }}
+              />
+              <TextField
+                label="رقم الجوال"
+                hint="مثال: 0501234567 أو +966501234567"
+                value={row.phone}
+                onChange={(e) => {
+                  const v = e.target.value
+                  setContactPhonesDraft((prev) => prev.map((r) => (r.id === row.id ? { ...r, phone: v } : r)))
+                }}
+                dir="ltr"
+              />
+              <Button
+                type="button"
+                variant="ghost"
+                onClick={() => setContactPhonesDraft((prev) => prev.filter((r) => r.id !== row.id))}
+              >
+                حذف
+              </Button>
+            </li>
+          ))}
+        </ul>
+        <Button
+          type="button"
+          variant="secondary"
+          onClick={() =>
+            setContactPhonesDraft((prev) => [
+              ...prev,
+              { id: firestoreApi.getNewId('cphone'), label: '', phone: '' },
+            ])
+          }
+        >
+          إضافة رقم
+        </Button>
       </section>
 
       {renderThemePanel(

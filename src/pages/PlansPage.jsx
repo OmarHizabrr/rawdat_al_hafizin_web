@@ -10,6 +10,10 @@ import { usePermissions } from '../context/usePermissions.js'
 import { firestoreApi } from '../services/firestoreApi.js'
 import { setUserDefaultPlanId } from '../services/userService.js'
 import {
+  PLAN_RESOURCE_CHANNELS,
+  normalizePlanResourceLinks,
+} from '../utils/planResourceLinks.js'
+import {
   DAILY_LOGGING_ALLOW_OVER,
   DAILY_LOGGING_STRICT_CARRYOVER,
 } from '../utils/planDailyQuota.js'
@@ -43,6 +47,7 @@ import {
 import { RhIcon, RH_ICON_STROKE } from '../ui/RhIcon.jsx'
 import { CrossNav } from '../components/CrossNav.jsx'
 import { PeekButton } from '../components/PeekButton.jsx'
+import { PlanResourceLinksBlock } from '../components/PlanResourceLinksBlock.jsx'
 
 const WEEKDAYS = [
   { d: 0, label: 'الأحد' },
@@ -56,6 +61,20 @@ const WEEKDAYS = [
 
 function newId() {
   return firestoreApi.getNewId('plans')
+}
+
+function editorResourceLinksFromPlan(plan) {
+  const raw = plan?.resourceLinks
+  if (!Array.isArray(raw)) return []
+  return raw.map((row) => ({
+    id: String(row?.id ?? '').trim() || newId(),
+    channel:
+      row?.channel === 'telegram' || row?.channel === 'whatsapp' || row?.channel === 'other'
+        ? row.channel
+        : 'other',
+    customTitle: String(row?.customTitle ?? row?.customLabel ?? '').trim(),
+    url: String(row?.url ?? '').trim(),
+  }))
 }
 
 function planCanEdit(plan) {
@@ -168,6 +187,7 @@ export default function PlansPage() {
   const [dateEnd, setDateEnd] = useState('')
   const [useWeekdayFilter, setUseWeekdayFilter] = useState(false)
   const [weekdays, setWeekdays] = useState(() => new Set())
+  const [resourceLinks, setResourceLinks] = useState([])
 
   const volumeOptions = useMemo(
     () => VOLUMES.map((v) => ({ value: v.id, label: v.label, secondary: `حتى ${v.pages} صفحة` })),
@@ -345,6 +365,7 @@ export default function PlansPage() {
     setDailyLoggingMode(DAILY_LOGGING_ALLOW_OVER)
     setAllowCustomRecordingDate(false)
     setAllowBelowDailyPages(true)
+    setResourceLinks([])
   }
 
   const openAddModal = () => {
@@ -389,6 +410,7 @@ export default function PlansPage() {
     )
     setAllowCustomRecordingDate(Boolean(plan.allowCustomRecordingDate))
     setAllowBelowDailyPages(plan.allowBelowDailyPages !== false)
+    setResourceLinks(editorResourceLinksFromPlan(plan))
     setIsEditorOpen(true)
   }
 
@@ -457,6 +479,7 @@ export default function PlansPage() {
       dailyLoggingMode,
       allowCustomRecordingDate,
       allowBelowDailyPages,
+      resourceLinks: normalizePlanResourceLinks(resourceLinks),
     }
 
     const nextPlans = editingPlanId
@@ -649,8 +672,14 @@ export default function PlansPage() {
     base.push(
       { to: withUserCtx('/app/awrad'), label: str('layout.nav_awrad') },
       { to: withUserCtx('/app/welcome'), label: str('layout.nav_welcome') },
-      { to: withUserCtx('/app/settings'), label: str('layout.nav_settings') },
     )
+    if (canAccessPage('leave_request')) {
+      base.push({ to: withUserCtx('/app/leave-request'), label: str('layout.nav_leave_request') })
+    }
+    if (canAccessPage('certificates')) {
+      base.push({ to: withUserCtx('/app/certificates'), label: str('layout.nav_certificates') })
+    }
+    base.push({ to: withUserCtx('/app/settings'), label: str('layout.nav_settings') })
     if (isAdmin(user)) {
       base.push({ to: '/app/admin', label: str('layout.nav_dashboard') })
       base.push({ to: '/app/admin/users', label: str('layout.nav_users') })
@@ -792,6 +821,7 @@ export default function PlansPage() {
                     </li>
                   ))}
                 </ul>
+                <PlanResourceLinksBlock links={p.resourceLinks} className="rh-plans__saved-links" />
                 {!readOnly &&
                   (can(PP, 'plan_card_set_home') ||
                     (planCanManageMembers(p) && can(PP, 'plan_card_members')) ||
@@ -923,6 +953,93 @@ export default function PlansPage() {
             <span className="rh-segment__hint">أي مستخدم يستطيع الانضمام بمعرف الخطة</span>
           </button>
         </div>
+            </section>
+
+            <section className="rh-settings-card rh-plans__section">
+              <div className="rh-settings-card__head">
+                <h2 className="rh-settings-card__title">روابط وقنوات (اختياري)</h2>
+                <p className="rh-settings-card__subtitle">
+                  أضف روابط واتساب أو تيليجرام أو أي عنوان تسمّيه. تظهر بشكل مرتب على بطاقة الخطة وفي صفحة استكشاف الخطط
+                  العامة.
+                </p>
+              </div>
+              <div className="rh-plans__resource-links-editor">
+                {resourceLinks.map((row) => (
+                  <div key={row.id} className="rh-plans__resource-row">
+                    <div className="ui-field">
+                      <label className="ui-field__label" htmlFor={`plan-link-type-${row.id}`}>
+                        نوع الرابط
+                      </label>
+                      <select
+                        id={`plan-link-type-${row.id}`}
+                        className="ui-input"
+                        value={row.channel}
+                        onChange={(e) =>
+                          setResourceLinks((prev) =>
+                            prev.map((r) =>
+                              r.id === row.id ? { ...r, channel: e.target.value } : r,
+                            ),
+                          )
+                        }
+                      >
+                        {PLAN_RESOURCE_CHANNELS.map((c) => (
+                          <option key={c.value} value={c.value}>
+                            {c.label}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    {row.channel === 'other' ? (
+                      <TextField
+                        label="اسم الرابط"
+                        placeholder="مثال: قناة يوتيوب"
+                        value={row.customTitle}
+                        onChange={(e) =>
+                          setResourceLinks((prev) =>
+                            prev.map((r) =>
+                              r.id === row.id ? { ...r, customTitle: e.target.value } : r,
+                            ),
+                          )
+                        }
+                      />
+                    ) : null}
+                    <TextField
+                      label="العنوان (https://…)"
+                      placeholder="https://…"
+                      value={row.url}
+                      onChange={(e) =>
+                        setResourceLinks((prev) =>
+                          prev.map((r) => (r.id === row.id ? { ...r, url: e.target.value } : r)),
+                        )
+                      }
+                      dir="ltr"
+                    />
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="rh-plans__resource-remove"
+                      onClick={() => setResourceLinks((prev) => prev.filter((r) => r.id !== row.id))}
+                    >
+                      <RhIcon as={Trash2} size={16} strokeWidth={RH_ICON_STROKE} />
+                      حذف
+                    </Button>
+                  </div>
+                ))}
+                <Button
+                  type="button"
+                  variant="secondary"
+                  onClick={() =>
+                    setResourceLinks((prev) => [
+                      ...prev,
+                      { id: newId(), channel: 'whatsapp', customTitle: '', url: '' },
+                    ])
+                  }
+                >
+                  <RhIcon as={Plus} size={18} strokeWidth={RH_ICON_STROKE} />
+                  إضافة رابط
+                </Button>
+              </div>
             </section>
 
             <section className="rh-settings-card rh-plans__section">

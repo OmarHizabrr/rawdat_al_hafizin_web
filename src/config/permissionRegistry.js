@@ -15,6 +15,8 @@ export const PERMISSION_PAGE_IDS = {
   awrad: 'awrad',
   settings: 'settings',
   foundation: 'foundation',
+  leave_request: 'leave_request',
+  certificates: 'certificates',
 }
 
 /** @typedef {{ id: string, label: string }} PermissionActionDef */
@@ -139,6 +141,18 @@ export const PERMISSION_PAGES = [
     path: '/app/foundation',
     label: 'أساس الواجهة (تجريبي)',
     actions: [{ id: 'foundation_playground', label: 'أزرار المعاينة والتنبيهات التجريبية' }],
+  },
+  {
+    id: PERMISSION_PAGE_IDS.leave_request,
+    path: '/app/leave-request',
+    label: 'طلب إجازة',
+    actions: [],
+  },
+  {
+    id: PERMISSION_PAGE_IDS.certificates,
+    path: '/app/certificates',
+    label: 'الشهادات',
+    actions: [],
   },
 ]
 

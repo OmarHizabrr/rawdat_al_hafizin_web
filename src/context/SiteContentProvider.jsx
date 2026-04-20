@@ -8,6 +8,7 @@ import {
   subscribeSiteConfig,
 } from '../services/siteConfigService.js'
 import { useTheme } from '../theme/useTheme.js'
+import { normalizeContactPhones } from '../utils/contactPhones.js'
 import { sanitizeCssColor, sanitizeImageUrl } from '../utils/brandingAssets.js'
 import { SiteContentContext } from './siteContentContext.js'
 
@@ -50,6 +51,11 @@ export function SiteContentProvider({ children }) {
   }, [])
 
   const planTypes = useMemo(() => resolvePlanTypes(planTypeRows), [planTypeRows])
+
+  const contactPhones = useMemo(
+    () => normalizeContactPhones(configData?.contactPhones),
+    [configData?.contactPhones],
+  )
 
   const branding = useMemo(() => {
     const b = configData?.branding || {}
@@ -114,13 +120,14 @@ export function SiteContentProvider({ children }) {
       planTypes,
       planTypeRows,
       branding,
+      contactPhones,
       mergedStrings,
       str,
       typeLabel,
       loadError,
       registryDefaults,
     }),
-    [planTypes, planTypeRows, branding, mergedStrings, str, typeLabel, loadError],
+    [planTypes, planTypeRows, branding, contactPhones, mergedStrings, str, typeLabel, loadError],
   )
 
   return <SiteContentContext.Provider value={value}>{children}</SiteContentContext.Provider>

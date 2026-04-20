@@ -100,7 +100,7 @@ const PH = PERMISSION_PAGE_IDS.halakat
 
 export default function HalakatPage() {
   const { user } = useAuth()
-  const { can } = usePermissions()
+  const { can, canAccessPage } = usePermissions()
   const { branding, str } = useSiteContent()
   const toast = useToast()
   const { search } = useLocation()
@@ -367,16 +367,22 @@ export default function HalakatPage() {
       .finally(() => setMembersLoading(false))
   }
 
-  const crossItems = useMemo(
-    () => [
+  const crossItems = useMemo(() => {
+    const items = [
       { to: appLink('/app'), label: str('layout.nav_home') },
       { to: appLink('/app/plans'), label: str('layout.nav_plans') },
       { to: exploreHref, label: str('layout.nav_halakat_explore') },
       { to: appLink('/app/dawrat'), label: str('layout.nav_dawrat') },
-      { to: appLink('/app/settings'), label: str('layout.nav_settings') },
-    ],
-    [str, exploreHref, appLink],
-  )
+    ]
+    if (canAccessPage('leave_request')) {
+      items.push({ to: appLink('/app/leave-request'), label: str('layout.nav_leave_request') })
+    }
+    if (canAccessPage('certificates')) {
+      items.push({ to: appLink('/app/certificates'), label: str('layout.nav_certificates') })
+    }
+    items.push({ to: appLink('/app/settings'), label: str('layout.nav_settings') })
+    return items
+  }, [str, exploreHref, appLink, canAccessPage])
 
   return (
     <div className="rh-plans">

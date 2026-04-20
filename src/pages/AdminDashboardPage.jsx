@@ -27,7 +27,7 @@ const tiles = [
   {
     to: '/app/admin/branding',
     title: 'هوية الموقع',
-    desc: 'النصوص، الشعار برابط، صورة OG، وتجاوز ألوان الوضعين الفاتح والداكن على كامل الواجهة.',
+    desc: 'النصوص، الشعار برابط، صورة OG، أرقام التواصل العامة (واتساب/رسائل)، وتجاوز ألوان الوضعين الفاتح والداكن على كامل الواجهة.',
     Icon: Palette,
   },
   {
@@ -49,6 +49,8 @@ export default function AdminDashboardPage() {
     { to: '/app', label: 'الرئيسية' },
     { to: '/app/plans', label: 'الخطط' },
     { to: '/app/awrad', label: 'الأوراد' },
+    { to: '/app/leave-request', label: 'طلب إجازة' },
+    { to: '/app/certificates', label: 'الشهادات' },
     { to: '/app/settings', label: 'الإعدادات' },
   ]
 

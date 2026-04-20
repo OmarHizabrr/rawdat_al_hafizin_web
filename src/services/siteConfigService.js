@@ -1,6 +1,7 @@
 import { orderBy, query } from 'firebase/firestore'
 import { DEFAULT_PLAN_TYPES } from '../data/defaultPlanTypes.js'
 import { SITE_DESCRIPTION, SITE_NAME, SITE_OG_IMAGE_PATH, SITE_TITLE } from '../config/site.js'
+import { normalizeContactPhones } from '../utils/contactPhones.js'
 import { sanitizeCssColor, sanitizeImageUrl } from '../utils/brandingAssets.js'
 import { firestoreApi } from './firestoreApi.js'
 
@@ -137,6 +138,17 @@ export async function patchSiteStrings(actor, partial) {
   await firestoreApi.setData({
     docRef: ref,
     data: { strings: prev },
+    merge: true,
+    userData: actor ?? {},
+  })
+}
+
+export async function saveContactPhones(actor, phones) {
+  const ref = firestoreApi.getSiteConfigDoc()
+  const rows = normalizeContactPhones(phones)
+  await firestoreApi.setData({
+    docRef: ref,
+    data: { contactPhones: rows.length ? rows : null },
     merge: true,
     userData: actor ?? {},
   })

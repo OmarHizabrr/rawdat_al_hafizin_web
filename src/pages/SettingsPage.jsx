@@ -1,5 +1,6 @@
 import { UserRound } from 'lucide-react'
 import { useEffect, useMemo, useRef, useState } from 'react'
+import { ContactPhonesSection } from '../components/ContactPhonesSection.jsx'
 import { CrossNav } from '../components/CrossNav.jsx'
 import { ThemeModePicker } from '../components/ThemeModePicker.jsx'
 import { PERMISSION_PAGE_IDS } from '../config/permissionRegistry.js'
@@ -22,7 +23,7 @@ const PS = PERMISSION_PAGE_IDS.settings
 export default function SettingsPage() {
   const { user } = useAuth()
   const { can, canAccessPage } = usePermissions()
-  const { branding, str } = useSiteContent()
+  const { branding, contactPhones, str } = useSiteContent()
   const toast = useToast()
   const [draftName, setDraftName] = useState('')
   const [savingName, setSavingName] = useState(false)
@@ -43,6 +44,8 @@ export default function SettingsPage() {
     }
     base.push(
       { to: '/app/awrad', label: str('layout.nav_awrad') },
+      { to: '/app/leave-request', label: str('layout.nav_leave_request') },
+      { to: '/app/certificates', label: str('layout.nav_certificates') },
       { to: '/app/welcome', label: str('layout.nav_welcome') },
     )
     if (isAdmin(user)) {
@@ -123,6 +126,24 @@ export default function SettingsPage() {
         <p className="rh-settings-desc">إدارة مظهر المنصة وبيانات العرض في المنصة وحساب Google المرتبط.</p>
         <CrossNav items={settingsCrossItems} className="rh-settings__cross" />
       </header>
+
+      {contactPhones.length > 0 ? (
+        <ContactPhonesSection
+          phones={contactPhones}
+          title="أرقام التواصل"
+          subtitle="واتساب يفتح المحادثة مباشرة؛ استخدم «رسالة نصية» إن لم يتوفر واتساب."
+          className="rh-settings__contacts"
+        />
+      ) : (
+        <section className="rh-settings-card">
+          <div className="rh-settings-card__head">
+            <h2 className="rh-settings-card__title">أرقام التواصل</h2>
+            <p className="rh-settings-card__subtitle">
+              لم تُضف أرقام بعد. يضبطها مشرف الموقع من لوحة التحكم ← هوية الموقع ← أرقام التواصل العامة.
+            </p>
+          </div>
+        </section>
+      )}
 
       <section className="rh-settings-card">
         <div className="rh-settings-card__head">

@@ -61,6 +61,8 @@ export default function AdminUsersPage() {
       { to: '/app/plans', label: str('layout.nav_plans') },
       { to: '/app/awrad', label: str('layout.nav_awrad') },
       { to: '/app/welcome', label: str('layout.nav_welcome') },
+      { to: '/app/leave-request', label: str('layout.nav_leave_request') },
+      { to: '/app/certificates', label: str('layout.nav_certificates') },
       { to: '/app/settings', label: str('layout.nav_settings') },
     ],
     [str],

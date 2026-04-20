@@ -41,7 +41,7 @@ const PE = PERMISSION_PAGE_IDS.halakat_explore
 
 export default function ExploreHalakatPage() {
   const { user } = useAuth()
-  const { can } = usePermissions()
+  const { can, canAccessPage } = usePermissions()
   const { search } = useLocation()
   const { branding, str } = useSiteContent()
   const toast = useToast()
@@ -128,14 +128,20 @@ export default function ExploreHalakatPage() {
       { to: appLink('/app/halakat'), label: str('layout.nav_halakat') },
       { to: appLink('/app/plans'), label: str('layout.nav_plans') },
       { to: appLink('/app/dawrat'), label: str('layout.nav_dawrat') },
-      { to: appLink('/app/settings'), label: str('layout.nav_settings') },
     ]
+    if (canAccessPage('leave_request')) {
+      base.push({ to: appLink('/app/leave-request'), label: str('layout.nav_leave_request') })
+    }
+    if (canAccessPage('certificates')) {
+      base.push({ to: appLink('/app/certificates'), label: str('layout.nav_certificates') })
+    }
+    base.push({ to: appLink('/app/settings'), label: str('layout.nav_settings') })
     if (isAdmin(user)) {
       base.push({ to: '/app/admin', label: str('layout.nav_dashboard') })
       base.push({ to: '/app/admin/users', label: str('layout.nav_users') })
     }
     return base
-  }, [user, str, appLink])
+  }, [user, str, appLink, canAccessPage])
 
   return (
     <div className="rh-explore-plans">

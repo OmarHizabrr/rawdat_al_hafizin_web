@@ -21,7 +21,7 @@ const PF = PERMISSION_PAGE_IDS.foundation
 
 export default function FoundationPage() {
   const { user } = useAuth()
-  const { can } = usePermissions()
+  const { can, canAccessPage } = usePermissions()
   const { branding } = useSiteContent()
   const toast = useToast()
   const homeHref = user ? '/app' : '/'
@@ -72,6 +72,16 @@ export default function FoundationPage() {
             حقول موحّدة، قائمة منسدلة قابلة للبحث، أزرار بأنماط متعددة، ورسائل للمستخدم — جاهزة للبناء عليها في{' '}
             {branding.siteName}.
           </p>
+          {user &&
+          (canAccessPage('leave_request') ||
+            canAccessPage('certificates') ||
+            canAccessPage('settings')) ? (
+            <div className="foundation-service-links">
+              {canAccessPage('leave_request') && <Link to="/app/leave-request">طلب إجازة</Link>}
+              {canAccessPage('certificates') && <Link to="/app/certificates">الشهادات</Link>}
+              {canAccessPage('settings') && <Link to="/app/settings">الإعدادات</Link>}
+            </div>
+          ) : null}
         </div>
       </header>
 

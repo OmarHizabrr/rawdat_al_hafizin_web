@@ -1,5 +1,6 @@
 import {
   BookOpen,
+  CalendarClock,
   CheckCircle2,
   ChevronDown,
   Coffee,
@@ -8,6 +9,7 @@ import {
   ListOrdered,
   Loader2,
   NotebookPen,
+  ScrollText,
   Sparkles,
   Sunrise,
   UsersRound,
@@ -225,8 +227,14 @@ export default function AppHomePage() {
     base.push(
       { to: appPath('/app/awrad'), label: str('app.home_cross_awrad') },
       { to: appPath('/app/welcome'), label: str('app.home_cross_welcome') },
-      { to: appPath('/app/settings'), label: str('app.home_cross_settings') },
     )
+    if (canAccessPage('leave_request')) {
+      base.push({ to: appPath('/app/leave-request'), label: str('layout.nav_leave_request') })
+    }
+    if (canAccessPage('certificates')) {
+      base.push({ to: appPath('/app/certificates'), label: str('layout.nav_certificates') })
+    }
+    base.push({ to: appPath('/app/settings'), label: str('app.home_cross_settings') })
     if (isAdmin(user)) {
       base.push({ to: '/app/admin', label: str('layout.nav_dashboard') })
       base.push({ to: '/app/admin/users', label: str('app.home_cross_users') })
@@ -432,6 +440,26 @@ export default function AppHomePage() {
                   <span>{str('layout.nav_dawrat')}</span>
                 </Link>
               )}
+              {canAccessPage('leave_request') && (
+                <Link
+                  className="rh-home-quick-icon"
+                  to={appPath('/app/leave-request')}
+                  title={str('layout.nav_leave_request')}
+                >
+                  <CalendarClock size={22} strokeWidth={1.75} />
+                  <span>{str('layout.nav_leave_request')}</span>
+                </Link>
+              )}
+              {canAccessPage('certificates') && (
+                <Link
+                  className="rh-home-quick-icon"
+                  to={appPath('/app/certificates')}
+                  title={str('layout.nav_certificates')}
+                >
+                  <ScrollText size={22} strokeWidth={1.75} />
+                  <span>{str('layout.nav_certificates')}</span>
+                </Link>
+              )}
             </div>
             {(can(PH, 'home_footer_awrad_link') || can(PH, 'home_footer_plans_link')) && (
             <p className="rh-app-home__quick-extra">
@@ -493,6 +521,16 @@ export default function AppHomePage() {
             <Link className="rh-home-empty-focus__link" to={appPath('/app/welcome')}>
               صفحة البداية
             </Link>
+            {canAccessPage('leave_request') && (
+              <Link className="rh-home-empty-focus__link" to={appPath('/app/leave-request')}>
+                {str('layout.nav_leave_request')}
+              </Link>
+            )}
+            {canAccessPage('certificates') && (
+              <Link className="rh-home-empty-focus__link" to={appPath('/app/certificates')}>
+                {str('layout.nav_certificates')}
+              </Link>
+            )}
           </div>
           <CrossNav items={homeCrossItems} className="rh-app-home__cross rh-app-home__cross--empty" />
         </section>
@@ -504,7 +542,8 @@ export default function AppHomePage() {
           لحظة سريعة تذكّرك بما أنجزت وتدفعك للمتابعة — غيّر الخطة المعروضة من القائمة فوق متى شئت؛ الخطة
           الافتراضية تُحدَّد من صفحة «الخطط» بنجمة الرئيسية. من قائمة الخطط أو أيقونة «أوراد» تنتقل مباشرة
           لصفحة الأوراد لتلك الخطة دون فقدان الترابط بين الصفحات. أقسام «الحلقات» و«الدورات» تتيح إدارة
-          الحلقات والدورات والانضمام للعام من صفحات الاستكشاف، بنفس أسلوب صلاحيات وأعضاء الخطط.
+          الحلقات والدورات والانضمام للعام من صفحات الاستكشاف، بنفس أسلوب صلاحيات وأعضاء الخطط. من «طلب إجازة»
+          و«الشهادات» يمكنك مراسلة الإدارة عبر واتساب أو الرسائل النصية إن عُرِّفت أرقام التواصل في الإعدادات.
         </p>
       </section>
     </div>

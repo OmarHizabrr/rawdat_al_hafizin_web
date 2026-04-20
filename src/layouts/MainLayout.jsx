@@ -1,6 +1,7 @@
 import { Suspense, useCallback, useEffect, useMemo, useState } from 'react'
 import {
   BookOpen,
+  CalendarClock,
   ChevronsLeft,
   ChevronsRight,
   ClipboardList,
@@ -11,6 +12,7 @@ import {
   Home,
   Menu,
   Puzzle,
+  ScrollText,
   Settings,
   Users,
   UsersRound,
@@ -45,6 +47,13 @@ export function MainLayout() {
       { to: '/app/dawrat', label: str('layout.nav_dawrat'), Icon: GraduationCap, pageId: 'dawrat' },
       { to: '/app/dawrat/explore', label: str('layout.nav_dawrat_explore'), Icon: Compass, pageId: 'dawrat_explore' },
       { to: '/app/awrad', label: str('layout.nav_awrad'), Icon: NotebookPen, pageId: 'awrad' },
+      {
+        to: '/app/leave-request',
+        label: str('layout.nav_leave_request'),
+        Icon: CalendarClock,
+        pageId: 'leave_request',
+      },
+      { to: '/app/certificates', label: str('layout.nav_certificates'), Icon: ScrollText, pageId: 'certificates' },
       { to: '/app/settings', label: str('layout.nav_settings'), Icon: Settings, pageId: 'settings' },
       { to: '/app/foundation', label: str('layout.nav_foundation'), Icon: Puzzle, pageId: 'foundation' },
     ],

@@ -87,10 +87,20 @@ export default function AwradPage() {
     if (canAccessPage('dawrat')) {
       base.push({ to: appPathWithImpersonation('/app/dawrat'), label: str('layout.nav_dawrat') })
     }
-    base.push(
-      { to: appPathWithImpersonation('/app/welcome'), label: str('layout.nav_welcome') },
-      { to: appPathWithImpersonation('/app/settings'), label: str('layout.nav_settings') },
-    )
+    base.push({ to: appPathWithImpersonation('/app/welcome'), label: str('layout.nav_welcome') })
+    if (canAccessPage('leave_request')) {
+      base.push({
+        to: appPathWithImpersonation('/app/leave-request'),
+        label: str('layout.nav_leave_request'),
+      })
+    }
+    if (canAccessPage('certificates')) {
+      base.push({
+        to: appPathWithImpersonation('/app/certificates'),
+        label: str('layout.nav_certificates'),
+      })
+    }
+    base.push({ to: appPathWithImpersonation('/app/settings'), label: str('layout.nav_settings') })
     if (isAdmin(user)) {
       base.push({ to: '/app/admin', label: str('layout.nav_dashboard') })
       base.push({ to: '/app/admin/users', label: str('layout.nav_users') })

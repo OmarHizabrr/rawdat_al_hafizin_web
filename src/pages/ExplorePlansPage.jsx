@@ -18,6 +18,7 @@ import { getImpersonateUid, withImpersonationQuery } from '../utils/impersonatio
 import { Button, ScrollArea, TextField, useToast } from '../ui/index.js'
 import { RhIcon, RH_ICON_STROKE } from '../ui/RhIcon.jsx'
 import { CrossNav } from '../components/CrossNav.jsx'
+import { PlanResourceLinksBlock } from '../components/PlanResourceLinksBlock.jsx'
 
 function formatReminderAr(hhmm) {
   if (!hhmm || typeof hhmm !== 'string') return null
@@ -127,8 +128,14 @@ export default function ExplorePlansPage() {
     base.push(
       { to: appLink('/app/awrad'), label: str('layout.nav_awrad') },
       { to: appLink('/app/welcome'), label: str('layout.nav_welcome') },
-      { to: appLink('/app/settings'), label: str('layout.nav_settings') },
     )
+    if (canAccessPage('leave_request')) {
+      base.push({ to: appLink('/app/leave-request'), label: str('layout.nav_leave_request') })
+    }
+    if (canAccessPage('certificates')) {
+      base.push({ to: appLink('/app/certificates'), label: str('layout.nav_certificates') })
+    }
+    base.push({ to: appLink('/app/settings'), label: str('layout.nav_settings') })
     if (isAdmin(user)) {
       base.push({ to: '/app/admin', label: str('layout.nav_dashboard') })
       base.push({ to: '/app/admin/users', label: str('layout.nav_users') })
@@ -329,6 +336,8 @@ export default function ExplorePlansPage() {
                       </ul>
                     </div>
                   )}
+
+                  <PlanResourceLinksBlock links={p.resourceLinks} />
 
                   <p className="rh-explore-plans__meta-muted">
                     أُنشئت: {p.createdAt ? String(p.createdAt) : '—'} · حُدّثت:{' '}
