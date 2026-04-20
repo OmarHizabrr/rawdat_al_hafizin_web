@@ -135,14 +135,14 @@ export function MainLayout() {
       const planId = String(detail.planId || '').trim()
       const day = String(detail.day || '').trim()
       if (!planId || !day) return
-      const dawraId = `notification-overdue-${planId}-${day}`
+      const notificationId = `notification-overdue-${planId}-${day}`
       const title = 'تنبيه تأخر الورد'
       const body = detail.overdueSinceYmd
         ? `يوجد تأخر في الخطة (${detail.planName || planId}) منذ ${detail.overdueSinceYmd}. المتبقي: ${detail.owedPages || 0} صفحة.`
         : `يوجد تأخر في الخطة (${detail.planName || planId}). المتبقي: ${detail.owedPages || 0} صفحة.`
       upsertUserNotification({
         userId: user.uid,
-        dawraId,
+        notificationId,
         title,
         body,
         notificationType: 'wird_overdue',

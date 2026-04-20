@@ -11,7 +11,7 @@ function normalizeNotificationDoc(docSnap) {
   const raw = docSnap.data() || {}
   return {
     id: docSnap.id,
-    dawraId: docSnap.id,
+    notificationId: docSnap.id,
     kind: raw.kind || '',
     notificationType: raw.notificationType || '',
     title: raw.title || '',
@@ -30,7 +30,7 @@ function normalizeNotificationDoc(docSnap) {
 
 export function subscribeUserNotifications(userId, onNext) {
   if (!userId) return () => {}
-  const ref = firestoreApi.getUserDawratCollection(userId)
+  const ref = firestoreApi.getUserNotificationsCollection(userId)
   return firestoreApi.subscribeSnapshot(ref, (snapshot) => {
     const rows = snapshot.docs
       .map((d) => normalizeNotificationDoc(d))
@@ -42,7 +42,7 @@ export function subscribeUserNotifications(userId, onNext) {
 
 export async function upsertUserNotification({
   userId,
-  dawraId,
+  notificationId,
   title,
   body,
   notificationType = 'general',
@@ -52,13 +52,13 @@ export async function upsertUserNotification({
   owedPages = 0,
   userData = {},
 }) {
-  if (!userId || !dawraId) return
-  const ref = firestoreApi.getUserDawratDoc(userId, dawraId)
+  if (!userId || !notificationId) return
+  const ref = firestoreApi.getUserNotificationDoc(userId, notificationId)
   const nowIso = new Date().toISOString()
   await firestoreApi.setData({
     docRef: ref,
     data: {
-      id: dawraId,
+      id: notificationId,
       kind: 'notification',
       notificationType,
       title: String(title || '').trim() || 'إشعار',
@@ -80,7 +80,7 @@ export async function upsertUserNotification({
 
 export async function markUserNotificationRead(userId, dawraId, userData = {}) {
   if (!userId || !dawraId) return
-  const ref = firestoreApi.getUserDawratDoc(userId, dawraId)
+  const ref = firestoreApi.getUserNotificationDoc(userId, dawraId)
   await firestoreApi.updateData({
     docRef: ref,
     data: {

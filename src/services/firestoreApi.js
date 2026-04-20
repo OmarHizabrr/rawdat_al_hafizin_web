@@ -154,6 +154,28 @@ class FirestoreApi {
     return this.getDocument("notifications", notificationId);
   }
 
+  static USER_NOTIFICATION_COLL = "notifications";
+  static USER_NOTIFICATION_SUB = "notifications";
+
+  /** notifications/{userId}/notifications */
+  getUserNotificationsCollection(userId) {
+    return this.getSubCollection(
+      FirestoreApi.USER_NOTIFICATION_COLL,
+      userId,
+      FirestoreApi.USER_NOTIFICATION_SUB,
+    );
+  }
+
+  /** notifications/{userId}/notifications/{notificationId} */
+  getUserNotificationDoc(userId, notificationId) {
+    return this.getSubDocument(
+      FirestoreApi.USER_NOTIFICATION_COLL,
+      userId,
+      FirestoreApi.USER_NOTIFICATION_SUB,
+      notificationId,
+    );
+  }
+
   /** conversations */
   getConversationsCollection() {
     return this.getCollection("conversations");
