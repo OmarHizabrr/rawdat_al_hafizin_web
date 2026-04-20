@@ -257,11 +257,7 @@ export function HomeWirdModal({ open, onClose, activePlan, awrad, contextUserId,
             }}
             maxDate={parseYmdToLocalNoon(localYmd()) || undefined}
             minDate={
-              parseYmdToLocalNoon(
-                activePlan.useDateRange && activePlan.dateStart
-                  ? String(activePlan.dateStart).slice(0, 10)
-                  : planScheduleStartYmd(activePlan),
-              ) || undefined
+              parseYmdToLocalNoon(planScheduleStartYmd(activePlan)) || undefined
             }
           />
         )}

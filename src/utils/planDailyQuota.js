@@ -40,9 +40,13 @@ export function nextYmd(ymd) {
 /** أول يوم يُحتسب منه الالتزام التراكمي */
 export function planScheduleStartYmd(plan) {
   if (!plan) return localYmd()
-  if (plan.useDateRange && plan.dateStart) {
+  if (plan.scheduleStartYmd) {
+    const n = normalizeStoredCalendarDay(plan.scheduleStartYmd)
+    if (n) return n
+  }
+  if (plan.dateStart) {
     const n = normalizeStoredCalendarDay(plan.dateStart)
-    return n || String(plan.dateStart).slice(0, 10)
+    if (n) return n
   }
   const c = plan.createdAt
   if (typeof c === 'string' && /^\d{4}-\d{2}-\d{2}/.test(c)) return gregorianYmdStringToHijriYmd(c.slice(0, 10))
@@ -54,6 +58,8 @@ export function planScheduleStartYmd(plan) {
 /** هل ينطبق يوم الخطة (فترة + أيام الأسبوع) على هذا التاريخ؟ */
 export function planAppliesToYmd(plan, ymd) {
   if (!plan || !ymd) return false
+  const scheduleStart = planScheduleStartYmd(plan)
+  if (ymd < scheduleStart) return false
   if (plan.useDateRange && plan.dateStart && plan.dateEnd) {
     const ds = normalizeStoredCalendarDay(plan.dateStart) || String(plan.dateStart).slice(0, 10)
     const de = normalizeStoredCalendarDay(plan.dateEnd) || String(plan.dateEnd).slice(0, 10)

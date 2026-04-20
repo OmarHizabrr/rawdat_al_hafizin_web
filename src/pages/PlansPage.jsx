@@ -16,6 +16,8 @@ import {
 import {
   DAILY_LOGGING_ALLOW_OVER,
   DAILY_LOGGING_STRICT_CARRYOVER,
+  localYmd,
+  planScheduleStartYmd,
 } from '../utils/planDailyQuota.js'
 import { countDaysInRange, sessionsNeeded } from '../utils/planSchedule.js'
 import { subscribeAllUsers } from '../services/adminUsersService.js'
@@ -182,6 +184,7 @@ export default function PlansPage() {
   const [volumeState, setVolumeState] = useState(() => createInitialVolumeState())
   const [dailyPages, setDailyPages] = useState(5)
   const [reminderTime, setReminderTime] = useState('')
+  const [scheduleStartYmd, setScheduleStartYmd] = useState(() => localYmd())
   const [useDateRange, setUseDateRange] = useState(false)
   const [dateStart, setDateStart] = useState('')
   const [dateEnd, setDateEnd] = useState('')
@@ -303,6 +306,12 @@ export default function PlansPage() {
     return null
   }, [useDateRange, availableDaysInRange, neededSessions])
 
+  useEffect(() => {
+    if (!useDateRange) return
+    if (!scheduleStartYmd) return
+    setDateStart((prev) => (prev ? prev : scheduleStartYmd))
+  }, [useDateRange, scheduleStartYmd])
+
   const handleVolumesChange = (ids) => {
     const idSet = new Set(ids)
     setVolumeState((prev) => {
@@ -356,6 +365,7 @@ export default function PlansPage() {
     setVolumeState(createInitialVolumeState())
     setDailyPages(5)
     setReminderTime('')
+    setScheduleStartYmd(localYmd())
     setUseDateRange(false)
     setDateStart('')
     setDateEnd('')
@@ -397,8 +407,10 @@ export default function PlansPage() {
     setVolumeState(nextVolumeState)
     setDailyPages(Math.max(1, Number(plan.dailyPages) || 1))
     setReminderTime(plan.reminderTime ?? '')
+    const existingScheduleStart = planScheduleStartYmd(plan)
+    setScheduleStartYmd(existingScheduleStart)
     setUseDateRange(Boolean(plan.useDateRange))
-    setDateStart(plan.dateStart ?? '')
+    setDateStart(plan.dateStart ?? existingScheduleStart)
     setDateEnd(plan.dateEnd ?? '')
     setUseWeekdayFilter(Boolean(plan.useWeekdayFilter))
     setWeekdays(new Set(Array.isArray(plan.weekdayFilter) ? plan.weekdayFilter : []))
@@ -435,9 +447,17 @@ export default function PlansPage() {
       toast.warning('حدّد ورداً يومياً بعدد صفحات صحيح (١ على الأقل).', 'تنبيه')
       return
     }
+    if (!scheduleStartYmd) {
+      toast.warning('حدّد تاريخ بداية الخطة لبدء احتساب التراكمي.', 'تنبيه')
+      return
+    }
     if (useDateRange) {
       if (!dateStart || !dateEnd) {
         toast.warning('أدخل تاريخ البداية والنهاية للفترة.', 'تنبيه')
+        return
+      }
+      if (dateStart < scheduleStartYmd) {
+        toast.warning('بداية الفترة لا يمكن أن تكون قبل بداية الخطة.', 'تنبيه')
         return
       }
       if (dateEnd < dateStart) {
@@ -469,6 +489,7 @@ export default function PlansPage() {
       totalTargetPages: volumesSnapshot.reduce((a, x) => a + x.pagesTarget, 0),
       dailyPages,
       reminderTime: reminderTime.trim() || null,
+      scheduleStartYmd,
       useDateRange,
       dateStart: useDateRange ? dateStart : null,
       dateEnd: useDateRange ? dateEnd : null,
@@ -811,6 +832,7 @@ export default function PlansPage() {
                 <p className="rh-plans__saved-meta">
                   {p.totalTargetPages} صفحة — ورد {p.dailyPages} ص/يوم
                   {p.reminderTime && ` — تذكير ${formatReminderAr(p.reminderTime)}`}
+                  {p.scheduleStartYmd && ` — بداية الاحتساب ${p.scheduleStartYmd}`}
                   {p.useDateRange && p.dateStart && p.dateEnd && ` — ${p.dateStart} → ${p.dateEnd}`}
                   {p.weekdayLabels && ` — ${p.weekdayLabels}`}
                 </p>
@@ -1210,17 +1232,35 @@ export default function PlansPage() {
         )}
 
         <label className="rh-plans__toggle">
+          <span>بداية احتساب الخطة (إلزامي)</span>
+        </label>
+        <div className="rh-plans__dates-grid">
+          <RhDatePickerField label="تاريخ البداية" value={scheduleStartYmd} onChange={setScheduleStartYmd} />
+        </div>
+
+        <label className="rh-plans__toggle">
           <input type="checkbox" checked={useDateRange} onChange={(e) => setUseDateRange(e.target.checked)} />
           <span>تحديد فترة زمنية (من — إلى)</span>
         </label>
         {useDateRange && (
           <div className="rh-plans__dates-grid">
-            <RhDatePickerField label="من" value={dateStart} onChange={setDateStart} />
+            <RhDatePickerField
+              label="من"
+              value={dateStart}
+              onChange={setDateStart}
+              minDate={scheduleStartYmd ? parseYmdToLocalNoon(scheduleStartYmd) ?? undefined : undefined}
+            />
             <RhDatePickerField
               label="إلى"
               value={dateEnd}
               onChange={setDateEnd}
-              minDate={dateStart ? parseYmdToLocalNoon(dateStart) ?? undefined : undefined}
+              minDate={
+                dateStart
+                  ? parseYmdToLocalNoon(dateStart) ?? undefined
+                  : scheduleStartYmd
+                    ? parseYmdToLocalNoon(scheduleStartYmd) ?? undefined
+                    : undefined
+              }
             />
           </div>
         )}
@@ -1262,6 +1302,9 @@ export default function PlansPage() {
           <li>
             <strong>جلسات الورد التقريبية:</strong>{' '}
             {neededSessions === Infinity ? '—' : neededSessions}
+          </li>
+          <li>
+            <strong>بداية الاحتساب:</strong> {scheduleStartYmd || '—'}
           </li>
           {useDateRange && dateStart && dateEnd && (
             <li>

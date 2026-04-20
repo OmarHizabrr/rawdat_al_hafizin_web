@@ -630,11 +630,7 @@ export default function AwradPage() {
               }}
               maxDate={parseYmdToLocalNoon(localYmd()) || undefined}
               minDate={
-                parseYmdToLocalNoon(
-                  selectedPlan.useDateRange && selectedPlan.dateStart
-                    ? String(selectedPlan.dateStart).slice(0, 10)
-                    : planScheduleStartYmd(selectedPlan),
-                ) || undefined
+                parseYmdToLocalNoon(planScheduleStartYmd(selectedPlan)) || undefined
               }
             />
           )}

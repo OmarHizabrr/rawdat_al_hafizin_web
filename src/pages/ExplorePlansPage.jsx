@@ -307,6 +307,11 @@ export default function ExplorePlansPage() {
                     <li>
                       <strong>إجمالي الصفحات:</strong> {p.totalTargetPages ?? '—'}
                     </li>
+                    {p.scheduleStartYmd && (
+                      <li>
+                        <strong>بداية الاحتساب:</strong> {p.scheduleStartYmd}
+                      </li>
+                    )}
                     {p.reminderTime && (
                       <li>
                         <strong>التذكير:</strong> {formatReminderAr(p.reminderTime)}

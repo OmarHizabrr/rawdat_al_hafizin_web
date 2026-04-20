@@ -104,6 +104,7 @@ export function isoFromHijriYmd(ymd) {
 export function normalizePlanCalendarDays(plan) {
   if (!plan || typeof plan !== 'object') return plan
   const next = { ...plan }
+  if (next.scheduleStartYmd) next.scheduleStartYmd = normalizeStoredCalendarDay(next.scheduleStartYmd)
   if (next.dateStart) next.dateStart = normalizeStoredCalendarDay(next.dateStart)
   if (next.dateEnd) next.dateEnd = normalizeStoredCalendarDay(next.dateEnd)
   return next
