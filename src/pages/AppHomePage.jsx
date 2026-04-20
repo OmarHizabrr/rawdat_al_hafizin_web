@@ -31,7 +31,7 @@ import { useOnClickOutside } from '../ui/hooks/useOnClickOutside.js'
 import { loadPlans, subscribePlans } from '../utils/plansStorage.js'
 import { subscribeAwrad } from '../utils/awradStorage.js'
 import { buildAutoDefaultWirdAddRequest } from '../utils/autoLogDefaultWird.js'
-import { getHomeWirdDayStatus } from '../utils/homeWirdStatus.js'
+import { getHomeWirdDayStatus, shouldShowHomeLogWirdCumulative } from '../utils/homeWirdStatus.js'
 import {
   isCheckinDismissedForDay,
   isCheckinSnoozed,
@@ -163,6 +163,10 @@ export default function AppHomePage() {
     () => getHomeWirdDayStatus(activePlan, awrad, homeNow),
     [activePlan, awrad, homeNow],
   )
+  const showHomeLogWirdCumulative = useMemo(
+    () => shouldShowHomeLogWirdCumulative(activePlan, awrad, homeWirdStatus.todayYmd),
+    [activePlan, awrad, homeWirdStatus.todayYmd],
+  )
   const homeMotivationQuote = useMemo(
     () => pickHomeMotivationQuote(homeWirdStatus.todayYmd),
     [homeWirdStatus.todayYmd],
@@ -181,6 +185,7 @@ export default function AppHomePage() {
     homeNow.getTime()
     if (!activePlan || !progress || !contextUserId) return false
     if (!can(PH, 'home_log_wird')) return false
+    if (!showHomeLogWirdCumulative) return false
     if (homeWirdOpen) return false
     if (!homeWirdStatus.appliesToday || homeWirdStatus.isComplete) return false
     const ymd = homeWirdStatus.todayYmd
@@ -195,6 +200,7 @@ export default function AppHomePage() {
     contextUserId,
     can,
     homeWirdOpen,
+    showHomeLogWirdCumulative,
     homeWirdStatus.appliesToday,
     homeWirdStatus.isComplete,
     homeWirdStatus.todayYmd,
@@ -405,7 +411,7 @@ export default function AppHomePage() {
 
             <p className="rh-home-focus__quick-label">اختصارات</p>
             <div className="rh-home-focus__quick-btns">
-              {can(PH, 'home_log_wird') && (
+              {can(PH, 'home_log_wird') && showHomeLogWirdCumulative && (
                 <button
                   type="button"
                   className="rh-home-quick-icon rh-home-quick-icon--primary"
@@ -475,7 +481,7 @@ export default function AppHomePage() {
           </div>
 
           <HomeWirdModal
-            open={homeWirdOpen && can(PH, 'home_log_wird')}
+            open={homeWirdOpen && can(PH, 'home_log_wird') && showHomeLogWirdCumulative}
             onClose={() => setHomeWirdOpen(false)}
             activePlan={activePlan}
             awrad={awrad}

@@ -137,7 +137,7 @@ export function HomeWirdCheckInModal({
         <div className="rh-checkin-modal__row2">
           <Button type="button" variant="ghost" onClick={handleSnooze} disabled={busy}>
             <RhIcon as={BellRing} size={16} strokeWidth={RH_ICON_STROKE} />
-            ذكّرني لاحقاً
+            ذكّرني بعد دقيقتين
           </Button>
           <Button type="button" variant="ghost" onClick={handleNo} disabled={busy}>
             <RhIcon as={XCircle} size={16} strokeWidth={RH_ICON_STROKE} />

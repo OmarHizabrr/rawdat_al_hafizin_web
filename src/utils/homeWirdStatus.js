@@ -1,5 +1,7 @@
 import {
   DAILY_LOGGING_STRICT_CARRYOVER,
+  cumulativeLoggedThroughPlan,
+  cumulativeRequiredThrough,
   getPlanDailyLoggingMode,
   localYmd,
   maxAdditionalPagesForRecordingDay,
@@ -47,4 +49,28 @@ export function getHomeWirdDayStatus(plan, awrad, now = new Date()) {
   }
 
   return { appliesToday: true, isComplete, variant, todayYmd, hour }
+}
+
+/**
+ * صفحات الورد المتأخرة حتى نهاية يوم `ymd` (المطلوب التراكمي − المسجّل حتى ذلك اليوم).
+ * في وضع «تجاوز مسموح» يُحسب الفرق الفعلي (وليس سقفاً مفتوحاً).
+ */
+export function getCumulativePagesOwedThrough(plan, awrad, ymd) {
+  if (!plan?.id || !ymd) return 0
+  if (getPlanDailyLoggingMode(plan) === DAILY_LOGGING_STRICT_CARRYOVER) {
+    return maxAdditionalPagesForRecordingDay(plan, awrad, ymd, {})
+  }
+  const req = cumulativeRequiredThrough(plan, ymd)
+  const logged = cumulativeLoggedThroughPlan(plan, awrad, ymd)
+  return Math.max(0, req - logged)
+}
+
+/**
+ * زر «تسجيل الورد» السريع في الرئيسية: يظهر فقط إن كان على المستخدم ورد تراكمي
+ * لا يقل عن الورد اليومي للخطة (أي تأخر بيوم كامل على الأقل، أو أول يوم نشط ولم يُسجَّل بعد).
+ */
+export function shouldShowHomeLogWirdCumulative(plan, awrad, ymd) {
+  if (!plan?.id || !ymd) return false
+  const daily = Math.max(1, Number(plan.dailyPages) || 1)
+  return getCumulativePagesOwedThrough(plan, awrad, ymd) >= daily
 }

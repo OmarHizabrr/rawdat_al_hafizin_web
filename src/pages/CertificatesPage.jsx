@@ -53,7 +53,7 @@ export default function CertificatesPage() {
       lines.push(`— إعداد الطلب من حساب المشرف نيابةً عن المستخدم (${impersonateUid}) —`)
     }
     return lines.join('\n')
-  }, [fullName, purpose, notes, branding.siteName, impersonateUid, user?.uid])
+  }, [fullName, purpose, notes, branding.siteName, impersonateUid, user])
 
   const crossItems = useMemo(() => {
     const base = [

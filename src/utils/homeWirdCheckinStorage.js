@@ -1,4 +1,5 @@
-const SNOOZE_MS = 45 * 60 * 1000
+/** تأجيل نافذة «هل أكملت وردك اليوم؟» — إعادة العرض بعد هذه المدة */
+const SNOOZE_MS = 2 * 60 * 1000
 
 function safeKeys(contextUserId, ymd, planId) {
   if (!contextUserId || !ymd || !planId) return null
