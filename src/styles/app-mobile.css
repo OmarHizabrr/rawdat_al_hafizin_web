@@ -1,0 +1,323 @@
+/**
+ * تحسينات شاملة للموبايل والتابلت الضيّق (≤899px)
+ * — safe-area، منع التمرير الأفقي، بطاقات وصفحات خدمة، شريط علوي
+ */
+
+@media (max-width: 899px) {
+  body {
+    overflow-x: clip;
+  }
+
+  .rh-topbar {
+    padding-inline-start: max(var(--rh-space-2), env(safe-area-inset-left, 0px));
+    padding-inline-end: max(var(--rh-space-2), env(safe-area-inset-right, 0px));
+  }
+
+  .rh-icon-btn {
+    min-width: 2.75rem;
+    min-height: 2.75rem;
+  }
+
+  /* بطاقات عامة (صفحات التسويق والكتل) */
+  .card {
+    padding: var(--rh-space-4) var(--rh-space-3);
+    max-width: 100%;
+    min-width: 0;
+    overflow-x: clip;
+  }
+
+  .card h2 {
+    font-size: 1.05rem;
+    overflow-wrap: anywhere;
+  }
+
+  .content {
+    max-width: 100%;
+    margin-inline: auto;
+    padding-inline: max(1rem, env(safe-area-inset-left, 0px)) max(1rem, env(safe-area-inset-right, 0px));
+    padding-bottom: max(2rem, env(safe-area-inset-bottom, 0px));
+  }
+
+  /* صفحات الخدمات — إجازة، شهادات، … */
+  .rh-service-page {
+    max-width: 100%;
+    min-width: 0;
+    overflow-x: clip;
+    gap: var(--rh-space-3);
+  }
+
+  .rh-service-page__hero {
+    grid-template-columns: 1fr;
+    justify-items: stretch;
+    text-align: center;
+    padding: var(--rh-space-4) var(--rh-space-3);
+  }
+
+  .rh-service-page__hero-icon {
+    justify-self: center;
+  }
+
+  .rh-service-page__title {
+    font-size: clamp(1.05rem, 4.2vw, 1.35rem);
+    overflow-wrap: anywhere;
+    word-break: break-word;
+  }
+
+  .rh-service-page__lead {
+    text-align: start;
+    overflow-wrap: anywhere;
+  }
+
+  .rh-service-page__preview-pre {
+    max-width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    font-size: var(--rh-text-xs);
+    padding: var(--rh-space-2);
+  }
+
+  .rh-service-page__bulk {
+    padding: var(--rh-space-3);
+    max-width: 100%;
+    min-width: 0;
+    overflow-x: clip;
+  }
+
+  .rh-admin-contact-phones-edit__row {
+    min-width: 0;
+  }
+
+  /* تسجيل الدخول — هوامش آمنة كاملة */
+  .rh-login-page {
+    padding-inline: max(var(--rh-space-4), env(safe-area-inset-left, 0px))
+      max(var(--rh-space-4), env(safe-area-inset-right, 0px));
+    padding-bottom: max(var(--rh-space-6), env(safe-area-inset-bottom, 0px));
+  }
+
+  .rh-login-card {
+    padding: var(--rh-space-6) var(--rh-space-4);
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  .rh-login-title {
+    font-size: clamp(1.2rem, 5vw, 1.5rem);
+    overflow-wrap: anywhere;
+  }
+
+  /* الإعدادات */
+  .rh-settings {
+    max-width: 100%;
+    min-width: 0;
+  }
+
+  .rh-settings-header {
+    margin-bottom: var(--rh-space-5);
+  }
+
+  .rh-settings-title {
+    font-size: clamp(1.25rem, 5vw, 1.75rem);
+    overflow-wrap: anywhere;
+  }
+
+  .rh-settings-desc {
+    overflow-wrap: anywhere;
+  }
+
+  .rh-segment__btn {
+    min-height: 2.75rem;
+    -webkit-tap-highlight-color: color-mix(in srgb, var(--rh-primary) 12%, transparent);
+  }
+
+  .rh-settings-profile-form__actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .rh-settings-profile-form__actions .ui-btn {
+    justify-content: center;
+  }
+
+  /* لوحات الإدارة — أبطال عمودية وبطاقات عمود واحد */
+  .rh-admin-dashboard,
+  .rh-admin-plan-types,
+  .rh-admin-copy,
+  .rh-admin-branding {
+    max-width: 100%;
+    min-width: 0;
+  }
+
+  .rh-admin-dashboard__hero,
+  .rh-admin-plan-types__hero,
+  .rh-admin-copy__hero,
+  .rh-admin-branding__hero {
+    flex-direction: column;
+    align-items: stretch;
+    gap: var(--rh-space-3);
+  }
+
+  .rh-admin-dashboard__grid {
+    grid-template-columns: 1fr;
+  }
+
+  .rh-admin-plan-types__table-wrap {
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior-x: contain;
+  }
+
+  /* صفحات الخدمة — الشريط الجانبي لا يبقى لاصقاً على الشاشات الضيقة */
+  .rh-service-page__aside .rh-contact-phones {
+    position: static;
+    top: auto;
+  }
+
+  .rh-service-page__grid {
+    min-width: 0;
+  }
+
+  /* أزرار معاينة / عين */
+  .rh-peek-btn {
+    min-width: 2.75rem;
+    min-height: 2.75rem;
+  }
+
+  /* روابط التنقل داخل الصفحات */
+  .rh-cross-nav {
+    gap: var(--rh-space-2);
+  }
+
+  .rh-cross-nav__link {
+    min-height: 2.5rem;
+    max-width: 100%;
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+
+  /* بطاقات التواصل */
+  .rh-contact-phones__number {
+    overflow-wrap: anywhere;
+    word-break: break-word;
+  }
+
+  .rh-contact-phones__btn {
+    min-height: 2.75rem;
+    padding-inline: var(--rh-space-3);
+    -webkit-tap-highlight-color: color-mix(in srgb, var(--rh-primary) 12%, transparent);
+  }
+
+  .rh-contact-bulk__row {
+    gap: var(--rh-space-2);
+    padding: var(--rh-space-2) var(--rh-space-3);
+  }
+
+  .rh-contact-bulk__footer {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .rh-contact-bulk__footer .ui-btn {
+    justify-content: center;
+  }
+
+  /* هوية الموقع (الإدارة) */
+  .rh-admin-branding__split {
+    grid-template-columns: 1fr;
+  }
+
+  .rh-admin-branding__toolbar,
+  .rh-admin-branding__theme-actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .rh-admin-branding__toolbar .ui-btn,
+  .rh-admin-branding__theme-actions .ui-btn {
+    justify-content: center;
+  }
+
+  .rh-admin-branding__title,
+  .rh-admin-branding__desc {
+    overflow-wrap: anywhere;
+  }
+
+  .rh-live-preview__scroll {
+    max-height: min(66dvh, 28rem);
+  }
+}
+
+@media (max-width: 520px) {
+  .rh-topbar {
+    padding-inline-start: max(var(--rh-space-1), env(safe-area-inset-left, 0px));
+    padding-inline-end: max(var(--rh-space-1), env(safe-area-inset-right, 0px));
+  }
+
+  .rh-content {
+    padding-inline-start: max(var(--rh-space-2), env(safe-area-inset-left, 0px));
+    padding-inline-end: max(var(--rh-space-2), env(safe-area-inset-right, 0px));
+  }
+
+  .card {
+    padding: var(--rh-space-3) var(--rh-space-2);
+    border-radius: var(--rh-radius-lg);
+  }
+
+  .rh-service-page__hero {
+    padding: var(--rh-space-3) var(--rh-space-2);
+  }
+
+  .rh-service-page__hero-icon {
+    transform: scale(0.9);
+  }
+
+  .rh-service-page__title {
+    font-size: 1.05rem;
+  }
+
+  .rh-service-page__lead {
+    font-size: var(--rh-text-sm);
+  }
+
+  .rh-service-page__form .rh-service-page__h2,
+  .rh-contact-bulk__title,
+  .rh-contact-phones__title {
+    font-size: 1rem;
+  }
+
+  .rh-cross-nav__link {
+    width: 100%;
+    justify-content: center;
+    text-align: center;
+    min-height: 2.65rem;
+  }
+
+  .rh-contact-phones__actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .rh-contact-phones__btn {
+    justify-content: center;
+  }
+
+  .rh-contact-bulk__channels {
+    align-items: flex-start;
+    gap: var(--rh-space-2);
+  }
+
+  .rh-login-card {
+    padding: var(--rh-space-5) var(--rh-space-3);
+  }
+
+  .rh-settings-card,
+  .rh-admin-branding__form,
+  .rh-admin-branding__theme-panel,
+  .rh-admin-branding__toolbar,
+  .rh-admin-branding__theme-actions {
+    padding: var(--rh-space-3);
+  }
+
+  .rh-settings-title,
+  .rh-admin-branding__title {
+    font-size: 1.2rem;
+  }
+}
