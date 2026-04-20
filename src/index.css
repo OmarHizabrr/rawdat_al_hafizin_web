@@ -1646,6 +1646,12 @@ a.rh-sidebar__brand-link.rh-sidebar__brand-link--active {
   color: var(--rh-text-muted);
 }
 
+.rh-home-dash__backlog-since {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: color-mix(in srgb, var(--rh-danger) 86%, #7f1d1d);
+}
+
 .rh-home-dash__backlog-state {
   font-size: 0.73rem;
   font-weight: 700;
@@ -1664,6 +1670,7 @@ a.rh-sidebar__brand-link.rh-sidebar__brand-link--active {
 
 .rh-home-dash__backlog-item--pending .rh-home-dash__backlog-date,
 .rh-home-dash__backlog-item--pending .rh-home-dash__backlog-missing,
+.rh-home-dash__backlog-item--pending .rh-home-dash__backlog-since,
 .rh-home-dash__backlog-item--pending .rh-home-dash__backlog-state,
 .rh-home-dash__backlog-item--pending .rh-home-dash__backlog-cta {
   color: #fff;
@@ -1690,6 +1697,7 @@ a.rh-sidebar__brand-link.rh-sidebar__brand-link--active {
 
 .rh-home-dash__backlog-item--waiting .rh-home-dash__backlog-date,
 .rh-home-dash__backlog-item--waiting .rh-home-dash__backlog-missing,
+.rh-home-dash__backlog-item--waiting .rh-home-dash__backlog-since,
 .rh-home-dash__backlog-item--waiting .rh-home-dash__backlog-state,
 .rh-home-dash__backlog-item--waiting .rh-home-dash__backlog-cta {
   color: #fff;

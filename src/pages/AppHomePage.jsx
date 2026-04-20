@@ -927,6 +927,11 @@ export default function AppHomePage() {
                     <span className="rh-home-dash__backlog-missing">
                       المتبقي: {d.missing} صفحة
                     </span>
+                    {!d.isToday ? (
+                      <span className="rh-home-dash__backlog-since">
+                        متأخر منذ: {d.weekdayLabel} — {d.ymd}
+                      </span>
+                    ) : null}
                     <span className="rh-home-dash__backlog-state">
                       {d.isToday ? "بانتظار إكمال اليوم" : d.missing > 0 ? "متأخر — لم يُنجز بعد" : "مكتمل"}
                     </span>
