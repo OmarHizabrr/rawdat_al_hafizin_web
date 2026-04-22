@@ -6939,3 +6939,55 @@ a.rh-peek-btn {
     justify-content: flex-start;
   }
 }
+
+@media (max-width: 640px) {
+  .rh-admin-plan-types__toolbar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .rh-admin-plan-types__toolbar .ui-btn {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .rh-admin-plan-types__actions {
+    width: 100%;
+    justify-content: flex-start;
+  }
+
+  .rh-admin-users__modal-actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .rh-admin-users__modal-actions .ui-btn {
+    width: 100%;
+    justify-content: center;
+  }
+}
+
+@media (max-width: 420px) {
+  .rh-user-trigger__text {
+    display: none;
+  }
+
+  .rh-user-trigger {
+    width: 2.75rem;
+    max-width: 2.75rem;
+    padding: 0;
+    justify-content: center;
+  }
+
+  .rh-user-trigger__chev {
+    display: none;
+  }
+
+  .rh-admin-plan-types__table {
+    min-width: 36rem;
+  }
+
+  .rh-awrad__hero {
+    padding: var(--rh-space-3);
+  }
+}
