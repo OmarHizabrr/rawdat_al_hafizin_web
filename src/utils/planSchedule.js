@@ -28,3 +28,10 @@ export function sessionsNeeded(totalPages, dailyPages) {
   if (!dailyPages || dailyPages <= 0) return Infinity
   return Math.ceil(totalPages / dailyPages)
 }
+
+/** ورد يومي مقترح لملء فترة بعدد أيام جدولة معلوم (تقريب لأعلى) */
+export function dailyPagesForScheduleDays(totalPages, daysInPeriod) {
+  if (!totalPages || totalPages <= 0) return 1
+  if (!daysInPeriod || daysInPeriod <= 0) return null
+  return Math.max(1, Math.ceil(totalPages / daysInPeriod))
+}

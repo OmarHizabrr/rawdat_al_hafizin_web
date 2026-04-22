@@ -19,7 +19,11 @@ import {
   localYmd,
   planScheduleStartYmd,
 } from '../utils/planDailyQuota.js'
-import { countDaysInRange, sessionsNeeded } from '../utils/planSchedule.js'
+import {
+  countDaysInRange,
+  dailyPagesForScheduleDays,
+  sessionsNeeded,
+} from '../utils/planSchedule.js'
 import { subscribeAllUsers } from '../services/adminUsersService.js'
 import {
   PLAN_MEMBER_ROLES,
@@ -296,13 +300,29 @@ export default function PlansPage() {
     return countDaysInRange(dateStart, dateEnd, weekdayFilterArr)
   }, [useDateRange, dateStart, dateEnd, weekdayFilterArr])
 
-  const neededSessions = useMemo(() => sessionsNeeded(totalTargetPages, dailyPages), [totalTargetPages, dailyPages])
+  /** مع فترة زمنية كاملة يُشتق الورد اليومي من إجمالي الصفحات وأيام الجدولة */
+  const derivedDailyFromRange = useMemo(() => {
+    if (!useDateRange || availableDaysInRange == null || availableDaysInRange < 1 || totalTargetPages < 1) {
+      return null
+    }
+    return dailyPagesForScheduleDays(totalTargetPages, availableDaysInRange)
+  }, [useDateRange, availableDaysInRange, totalTargetPages])
+
+  const resolvedDailyPages = useMemo(() => {
+    if (derivedDailyFromRange != null) return derivedDailyFromRange
+    return Math.max(1, dailyPages)
+  }, [derivedDailyFromRange, dailyPages])
+
+  const neededSessions = useMemo(
+    () => sessionsNeeded(totalTargetPages, resolvedDailyPages),
+    [totalTargetPages, resolvedDailyPages],
+  )
 
   /** أقصى صفحات يمكن «استيعابها» تقريباً إذا التزمنا بكل يوم جدولة بمقدار الورد اليومي */
   const rangeCapacityPages = useMemo(() => {
-    if (!useDateRange || availableDaysInRange == null || !dailyPages || dailyPages < 1) return null
-    return availableDaysInRange * dailyPages
-  }, [useDateRange, availableDaysInRange, dailyPages])
+    if (!useDateRange || availableDaysInRange == null || !resolvedDailyPages || resolvedDailyPages < 1) return null
+    return availableDaysInRange * resolvedDailyPages
+  }, [useDateRange, availableDaysInRange, resolvedDailyPages])
 
   const rangeWarning = useMemo(() => {
     if (!useDateRange || availableDaysInRange == null || neededSessions === Infinity) return null
@@ -311,7 +331,7 @@ export default function PlansPage() {
         rangeCapacityPages != null
           ? ` سعة الفترة التقريبية (أيام الجدولة × الورد اليومي) = ${rangeCapacityPages} صفحة، وهي أقل من إجمالي الصفحات المستهدفة (${totalTargetPages}).`
           : ''
-      return `جلسات الورد هنا تُحسب كـ ⌈إجمالي الصفحات ÷ الورد اليومي⌉ = ⌈${totalTargetPages} ÷ ${dailyPages}⌉ = ${neededSessions} جلسة، وتُقارَن بعدد أيام الجدولة في الفترة (${availableDaysInRange} يوماً).${cap} زد الفترة، أو رفع «الورد اليومي» ليطابق صفحات يوم الحفظ في خطتك، أو خفّض إجمالي الصفحات.`
+      return `الأيام المطلوبة لإتمام الورد تُحسب كـ ⌈إجمالي الصفحات ÷ الورد اليومي⌉ = ⌈${totalTargetPages} ÷ ${resolvedDailyPages}⌉ = ${neededSessions} يوماً، وتُقارَن بعدد أيام الجدولة في الفترة (${availableDaysInRange} يوماً).${cap} زد الفترة، أو اضبط «الورد اليومي» ليطابق صفحات يوم الحفظ في خطتك، أو خفّض إجمالي الصفحات.`
     }
     return null
   }, [
@@ -320,7 +340,7 @@ export default function PlansPage() {
     neededSessions,
     rangeCapacityPages,
     totalTargetPages,
-    dailyPages,
+    resolvedDailyPages,
   ])
 
   useEffect(() => {
@@ -460,7 +480,7 @@ export default function PlansPage() {
       toast.warning('اختر مجلداً واحداً على الأقل.', 'تنبيه')
       return
     }
-    if (!dailyPages || dailyPages < 1) {
+    if (!useDateRange && (!dailyPages || dailyPages < 1)) {
       toast.warning('حدّد ورداً يومياً بعدد صفحات صحيح (١ على الأقل).', 'تنبيه')
       return
     }
@@ -492,6 +512,20 @@ export default function PlansPage() {
     const wdArr =
       useWeekdayFilter && weekdays.size > 0 && weekdays.size < 7 ? [...weekdays].sort((a, b) => a - b) : null
 
+    const totalPages = volumesSnapshot.reduce((a, x) => a + x.pagesTarget, 0)
+    let dailyToSave = Math.max(1, dailyPages)
+    if (useDateRange) {
+      const daysInRange = countDaysInRange(dateStart, dateEnd, wdArr)
+      if (!daysInRange || daysInRange < 1) {
+        toast.warning(
+          'لا توجد أيام جدولة ضمن الفترة مع الإعدادات الحالية. راجع التواريخ أو أيام الأسبوع.',
+          'تنبيه',
+        )
+        return
+      }
+      dailyToSave = Math.max(1, Math.ceil(totalPages / daysInRange))
+    }
+
     const nowIso = new Date().toISOString()
     const plan = {
       id: editingPlanId || newId(),
@@ -503,8 +537,8 @@ export default function PlansPage() {
       name: planName.trim() || `خطة ${new Date().toLocaleDateString('ar-SA')}`,
       planType,
       volumes: volumesSnapshot,
-      totalTargetPages: volumesSnapshot.reduce((a, x) => a + x.pagesTarget, 0),
-      dailyPages,
+      totalTargetPages: totalPages,
+      dailyPages: dailyToSave,
       reminderTime: reminderTime.trim() || null,
       scheduleStartYmd,
       useDateRange,
@@ -1141,19 +1175,27 @@ export default function PlansPage() {
             <section className="rh-settings-card rh-plans__section">
         <div className="rh-settings-card__head">
           <h2 className="rh-settings-card__title">الورد اليومي والجدولة</h2>
-          <p className="rh-settings-card__subtitle">عدد الصفحات في كل جلسة/يوم، ثم اختيار فترة زمنية و/أو أيام محددة من الأسبوع.</p>
+          <p className="rh-settings-card__subtitle">
+            عند تحديد فترة (من — إلى) يُحسب الورد اليومي تلقائياً من إجمالي الصفحات وأيام الجدولة في الفترة. بدون
+            فترة يمكنك ضبط الورد يدوياً. يمكن تقييد أيام الأسبوع أدناه.
+          </p>
         </div>
 
         <div className="rh-plans__daily-row">
           <div className="rh-plans__daily-field">
             <NumberStepField
               label="الورد اليومي (صفحات)"
-              hint="عدد الصفحات في كل جلسة."
-              value={dailyPages}
+              hint={
+                derivedDailyFromRange != null
+                  ? 'يُحسب تلقائياً: إجمالي الصفحات ÷ أيام الجدولة (تقريب لأعلى). عطّل الفترة لتعديل الورد يدوياً.'
+                  : 'عدد الصفحات في كل يوم جدولة.'
+              }
+              value={derivedDailyFromRange != null ? derivedDailyFromRange : dailyPages}
               onChange={setDailyPages}
               min={1}
               max={999}
               step={1}
+              disabled={derivedDailyFromRange != null}
             />
           </div>
           <div className="rh-plans__daily-field">
@@ -1329,7 +1371,7 @@ export default function PlansPage() {
             <strong>إجمالي الصفحات المستهدفة:</strong> {totalTargetPages}
           </li>
           <li>
-            <strong>جلسات الورد التقريبية:</strong>{' '}
+            <strong>الأيام المطلوبة (تقريباً):</strong>{' '}
             {neededSessions === Infinity ? '—' : neededSessions}
           </li>
           <li>
@@ -1357,8 +1399,8 @@ export default function PlansPage() {
           <>
             <p className="rh-plans__warn">{rangeWarning}</p>
             <p className="rh-plans__warn-footnote">
-              الحفظ غير ممنوع — التنبيه إرشادي. الخطة الورقية التي فيها أيام مراجعة فقط: فعّل «تقييد أيام الأسبوع»
-              واختر أيام الحفظ فقط (دون أيام المراجعة)، واضبط «الورد اليومي» ليساوي عدد الصفحات في يوم الحفظ (مثلاً ٦).
+              الحفظ غير ممنوع — التنبيه إرشادي. إن كانت خطتك تفصل أيام الحفظ عن المراجعة: فعّل «تقييد أيام الأسبوع»
+              واختر أيام الحفظ فقط، أو بدون فترة زمنية اضبط الورد يدوياً ليطابق صفحات يوم الحفظ.
             </p>
           </>
         )}
