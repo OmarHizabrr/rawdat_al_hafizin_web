@@ -27,8 +27,10 @@ const SettingsPage = lazy(() => import('./pages/SettingsPage.jsx'))
 const LeaveRequestPage = lazy(() => import('./pages/LeaveRequestPage.jsx'))
 const CertificatesPage = lazy(() => import('./pages/CertificatesPage.jsx'))
 const StudentFeelingsPage = lazy(() => import('./pages/StudentFeelingsPage.jsx'))
+const ApplicationRequestPage = lazy(() => import('./pages/ApplicationRequestPage.jsx'))
 const AdminUsersPage = lazy(() => import('./pages/AdminUsersPage.jsx'))
 const AdminDashboardPage = lazy(() => import('./pages/AdminDashboardPage.jsx'))
+const AdminApplicationRequestsPage = lazy(() => import('./pages/AdminApplicationRequestsPage.jsx'))
 const AdminPlanTypesPage = lazy(() => import('./pages/AdminPlanTypesPage.jsx'))
 const AdminSiteCopyPage = lazy(() => import('./pages/AdminSiteCopyPage.jsx'))
 const AdminBrandingPage = lazy(() => import('./pages/AdminBrandingPage.jsx'))
@@ -125,9 +127,11 @@ export default function App() {
                         </PageGuard>
                       }
                     />
+                    <Route path="application" element={<ApplicationRequestPage />} />
                     <Route path="settings" element={<PageGuard pageId="settings"><SettingsPage /></PageGuard>} />
                     <Route element={<AdminRoute />}>
                       <Route path="admin" element={<AdminDashboardPage />} />
+                      <Route path="admin/applications" element={<AdminApplicationRequestsPage />} />
                       <Route path="admin/plan-types" element={<AdminPlanTypesPage />} />
                       <Route path="admin/copy" element={<AdminSiteCopyPage />} />
                       <Route path="admin/branding" element={<AdminBrandingPage />} />

@@ -45,6 +45,9 @@ const db = getFirestore(app);
  *   dawrat/{dawraId} — بيانات الدورة
  *   members/{dawraId}/members/{userId} — الأعضاء
  *   Mydawrat/{userId}/Mydawrat/{dawraId} — مرآة قائمة المستخدم
+ *
+ * طلبات الالتحاق (profile request):
+ *   MyProfile/{userId}/MyProfile/{userId}
  */
 class FirestoreApi {
   static get Api() {
@@ -330,6 +333,9 @@ class FirestoreApi {
   static USER_DAWRA_MIRROR_COLL = "Mydawrat";
   static USER_DAWRA_MIRROR_SUB = "Mydawrat";
 
+  static USER_PROFILE_REQUEST_COLL = "MyProfile";
+  static USER_PROFILE_REQUEST_SUB = "MyProfile";
+
   /** Mydawrat/{userId}/Mydawrat */
   getUserDawratCollection(userId) {
     return this.getSubCollection(
@@ -346,6 +352,25 @@ class FirestoreApi {
       userId,
       FirestoreApi.USER_DAWRA_MIRROR_SUB,
       dawraId,
+    );
+  }
+
+  /** MyProfile/{userId}/MyProfile */
+  getUserProfileRequestCollection(userId) {
+    return this.getSubCollection(
+      FirestoreApi.USER_PROFILE_REQUEST_COLL,
+      userId,
+      FirestoreApi.USER_PROFILE_REQUEST_SUB,
+    );
+  }
+
+  /** MyProfile/{userId}/MyProfile/{userId} */
+  getUserProfileRequestDoc(userId) {
+    return this.getSubDocument(
+      FirestoreApi.USER_PROFILE_REQUEST_COLL,
+      userId,
+      FirestoreApi.USER_PROFILE_REQUEST_SUB,
+      userId,
     );
   }
 

@@ -1,4 +1,4 @@
-import { FileText, LayoutDashboard, Palette, Shapes, Shield, Users } from 'lucide-react'
+import { FileText, LayoutDashboard, Palette, Shapes, Shield, UserCheck, Users } from 'lucide-react'
 import { useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { useSiteContent } from '../context/useSiteContent.js'
@@ -35,6 +35,12 @@ const tiles = [
     title: 'المستخدمون',
     desc: 'إدارة الحسابات والأدوار (كما في الصفحة الحالية).',
     Icon: Users,
+  },
+  {
+    to: '/app/admin/applications',
+    title: 'طلبات الالتحاق',
+    desc: 'مراجعة بيانات طلاب الالتحاق، ثم القبول أو الرفض في أي وقت.',
+    Icon: UserCheck,
   },
 ]
 

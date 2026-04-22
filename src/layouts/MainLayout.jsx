@@ -68,6 +68,7 @@ export function MainLayout() {
     () => [
       { to: '/app/admin', label: str('layout.nav_dashboard'), Icon: LayoutDashboard },
       { to: '/app/admin/users', label: str('layout.nav_users'), Icon: Users },
+      { to: '/app/admin/applications', label: 'طلبات الالتحاق', Icon: Users },
     ],
     [str],
   )

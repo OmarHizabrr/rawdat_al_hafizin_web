@@ -5,6 +5,7 @@ import { subscribeAuth } from '../services/authService.js'
 import { firestoreApi } from '../services/firestoreApi.js'
 import { normalizeRole } from '../config/roles.js'
 import { ensureUserProfile } from '../services/userService.js'
+import { subscribeMyProfileRequest } from '../services/profileRequestService.js'
 
 function mergeAuthAndProfile(authUser, profileDoc) {
   if (!profileDoc) return authUser
@@ -18,11 +19,14 @@ export function AuthProvider({ children }) {
   const [user, setUser] = useState(null)
   const [loading, setLoading] = useState(true)
   const profileSnapUnsubRef = useRef(() => {})
+  const profileRequestUnsubRef = useRef(() => {})
 
   useEffect(() => {
     const unsubAuth = subscribeAuth((u) => {
       profileSnapUnsubRef.current()
       profileSnapUnsubRef.current = () => {}
+      profileRequestUnsubRef.current()
+      profileRequestUnsubRef.current = () => {}
 
       if (!u) {
         setUser(null)
@@ -41,6 +45,25 @@ export function AuthProvider({ children }) {
               prev && prev.uid === u.uid ? mergeAuthAndProfile(prev, d) : prev,
             )
           })
+          profileRequestUnsubRef.current = subscribeMyProfileRequest(
+            u.uid,
+            (row) => {
+              setUser((prev) => {
+                if (!prev || prev.uid !== u.uid) return prev
+                return {
+                  ...prev,
+                  profileRequestStatus: row?.status || 'none',
+                  profileRequestReviewedAt: row?.reviewedAt || null,
+                }
+              })
+            },
+            () => {
+              setUser((prev) => {
+                if (!prev || prev.uid !== u.uid) return prev
+                return { ...prev, profileRequestStatus: 'none', profileRequestReviewedAt: null }
+              })
+            },
+          )
         })
         .finally(() => {
           setLoading(false)
@@ -50,6 +73,8 @@ export function AuthProvider({ children }) {
       unsubAuth()
       profileSnapUnsubRef.current()
       profileSnapUnsubRef.current = () => {}
+      profileRequestUnsubRef.current()
+      profileRequestUnsubRef.current = () => {}
     }
   }, [])
 
