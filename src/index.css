@@ -570,6 +570,8 @@ a.rh-sidebar__brand-link.rh-sidebar__brand-link--active {
   font-weight: 700;
   color: var(--rh-text-muted);
   margin: 0;
+  flex: 1 1 auto;
+  min-width: 0;
 }
 
 .rh-topbar__home-link {
@@ -578,6 +580,11 @@ a.rh-sidebar__brand-link.rh-sidebar__brand-link--active {
   border-radius: var(--rh-radius-sm);
   padding: 0.2rem 0.4rem;
   margin: -0.2rem -0.4rem;
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 100%;
   transition:
     color 0.12s ease,
     background 0.12s ease;
@@ -5221,6 +5228,8 @@ a.rh-peek-btn {
 
 .rh-admin-plan-types__table-wrap {
   overflow-x: auto;
+  max-width: 100%;
+  -webkit-overflow-scrolling: touch;
 }
 
 .rh-admin-plan-types__table {
@@ -6706,4 +6715,132 @@ a.rh-peek-btn {
 
 .rh-home-feelings-birds__detail-link:hover {
   text-decoration: underline;
+}
+
+/* ——— تجاوب إضافي: شريط علوي، إدارة، خطط/حلقات، استكشاف، خدمات ——— */
+@media (max-width: 899px) {
+  .rh-topbar {
+    gap: var(--rh-space-2);
+    padding-inline: max(var(--rh-space-2), env(safe-area-inset-left, 0px))
+      max(var(--rh-space-2), env(safe-area-inset-right, 0px));
+  }
+
+  .rh-user-dropdown {
+    max-width: min(20rem, calc(100vw - 0.75rem - env(safe-area-inset-left, 0px) - env(safe-area-inset-right, 0px)));
+  }
+
+  .rh-user-trigger {
+    max-width: min(11rem, calc(100vw - 8.5rem));
+  }
+
+  .rh-explore-plans__scroll {
+    max-height: min(58dvh, 38rem);
+  }
+}
+
+@media (max-width: 640px) {
+  .rh-admin-dashboard__hero,
+  .rh-admin-plan-types__hero,
+  .rh-admin-copy__hero,
+  .rh-admin-branding__hero {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .rh-plans__hero-head {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .rh-plans__hero-actions {
+    align-items: stretch;
+    width: 100%;
+  }
+
+  .rh-plans__hero-actions .ui-btn {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .rh-plans__add-btn {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .rh-plans__hero {
+    padding: var(--rh-space-4) var(--rh-space-3);
+  }
+
+  .rh-service-page__hero {
+    grid-template-columns: 1fr;
+  }
+
+  .rh-service-page__hero-icon {
+    width: 3rem;
+    height: 3rem;
+  }
+
+  .rh-service-page__aside .rh-contact-phones {
+    position: static;
+  }
+
+  .rh-explore-plans__card {
+    padding: var(--rh-space-4) var(--rh-space-3);
+  }
+
+  .rh-explore-plans__card-name {
+    overflow-wrap: anywhere;
+    word-break: break-word;
+  }
+
+  .foundation-page .foundation-header {
+    padding-inline: max(var(--rh-space-4), env(safe-area-inset-left, 0px))
+      max(var(--rh-space-4), env(safe-area-inset-right, 0px));
+    padding-top: max(var(--rh-space-5), env(safe-area-inset-top, 0px));
+  }
+
+  .foundation-button-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .foundation-button-row .ui-btn {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .foundation-actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .foundation-actions .ui-btn {
+    width: 100%;
+    justify-content: center;
+  }
+}
+
+@media (max-width: 480px) {
+  .rh-plans__saved-head {
+    flex-wrap: wrap;
+  }
+
+  .rh-plans__card-actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .rh-plans__card-actions .ui-btn {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .rh-cross-nav {
+    font-size: var(--rh-text-xs);
+    line-height: 1.45;
+  }
+
+  .rh-settings-title {
+    font-size: clamp(1.35rem, 6vw, 1.75rem);
+  }
 }
