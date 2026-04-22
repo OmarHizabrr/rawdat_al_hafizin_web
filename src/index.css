@@ -2693,6 +2693,13 @@ a.rh-sidebar__brand-link.rh-sidebar__brand-link--active {
   margin-top: var(--rh-space-3);
 }
 
+.rh-app-welcome {
+  width: 100%;
+  max-width: min(42rem, 100%);
+  margin-inline: auto;
+  box-sizing: border-box;
+}
+
 .rh-app-home__cross--empty {
   margin-top: var(--rh-space-4);
   justify-content: center;
@@ -3939,6 +3946,7 @@ button.rh-home-quick-icon {
   margin-bottom: var(--rh-space-3);
   border-radius: var(--rh-radius-md);
   background: color-mix(in srgb, var(--rh-surface) 92%, var(--rh-border));
+  min-width: 0;
 }
 
 .rh-explore-plans__avatar {
@@ -6793,6 +6801,24 @@ a.rh-peek-btn {
     word-break: break-word;
   }
 
+  .rh-explore-plans__to-mine {
+    display: inline-flex;
+    width: 100%;
+    max-width: 100%;
+    justify-content: center;
+    box-sizing: border-box;
+  }
+
+  .rh-explore-plans__creator > div:last-child {
+    min-width: 0;
+    flex: 1;
+  }
+
+  .rh-profile-card {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
   .foundation-page .foundation-header {
     padding-inline: max(var(--rh-space-4), env(safe-area-inset-left, 0px))
       max(var(--rh-space-4), env(safe-area-inset-right, 0px));
@@ -6842,5 +6868,74 @@ a.rh-peek-btn {
 
   .rh-settings-title {
     font-size: clamp(1.35rem, 6vw, 1.75rem);
+  }
+}
+
+/* أوراد + بطاقات الاستكشاف (حلقات/دورات) + صف إدارة المستخدمين */
+@media (max-width: 560px) {
+  .rh-explore-plans__card-head {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .rh-explore-plans__card-head > .ui-btn {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .rh-explore-plans__join-inline {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .rh-explore-plans__join-inline .ui-btn {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .rh-explore-plans__facts li {
+    overflow-wrap: anywhere;
+  }
+
+  .rh-plans__saved-desc {
+    overflow-wrap: anywhere;
+    word-break: break-word;
+  }
+
+  .rh-awrad__stat {
+    overflow-wrap: anywhere;
+  }
+
+  .rh-awrad__item {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .rh-awrad__item-actions {
+    margin-inline-start: 0;
+    width: 100%;
+    justify-content: flex-end;
+    flex-wrap: wrap;
+  }
+
+  .rh-awrad__actions {
+    display: flex;
+    flex-direction: column;
+    gap: var(--rh-space-2);
+  }
+
+  .rh-awrad__actions .ui-btn {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .rh-admin-users__row--actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .rh-admin-users__peek-row {
+    margin-inline-start: 0;
+    justify-content: flex-start;
   }
 }
