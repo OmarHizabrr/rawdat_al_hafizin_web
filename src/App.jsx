@@ -92,6 +92,7 @@ export default function App() {
                   }
                 />
                 <Route element={<ProtectedRoute />}>
+                  <Route path="/app/application" element={<ApplicationRequestPage />} />
                   <Route path="/app" element={<MainLayout />}>
                     <Route index element={<PageGuard pageId="home"><AppHomePage /></PageGuard>} />
                     <Route path="welcome" element={<PageGuard pageId="welcome"><WelcomePage /></PageGuard>} />
@@ -127,7 +128,6 @@ export default function App() {
                         </PageGuard>
                       }
                     />
-                    <Route path="application" element={<ApplicationRequestPage />} />
                     <Route path="settings" element={<PageGuard pageId="settings"><SettingsPage /></PageGuard>} />
                     <Route element={<AdminRoute />}>
                       <Route path="admin" element={<AdminDashboardPage />} />
