@@ -336,15 +336,19 @@
 /* رسائل Toast */
 .ui-toast-region {
   position: fixed;
-  inset-inline-start: var(--rh-space-4);
+  inset-inline-start: max(var(--rh-space-3), env(safe-area-inset-left, 0px));
   inset-inline-end: auto;
-  bottom: var(--rh-space-4);
+  bottom: max(var(--rh-space-3), env(safe-area-inset-bottom, 0px));
   z-index: 1000;
   display: flex;
   flex-direction: column;
-  gap: var(--rh-space-3);
-  max-width: min(22rem, calc(100vw - 2rem));
-  pointer-events: none;
+  gap: var(--rh-space-2);
+  max-width: min(20rem, calc(100vw - 1.25rem - env(safe-area-inset-left, 0px) - env(safe-area-inset-right, 0px)));
+  max-height: min(34dvh, 13.5rem);
+  overflow-y: auto;
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
+  pointer-events: auto;
 }
 
 .ui-toast {
@@ -352,12 +356,15 @@
   display: flex;
   gap: var(--rh-space-3);
   align-items: flex-start;
-  padding: var(--rh-space-4);
+  padding: var(--rh-space-3);
   border-radius: var(--rh-radius-md);
   border: 1px solid var(--rh-border);
   background: var(--rh-surface);
   box-shadow: var(--rh-shadow-lg);
   animation: ui-toast-in 0.28s ease;
+  flex-shrink: 0;
+  max-height: min(28dvh, 11rem);
+  overflow: hidden;
 }
 
 @keyframes ui-toast-in {
@@ -382,6 +389,9 @@
 .ui-toast__body {
   flex: 1;
   min-width: 0;
+  min-height: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
 }
 
 .ui-toast__title {
@@ -395,6 +405,8 @@
   font-size: var(--rh-text-sm);
   color: var(--rh-text-muted);
   line-height: var(--rh-leading-tight);
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 .ui-toast__close {

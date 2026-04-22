@@ -78,6 +78,35 @@ const MOOD_BADGE_LABEL = {
   late: "حان التعويض",
 };
 
+const DISMISSED_BIRDS_KEY = "rh.home.dismissedBirdKeys";
+
+function readDismissedBirdKeys() {
+  try {
+    const raw = sessionStorage.getItem(DISMISSED_BIRDS_KEY);
+    const arr = JSON.parse(raw);
+    if (Array.isArray(arr))
+      return new Set(arr.filter((x) => typeof x === "string"));
+  } catch {
+    /* ignore */
+  }
+  return new Set();
+}
+
+function persistDismissedBirdKeys(next) {
+  try {
+    sessionStorage.setItem(
+      DISMISSED_BIRDS_KEY,
+      JSON.stringify([...next].slice(0, 40)),
+    );
+  } catch {
+    /* ignore */
+  }
+}
+
+function birdKey(feeling) {
+  return `${feeling?.ownerUid || "u"}:${feeling?.id || ""}`;
+}
+
 function HomeDashMoodIcon({ mood }) {
   const common = { size: 36, strokeWidth: 1.65 };
   switch (mood) {
@@ -173,11 +202,21 @@ function buildBacklogDays(plan, awrad, todayYmd, maxDays = 21) {
   return out;
 }
 
-function FlyingFeelingBird({ feeling, idx, mode, paused, onSingleClick }) {
+const BIRD_SWIPE_DISMISS_PX = 52;
+
+function FlyingFeelingBird({
+  feeling,
+  idx,
+  mode,
+  paused,
+  onSingleClick,
+  onDismissSwipe,
+}) {
   const [dragging, setDragging] = useState(false);
   const [dx, setDx] = useState(0);
   const [dy, setDy] = useState(0);
   const dragRef = useRef({ active: false, x: 0, y: 0, moved: false });
+  const offsetRef = useRef({ dx: 0, dy: 0 });
 
   const onPointerDown = (e) => {
     dragRef.current = {
@@ -186,6 +225,7 @@ function FlyingFeelingBird({ feeling, idx, mode, paused, onSingleClick }) {
       y: e.clientY,
       moved: false,
     };
+    offsetRef.current = { dx: 0, dy: 0 };
     e.currentTarget.setPointerCapture?.(e.pointerId);
   };
 
@@ -194,6 +234,7 @@ function FlyingFeelingBird({ feeling, idx, mode, paused, onSingleClick }) {
     const nx = e.clientX - dragRef.current.x;
     const ny = e.clientY - dragRef.current.y;
     if (Math.abs(nx) > 3 || Math.abs(ny) > 3) dragRef.current.moved = true;
+    offsetRef.current = { dx: nx, dy: ny };
     setDragging(true);
     setDx(nx);
     setDy(ny);
@@ -203,9 +244,16 @@ function FlyingFeelingBird({ feeling, idx, mode, paused, onSingleClick }) {
     if (!dragRef.current.active) return;
     const moved = dragRef.current.moved;
     dragRef.current.active = false;
+    const { dx: fx, dy: fy } = offsetRef.current;
+    const dist = Math.hypot(fx, fy);
     setDragging(false);
     setDx(0);
     setDy(0);
+    offsetRef.current = { dx: 0, dy: 0 };
+    if (moved && dist >= BIRD_SWIPE_DISMISS_PX && onDismissSwipe) {
+      onDismissSwipe(feeling);
+      return;
+    }
     if (!moved) onSingleClick?.(feeling);
   };
 
@@ -226,6 +274,7 @@ function FlyingFeelingBird({ feeling, idx, mode, paused, onSingleClick }) {
         ]
           .filter(Boolean)
           .join(" ")}
+        title="اسحب بعيداً لإخفاء الطائر — اضغط دون سحب لعرض التفاصيل"
         style={{
           transform: `translate(${dx}px, ${dy}px) scale(var(--bird-scale, 1))`,
         }}
@@ -305,6 +354,7 @@ export default function AppHomePage() {
   const [backlogConfirmYmd, setBacklogConfirmYmd] = useState("");
   const [pausedBirdIds, setPausedBirdIds] = useState({});
   const [activeFeelingDetail, setActiveFeelingDetail] = useState(null);
+  const [dismissedBirdKeys, setDismissedBirdKeys] = useState(readDismissedBirdKeys);
   const prevShouldOfferCheckInRef = useRef(false);
 
   useOnClickOutside(planMenuRef, () => setPlanMenuOpen(false), planMenuOpen);
@@ -483,14 +533,13 @@ export default function AppHomePage() {
     canVisitFeelings &&
     recentFeelings.length > 0 &&
     feelingsFlightMode !== FEELINGS_FLIGHT_MODE.OFF;
-  const flyingFeelings = useMemo(
-    () =>
-      recentFeelings.slice(
-        0,
-        feelingsFlightMode === FEELINGS_FLIGHT_MODE.CALM ? 5 : 8,
-      ),
-    [recentFeelings, feelingsFlightMode],
-  );
+  const flyingFeelings = useMemo(() => {
+    const cap =
+      feelingsFlightMode === FEELINGS_FLIGHT_MODE.CALM ? 5 : 8;
+    return recentFeelings
+      .slice(0, cap)
+      .filter((f) => !dismissedBirdKeys.has(birdKey(f)));
+  }, [recentFeelings, feelingsFlightMode, dismissedBirdKeys]);
 
   useEffect(() => {
     const onStorage = (e) => {
@@ -594,6 +643,26 @@ export default function AppHomePage() {
     }, 3000);
   }, []);
 
+  const onBirdDismissSwipe = useCallback((feeling) => {
+    const key = birdKey(feeling);
+    setDismissedBirdKeys((prev) => {
+      if (prev.has(key)) return prev;
+      const next = new Set(prev);
+      next.add(key);
+      persistDismissedBirdKeys(next);
+      return next;
+    });
+    setActiveFeelingDetail((cur) =>
+      cur && birdKey(cur) === birdKey(feeling) ? null : cur,
+    );
+    setPausedBirdIds((prev) => {
+      if (!prev[key]) return prev;
+      const next = { ...prev };
+      delete next[key];
+      return next;
+    });
+  }, []);
+
   const pendingBacklogDay = useMemo(
     () => backlogDays.find((d) => d.ymd === backlogConfirmYmd) || null,
     [backlogDays, backlogConfirmYmd],
@@ -667,6 +736,7 @@ export default function AppHomePage() {
                 mode={feelingsFlightMode}
                 paused={pausedBirdIds[key] === true}
                 onSingleClick={onBirdSingleClick}
+                onDismissSwipe={onBirdDismissSwipe}
               />
             );
           })}

@@ -168,7 +168,8 @@ export default function SettingsPage() {
             <div className="rh-settings-card__head" style={{ marginTop: 'var(--rh-space-4)' }}>
               <h3 className="rh-settings-card__title">حركة طيور المشاعر</h3>
               <p className="rh-settings-card__subtitle">
-                تتحكم بحركة الرسائل الطائرة في الصفحة الرئيسية: تعطيل كامل، حركة هادئة، أو حركة أسرع.
+                تتحكم بحركة الرسائل الطائرة في الصفحة الرئيسية: تعطيل كامل، حركة هادئة، أو حركة أسرع. يمكنك أيضاً سحب
+                أي طائر بعيداً بإصبعك أو بالفأرة لإخفائه حتى تحديث الصفحة (مثل إيماءة إغلاق على الجوال).
               </p>
             </div>
             <div className="rh-segment" role="radiogroup" aria-label="وضع حركة طيور المشاعر">

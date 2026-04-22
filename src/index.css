@@ -637,10 +637,11 @@ a.rh-sidebar__brand-link.rh-sidebar__brand-link--active {
   position: absolute;
   inset-inline-end: 0;
   top: calc(100% + var(--rh-space-2));
-  width: min(23rem, calc(100vw - 1.25rem));
-  max-height: min(70dvh, 32rem);
+  width: min(21rem, calc(100vw - 1.5rem - env(safe-area-inset-left, 0px) - env(safe-area-inset-right, 0px)));
+  max-height: min(38dvh, 19rem);
   display: flex;
   flex-direction: column;
+  min-height: 0;
   background: var(--rh-surface);
   border: 1px solid var(--rh-border);
   border-radius: var(--rh-radius-lg);
@@ -672,7 +673,11 @@ a.rh-sidebar__brand-link.rh-sidebar__brand-link--active {
 }
 
 .rh-notify__list {
-  overflow: auto;
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
   padding: var(--rh-space-2);
   display: flex;
   flex-direction: column;
@@ -702,6 +707,8 @@ a.rh-sidebar__brand-link.rh-sidebar__brand-link--active {
   font-size: var(--rh-text-sm);
   font-weight: 800;
   color: var(--rh-text);
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 .rh-notify__creator {
@@ -739,6 +746,9 @@ a.rh-sidebar__brand-link.rh-sidebar__brand-link--active {
   font-size: var(--rh-text-xs);
   color: var(--rh-text-muted);
   line-height: 1.6;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+  max-width: 100%;
 }
 
 .rh-notify__meta {
@@ -6291,6 +6301,30 @@ a.rh-peek-btn {
   gap: var(--rh-space-3);
 }
 
+@media (max-width: 640px) {
+  .rh-feelings-page__hero {
+    grid-template-columns: 1fr;
+  }
+
+  .rh-feelings-page__hero-icon {
+    width: 2.75rem;
+    height: 2.75rem;
+  }
+
+  .rh-feelings__grid {
+    grid-template-columns: 1fr;
+  }
+
+  .rh-feelings-item__actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .rh-feelings-item__actions .ui-btn {
+    justify-content: center;
+  }
+}
+
 .rh-feelings__stars {
   display: flex;
   flex-wrap: wrap;
@@ -6625,7 +6659,10 @@ a.rh-peek-btn {
   z-index: 71;
   inset-inline-end: max(1rem, env(safe-area-inset-right, 0px));
   bottom: max(1rem, env(safe-area-inset-bottom, 0px));
-  width: min(20rem, calc(100vw - 2rem));
+  width: min(20rem, calc(100vw - 2rem - env(safe-area-inset-left, 0px) - env(safe-area-inset-right, 0px)));
+  max-height: min(42dvh, 22rem);
+  overflow: auto;
+  -webkit-overflow-scrolling: touch;
   border: 1px solid var(--rh-border);
   border-radius: var(--rh-radius-lg);
   background: var(--rh-surface);
@@ -6655,6 +6692,8 @@ a.rh-peek-btn {
 .rh-home-feelings-birds__detail-text {
   margin: 0 0 var(--rh-space-2);
   line-height: 1.7;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 .rh-home-feelings-birds__detail-link {
