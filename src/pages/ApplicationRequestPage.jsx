@@ -17,11 +17,18 @@ const GENDER_OPTIONS = [
 ]
 
 const EDUCATION_OPTIONS = [
+  { value: 'أمي', label: 'أمي' },
+  { value: 'يقرأ ويكتب', label: 'يقرأ ويكتب' },
+  { value: 'روضة', label: 'روضة' },
   { value: 'ابتدائي', label: 'ابتدائي' },
   { value: 'إعدادي', label: 'إعدادي' },
   { value: 'ثانوي', label: 'ثانوي' },
+  { value: 'دبلوم', label: 'دبلوم' },
   { value: 'جامعي', label: 'جامعي' },
+  { value: 'ماجستير', label: 'ماجستير' },
+  { value: 'دكتوراه', label: 'دكتوراه' },
   { value: 'دراسات عليا', label: 'دراسات عليا' },
+  { value: 'أخرى', label: 'أخرى' },
 ]
 
 function defaultForm(user) {
@@ -116,68 +123,70 @@ export default function ApplicationRequestPage() {
   }
 
   return (
-    <div className="rh-settings" style={{ maxWidth: '760px' }}>
-      <header className="rh-settings-header">
-        <h1 className="rh-settings-title">طلب الالتحاق</h1>
-        <p className="rh-settings-desc">
+    <div className="rh-login-page rh-app-request-page">
+      <div className="rh-app-request-card">
+        <header className="rh-settings-header rh-app-request-header">
+          <h1 className="rh-settings-title">طلب الالتحاق</h1>
+          <p className="rh-settings-desc">
           نرجو تعبئة البيانات التالية بدقة. بعد الإرسال سيظهر الطلب في صفحة الطلبات لدى الإدارة للمراجعة.
-        </p>
-        <p className="rh-settings-footnote">حالة الطلب الحالية: <strong>{statusLabel}</strong></p>
-      </header>
+          </p>
+          <p className="rh-settings-footnote">حالة الطلب الحالية: <strong>{statusLabel}</strong></p>
+        </header>
 
-      <section className="rh-settings-card">
-        <TextField label="الاسم الرباعي" value={form.fullName} onChange={(e) => onChange('fullName', e.target.value)} />
-        <TextField label="رقم الهاتف" value={form.phone} onChange={(e) => onChange('phone', e.target.value)} />
-        <SearchableSelect
-          label="الجنسية"
-          options={COUNTRY_OPTIONS_AR}
-          value={form.nationality}
-          onChange={(v) => onChange('nationality', v)}
-          placeholder="اختر الجنسية"
-          searchPlaceholder="ابحث عن دولة..."
-        />
-        <TextField
-          label="مكان الإقامة الدائم"
-          value={form.permanentResidence}
-          onChange={(e) => onChange('permanentResidence', e.target.value)}
-        />
-        <TextField label="المحافظة أو المدينة" value={form.city} onChange={(e) => onChange('city', e.target.value)} />
-        <NumberStepField label="العمر" value={form.age} onChange={(v) => onChange('age', v)} min={10} max={100} />
-        <TextField label="البريد الإلكتروني" value={user?.email || form.email} disabled />
-        <SearchableSelect
-          label="الجنس"
-          options={GENDER_OPTIONS}
-          value={form.gender}
-          onChange={(v) => onChange('gender', v)}
-          placeholder="اختر الجنس"
-          searchPlaceholder="ابحث..."
-        />
-        <SearchableSelect
-          label="المستوى التعليمي"
-          options={EDUCATION_OPTIONS}
-          value={form.educationLevel}
-          onChange={(v) => onChange('educationLevel', v)}
-          placeholder="اختر المستوى"
-          searchPlaceholder="ابحث..."
-        />
-        <NumberStepField
-          label="مقدار حفظ القرآن (عدد الأجزاء)"
-          hint="يشترط حالياً حفظ 30 جزءاً لقبول الطلب."
-          value={form.quranMemorizedJuz}
-          onChange={(v) => onChange('quranMemorizedJuz', v)}
-          min={1}
-          max={30}
-        />
+        <section className="rh-settings-card rh-app-request-form">
+          <TextField label="الاسم الرباعي" value={form.fullName} onChange={(e) => onChange('fullName', e.target.value)} />
+          <TextField label="رقم الهاتف" value={form.phone} onChange={(e) => onChange('phone', e.target.value)} />
+          <SearchableSelect
+            label="الجنسية"
+            options={COUNTRY_OPTIONS_AR}
+            value={form.nationality}
+            onChange={(v) => onChange('nationality', v)}
+            placeholder="اختر الجنسية"
+            searchPlaceholder="ابحث عن دولة..."
+          />
+          <TextField
+            label="مكان الإقامة الدائم"
+            value={form.permanentResidence}
+            onChange={(e) => onChange('permanentResidence', e.target.value)}
+          />
+          <TextField label="المحافظة أو المدينة" value={form.city} onChange={(e) => onChange('city', e.target.value)} />
+          <NumberStepField label="العمر" value={form.age} onChange={(v) => onChange('age', v)} min={10} max={100} />
+          <TextField label="البريد الإلكتروني" value={user?.email || form.email} disabled />
+          <SearchableSelect
+            label="الجنس"
+            options={GENDER_OPTIONS}
+            value={form.gender}
+            onChange={(v) => onChange('gender', v)}
+            placeholder="اختر الجنس"
+            searchPlaceholder="ابحث..."
+          />
+          <SearchableSelect
+            label="المستوى التعليمي"
+            options={EDUCATION_OPTIONS}
+            value={form.educationLevel}
+            onChange={(v) => onChange('educationLevel', v)}
+            placeholder="اختر المستوى"
+            searchPlaceholder="ابحث..."
+          />
+          <NumberStepField
+            label="مقدار حفظ القرآن (عدد الأجزاء)"
+            hint="يشترط حالياً حفظ 30 جزءاً لقبول الطلب."
+            value={form.quranMemorizedJuz}
+            onChange={(v) => onChange('quranMemorizedJuz', v)}
+            min={1}
+            max={30}
+          />
 
-        <div className="rh-settings-profile-form__actions">
-          <Button type="button" variant="primary" onClick={onSubmit} loading={submitting}>
-            إرسال الطلب
-          </Button>
-          <Link to="/app/welcome" className="ui-btn ui-btn--ghost">
-            صفحة البداية
-          </Link>
-        </div>
-      </section>
+          <div className="rh-settings-profile-form__actions rh-app-request-actions">
+            <Button type="button" variant="primary" onClick={onSubmit} loading={submitting}>
+              إرسال الطلب
+            </Button>
+            <Link to="/app/welcome" className="ui-btn ui-btn--ghost">
+              صفحة البداية
+            </Link>
+          </div>
+        </section>
+      </div>
 
       <Modal
         open={showRejectedModal && row?.status === PROFILE_REQUEST_STATUS.REJECTED}

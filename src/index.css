@@ -1087,6 +1087,30 @@ a.rh-sidebar__brand-link.rh-sidebar__brand-link--active {
   text-decoration: underline;
 }
 
+.rh-app-request-page {
+  padding: var(--rh-space-5) var(--rh-space-4);
+  align-items: flex-start;
+}
+
+.rh-app-request-card {
+  width: 100%;
+  max-width: 760px;
+  margin-inline: auto;
+}
+
+.rh-app-request-header {
+  margin-bottom: var(--rh-space-4);
+  text-align: center;
+}
+
+.rh-app-request-form {
+  width: 100%;
+}
+
+.rh-app-request-actions .ui-btn {
+  min-width: 11rem;
+}
+
 .rh-app-home {
   display: flex;
   flex-direction: column;
@@ -6989,5 +7013,22 @@ a.rh-peek-btn {
 
   .rh-awrad__hero {
     padding: var(--rh-space-3);
+  }
+
+  .rh-app-request-page {
+    padding-inline: max(var(--rh-space-2), env(safe-area-inset-left, 0px))
+      max(var(--rh-space-2), env(safe-area-inset-right, 0px));
+    padding-top: max(var(--rh-space-4), env(safe-area-inset-top, 0px));
+  }
+
+  .rh-app-request-actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .rh-app-request-actions .ui-btn {
+    width: 100%;
+    min-width: 0;
+    justify-content: center;
   }
 }
