@@ -34,24 +34,22 @@ export default function LeaveRequestPage() {
       : `طلب إجازة — ${branding.siteTitle}`
   }, [actingAsUser, branding.siteTitle])
 
-  const messageBody = useMemo(() => {
-    const n = fullName.trim()
-    const d = details.trim()
-    const lines = [
-      'السلام عليكم ورحمة الله وبركاته',
-      '',
-      `طلب إجازة — ${branding.siteName}`,
-      '',
-      `الاسم الرباعي: ${n || '—'}`,
-      '',
-      'تفاصيل الطلب:',
-      d || '—',
-    ]
-    if (impersonateUid && user?.uid && impersonateUid !== user.uid) {
-      lines.push('', `— إعداد الطلب من حساب المشرف نيابةً عن المستخدم (${impersonateUid}) —`)
-    }
-    return lines.join('\n')
-  }, [fullName, details, branding.siteName, impersonateUid, user?.uid])
+  const n = fullName.trim()
+  const d = details.trim()
+  const lines = [
+    'السلام عليكم ورحمة الله وبركاته',
+    '',
+    `طلب إجازة — ${branding.siteName}`,
+    '',
+    `الاسم الرباعي: ${n || '—'}`,
+    '',
+    'تفاصيل الطلب:',
+    d || '—',
+  ]
+  if (impersonateUid && user?.uid && impersonateUid !== user.uid) {
+    lines.push('', `— إعداد الطلب من حساب المشرف نيابةً عن المستخدم (${impersonateUid}) —`)
+  }
+  const messageBody = lines.join('\n')
 
   const crossItems = useMemo(() => {
     const base = [

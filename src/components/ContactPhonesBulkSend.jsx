@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 import {
   normalizeContactPhones,
   normalizeTelegramHandle,
@@ -19,18 +19,15 @@ import { useToast } from '../ui/useToast.js'
 export function ContactPhonesBulkSend({ phones, messageBody, className = '' }) {
   const toast = useToast()
   const rows = useMemo(() => normalizeContactPhones(phones), [phones])
-  const [selectedIds, setSelectedIds] = useState(() => new Set())
+  // Default behavior: all contacts are selected unless explicitly deselected.
+  const [deselectedIds, setDeselectedIds] = useState(() => new Set())
   const [chWa, setChWa] = useState(true)
   const [chSms, setChSms] = useState(true)
   const [chTg, setChTg] = useState(true)
   const [opening, setOpening] = useState(false)
 
-  useEffect(() => {
-    setSelectedIds(new Set(rows.map((r) => r.id)))
-  }, [rows])
-
   const toggleContact = useCallback((id) => {
-    setSelectedIds((prev) => {
+    setDeselectedIds((prev) => {
       const next = new Set(prev)
       if (next.has(id)) next.delete(id)
       else next.add(id)
@@ -39,16 +36,16 @@ export function ContactPhonesBulkSend({ phones, messageBody, className = '' }) {
   }, [])
 
   const selectAll = useCallback(() => {
-    setSelectedIds(new Set(rows.map((r) => r.id)))
-  }, [rows])
+    setDeselectedIds(new Set())
+  }, [])
 
   const clearAll = useCallback(() => {
-    setSelectedIds(new Set())
-  }, [])
+    setDeselectedIds(new Set(rows.map((r) => r.id)))
+  }, [rows])
 
   const openChannels = useCallback(() => {
     const text = String(messageBody ?? '')
-    const selectedRows = rows.filter((r) => selectedIds.has(r.id))
+    const selectedRows = rows.filter((r) => !deselectedIds.has(r.id))
     if (!selectedRows.length) {
       toast.warning('حدّد جهة تواصل واحدة على الأقل.', 'تنبيه')
       return
@@ -96,7 +93,7 @@ export function ContactPhonesBulkSend({ phones, messageBody, className = '' }) {
         }
       }, i * 550)
     })
-  }, [rows, selectedIds, chWa, chSms, chTg, messageBody, toast])
+  }, [rows, deselectedIds, chWa, chSms, chTg, messageBody, toast])
 
   if (!rows.length) return null
 
@@ -146,7 +143,7 @@ export function ContactPhonesBulkSend({ phones, messageBody, className = '' }) {
               <label className="rh-contact-bulk__check">
                 <input
                   type="checkbox"
-                  checked={selectedIds.has(row.id)}
+                  checked={!deselectedIds.has(row.id)}
                   onChange={() => toggleContact(row.id)}
                 />
                 <span className="rh-contact-bulk__check-main">
