@@ -199,7 +199,7 @@ export default function AdminBrandingPage() {
     <div className="rh-admin-branding rh-admin-branding--split">
       <header className="rh-admin-branding__hero card">
         <div className="rh-admin-branding__head-row">
-          <Link to="/app/admin" className="rh-admin-back-link">
+          <Link to="/app/admin" className="rh-admin-plan-types__back">
             <RhIcon as={ArrowLeft} size={18} strokeWidth={RH_ICON_STROKE} /> لوحة التحكم
           </Link>
         </div>

@@ -5127,6 +5127,7 @@ a.rh-peek-btn {
 
 /* ——— لوحة التحكم وإعدادات الموقع ——— */
 .rh-admin-dashboard,
+.rh-admin-plan-types,
 .rh-admin-copy,
 .rh-admin-branding {
   display: flex;
@@ -5137,6 +5138,7 @@ a.rh-peek-btn {
 }
 
 .rh-admin-dashboard__hero,
+.rh-admin-plan-types__hero,
 .rh-admin-copy__hero,
 .rh-admin-branding__hero {
   display: flex;
@@ -5156,6 +5158,7 @@ a.rh-peek-btn {
 }
 
 .rh-admin-dashboard__title,
+.rh-admin-plan-types__title,
 .rh-admin-copy__title,
 .rh-admin-branding__title {
   font-size: var(--rh-text-xl);
@@ -5163,6 +5166,7 @@ a.rh-peek-btn {
 }
 
 .rh-admin-dashboard__desc,
+.rh-admin-plan-types__desc,
 .rh-admin-copy__desc,
 .rh-admin-branding__desc {
   margin: 0;
@@ -5171,14 +5175,16 @@ a.rh-peek-btn {
   font-size: var(--rh-text-sm);
 }
 
-.rh-admin-dashboard__code {
+.rh-admin-dashboard__code,
+.rh-admin-plan-types__table code {
   font-size: 0.85em;
   padding: 0.1em 0.35em;
   border-radius: 4px;
   background: color-mix(in srgb, var(--rh-surface-elevated) 80%, var(--rh-border));
 }
 
-.rh-admin-dashboard__cross {
+.rh-admin-dashboard__cross,
+.rh-admin-plan-types__cross {
   margin-top: calc(-1 * var(--rh-space-2));
 }
 
@@ -5225,12 +5231,13 @@ a.rh-peek-btn {
   font-weight: 600;
 }
 
+.rh-admin-plan-types__head-row,
 .rh-admin-copy__head-row,
 .rh-admin-branding__head-row {
   margin-bottom: var(--rh-space-2);
 }
 
-.rh-admin-back-link {
+.rh-admin-plan-types__back {
   display: inline-flex;
   align-items: center;
   gap: 0.35rem;
@@ -5239,15 +5246,58 @@ a.rh-peek-btn {
   text-decoration: none;
 }
 
-.rh-admin-back-link:hover {
+.rh-admin-plan-types__back:hover {
   text-decoration: underline;
 }
 
+.rh-admin-plan-types__toolbar,
 .rh-admin-copy__toolbar {
   display: flex;
   flex-wrap: wrap;
   gap: var(--rh-space-2);
   margin-top: var(--rh-space-3);
+}
+
+.rh-admin-plan-types__table-wrap {
+  overflow-x: auto;
+  max-width: 100%;
+  -webkit-overflow-scrolling: touch;
+}
+
+.rh-admin-plan-types__table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--rh-text-sm);
+}
+
+.rh-admin-plan-types__table th,
+.rh-admin-plan-types__table td {
+  padding: var(--rh-space-2) var(--rh-space-3);
+  text-align: start;
+  border-bottom: 1px solid var(--rh-border);
+}
+
+.rh-admin-plan-types__table th {
+  color: var(--rh-text-muted);
+  font-weight: 600;
+}
+
+.rh-admin-plan-types__hint {
+  max-width: 320px;
+  color: var(--rh-text-muted);
+}
+
+.rh-admin-plan-types__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--rh-space-2);
+  white-space: nowrap;
+}
+
+.rh-admin-plan-types__empty {
+  padding: var(--rh-space-4);
+  color: var(--rh-text-muted);
+  text-align: center;
 }
 
 .rh-admin-copy__group-title {
@@ -6722,6 +6772,7 @@ a.rh-peek-btn {
 
 @media (max-width: 640px) {
   .rh-admin-dashboard__hero,
+  .rh-admin-plan-types__hero,
   .rh-admin-copy__hero,
   .rh-admin-branding__hero {
     flex-direction: column;
@@ -6914,6 +6965,21 @@ a.rh-peek-btn {
 }
 
 @media (max-width: 640px) {
+  .rh-admin-plan-types__toolbar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .rh-admin-plan-types__toolbar .ui-btn {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .rh-admin-plan-types__actions {
+    width: 100%;
+    justify-content: flex-start;
+  }
+
   .rh-admin-users__modal-actions {
     flex-direction: column;
     align-items: stretch;
@@ -6939,6 +7005,10 @@ a.rh-peek-btn {
 
   .rh-user-trigger__chev {
     display: none;
+  }
+
+  .rh-admin-plan-types__table {
+    min-width: 36rem;
   }
 
   .rh-awrad__hero {
