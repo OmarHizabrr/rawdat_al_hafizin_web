@@ -140,7 +140,6 @@
 
   /* لوحات الإدارة — أبطال عمودية وبطاقات عمود واحد */
   .rh-admin-dashboard,
-  .rh-admin-plan-types,
   .rh-admin-copy,
   .rh-admin-branding {
     max-width: 100%;
@@ -148,7 +147,6 @@
   }
 
   .rh-admin-dashboard__hero,
-  .rh-admin-plan-types__hero,
   .rh-admin-copy__hero,
   .rh-admin-branding__hero {
     flex-direction: column;
@@ -158,11 +156,6 @@
 
   .rh-admin-dashboard__grid {
     grid-template-columns: 1fr;
-  }
-
-  .rh-admin-plan-types__table-wrap {
-    -webkit-overflow-scrolling: touch;
-    overscroll-behavior-x: contain;
   }
 
   /* صفحات الخدمة — الشريط الجانبي لا يبقى لاصقاً على الشاشات الضيقة */

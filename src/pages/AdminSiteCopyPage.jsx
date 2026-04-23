@@ -85,7 +85,7 @@ export default function AdminSiteCopyPage() {
     <div className="rh-admin-copy">
       <header className="rh-admin-copy__hero card">
         <div className="rh-admin-copy__head-row">
-          <Link to="/app/admin" className="rh-admin-plan-types__back">
+          <Link to="/app/admin" className="rh-admin-back-link">
             <RhIcon as={ArrowLeft} size={18} strokeWidth={RH_ICON_STROKE} /> لوحة التحكم
           </Link>
         </div>
