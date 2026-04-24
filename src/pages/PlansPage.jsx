@@ -20,6 +20,7 @@ import {
   planScheduleStartYmd,
 } from '../utils/planDailyQuota.js'
 import { leavingUserDeletesWholeGroup } from '../utils/groupMembership.js'
+import { mergeUserDirectoryRows } from '../utils/userDirectoryMerge.js'
 import {
   countDaysInRange,
   dailyPagesForScheduleDays,
@@ -619,9 +620,38 @@ export default function PlansPage() {
     [planMembersList],
   )
 
+  const memberDirectoryExtras = useMemo(() => {
+    const out = []
+    if (user?.uid) {
+      out.push({
+        uid: user.uid,
+        displayName: user.displayName,
+        email: user.email,
+        photoURL: user.photoURL,
+        role: user.role,
+      })
+    }
+    for (const row of planMembersList) {
+      if (!row.userId) continue
+      out.push({
+        uid: row.userId,
+        displayName: row.displayName,
+        email: row.email,
+        photoURL: row.photoURL,
+        role: row.role,
+      })
+    }
+    return out
+  }, [user, planMembersList])
+
+  const mergedDirectoryUsers = useMemo(
+    () => mergeUserDirectoryRows(directoryUsers, memberDirectoryExtras),
+    [directoryUsers, memberDirectoryExtras],
+  )
+
   const filteredPickerUsers = useMemo(() => {
     const q = memberPickerQuery.trim().toLowerCase()
-    let list = directoryUsers
+    let list = mergedDirectoryUsers
     if (q) {
       list = list.filter((u) => {
         const hay = `${u.displayName || ''} ${u.email || ''} ${u.uid || ''}`.toLowerCase()
@@ -634,7 +664,7 @@ export default function PlansPage() {
       if (aAdded !== bAdded) return aAdded ? 1 : -1
       return (a.displayName || a.uid || '').localeCompare(b.displayName || b.uid || '', 'ar')
     })
-  }, [directoryUsers, memberPickerQuery, memberUidSet])
+  }, [mergedDirectoryUsers, memberPickerQuery, memberUidSet])
 
   const handleAddMemberByUid = async (uid) => {
     const trimmed = (uid || '').trim()
@@ -1510,7 +1540,8 @@ export default function PlansPage() {
         <section className="rh-plan-members-modal__section">
           <h3 className="rh-plan-members-modal__heading">إضافة من المستخدمين</h3>
           <p className="rh-plan-members-modal__hint">
-            ابحث بالاسم أو البريد أو المعرف. المضافون للخطة يظهرون باهتين مع ملاحظة «مضاف مسبقاً».
+            ابحث بالاسم أو البريد أو المعرف. تُدمج قائمة المستخدمين مع حسابك الحالي وجميع أعضاء الخطة المعروضين (بمن فيهم
+            مديرو النظام) حتى لا يغيب أحد عن القائمة بسبب تأخر التحميل أو صلاحيات القراءة.
           </p>
           <SearchField
             label="بحث في المستخدمين"
@@ -1519,7 +1550,7 @@ export default function PlansPage() {
             onChange={(e) => setMemberPickerQuery(e.target.value)}
           />
           <ScrollArea className="rh-plan-members-picker" padded maxHeight="min(14rem, 36vh)">
-            {directoryUsers.length === 0 ? (
+            {mergedDirectoryUsers.length === 0 ? (
               <p className="rh-plan-members-picker__empty">
                 جاري تحميل قائمة المستخدمين… إن بقيت فارغة فقد لا تملك صلاحية قراءة مجموعة المستخدمين في Firestore.
               </p>

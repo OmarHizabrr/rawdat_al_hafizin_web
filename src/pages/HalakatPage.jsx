@@ -27,6 +27,7 @@ import {
   halakaSessionDisplay,
 } from '../utils/datePeriodAr.js'
 import { leavingUserDeletesWholeGroup } from '../utils/groupMembership.js'
+import { mergeUserDirectoryRows } from '../utils/userDirectoryMerge.js'
 import { getImpersonateUid, withImpersonationQuery } from '../utils/impersonation.js'
 import {
   Button,
@@ -347,9 +348,39 @@ export default function HalakatPage() {
   }
 
   const memberUidSet = useMemo(() => new Set(membersList.map((r) => r.userId)), [membersList])
+
+  const memberDirectoryExtras = useMemo(() => {
+    const out = []
+    if (user?.uid) {
+      out.push({
+        uid: user.uid,
+        displayName: user.displayName,
+        email: user.email,
+        photoURL: user.photoURL,
+        role: user.role,
+      })
+    }
+    for (const row of membersList) {
+      if (!row.userId) continue
+      out.push({
+        uid: row.userId,
+        displayName: row.displayName,
+        email: row.email,
+        photoURL: row.photoURL,
+        role: row.role,
+      })
+    }
+    return out
+  }, [user, membersList])
+
+  const mergedDirectoryUsers = useMemo(
+    () => mergeUserDirectoryRows(directoryUsers, memberDirectoryExtras),
+    [directoryUsers, memberDirectoryExtras],
+  )
+
   const filteredPickerUsers = useMemo(() => {
     const q = memberPickerQuery.trim().toLowerCase()
-    let list = directoryUsers
+    let list = mergedDirectoryUsers
     if (q) {
       list = list.filter((u) => {
         const hay = `${u.displayName || ''} ${u.email || ''} ${u.uid || ''}`.toLowerCase()
@@ -362,7 +393,7 @@ export default function HalakatPage() {
       if (aAdded !== bAdded) return aAdded ? 1 : -1
       return (a.displayName || a.uid || '').localeCompare(b.displayName || b.uid || '', 'ar')
     })
-  }, [directoryUsers, memberPickerQuery, memberUidSet])
+  }, [mergedDirectoryUsers, memberPickerQuery, memberUidSet])
 
   const refreshMembers = () => {
     if (!membersModal?.id) return
@@ -683,12 +714,23 @@ export default function HalakatPage() {
           {can(PH, 'halaka_member_add') && (
             <section className="rh-plan-members-modal__section">
               <h3 className="rh-plan-members-modal__heading">إضافة عضو</h3>
+              <p className="rh-plan-members-modal__hint">
+                تظهر القائمة من مستخدمي المنصة مع دمج حسابك والأعضاء المعروضين أدناه (بمن فيهم مديرو النظام) حتى لا يُستبعد
+                أحد.
+              </p>
               <SearchField
                 label="بحث"
                 value={memberPickerQuery}
                 onChange={(e) => setMemberPickerQuery(e.target.value)}
               />
               <ScrollArea className="rh-plan-members-picker" padded maxHeight="min(14rem, 36vh)">
+                {mergedDirectoryUsers.length === 0 ? (
+                  <p className="rh-plan-members-picker__empty">
+                    جاري تحميل المستخدمين… إن بقيت فارغة فتحقق من صلاحيات قراءة مجموعة users في Firestore.
+                  </p>
+                ) : filteredPickerUsers.length === 0 ? (
+                  <p className="rh-plan-members-picker__empty">لا نتائج مطابقة للبحث.</p>
+                ) : (
                 <ul className="rh-plan-members-picker__list">
                   {filteredPickerUsers.map((u) => {
                     const added = memberUidSet.has(u.uid)
@@ -723,6 +765,7 @@ export default function HalakatPage() {
                     )
                   })}
                 </ul>
+                )}
               </ScrollArea>
             </section>
           )}

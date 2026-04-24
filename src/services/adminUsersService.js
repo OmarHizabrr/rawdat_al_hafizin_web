@@ -6,6 +6,7 @@ import { removeHalakaForUser } from '../utils/halakatStorage.js'
 import { removeDawraForUser } from '../utils/dawratStorage.js'
 import { getDefaultPermissionProfileIdForPlatformRole } from './permissionProfilesService.js'
 
+/** يحوّل لقطات users إلى صفوف للعرض — لا يُستبعد أي دور (طالب، معلم، أدمن). */
 function mapUserDocs(docs) {
   return docs
     .map((d) => ({ uid: d.id, ...d.data() }))
@@ -16,7 +17,10 @@ function mapUserDocs(docs) {
     })
 }
 
-/** اشتراك بجميع مستندات users (للوحة الإدارة) */
+/**
+ * اشتراك بجميع مستندات users (للوحة الإدارة ومنتقي الأعضاء).
+ * لا يُطبَّق فلترة أدوار على الواجهة — من يريد استثناءات يضبطها في قواعد Firestore.
+ */
 export function subscribeAllUsers(onNext, onError) {
   const col = firestoreApi.getUsersCollection()
   return firestoreApi.subscribeSnapshot(
