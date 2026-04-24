@@ -1,4 +1,5 @@
 import { firestoreApi } from '../services/firestoreApi.js'
+import { leavingUserDeletesWholeGroup } from './groupMembership.js'
 import { normalizeDawraCalendarDays } from './hijriDates.js'
 
 export const DAWRA_MEMBER_ROLES = {
@@ -110,17 +111,22 @@ export async function deleteDawraFully(dawraId) {
   await firestoreApi.deleteData(canonicalRef(dawraId))
 }
 
+/** @returns {'deletedFully' | 'left' | 'noop'} */
 export async function removeDawraForUser(userId, dawraId) {
-  if (!userId || !dawraId) return
+  if (!userId || !dawraId) return 'noop'
+  const canon = await firestoreApi.getData(canonicalRef(dawraId))
+  if (!canon) return 'noop'
   const memSnap = await firestoreApi.getData(memberRef(dawraId, userId))
   const role = memSnap?.role || DAWRA_MEMBER_ROLES.MEMBER
-  if (role === DAWRA_MEMBER_ROLES.OWNER || role === DAWRA_MEMBER_ROLES.ADMIN) {
+  if (leavingUserDeletesWholeGroup(userId, canon.ownerUid, role, DAWRA_MEMBER_ROLES)) {
     await deleteDawraFully(dawraId)
-    return
+    return 'deletedFully'
   }
+  if (!memSnap) return 'noop'
   await firestoreApi.deleteData(memberRef(dawraId, userId))
   await firestoreApi.deleteData(mirrorDoc(userId, dawraId))
   await syncDawraMemberCount(dawraId)
+  return 'left'
 }
 
 async function assertDawraManager(actorUid, dawraId) {

@@ -19,6 +19,7 @@ import {
   localYmd,
   planScheduleStartYmd,
 } from '../utils/planDailyQuota.js'
+import { leavingUserDeletesWholeGroup } from '../utils/groupMembership.js'
 import {
   countDaysInRange,
   dailyPagesForScheduleDays,
@@ -573,16 +574,21 @@ export default function PlansPage() {
 
   const deletePlan = async (id) => {
     if (readOnly) return
-    const meta = savedPlans.find((p) => p.id === id)
     setDeletePlanSubmitting(true)
+    let outcome = 'noop'
     try {
-      await removePlanForUser(viewUserId, id)
+      outcome = await removePlanForUser(viewUserId, id)
     } catch {
       toast.warning('تعذر تنفيذ العملية. حاول مرة أخرى.', 'تنبيه')
       setDeletingPlan(null)
       return
     } finally {
       setDeletePlanSubmitting(false)
+    }
+    if (outcome === 'noop') {
+      toast.warning('تعذّر إكمال العملية. تحقق من أنك ما زلت عضواً في الخطة.', 'تنبيه')
+      setDeletingPlan(null)
+      return
     }
     const prevHomeDefault = actingAsUser ? viewedDefaultPlanId : user?.defaultPlanId
     if (prevHomeDefault === id) {
@@ -594,7 +600,7 @@ export default function PlansPage() {
       }
     }
     toast.info(
-      meta?.planRole === PLAN_MEMBER_ROLES.MEMBER ? 'تمت مغادرة الخطة.' : 'حُذفت الخطة عن جميع الأعضاء.',
+      outcome === 'deletedFully' ? 'حُذفت الخطة عن جميع الأعضاء.' : 'تمت مغادرة الخطة.',
       '',
     )
     setDeletingPlan(null)
@@ -949,7 +955,9 @@ export default function PlansPage() {
                         onClick={() => setDeletingPlan(p)}
                       >
                         <RhIcon as={Trash2} size={16} strokeWidth={RH_ICON_STROKE} />
-                        {p.planRole === PLAN_MEMBER_ROLES.MEMBER ? 'مغادرة' : 'حذف'}
+                        {leavingUserDeletesWholeGroup(viewUserId, p.ownerUid, p.planRole, PLAN_MEMBER_ROLES)
+                          ? 'حذف'
+                          : 'مغادرة'}
                       </Button>
                     )}
                   </div>
@@ -1438,13 +1446,19 @@ export default function PlansPage() {
         showClose={!deletePlanSubmitting}
       >
             <p className="rh-plans__warn rh-plans__warn--confirm">
-              {deletingPlan?.planRole === PLAN_MEMBER_ROLES.MEMBER ? (
+              {deletingPlan &&
+              leavingUserDeletesWholeGroup(
+                viewUserId,
+                deletingPlan.ownerUid,
+                deletingPlan.planRole,
+                PLAN_MEMBER_ROLES,
+              ) ? (
                 <>
-                  سيتم إزالة خطة <strong>{deletingPlan?.name}</strong> من قائمتك فقط. بقية الأعضاء لا يتأثرون.
+                  سيتم حذف خطة <strong>{deletingPlan?.name}</strong> نهائياً عن جميع الأعضاء. هل أنت متأكد؟
                 </>
               ) : (
                 <>
-                  سيتم حذف خطة <strong>{deletingPlan?.name}</strong> نهائياً عن جميع الأعضاء. هل أنت متأكد؟
+                  سيتم إزالة خطة <strong>{deletingPlan?.name}</strong> من قائمتك فقط. بقية الأعضاء لا يتأثرون.
                 </>
               )}
             </p>
@@ -1455,7 +1469,15 @@ export default function PlansPage() {
                 loading={deletePlanSubmitting}
                 onClick={() => deletingPlan && deletePlan(deletingPlan.id)}
               >
-                {deletingPlan?.planRole === PLAN_MEMBER_ROLES.MEMBER ? 'نعم، مغادرة' : 'نعم، حذف للجميع'}
+                {deletingPlan &&
+                leavingUserDeletesWholeGroup(
+                  viewUserId,
+                  deletingPlan.ownerUid,
+                  deletingPlan.planRole,
+                  PLAN_MEMBER_ROLES,
+                )
+                  ? 'نعم، حذف للجميع'
+                  : 'نعم، مغادرة'}
               </Button>
               <Button type="button" variant="ghost" disabled={deletePlanSubmitting} onClick={() => setDeletingPlan(null)}>
                 إلغاء

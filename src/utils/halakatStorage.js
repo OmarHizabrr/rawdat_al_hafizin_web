@@ -1,4 +1,5 @@
 import { firestoreApi } from '../services/firestoreApi.js'
+import { leavingUserDeletesWholeGroup } from './groupMembership.js'
 
 /** أدوار عضو الحلقة — members/{halakaId}/members/{uid} */
 export const HALAKA_MEMBER_ROLES = {
@@ -108,17 +109,22 @@ export async function deleteHalakaFully(halakaId) {
   await firestoreApi.deleteData(canonicalRef(halakaId))
 }
 
+/** @returns {'deletedFully' | 'left' | 'noop'} */
 export async function removeHalakaForUser(userId, halakaId) {
-  if (!userId || !halakaId) return
+  if (!userId || !halakaId) return 'noop'
+  const canon = await firestoreApi.getData(canonicalRef(halakaId))
+  if (!canon) return 'noop'
   const memSnap = await firestoreApi.getData(memberRef(halakaId, userId))
   const role = memSnap?.role || HALAKA_MEMBER_ROLES.MEMBER
-  if (role === HALAKA_MEMBER_ROLES.OWNER || role === HALAKA_MEMBER_ROLES.ADMIN) {
+  if (leavingUserDeletesWholeGroup(userId, canon.ownerUid, role, HALAKA_MEMBER_ROLES)) {
     await deleteHalakaFully(halakaId)
-    return
+    return 'deletedFully'
   }
+  if (!memSnap) return 'noop'
   await firestoreApi.deleteData(memberRef(halakaId, userId))
   await firestoreApi.deleteData(mirrorDoc(userId, halakaId))
   await syncHalakaMemberCount(halakaId)
+  return 'left'
 }
 
 async function assertHalakaManager(actorUid, halakaId) {

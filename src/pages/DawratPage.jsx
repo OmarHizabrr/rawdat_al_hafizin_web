@@ -22,6 +22,7 @@ import {
   subscribeDawrat,
 } from '../utils/dawratStorage.js'
 import { daysInclusiveYmd } from '../utils/datePeriodAr.js'
+import { leavingUserDeletesWholeGroup } from '../utils/groupMembership.js'
 import { getImpersonateUid, withImpersonationQuery } from '../utils/impersonation.js'
 import {
   Button,
@@ -287,19 +288,23 @@ export default function DawratPage() {
   const doDelete = async () => {
     if (!deleting?.id) return
     setDeleteBusy(true)
+    let outcome = 'noop'
     try {
-      await removeDawraForUser(viewUserId, deleting.id)
-      toast.info(
-        deleting.dawraRole === DAWRA_MEMBER_ROLES.MEMBER ? 'غادرت الدورة.' : 'حُذفت الدورة للجميع.',
-        '',
-      )
-      setDeleting(null)
+      outcome = await removeDawraForUser(viewUserId, deleting.id)
     } catch {
       toast.warning('تعذّر التنفيذ.', 'تنبيه')
       setDeleting(null)
+      return
     } finally {
       setDeleteBusy(false)
     }
+    if (outcome === 'noop') {
+      toast.warning('تعذّر إكمال العملية. تحقق من أنك ما زلت عضواً في الدورة.', 'تنبيه')
+      setDeleting(null)
+      return
+    }
+    toast.info(outcome === 'deletedFully' ? 'حُذفت الدورة للجميع.' : 'غادرت الدورة.', '')
+    setDeleting(null)
   }
 
   const handleJoin = async () => {
@@ -485,7 +490,9 @@ export default function DawratPage() {
                   {can(PH, 'dawra_card_delete_leave') && (
                     <Button type="button" variant="ghost" size="sm" onClick={() => setDeleting(d)}>
                       <RhIcon as={Trash2} size={16} strokeWidth={RH_ICON_STROKE} />
-                      {d.dawraRole === DAWRA_MEMBER_ROLES.MEMBER ? 'مغادرة' : 'حذف'}
+                      {leavingUserDeletesWholeGroup(viewUserId, d.ownerUid, d.dawraRole, DAWRA_MEMBER_ROLES)
+                        ? 'حذف'
+                        : 'مغادرة'}
                     </Button>
                   )}
                 </div>
@@ -672,11 +679,17 @@ export default function DawratPage() {
         showClose={!deleteBusy}
       >
         <p className="rh-plans__warn rh-plans__warn--confirm">
-          {deleting?.dawraRole === DAWRA_MEMBER_ROLES.MEMBER ? 'مغادرة الدورة؟' : 'حذف الدورة للجميع؟'}
+          {deleting &&
+          leavingUserDeletesWholeGroup(viewUserId, deleting.ownerUid, deleting.dawraRole, DAWRA_MEMBER_ROLES)
+            ? 'حذف الدورة للجميع؟'
+            : 'مغادرة الدورة من قائمتك فقط؟'}
         </p>
         <div className="rh-plans__actions">
           <Button type="button" variant="danger" loading={deleteBusy} onClick={doDelete}>
-            تأكيد
+            {deleting &&
+            leavingUserDeletesWholeGroup(viewUserId, deleting.ownerUid, deleting.dawraRole, DAWRA_MEMBER_ROLES)
+              ? 'نعم، حذف للجميع'
+              : 'نعم، مغادرة'}
           </Button>
           <Button type="button" variant="ghost" disabled={deleteBusy} onClick={() => setDeleting(null)}>
             إلغاء

@@ -1,4 +1,5 @@
 import { firestoreApi } from '../services/firestoreApi.js'
+import { leavingUserDeletesWholeGroup } from './groupMembership.js'
 import { normalizePlanCalendarDays } from './hijriDates.js'
 
 /** أدوار عضو الخطة (مطابقة لحقل role في members/{planId}/members/{uid}) */
@@ -117,19 +118,24 @@ export async function deletePlanFully(planId) {
 }
 
 /**
- * إزالة خطة من المستخدم: إن كان owner أو admin يُحذف المسار للجميع؛ وإلا يغادر العضو فقط.
+ * إزالة خطة من المستخدم: الحذف الكامل فقط لمالك الخطة (ownerUid). المشرف والعضو يغادرون فقط.
+ * @returns {'deletedFully' | 'left' | 'noop'}
  */
 export async function removePlanForUser(userId, planId) {
-  if (!userId || !planId) return
+  if (!userId || !planId) return 'noop'
+  const canon = await firestoreApi.getData(canonicalRef(planId))
+  if (!canon) return 'noop'
   const memSnap = await firestoreApi.getData(memberRef(planId, userId))
   const role = memSnap?.role || PLAN_MEMBER_ROLES.MEMBER
-  if (role === PLAN_MEMBER_ROLES.OWNER || role === PLAN_MEMBER_ROLES.ADMIN) {
+  if (leavingUserDeletesWholeGroup(userId, canon.ownerUid, role, PLAN_MEMBER_ROLES)) {
     await deletePlanFully(planId)
-    return
+    return 'deletedFully'
   }
+  if (!memSnap) return 'noop'
   await firestoreApi.deleteData(memberRef(planId, userId))
   await firestoreApi.deleteData(mirrorDoc(userId, planId))
   await syncPlanMemberCount(planId)
+  return 'left'
 }
 
 async function assertPlanManager(actorUid, planId) {

@@ -26,6 +26,7 @@ import {
   durationBetweenDatesAr,
   halakaSessionDisplay,
 } from '../utils/datePeriodAr.js'
+import { leavingUserDeletesWholeGroup } from '../utils/groupMembership.js'
 import { getImpersonateUid, withImpersonationQuery } from '../utils/impersonation.js'
 import {
   Button,
@@ -307,19 +308,23 @@ export default function HalakatPage() {
   const doDelete = async () => {
     if (!deleting?.id) return
     setDeleteBusy(true)
+    let outcome = 'noop'
     try {
-      await removeHalakaForUser(viewUserId, deleting.id)
-      toast.info(
-        deleting.halakaRole === HALAKA_MEMBER_ROLES.MEMBER ? 'غادرت الحلقة.' : 'حُذفت الحلقة للجميع.',
-        '',
-      )
-      setDeleting(null)
+      outcome = await removeHalakaForUser(viewUserId, deleting.id)
     } catch {
       toast.warning('تعذّر التنفيذ.', 'تنبيه')
       setDeleting(null)
+      return
     } finally {
       setDeleteBusy(false)
     }
+    if (outcome === 'noop') {
+      toast.warning('تعذّر إكمال العملية. تحقق من أنك ما زلت عضواً في الحلقة.', 'تنبيه')
+      setDeleting(null)
+      return
+    }
+    toast.info(outcome === 'deletedFully' ? 'حُذفت الحلقة للجميع.' : 'غادرت الحلقة.', '')
+    setDeleting(null)
   }
 
   const handleJoin = async () => {
@@ -499,7 +504,9 @@ export default function HalakatPage() {
                   {can(PH, 'halaka_card_delete_leave') && (
                     <Button type="button" variant="ghost" size="sm" onClick={() => setDeleting(h)}>
                       <RhIcon as={Trash2} size={16} strokeWidth={RH_ICON_STROKE} />
-                      {h.halakaRole === HALAKA_MEMBER_ROLES.MEMBER ? 'مغادرة' : 'حذف'}
+                      {leavingUserDeletesWholeGroup(viewUserId, h.ownerUid, h.halakaRole, HALAKA_MEMBER_ROLES)
+                        ? 'حذف'
+                        : 'مغادرة'}
                     </Button>
                   )}
                 </div>
@@ -626,13 +633,27 @@ export default function HalakatPage() {
         showClose={!deleteBusy}
       >
         <p className="rh-plans__warn rh-plans__warn--confirm">
-          {deleting?.halakaRole === HALAKA_MEMBER_ROLES.MEMBER
-            ? 'مغادرة الحلقة من قائمتك فقط؟'
-            : 'حذف الحلقة نهائياً عن الجميع؟'}
+          {deleting &&
+          leavingUserDeletesWholeGroup(
+            viewUserId,
+            deleting.ownerUid,
+            deleting.halakaRole,
+            HALAKA_MEMBER_ROLES,
+          )
+            ? 'حذف الحلقة نهائياً عن الجميع؟'
+            : 'مغادرة الحلقة من قائمتك فقط؟'}
         </p>
         <div className="rh-plans__actions">
           <Button type="button" variant="danger" loading={deleteBusy} onClick={doDelete}>
-            تأكيد
+            {deleting &&
+            leavingUserDeletesWholeGroup(
+              viewUserId,
+              deleting.ownerUid,
+              deleting.halakaRole,
+              HALAKA_MEMBER_ROLES,
+            )
+              ? 'نعم، حذف للجميع'
+              : 'نعم، مغادرة'}
           </Button>
           <Button type="button" variant="ghost" disabled={deleteBusy} onClick={() => setDeleting(null)}>
             إلغاء

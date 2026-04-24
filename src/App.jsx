@@ -28,7 +28,6 @@ const LeaveRequestPage = lazy(() => import('./pages/LeaveRequestPage.jsx'))
 const CertificatesPage = lazy(() => import('./pages/CertificatesPage.jsx'))
 const StudentFeelingsPage = lazy(() => import('./pages/StudentFeelingsPage.jsx'))
 const ApplicationRequestPage = lazy(() => import('./pages/ApplicationRequestPage.jsx'))
-const UserNotificationsPage = lazy(() => import('./pages/UserNotificationsPage.jsx'))
 const AdminUsersPage = lazy(() => import('./pages/AdminUsersPage.jsx'))
 const AdminDashboardPage = lazy(() => import('./pages/AdminDashboardPage.jsx'))
 const AdminApplicationRequestsPage = lazy(() => import('./pages/AdminApplicationRequestsPage.jsx'))
@@ -130,14 +129,6 @@ export default function App() {
                       }
                     />
                     <Route path="settings" element={<PageGuard pageId="settings"><SettingsPage /></PageGuard>} />
-                    <Route
-                      path="notifications"
-                      element={
-                        <PageGuard pageId="notifications">
-                          <UserNotificationsPage />
-                        </PageGuard>
-                      }
-                    />
                     <Route element={<AdminRoute />}>
                       <Route path="admin" element={<AdminDashboardPage />} />
                       <Route path="admin/applications" element={<AdminApplicationRequestsPage />} />
