@@ -1,5 +1,8 @@
 import { Bell, CheckCheck } from 'lucide-react'
 import { useEffect, useMemo, useRef, useState } from 'react'
+import { Link, useLocation } from 'react-router-dom'
+import { getImpersonateUid, withImpersonationQuery } from '../utils/impersonation.js'
+import { usePermissions } from '../context/usePermissions.js'
 import {
   markAllUserNotificationsRead,
   markUserNotificationRead,
@@ -20,6 +23,9 @@ function formatWhen(iso) {
 }
 
 export function UserNotificationsMenu({ user }) {
+  const { canAccessPage } = usePermissions()
+  const { search } = useLocation()
+  const impersonateUid = getImpersonateUid(user, search)
   const userId = user?.uid || ''
   const [open, setOpen] = useState(false)
   const [items, setItems] = useState([])
@@ -70,7 +76,15 @@ export function UserNotificationsMenu({ user }) {
                 <article key={n.id} className={['rh-notify__item', n.isRead ? 'is-read' : ''].filter(Boolean).join(' ')}>
                   <div className="rh-notify__creator">
                     {n.creatorPhotoURL ? (
-                      <img src={n.creatorPhotoURL} alt="" width={28} height={28} className="rh-notify__creator-avatar" />
+                      <img
+                        src={n.creatorPhotoURL}
+                        alt=""
+                        width={28}
+                        height={28}
+                        className="rh-notify__creator-avatar"
+                        loading="lazy"
+                        decoding="async"
+                      />
                     ) : (
                       <span className="rh-notify__creator-avatar rh-notify__creator-avatar--fallback">
                         {(n.creatorDisplayName || 'م').charAt(0)}
@@ -98,6 +112,17 @@ export function UserNotificationsMenu({ user }) {
               ))
             )}
           </div>
+          {canAccessPage('notifications') ? (
+            <footer className="rh-notify__footer">
+              <Link
+                to={withImpersonationQuery('/app/notifications', impersonateUid)}
+                className="rh-notify__manage-link"
+                onClick={() => setOpen(false)}
+              >
+                إدارة كل الإشعارات…
+              </Link>
+            </footer>
+          ) : null}
         </section>
       ) : null}
     </div>

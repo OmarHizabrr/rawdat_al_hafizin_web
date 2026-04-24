@@ -28,6 +28,7 @@ function starterSyntheticPagesMap() {
     welcome: { actions: {} },
     feelings: { actions: { feelings_create: true, feelings_edit_own: true, feelings_delete_own: true } },
     settings: { actions: { settings_theme: true, settings_edit_profile: true } },
+    notifications: { actions: { notification_delete: true } },
     leave_request: { actions: {} },
     certificates: { actions: {} },
   }

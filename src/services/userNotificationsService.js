@@ -112,3 +112,10 @@ export async function markAllUserNotificationsRead(userId, rows, userData = {}) 
   }
 }
 
+/** حذف إشعار واحد من مجموعة المستخدم */
+export async function deleteUserNotification(userId, notificationId) {
+  if (!userId || !notificationId) return
+  const ref = firestoreApi.getUserNotificationDoc(userId, notificationId)
+  await firestoreApi.deleteData(ref)
+}
+

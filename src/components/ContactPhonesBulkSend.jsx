@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 import {
   normalizeContactPhones,
   normalizeTelegramHandle,
@@ -19,15 +19,18 @@ import { useToast } from '../ui/useToast.js'
 export function ContactPhonesBulkSend({ phones, messageBody, className = '' }) {
   const toast = useToast()
   const rows = useMemo(() => normalizeContactPhones(phones), [phones])
+  const rowIdsKey = useMemo(() => rows.map((r) => r.id).join('|'), [rows])
   const [selectedIds, setSelectedIds] = useState(() => new Set())
+  const [appliedRowIdsKey, setAppliedRowIdsKey] = useState('')
   const [chWa, setChWa] = useState(true)
   const [chSms, setChSms] = useState(true)
   const [chTg, setChTg] = useState(true)
   const [opening, setOpening] = useState(false)
 
-  useEffect(() => {
+  if (appliedRowIdsKey !== rowIdsKey) {
+    setAppliedRowIdsKey(rowIdsKey)
     setSelectedIds(new Set(rows.map((r) => r.id)))
-  }, [rows])
+  }
 
   const toggleContact = useCallback((id) => {
     setSelectedIds((prev) => {

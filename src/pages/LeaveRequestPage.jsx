@@ -51,7 +51,7 @@ export default function LeaveRequestPage() {
       lines.push('', `— إعداد الطلب من حساب المشرف نيابةً عن المستخدم (${impersonateUid}) —`)
     }
     return lines.join('\n')
-  }, [fullName, details, branding.siteName, impersonateUid, user?.uid])
+  }, [fullName, details, branding.siteName, impersonateUid, user])
 
   const crossItems = useMemo(() => {
     const base = [

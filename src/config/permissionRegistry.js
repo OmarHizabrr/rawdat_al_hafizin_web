@@ -14,6 +14,7 @@ export const PERMISSION_PAGE_IDS = {
   dawrat_explore: 'dawrat_explore',
   awrad: 'awrad',
   settings: 'settings',
+  notifications: 'notifications',
   feelings: 'feelings',
   foundation: 'foundation',
   leave_request: 'leave_request',
@@ -145,6 +146,14 @@ export const PERMISSION_PAGES = [
     actions: [
       { id: 'settings_theme', label: 'تغيير وضع المظهر (فاتح/داكن)' },
       { id: 'settings_edit_profile', label: 'تعديل الاسم ورفع صورة الملف الشخصي (تخزين)' },
+    ],
+  },
+  {
+    id: PERMISSION_PAGE_IDS.notifications,
+    path: '/app/notifications',
+    label: 'الإشعارات',
+    actions: [
+      { id: 'notification_delete', label: 'حذف إشعار' },
     ],
   },
   {

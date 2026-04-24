@@ -42,7 +42,7 @@ function defaultForm(user) {
     email: String(user?.email || '').trim(),
     gender: 'male',
     educationLevel: '',
-    quranMemorizedJuz: 1,
+    quranMemorizedJuz: 30,
   }
 }
 
@@ -54,6 +54,7 @@ export default function ApplicationRequestPage() {
   const [row, setRow] = useState(null)
   const [submitting, setSubmitting] = useState(false)
   const [showRejectedModal, setShowRejectedModal] = useState(false)
+  const [submitSuccess, setSubmitSuccess] = useState(false)
 
   useEffect(() => {
     document.title = `طلب الالتحاق — ${branding.siteTitle}`
@@ -107,6 +108,7 @@ export default function ApplicationRequestPage() {
     setSubmitting(true)
     try {
       await upsertMyProfileRequest(user, form)
+      setSubmitSuccess(true)
       toast.success('تم إرسال طلبك بنجاح، وسيتم مراجعته قريباً بإذن الله.', 'تم')
     } catch (e) {
       if (e?.code === 'QURAN_MEMORIZATION_REQUIREMENT_NOT_MET') {
@@ -185,6 +187,15 @@ export default function ApplicationRequestPage() {
               صفحة البداية
             </Link>
           </div>
+
+          {submitSuccess ? (
+            <div className="rh-app-request-success">
+              <p>تم إرسال الطلب. يمكنك الآن العودة إلى صفحة البداية متى شئت.</p>
+              <Link to="/app/welcome" className="ui-btn ui-btn--primary">
+                الذهاب إلى صفحة البداية
+              </Link>
+            </div>
+          ) : null}
         </section>
       </div>
 

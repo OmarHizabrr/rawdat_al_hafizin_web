@@ -53,8 +53,11 @@ export default function SettingsPage() {
       { to: '/app/leave-request', label: str('layout.nav_leave_request') },
       { to: '/app/certificates', label: str('layout.nav_certificates') },
       { to: '/app/feelings', label: str('layout.nav_feelings') },
-      { to: '/app/welcome', label: str('layout.nav_welcome') },
     )
+    if (canAccessPage('notifications')) {
+      base.push({ to: '/app/notifications', label: str('layout.nav_notifications') })
+    }
+    base.push({ to: '/app/welcome', label: str('layout.nav_welcome') })
     if (isAdmin(user)) {
       base.push({ to: '/app/admin', label: str('layout.nav_dashboard') })
       base.push({ to: '/app/admin/users', label: str('layout.nav_users') })

@@ -782,6 +782,68 @@ a.rh-sidebar__brand-link.rh-sidebar__brand-link--active {
   font-weight: 700;
 }
 
+.rh-notify__footer {
+  flex-shrink: 0;
+  padding: var(--rh-space-2) var(--rh-space-3);
+  border-top: 1px solid var(--rh-border);
+  background: var(--rh-bg);
+}
+
+.rh-notify__manage-link {
+  display: block;
+  text-align: center;
+  font-size: var(--rh-text-sm);
+  font-weight: 700;
+  color: var(--rh-primary);
+  text-decoration: none;
+}
+
+.rh-notify__manage-link:hover {
+  text-decoration: underline;
+}
+
+.rh-notifications-page__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--rh-space-3);
+}
+
+.rh-notifications-page__delete {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  border: none;
+  border-radius: var(--rh-radius-sm);
+  padding: 0.15rem 0.45rem;
+  background: transparent;
+  color: var(--rh-danger);
+  font-size: 0.75rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.rh-notifications-page__delete:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.rh-app-request-success {
+  margin-top: var(--rh-space-4);
+  padding: var(--rh-space-4);
+  border-radius: var(--rh-radius-lg);
+  border: 1px solid color-mix(in srgb, var(--rh-forest-700) 35%, var(--rh-border));
+  background: color-mix(in srgb, var(--rh-forest-700) 12%, var(--rh-surface));
+}
+
+.rh-app-request-success p {
+  margin: 0 0 var(--rh-space-3);
+  font-weight: 700;
+  color: var(--rh-text);
+}
+
 .rh-icon-btn {
   display: inline-flex;
   align-items: center;
