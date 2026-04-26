@@ -21,11 +21,12 @@ import {
 import { NavLink, Outlet, useLocation } from 'react-router-dom'
 import { UserNotificationsMenu } from '../components/UserNotificationsMenu.jsx'
 import { UserMenu } from '../components/UserMenu.jsx'
-import { isAdmin } from '../config/roles.js'
+import { isAdmin, normalizeRole } from '../config/roles.js'
 import { useAuth } from '../context/useAuth.js'
 import { usePermissions } from '../context/usePermissions.js'
 import { useSiteContent } from '../context/useSiteContent.js'
 import { usePlanReminders } from '../hooks/usePlanReminders.js'
+import { PROFILE_REQUEST_STATUS } from '../services/profileRequestService.js'
 import { upsertUserNotification } from '../services/userNotificationsService.js'
 import { getImpersonateUid, withImpersonationQuery } from '../utils/impersonation.js'
 import { RhIcon, RH_ICON_STROKE } from '../ui/RhIcon.jsx'
@@ -36,7 +37,7 @@ export function MainLayout() {
   const { user } = useAuth()
   const { ready: permReady, canAccessPage } = usePermissions()
   const { str, branding } = useSiteContent()
-  const { search } = useLocation()
+  const { pathname, search } = useLocation()
   const impersonateUid = getImpersonateUid(user, search)
 
   const baseNav = useMemo(
@@ -159,6 +160,46 @@ export function MainLayout() {
   }, [user, impersonateUid])
 
   const CollapseIcon = collapsed ? ChevronsLeft : ChevronsRight
+
+  const isStudent = normalizeRole(user?.role) === 'student'
+  const profileStatus = String(user?.profileRequestStatus || '').trim()
+  const approved = profileStatus === PROFILE_REQUEST_STATUS.APPROVED
+  const isWelcomePath = pathname === '/app/welcome' || pathname === '/app/welcome/'
+  const pendingWelcome = isStudent && !approved && isWelcomePath
+
+  if (pendingWelcome) {
+    return (
+      <div className="rh-app rh-app--pending-welcome">
+        <header className="rh-pending-welcome__bar">
+          <div className="rh-pending-welcome__brand">
+            <img src={branding.logoSrc} alt="" className="rh-pending-welcome__logo" width={40} height={40} />
+            <span className="rh-pending-welcome__title">{str('layout.sidebar_title')}</span>
+          </div>
+          {user && <UserMenu user={user} />}
+        </header>
+        <div className="rh-pending-welcome__content">
+          <div className="rh-mob-app-scaffold">
+            <Suspense
+              fallback={
+                <div
+                  className="rh-mob-app-scaffold"
+                  style={{ display: 'flex', justifyContent: 'center', padding: '3rem' }}
+                  role="status"
+                  aria-live="polite"
+                >
+                  <p className="lead" style={{ color: 'var(--rh-text-muted)', margin: 0 }}>
+                    جاري التحميل…
+                  </p>
+                </div>
+              }
+            >
+              <Outlet />
+            </Suspense>
+          </div>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className={['rh-app', collapsed ? 'rh-app--collapsed' : '', mobileOpen ? 'rh-app--mobile-nav' : '']

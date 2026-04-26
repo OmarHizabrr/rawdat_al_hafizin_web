@@ -2717,6 +2717,66 @@ a.rh-sidebar__brand-link.rh-sidebar__brand-link--active {
   margin-top: var(--rh-space-3);
 }
 
+/* صفحة البداية — طالب بانتظار الاعتماد: بدون شريط جانبي (واجهة مثل أول دخول) */
+.rh-app--pending-welcome {
+  min-height: 100dvh;
+  min-height: 100svh;
+  display: flex;
+  flex-direction: column;
+  background: var(--rh-bg, var(--rh-forest-50, #f6f7f4));
+}
+
+.rh-pending-welcome__bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--rh-space-3);
+  padding: var(--rh-space-3) var(--rh-space-4);
+  padding-top: max(var(--rh-space-3), env(safe-area-inset-top, 0));
+  border-bottom: 1px solid var(--rh-border, rgba(0, 0, 0, 0.08));
+  background: var(--rh-surface);
+  flex-shrink: 0;
+  position: relative;
+  z-index: 2;
+  box-shadow: 0 1px 0 rgba(0, 0, 0, 0.04);
+}
+
+.rh-pending-welcome__brand {
+  display: flex;
+  align-items: center;
+  gap: var(--rh-space-2);
+  min-width: 0;
+}
+
+.rh-pending-welcome__logo {
+  border-radius: var(--rh-radius-lg);
+  flex-shrink: 0;
+}
+
+.rh-pending-welcome__title {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--rh-text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.rh-pending-welcome__content {
+  flex: 1;
+  width: 100%;
+  max-width: min(72rem, 100%);
+  margin-inline: auto;
+  box-sizing: border-box;
+  padding: var(--rh-space-5) var(--rh-space-4);
+  padding-bottom: max(var(--rh-space-6), env(safe-area-inset-bottom, 0));
+  min-width: 0;
+}
+
+.rh-pending-welcome__content .rh-mob-app-scaffold {
+  min-height: 0;
+}
+
 .rh-app-welcome {
   width: 100%;
   max-width: min(42rem, 100%);
