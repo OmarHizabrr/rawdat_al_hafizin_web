@@ -1,4 +1,4 @@
-import { CheckCircle2, XCircle } from 'lucide-react'
+import { CheckCircle2, Download, XCircle } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { CrossNav } from '../components/CrossNav.jsx'
@@ -9,6 +9,7 @@ import {
   reviewProfileRequest,
   subscribeAllProfileRequests,
 } from '../services/profileRequestService.js'
+import { downloadProfileRequestsCsv } from '../utils/downloadProfileRequestsCsv.js'
 import { Button, Modal, SearchField, TextField, useToast } from '../ui/index.js'
 import { RhIcon, RH_ICON_STROKE } from '../ui/RhIcon.jsx'
 
@@ -57,6 +58,17 @@ export default function AdminApplicationRequestsPage() {
     }
   }
 
+  const onSaveCsv = () => {
+    const res = downloadProfileRequestsCsv(filtered)
+    if (!res.ok && res.reason === 'empty') {
+      toast.info('لا توجد طلبات في القائمة الحالية للتصدير.', 'تنبيه')
+      return
+    }
+    if (res.ok) {
+      toast.success('تم تنزيل ملف الطلبات (CSV) إلى جهازك.', 'تم')
+    }
+  }
+
   const onReject = async () => {
     if (!user?.uid || !rejectingRow?.userId) return
     setBusyId(rejectingRow.userId)
@@ -88,19 +100,38 @@ export default function AdminApplicationRequestsPage() {
       <header className="rh-admin-users__hero card">
         <h1 className="rh-admin-users__title">طلبات الالتحاق</h1>
         <p className="rh-admin-users__desc">
-          جميع الطلبات الواردة من الطلاب تظهر هنا مع بياناتهم كاملة وصورة الحساب. يمكن القبول أو الرفض في أي وقت.
+          جميع الطلبات الواردة من الطلاب تظهر هنا مع بياناتهم كاملة وصورة الحساب. يمكن القبول أو الرفض في أي وقت،
+          كما يمكنك حفظ نسخة من الطلبات الظاهرة (بعد تطبيق البحث) كملف جدول يفتح في Excel.
         </p>
       </header>
 
       <CrossNav items={crossItems} className="rh-admin-users__cross" />
 
       <section className="card rh-admin-users__toolbar">
-        <SearchField
-          label="بحث"
-          placeholder="ابحث بالاسم أو البريد أو الهاتف أو الجنسية أو الوظيفة..."
-          value={q}
-          onChange={(e) => setQ(e.target.value)}
-        />
+        <div className="rh-admin-applications__toolbar">
+          <SearchField
+            label="بحث"
+            placeholder="ابحث بالاسم أو البريد أو الهاتف أو الجنسية أو الوظيفة..."
+            value={q}
+            onChange={(e) => setQ(e.target.value)}
+            className="rh-admin-applications__search"
+          />
+          <div className="rh-admin-applications__save">
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={onSaveCsv}
+              disabled={filtered.length === 0}
+              title="يصدّر الطلبات الظاهرة في القائمة حالياً (إن وُجد بحث، يُصدَّر المطابقة فقط)"
+            >
+              <RhIcon as={Download} size={18} strokeWidth={RH_ICON_STROKE} />
+              حفظ الطلبات (Excel / CSV)
+            </Button>
+            <p className="rh-admin-applications__save-hint">
+              {q.trim() ? 'سيتم تصدير النتائج المطابقة للبحث فقط.' : 'سيتم تصدير جميع الطلبات.'}
+            </p>
+          </div>
+        </div>
       </section>
 
       <ul className="rh-admin-users__grid">

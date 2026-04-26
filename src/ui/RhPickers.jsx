@@ -31,6 +31,7 @@ export function RhTimePickerField({
   onChange,
   disabled,
   placeholderText,
+  timeIntervals = 15,
 }) {
   const uid = useId()
   const id = idProp ?? uid
@@ -54,7 +55,7 @@ export function RhTimePickerField({
           locale="ar"
           showTimeSelect
           showTimeSelectOnly
-          timeIntervals={15}
+          timeIntervals={timeIntervals}
           timeCaption="الوقت"
           dateFormat="HH:mm"
           disabled={disabled}
@@ -99,6 +100,7 @@ export function RhDateTimePickerField({
   maxDate,
   disabled,
   placeholderText,
+  timeIntervals = 15,
 }) {
   const uid = useId()
   const id = idProp ?? uid
@@ -149,7 +151,13 @@ export function RhDateTimePickerField({
           disabled={disabled}
           placeholderText={placeholderText || 'اختر التاريخ الهجري…'}
         />
-        <RhTimePickerField label="الوقت" value={hh} onChange={onTime} disabled={disabled} />
+        <RhTimePickerField
+          label="الوقت"
+          value={hh}
+          onChange={onTime}
+          disabled={disabled}
+          timeIntervals={timeIntervals}
+        />
       </div>
       {hint && !error && (
         <p className="ui-field__hint" id={hintId}>

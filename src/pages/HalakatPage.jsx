@@ -21,10 +21,11 @@ import {
   setHalakaMemberRole,
   subscribeHalakat,
 } from '../utils/halakatStorage.js'
+import { combineHijriYmdAndHHmm } from '../utils/hijriDates.js'
 import {
   defaultHalakaSessionDates,
-  durationBetweenDatesAr,
   halakaSessionDisplay,
+  halakaSessionDurationAr,
 } from '../utils/datePeriodAr.js'
 import { leavingUserDeletesWholeGroup } from '../utils/groupMembership.js'
 import { mergeUserDirectoryRows } from '../utils/userDirectoryMerge.js'
@@ -39,6 +40,7 @@ import {
   RhDateTimePickerField,
   useToast,
 } from '../ui/index.js'
+import { formatYmd } from '../ui/rhPickerUtils.js'
 import { RhIcon, RH_ICON_STROKE } from '../ui/RhIcon.jsx'
 
 const WEEKDAYS = [
@@ -100,6 +102,8 @@ function legacyTimesToSessionDates(startTime, endTime) {
 
 const PH = PERMISSION_PAGE_IDS.halakat
 
+const SESSION_PERIOD = { CUSTOM: 'custom', MORNING: 'morning', EVENING: 'evening' }
+
 export default function HalakatPage() {
   const { user } = useAuth()
   const { can, canAccessPage } = usePermissions()
@@ -133,6 +137,7 @@ export default function HalakatPage() {
   const [genderType, setGenderType] = useState('men')
   const [sessionStart, setSessionStart] = useState(() => new Date(defaultHalakaSessionDates().sessionStart))
   const [sessionEnd, setSessionEnd] = useState(() => new Date(defaultHalakaSessionDates().sessionEnd))
+  const [sessionPeriod, setSessionPeriod] = useState(SESSION_PERIOD.EVENING)
   const [tasmeeDays, setTasmeeDays] = useState(() => new Set())
   const [reviewDays, setReviewDays] = useState(() => new Set())
   const [saveBusy, setSaveBusy] = useState(false)
@@ -197,9 +202,34 @@ export default function HalakatPage() {
   }, [membersModal?.id, user?.uid])
 
   const durationLabel = useMemo(
-    () => (sessionStart && sessionEnd ? durationBetweenDatesAr(sessionStart, sessionEnd) : '—'),
+    () => (sessionStart && sessionEnd ? halakaSessionDurationAr(sessionStart, sessionEnd) : '—'),
     [sessionStart, sessionEnd],
   )
+
+  const applySessionPeriod = useCallback((period) => {
+    const ymd = formatYmd(sessionStart)
+    if (!ymd) return
+    if (period === SESSION_PERIOD.MORNING) {
+      setSessionStart(combineHijriYmdAndHHmm(ymd, '08:00'))
+      setSessionEnd(combineHijriYmdAndHHmm(ymd, '12:00'))
+    } else if (period === SESSION_PERIOD.EVENING) {
+      setSessionStart(combineHijriYmdAndHHmm(ymd, '18:00'))
+      setSessionEnd(combineHijriYmdAndHHmm(ymd, '20:00'))
+    }
+    setSessionPeriod(period)
+  }, [sessionStart])
+
+  const onSessionStartChange = useCallback((d) => {
+    if (!d) return
+    setSessionStart(d)
+    setSessionPeriod(SESSION_PERIOD.CUSTOM)
+  }, [])
+
+  const onSessionEndChange = useCallback((d) => {
+    if (!d) return
+    setSessionEnd(d)
+    setSessionPeriod(SESSION_PERIOD.CUSTOM)
+  }, [])
 
   const toWeekdayArr = (set) => {
     if (set.size === 0 || set.size >= 7) return null
@@ -216,6 +246,7 @@ export default function HalakatPage() {
     const { sessionStart: s, sessionEnd: e } = defaultHalakaSessionDates()
     setSessionStart(s)
     setSessionEnd(e)
+    setSessionPeriod(SESSION_PERIOD.EVENING)
     setTasmeeDays(new Set())
     setReviewDays(new Set())
     setEditorOpen(true)
@@ -252,6 +283,12 @@ export default function HalakatPage() {
     const r = h.reviewWeekdays
     setReviewDays(
       r && Array.isArray(r) && r.length > 0 && r.length < 7 ? new Set(r) : new Set(),
+    )
+    const per = h.sessionDayPeriod
+    setSessionPeriod(
+      per === SESSION_PERIOD.MORNING || per === SESSION_PERIOD.EVENING || per === SESSION_PERIOD.CUSTOM
+        ? per
+        : SESSION_PERIOD.CUSTOM,
     )
     setEditorOpen(true)
   }
@@ -291,6 +328,7 @@ export default function HalakatPage() {
       reviewWeekdays,
       tasmeeWeekdayLabels: weekdayArrLabel(tasmeeWeekdays),
       reviewWeekdayLabels: weekdayArrLabel(reviewWeekdays),
+      sessionDayPeriod: sessionPeriod,
     }
     const next = editingId ? saved.map((x) => (x.id === editingId ? halaka : x)) : [halaka, ...saved]
     setSaveBusy(true)
@@ -627,19 +665,61 @@ export default function HalakatPage() {
               </button>
             ))}
           </div>
+          <p className="rh-plans__field-label">فترة الحلقة (الوقت)</p>
+          <p className="ui-field__hint" style={{ marginTop: 0, marginBottom: '0.4rem' }}>
+            صباحاً أو مساءً تضبط الأوقات على <strong>نفس يوم</strong> بداية الحلقة (هجرياً). «مخصص» لأي تاريخ ومدة. إن
+            زادت المدة عن 12 ساعة تُعرض كـ «مدة مفتوحة» في البطاقة.
+          </p>
+          <div className="rh-segment rh-segment--plans" style={{ marginBottom: 'var(--rh-space-3)' }}>
+            <button
+              type="button"
+              className={[
+                'rh-segment__btn',
+                sessionPeriod === SESSION_PERIOD.MORNING ? 'rh-segment__btn--active' : '',
+              ]
+                .filter(Boolean)
+                .join(' ')}
+              onClick={() => applySessionPeriod(SESSION_PERIOD.MORNING)}
+            >
+              <span className="rh-segment__label">صباحاً</span>
+            </button>
+            <button
+              type="button"
+              className={[
+                'rh-segment__btn',
+                sessionPeriod === SESSION_PERIOD.EVENING ? 'rh-segment__btn--active' : '',
+              ]
+                .filter(Boolean)
+                .join(' ')}
+              onClick={() => applySessionPeriod(SESSION_PERIOD.EVENING)}
+            >
+              <span className="rh-segment__label">مساءً</span>
+            </button>
+            <button
+              type="button"
+              className={['rh-segment__btn', sessionPeriod === SESSION_PERIOD.CUSTOM ? 'rh-segment__btn--active' : '']
+                .filter(Boolean)
+                .join(' ')}
+              onClick={() => setSessionPeriod(SESSION_PERIOD.CUSTOM)}
+            >
+              <span className="rh-segment__label">مخصص</span>
+            </button>
+          </div>
           <p className="rh-plans__field-label">بداية ونهاية الحلقة (تاريخ ووقت)</p>
           <div className="rh-plans__dates-grid">
             <RhDateTimePickerField
               label="البداية"
               selected={sessionStart}
-              onChange={(d) => d && setSessionStart(d)}
+              onChange={onSessionStartChange}
               maxDate={sessionEnd || undefined}
+              timeIntervals={5}
             />
             <RhDateTimePickerField
               label="النهاية"
               selected={sessionEnd}
-              onChange={(d) => d && setSessionEnd(d)}
+              onChange={onSessionEndChange}
               minDate={sessionStart || undefined}
+              timeIntervals={5}
             />
           </div>
           <p className="ui-field__hint">المدة: {durationLabel}</p>

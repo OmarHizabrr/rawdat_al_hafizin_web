@@ -30,11 +30,29 @@ export function sessionDurationLabelAr(startHHmm, endHHmm) {
   const t2 = Number(m2[1]) * 60 + Number(m2[2])
   let diff = t2 - t1
   if (diff <= 0) return 'تأكد أن وقت النهاية بعد البداية'
+  if (diff > 12 * 60) return 'مدة مفتوحة (تتجاوز نصف يوم)'
   const h = Math.floor(diff / 60)
   const mm = diff % 60
   if (h && mm) return `${h} ساعة و${mm} دقيقة`
   if (h) return `${h} ساعة`
   return `${mm} دقيقة`
+}
+
+/** أكثر من 12 ساعة = نصف يوم: تُعرض المدة كـ «مفتوحة» في واجهة الحلقات */
+const MS_HALF_DAY = 12 * 60 * 60 * 1000
+
+/**
+ * مدة الحلقة للعرض: إن تجاوزت نصف يوم تُوصف بأنها مفتوحة.
+ * @param {Date} startDate
+ * @param {Date} endDate
+ */
+export function halakaSessionDurationAr(startDate, endDate) {
+  if (!(startDate instanceof Date) || !(endDate instanceof Date)) return '—'
+  if (Number.isNaN(startDate.getTime()) || Number.isNaN(endDate.getTime())) return '—'
+  const ms = endDate.getTime() - startDate.getTime()
+  if (ms <= 0) return 'تأكد أن نهاية الحلقة بعد بدايتها'
+  if (ms > MS_HALF_DAY) return 'مدة مفتوحة (تتجاوز نصف يوم)'
+  return durationBetweenDatesAr(startDate, endDate)
 }
 
 /** فرق دقيقتين بين تاريخين كاملين */
@@ -79,7 +97,7 @@ export function halakaSessionDisplay(h) {
         mode: 'datetime',
         startLabel: a.toLocaleString('ar-SA', dtFmt),
         endLabel: b.toLocaleString('ar-SA', dtFmt),
-        durationLabel: durationBetweenDatesAr(a, b),
+        durationLabel: halakaSessionDurationAr(a, b),
       }
     }
   }
