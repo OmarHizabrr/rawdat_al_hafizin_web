@@ -141,3 +141,10 @@ export async function reviewProfileRequest(actorUser, targetUserId, nextStatus, 
     userData: actorUser,
   })
 }
+
+/** حذف سجل طلب الالتحاق (مستند المستخدم) — يتطلب صلاحيات قواعد المطابقة لمن يدير النظام. */
+export async function deleteProfileRequest(actorUser, targetUserId) {
+  if (!actorUser?.uid || !targetUserId) return
+  const ref = firestoreApi.getUserProfileRequestDoc(targetUserId)
+  await firestoreApi.deleteData(ref)
+}

@@ -1,10 +1,11 @@
-import { CheckCircle2, Download, XCircle } from 'lucide-react'
+import { CheckCircle2, Download, Trash2, XCircle } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { CrossNav } from '../components/CrossNav.jsx'
 import { useAuth } from '../context/useAuth.js'
 import { useSiteContent } from '../context/useSiteContent.js'
 import {
+  deleteProfileRequest,
   PROFILE_REQUEST_STATUS,
   reviewProfileRequest,
   subscribeAllProfileRequests,
@@ -22,6 +23,7 @@ export default function AdminApplicationRequestsPage() {
   const [busyId, setBusyId] = useState('')
   const [rejectingRow, setRejectingRow] = useState(null)
   const [rejectReason, setRejectReason] = useState('')
+  const [deleteTarget, setDeleteTarget] = useState(null)
 
   useEffect(() => {
     document.title = `طلبات الالتحاق — ${branding.siteTitle}`
@@ -69,6 +71,20 @@ export default function AdminApplicationRequestsPage() {
     }
   }
 
+  const onConfirmDelete = async () => {
+    if (!user?.uid || !deleteTarget?.userId) return
+    setBusyId(deleteTarget.userId)
+    try {
+      await deleteProfileRequest(user, deleteTarget.userId)
+      toast.success('تم حذف سجل طلب الالتحاق نهائياً.', 'تم')
+      setDeleteTarget(null)
+    } catch {
+      toast.warning('تعذّر حذف الطلب. تحقق من صلاحياتك أو قواعد Firestore.', 'تنبيه')
+    } finally {
+      setBusyId('')
+    }
+  }
+
   const onReject = async () => {
     if (!user?.uid || !rejectingRow?.userId) return
     setBusyId(rejectingRow.userId)
@@ -101,7 +117,8 @@ export default function AdminApplicationRequestsPage() {
         <h1 className="rh-admin-users__title">طلبات الالتحاق</h1>
         <p className="rh-admin-users__desc">
           جميع الطلبات الواردة من الطلاب تظهر هنا مع بياناتهم كاملة وصورة الحساب. يمكن القبول أو الرفض في أي وقت،
-          كما يمكنك حفظ نسخة من الطلبات الظاهرة (بعد تطبيق البحث) كملف جدول يفتح في Excel.
+          كما يمكنك حفظ نسخة من الطلبات الظاهرة (بعد تطبيق البحث) كملف جدول يفتح في Excel، أو حذف سجل طلب
+          نهائياً عند الحاجة.
         </p>
       </header>
 
@@ -190,6 +207,17 @@ export default function AdminApplicationRequestsPage() {
                 <RhIcon as={XCircle} size={16} strokeWidth={RH_ICON_STROKE} />
                 رفض
               </Button>
+              <Button
+                type="button"
+                size="sm"
+                variant="danger"
+                disabled={busyId === r.userId}
+                onClick={() => setDeleteTarget(r)}
+                title="حذف سجل طلب الالتحاق من قاعدة البيانات"
+              >
+                <RhIcon as={Trash2} size={16} strokeWidth={RH_ICON_STROKE} />
+                حذف الطلب
+              </Button>
               <Link to={`/app/plans?uid=${encodeURIComponent(r.userId)}`} className="ui-btn ui-btn--secondary ui-btn--sm">
                 فتح خطط المستخدم
               </Link>
@@ -203,6 +231,40 @@ export default function AdminApplicationRequestsPage() {
           <p className="rh-admin-users__empty">لا توجد طلبات مطابقة حالياً.</p>
         </section>
       ) : null}
+
+      <Modal
+        open={Boolean(deleteTarget)}
+        title="حذف طلب الالتحاق"
+        onClose={() => !busyId && setDeleteTarget(null)}
+        size="sm"
+        closeOnBackdrop={!busyId}
+        closeOnEsc={!busyId}
+        showClose={!busyId}
+      >
+        <p className="rh-settings-footnote" style={{ marginTop: 0 }}>
+          سيتم <strong>حذف</strong> سجل الطلب فقط من «طلب الالتحاق» المخزن للمستخدم. يمكنه إعادة إرسال طلب جديد لاحقاً. لا
+          يُلغي هذا حسابه في المنصة.
+        </p>
+        {deleteTarget ? (
+          <p className="rh-plans__saved-meta" style={{ marginBottom: '0.5rem' }}>
+            الطالب: {deleteTarget.fullName || '—'} — {deleteTarget.email || deleteTarget.userId}
+          </p>
+        ) : null}
+        <div className="rh-admin-users__modal-actions">
+          <Button
+            type="button"
+            variant="danger"
+            onClick={onConfirmDelete}
+            loading={busyId === deleteTarget?.userId}
+            disabled={Boolean(busyId && busyId !== deleteTarget?.userId)}
+          >
+            نعم، حذف نهائياً
+          </Button>
+          <Button type="button" variant="ghost" onClick={() => setDeleteTarget(null)} disabled={Boolean(busyId)}>
+            إلغاء
+          </Button>
+        </div>
+      </Modal>
 
       <Modal
         open={Boolean(rejectingRow)}
