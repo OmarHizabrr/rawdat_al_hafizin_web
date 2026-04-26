@@ -106,22 +106,35 @@ body {
   max-width: calc(var(--max) + 3rem);
   width: 100%;
   margin: -1.5rem auto 0;
-  padding: 0 1.25rem 2.5rem;
+  padding: 0 clamp(1rem, 3.5vw, 1.35rem) clamp(1.75rem, 4vw, 2.5rem);
 }
 
 .card {
   background: var(--rh-surface);
-  border-radius: var(--rh-radius-xl);
-  padding: 1.35rem 1.35rem 1.5rem;
-  margin-bottom: 1rem;
-  border: 1px solid var(--rh-border);
+  border-radius: var(--rh-radius-lg);
+  padding: var(--rh-card-pad) var(--rh-card-pad) calc(var(--rh-card-pad) * 1.05);
+  margin-bottom: var(--rh-space-3);
+  border: 1px solid color-mix(in srgb, var(--rh-border) 90%, var(--rh-text) 1.2%);
   box-shadow: var(--rh-shadow-sm);
+  min-width: 0;
+  box-sizing: border-box;
+  transition:
+    box-shadow 0.2s ease,
+    border-color 0.2s ease;
+}
+
+@media (min-width: 900px) {
+  .card {
+    border-radius: var(--rh-radius-xl);
+    box-shadow: 0 1px 0 rgba(0, 0, 0, 0.04), var(--rh-shadow-sm);
+  }
 }
 
 .card h2 {
-  font-size: 1.15rem;
+  font-size: clamp(1.05rem, 2.2vw, 1.15rem);
   font-weight: 700;
-  margin-bottom: 0.85rem;
+  margin-bottom: clamp(0.55rem, 1.2vw, 0.85rem);
+  line-height: var(--rh-leading-tight);
   display: flex;
   align-items: center;
   gap: 0.5rem;
@@ -811,22 +824,29 @@ a.rh-sidebar__brand-link.rh-sidebar__brand-link--active {
 
 .rh-content {
   flex: 1;
-  padding: var(--rh-space-5) var(--rh-space-4);
-  padding-bottom: max(var(--rh-space-6), env(safe-area-inset-bottom, 0));
-  max-width: min(72rem, 100%);
   width: 100%;
+  max-width: var(--rh-content-max);
   margin-inline: auto;
+  min-width: 0;
+  box-sizing: border-box;
+  padding: clamp(0.75rem, 1.8vw, 1.5rem) clamp(0.65rem, 1.5vw, 1.15rem);
+  padding-bottom: max(clamp(0.75rem, 1.8vw, 1.5rem), env(safe-area-inset-bottom, 0));
+  overflow-x: clip;
+}
+
+@media (min-width: 900px) {
+  .rh-content {
+    padding: clamp(1rem, 1.3vw, 1.4rem) clamp(0.9rem, 1.2vw, 1.5rem);
+    padding-bottom: max(var(--rh-space-6), env(safe-area-inset-bottom, 0));
+  }
 }
 
 @media (max-width: 899px) {
   .rh-content {
-    max-width: 100%;
-    min-width: 0;
-    overflow-x: clip;
-    padding-top: var(--rh-space-5);
-    padding-bottom: max(var(--rh-space-6), env(safe-area-inset-bottom, 0));
-    padding-inline-start: max(var(--rh-space-4), env(safe-area-inset-left, 0px));
-    padding-inline-end: max(var(--rh-space-4), env(safe-area-inset-right, 0px));
+    padding-top: var(--rh-space-4);
+    padding-bottom: max(var(--rh-space-5), env(safe-area-inset-bottom, 0));
+    padding-inline-start: max(var(--rh-space-3), env(safe-area-inset-left, 0px));
+    padding-inline-end: max(var(--rh-space-3), env(safe-area-inset-right, 0px));
   }
 }
 
@@ -2765,11 +2785,11 @@ a.rh-sidebar__brand-link.rh-sidebar__brand-link--active {
 .rh-pending-welcome__content {
   flex: 1;
   width: 100%;
-  max-width: min(72rem, 100%);
+  max-width: var(--rh-content-max);
   margin-inline: auto;
   box-sizing: border-box;
-  padding: var(--rh-space-5) var(--rh-space-4);
-  padding-bottom: max(var(--rh-space-6), env(safe-area-inset-bottom, 0));
+  padding: clamp(0.85rem, 1.4vw, 1.3rem) clamp(0.65rem, 1.3vw, 1.1rem);
+  padding-bottom: max(var(--rh-space-5), env(safe-area-inset-bottom, 0));
   min-width: 0;
 }
 
@@ -3354,11 +3374,19 @@ button.rh-home-quick-icon {
 
 .rh-settings-card {
   background: var(--rh-surface);
-  border-radius: var(--rh-radius-xl);
-  border: 1px solid var(--rh-border);
-  box-shadow: var(--rh-shadow-sm);
-  padding: var(--rh-space-6);
-  margin-bottom: var(--rh-space-5);
+  border-radius: var(--rh-radius-lg);
+  border: 1px solid color-mix(in srgb, var(--rh-border) 90%, var(--rh-text) 1.5%);
+  box-shadow: 0 1px 0 rgba(0, 0, 0, 0.04), var(--rh-shadow-sm);
+  padding: clamp(var(--rh-space-4), 1.6vw, var(--rh-space-6));
+  margin-bottom: clamp(var(--rh-space-3), 1.2vw, var(--rh-space-5));
+  min-width: 0;
+  box-sizing: border-box;
+}
+
+@media (min-width: 900px) {
+  .rh-settings-card {
+    border-radius: var(--rh-radius-xl);
+  }
 }
 
 .rh-settings-card__head {
@@ -4322,13 +4350,29 @@ button.rh-home-quick-icon {
 
 .rh-plans__saved-card {
   background: var(--rh-surface);
-  border: 1px solid var(--rh-border);
-  border-radius: var(--rh-radius-xl);
-  padding: var(--rh-space-4);
-  box-shadow: var(--rh-shadow-sm);
+  border: 1px solid color-mix(in srgb, var(--rh-border) 90%, var(--rh-text) 1.2%);
+  border-radius: var(--rh-radius-lg);
+  padding: clamp(var(--rh-space-3), 1.2vw, var(--rh-space-5));
+  box-shadow: 0 1px 0 rgba(0, 0, 0, 0.04), var(--rh-shadow-sm);
   display: flex;
   flex-direction: column;
   gap: var(--rh-space-2);
+  min-width: 0;
+  box-sizing: border-box;
+  transition: box-shadow 0.2s ease, border-color 0.2s ease;
+}
+
+@media (min-width: 900px) {
+  .rh-plans__saved-card {
+    border-radius: var(--rh-radius-xl);
+  }
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .rh-plans__saved-card:hover {
+    box-shadow: var(--rh-shadow-md);
+    border-color: color-mix(in srgb, var(--rh-border) 75%, var(--rh-primary) 10%);
+  }
 }
 
 .rh-plans__saved-head {
@@ -4607,12 +4651,12 @@ button.rh-home-quick-icon {
 @media (max-width: 899px) {
   .rh-mob-app-scaffold {
     background: var(--rh-surface);
-    border-radius: 1.35rem 1.35rem 0 0;
+    border-radius: 1.15rem 1.15rem 0 0;
     margin-inline: 0;
-    margin-top: var(--rh-space-2);
-    padding-inline-start: max(var(--rh-space-3), env(safe-area-inset-left, 0px));
-    padding-inline-end: max(var(--rh-space-3), env(safe-area-inset-right, 0px));
-    padding-bottom: max(var(--rh-space-4), env(safe-area-inset-bottom, 0));
+    margin-top: var(--rh-space-1);
+    padding-inline-start: max(var(--rh-space-2), env(safe-area-inset-left, 0px));
+    padding-inline-end: max(var(--rh-space-2), env(safe-area-inset-right, 0px));
+    padding-bottom: max(var(--rh-space-3), env(safe-area-inset-bottom, 0));
     min-height: min(
       calc(100svh - 4.5rem - env(safe-area-inset-top, 0px)),
       calc(100dvh - 4.5rem - env(safe-area-inset-top, 0px))
@@ -4620,7 +4664,7 @@ button.rh-home-quick-icon {
     max-width: 100%;
     min-width: 0;
     box-sizing: border-box;
-    box-shadow: 0 -6px 28px rgba(0, 0, 0, 0.06);
+    box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.05);
     border: 1px solid var(--rh-border);
     border-bottom: none;
     overflow-x: clip;
@@ -4708,10 +4752,10 @@ a.rh-peek-btn {
 /* إدارة المستخدمين */
 .rh-admin-users {
   width: 100%;
-  max-width: min(52rem, 100%);
+  max-width: min(56rem, 100%);
   margin-inline: auto;
-  padding-inline: clamp(0.5rem, 2.5vw, 1rem);
-  padding-block-end: var(--rh-space-8);
+  padding-inline: 0;
+  padding-block-end: clamp(var(--rh-space-5), 3vw, var(--rh-space-8));
 }
 
 .rh-admin-users__hero {
@@ -4789,18 +4833,40 @@ a.rh-peek-btn {
   padding: 0;
   display: grid;
   grid-template-columns: 1fr;
-  gap: var(--rh-space-3);
+  gap: clamp(var(--rh-space-2), 1.2vw, var(--rh-space-4));
 }
 
 @media (min-width: 640px) {
   .rh-admin-users__grid {
-    grid-template-columns: repeat(2, 1fr);
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 
 @media (min-width: 1024px) {
   .rh-admin-users__grid {
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+/* بطاقات طلبات الالتحاق / المستخدمين — مظهر موحّد */
+.card.rh-admin-users__card,
+.rh-admin-users__card.card {
+  padding: clamp(var(--rh-space-3), 1.2vw, var(--rh-space-5));
+  background: var(--rh-surface);
+  border: 1px solid color-mix(in srgb, var(--rh-border) 88%, var(--rh-forest-400) 4%);
+  box-shadow: 0 1px 0 rgba(0, 0, 0, 0.04), var(--rh-shadow-sm);
+  border-radius: var(--rh-radius-lg);
+  transition:
+    box-shadow 0.2s ease,
+    border-color 0.2s ease,
+    transform 0.2s ease;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .card.rh-admin-users__card:hover,
+  .rh-admin-users__card.card:hover {
+    box-shadow: var(--rh-shadow-md);
+    border-color: color-mix(in srgb, var(--rh-border) 70%, var(--rh-primary) 8%);
   }
 }
 
@@ -7057,6 +7123,11 @@ a.rh-peek-btn {
   .rh-admin-users__row--actions {
     flex-direction: column;
     align-items: stretch;
+  }
+
+  .rh-admin-users__row--actions .ui-btn {
+    width: 100%;
+    justify-content: center;
   }
 
   .rh-admin-users__peek-row {

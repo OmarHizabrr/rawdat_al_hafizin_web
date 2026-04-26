@@ -93,6 +93,10 @@ html {
   --shadow: var(--rh-shadow-md);
   --font: var(--rh-font);
   --max: 720px;
+
+  /* تباعد محتوى التطبيق — يُراعي الشاشات الضيّقة دون هدر أفقي */
+  --rh-content-max: min(72rem, calc(100% - 1.5rem));
+  --rh-card-pad: clamp(0.85rem, 1.6vw, 1.4rem);
 }
 
 html[data-theme='dark'] {
