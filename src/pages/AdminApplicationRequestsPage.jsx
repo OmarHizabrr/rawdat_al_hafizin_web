@@ -39,7 +39,7 @@ export default function AdminApplicationRequestsPage() {
     if (!s) return rows
     return rows.filter((r) => {
       const hay =
-        `${r.fullName} ${r.email} ${r.phone} ${r.nationality} ${r.city} ${r.userId}`.toLowerCase()
+        `${r.fullName} ${r.email} ${r.phone} ${r.nationality} ${r.city} ${r.occupation} ${r.userId}`.toLowerCase()
       return hay.includes(s)
     })
   }, [rows, q])
@@ -97,7 +97,7 @@ export default function AdminApplicationRequestsPage() {
       <section className="card rh-admin-users__toolbar">
         <SearchField
           label="بحث"
-          placeholder="ابحث بالاسم أو البريد أو الهاتف أو الجنسية..."
+          placeholder="ابحث بالاسم أو البريد أو الهاتف أو الجنسية أو الوظيفة..."
           value={q}
           onChange={(e) => setQ(e.target.value)}
         />
@@ -131,6 +131,7 @@ export default function AdminApplicationRequestsPage() {
               <span><strong>العمر:</strong> {r.age || '—'}</span>
               <span><strong>الجنس:</strong> {r.gender === 'female' ? 'أنثى' : 'ذكر'}</span>
               <span><strong>المستوى التعليمي:</strong> {r.educationLevel || '—'}</span>
+              <span><strong>الوظيفة:</strong> {r.occupation || '—'}</span>
               <span><strong>الحفظ:</strong> {r.quranMemorizedJuz || 0} / 30 جزء</span>
             </div>
 

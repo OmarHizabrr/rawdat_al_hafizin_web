@@ -28,9 +28,10 @@ export function ProtectedRoute() {
   const status = String(user.profileRequestStatus || '').trim()
   const isStudent = role === 'student'
   const onApplicationPage = location.pathname === '/app/application'
+  const onWelcomePage = location.pathname === '/app/welcome'
   const approved = status === PROFILE_REQUEST_STATUS.APPROVED
 
-  if (isStudent && !approved && !onApplicationPage) {
+  if (isStudent && !approved && !onApplicationPage && !onWelcomePage) {
     return <Navigate to="/app/application" replace state={{ from: location }} />
   }
 

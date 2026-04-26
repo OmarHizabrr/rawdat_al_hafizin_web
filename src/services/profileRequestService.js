@@ -9,17 +9,21 @@ export const PROFILE_REQUEST_STATUS = {
 }
 
 function normalizeProfileRequestRow(userId, raw = {}) {
+  const normalizedAge = Number(raw.age) || 0
   return {
     userId,
     fullName: String(raw.fullName || '').trim(),
     phone: String(raw.phone || '').trim(),
+    phoneCountry: String(raw.phoneCountry || '').trim(),
+    phoneDialCode: String(raw.phoneDialCode || '').trim(),
     nationality: String(raw.nationality || '').trim(),
     permanentResidence: String(raw.permanentResidence || '').trim(),
     city: String(raw.city || '').trim(),
-    age: Math.max(1, Number(raw.age) || 0),
+    age: Math.max(7, Math.min(150, normalizedAge)),
     email: String(raw.email || '').trim(),
     gender: raw.gender === 'female' ? 'female' : 'male',
     educationLevel: String(raw.educationLevel || '').trim(),
+    occupation: String(raw.occupation || '').trim(),
     quranMemorizedJuz: Math.max(0, Math.min(30, Number(raw.quranMemorizedJuz) || 0)),
     status:
       raw.status === PROFILE_REQUEST_STATUS.APPROVED || raw.status === PROFILE_REQUEST_STATUS.REJECTED
@@ -59,13 +63,16 @@ export async function upsertMyProfileRequest(user, payload) {
       userId,
       fullName: String(payload?.fullName || '').trim(),
       phone: String(payload?.phone || '').trim(),
+      phoneCountry: String(payload?.phoneCountry || '').trim(),
+      phoneDialCode: String(payload?.phoneDialCode || '').trim(),
       nationality: String(payload?.nationality || '').trim(),
       permanentResidence: String(payload?.permanentResidence || '').trim(),
       city: String(payload?.city || '').trim(),
-      age: Math.max(1, Number(payload?.age) || 1),
+      age: Math.max(7, Math.min(150, Number(payload?.age) || 7)),
       email: String(user?.email || payload?.email || '').trim(),
       gender: payload?.gender === 'female' ? 'female' : 'male',
       educationLevel: String(payload?.educationLevel || '').trim(),
+      occupation: String(payload?.occupation || '').trim(),
       quranMemorizedJuz: juz,
       photoURL: String(user?.photoURL || '').trim(),
       displayName: String(user?.displayName || '').trim(),

@@ -1,3 +1,5 @@
+import { getCountries, getCountryCallingCode } from 'libphonenumber-js/min'
+
 export const COUNTRIES_AR = [
   'أفغانستان',
   'ألبانيا',
@@ -197,3 +199,23 @@ export const COUNTRY_OPTIONS_AR = COUNTRIES_AR.map((name) => ({
   value: name,
   label: name,
 }))
+
+const regionNamesAr =
+  typeof Intl !== 'undefined' && typeof Intl.DisplayNames === 'function'
+    ? new Intl.DisplayNames(['ar'], { type: 'region' })
+    : null
+
+const collatorAr = typeof Intl !== 'undefined' && Intl.Collator ? new Intl.Collator('ar') : null
+
+export const COUNTRY_DIAL_OPTIONS_AR = getCountries()
+  .map((regionCode) => {
+    const countryName = regionNamesAr?.of(regionCode) || regionCode
+    const dialCode = `+${getCountryCallingCode(regionCode)}`
+    return {
+      value: regionCode,
+      label: `${countryName} (${dialCode})`,
+      countryName,
+      dialCode,
+    }
+  })
+  .sort((a, b) => (collatorAr ? collatorAr.compare(a.countryName, b.countryName) : a.countryName.localeCompare(b.countryName)))
