@@ -49,6 +49,11 @@
   box-shadow: var(--rh-focus-ring);
 }
 
+.ui-btn--danger:focus-visible {
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--rh-danger) 60%, transparent),
+    0 0 0 4px color-mix(in srgb, var(--rh-danger) 24%, transparent);
+}
+
 .ui-btn--sm {
   min-height: 2.35rem;
   padding: 0 var(--rh-space-4);
@@ -1338,11 +1343,16 @@ html[data-theme='dark'] .rh-themed-scroll::-webkit-scrollbar-thumb:hover {
 
 .ui-multi__row:hover,
 .ui-multi__row--highlight {
-  background: var(--rh-bg);
+  background: var(--rh-primary-muted);
 }
 
 .ui-multi__row--selected {
-  background: color-mix(in srgb, var(--rh-primary-muted) 45%, transparent);
+  background: color-mix(in srgb, var(--rh-primary-muted) 50%, var(--rh-surface) 50%);
+}
+
+/* صف مُختار + مُميّز بلوحة المفاتيح */
+.ui-multi__row--selected.ui-multi__row--highlight {
+  background: color-mix(in srgb, var(--rh-primary) 16%, var(--rh-primary-muted) 84%);
 }
 
 .ui-multi__check {
