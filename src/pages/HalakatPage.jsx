@@ -10,16 +10,22 @@ import { useSiteContent } from '../context/useSiteContent.js'
 import { firestoreApi } from '../services/firestoreApi.js'
 import { subscribeAllUsers } from '../services/adminUsersService.js'
 import {
+  HALAKA_ATTENDANCE_STATUSES,
   HALAKA_MEMBER_ROLES,
   addUserToHalaka,
+  closeHalakaSession,
   joinPublicHalaka,
   loadHalakat,
   loadHalakatMembersWithProfiles,
+  loadHalakaSessions,
+  loadSessionAttendance,
   removeHalakaForUser,
   removeHalakaMember,
   saveHalakat,
+  saveHalakaSession,
   setHalakaMemberRole,
   subscribeHalakat,
+  upsertSessionAttendance,
 } from '../utils/halakatStorage.js'
 import { combineHijriYmdAndHHmm } from '../utils/hijriDates.js'
 import {
@@ -42,6 +48,7 @@ import {
 } from '../ui/index.js'
 import { formatYmd } from '../ui/rhPickerUtils.js'
 import { RhIcon, RH_ICON_STROKE } from '../ui/RhIcon.jsx'
+import { VOLUMES, VOLUME_BY_ID } from '../data/volumes.js'
 
 const WEEKDAYS = [
   { d: 0, label: 'الأحد' },
@@ -58,18 +65,64 @@ function newId() {
 }
 
 function halakaCanEdit(h) {
-  return h?.halakaRole !== HALAKA_MEMBER_ROLES.MEMBER
+  return h?.halakaRole !== HALAKA_MEMBER_ROLES.STUDENT
 }
 
 function halakaCanManageMembers(h) {
   const r = h?.halakaRole
-  return r === HALAKA_MEMBER_ROLES.OWNER || r === HALAKA_MEMBER_ROLES.ADMIN
+  return r === HALAKA_MEMBER_ROLES.OWNER || r === HALAKA_MEMBER_ROLES.SUPERVISOR
 }
 
 function roleLabel(role) {
   if (role === HALAKA_MEMBER_ROLES.OWNER) return 'مالك'
-  if (role === HALAKA_MEMBER_ROLES.ADMIN) return 'مشرف'
-  return 'عضو'
+  if (role === HALAKA_MEMBER_ROLES.SUPERVISOR) return 'مشرف'
+  if (role === HALAKA_MEMBER_ROLES.TEACHER) return 'معلم'
+  return 'طالب'
+}
+
+const ROLE_RANK = {
+  [HALAKA_MEMBER_ROLES.OWNER]: 4,
+  [HALAKA_MEMBER_ROLES.SUPERVISOR]: 3,
+  [HALAKA_MEMBER_ROLES.TEACHER]: 2,
+  [HALAKA_MEMBER_ROLES.STUDENT]: 1,
+}
+
+function normalizeRole(role) {
+  if (role === HALAKA_MEMBER_ROLES.OWNER) return HALAKA_MEMBER_ROLES.OWNER
+  if (role === HALAKA_MEMBER_ROLES.SUPERVISOR) return HALAKA_MEMBER_ROLES.SUPERVISOR
+  if (role === HALAKA_MEMBER_ROLES.TEACHER) return HALAKA_MEMBER_ROLES.TEACHER
+  return HALAKA_MEMBER_ROLES.STUDENT
+}
+
+function canManageRole(actorRole, targetRole) {
+  const actor = normalizeRole(actorRole)
+  const target = normalizeRole(targetRole)
+  if (actor === HALAKA_MEMBER_ROLES.OWNER) return true
+  if (actor === HALAKA_MEMBER_ROLES.SUPERVISOR) {
+    return target === HALAKA_MEMBER_ROLES.TEACHER || target === HALAKA_MEMBER_ROLES.STUDENT
+  }
+  if (actor === HALAKA_MEMBER_ROLES.TEACHER) return target === HALAKA_MEMBER_ROLES.STUDENT
+  return false
+}
+
+function canAssignRole(actorRole, targetRole, nextRole) {
+  const actor = normalizeRole(actorRole)
+  const target = normalizeRole(targetRole)
+  const next = normalizeRole(nextRole)
+  return (
+    canManageRole(actor, target) &&
+    canManageRole(actor, next) &&
+    (ROLE_RANK[next] || 0) < (ROLE_RANK[actor] || 0)
+  )
+}
+
+function attendanceStatusLabel(status) {
+  if (status === HALAKA_ATTENDANCE_STATUSES.PRESENT) return 'حاضر'
+  if (status === HALAKA_ATTENDANCE_STATUSES.ABSENT) return 'غائب'
+  if (status === HALAKA_ATTENDANCE_STATUSES.EXCUSED) return 'غياب بعذر'
+  if (status === HALAKA_ATTENDANCE_STATUSES.PERMITTED) return 'مستأذن'
+  if (status === HALAKA_ATTENDANCE_STATUSES.LATE) return 'متأخر'
+  return 'أخرى'
 }
 
 function weekdayArrLabel(arr) {
@@ -152,6 +205,22 @@ export default function HalakatPage() {
   const [memberPickerQuery, setMemberPickerQuery] = useState('')
   const [addingMemberUid, setAddingMemberUid] = useState('')
   const [memberRowBusy, setMemberRowBusy] = useState(null)
+  const [sessionsModalHalaka, setSessionsModalHalaka] = useState(null)
+  const [sessionsList, setSessionsList] = useState([])
+  const [sessionsLoading, setSessionsLoading] = useState(false)
+  const [sessionEditorStart, setSessionEditorStart] = useState(() => new Date())
+  const [sessionEditorEnd, setSessionEditorEnd] = useState(() => {
+    const d = new Date()
+    d.setHours(d.getHours() + 1)
+    return d
+  })
+  const [sessionEditorTitle, setSessionEditorTitle] = useState('')
+  const [sessionEditorNotes, setSessionEditorNotes] = useState('')
+  const [sessionSaveBusy, setSessionSaveBusy] = useState(false)
+  const [activeSession, setActiveSession] = useState(null)
+  const [sessionAttendanceRows, setSessionAttendanceRows] = useState([])
+  const [sessionAttendanceBusy, setSessionAttendanceBusy] = useState(false)
+  const [sessionCloseBusyId, setSessionCloseBusyId] = useState('')
 
   useEffect(() => {
     document.title = readOnly
@@ -191,6 +260,51 @@ export default function HalakatPage() {
       cancelled = true
     }
   }, [membersModal?.id, user?.uid])
+
+  useEffect(() => {
+    if (!sessionsModalHalaka?.id) {
+      setSessionsList([])
+      setActiveSession(null)
+      setSessionAttendanceRows([])
+      return
+    }
+    setSessionsLoading(true)
+    loadHalakaSessions(sessionsModalHalaka.id)
+      .then((rows) => {
+        setSessionsList(rows)
+        if (rows.length > 0 && !activeSession) setActiveSession(rows[0])
+      })
+      .finally(() => setSessionsLoading(false))
+  }, [sessionsModalHalaka?.id, activeSession])
+
+  useEffect(() => {
+    if (!sessionsModalHalaka?.id || !activeSession?.id) {
+      setSessionAttendanceRows([])
+      return
+    }
+    setSessionAttendanceBusy(true)
+    Promise.all([
+      loadSessionAttendance(sessionsModalHalaka.id, activeSession.id),
+      loadHalakatMembersWithProfiles(sessionsModalHalaka.id),
+    ])
+      .then(([attendanceRows, memberRows]) => {
+        const map = new Map(attendanceRows.map((r) => [r.userId, r]))
+        const rows = memberRows.map((m) => {
+          const a = map.get(m.userId) || {}
+          return {
+            userId: m.userId,
+            displayName: m.displayName || m.userId,
+            role: m.role,
+            attendanceStatus: a.attendanceStatus || HALAKA_ATTENDANCE_STATUSES.PRESENT,
+            memorizationVolumeId: a.memorizationVolumeId || '',
+            memorizedAmount: Number(a.memorizedAmount || 0),
+            notes: a.notes || '',
+          }
+        })
+        setSessionAttendanceRows(rows)
+      })
+      .finally(() => setSessionAttendanceBusy(false))
+  }, [sessionsModalHalaka?.id, activeSession?.id])
 
   useEffect(() => {
     if (!membersModal?.id || !user?.uid) {
@@ -441,6 +555,68 @@ export default function HalakatPage() {
       .finally(() => setMembersLoading(false))
   }
 
+  const activeHalakaRole = useMemo(() => {
+    if (!sessionsModalHalaka?.id) return HALAKA_MEMBER_ROLES.STUDENT
+    const row = saved.find((h) => h.id === sessionsModalHalaka.id)
+    return normalizeRole(row?.halakaRole)
+  }, [saved, sessionsModalHalaka?.id])
+
+  const canOpenSessions = (h) => Boolean(h?.id)
+
+  const canWriteSessionRows = canManageRole(activeHalakaRole, HALAKA_MEMBER_ROLES.STUDENT)
+
+  const refreshSessions = useCallback(async () => {
+    if (!sessionsModalHalaka?.id) return
+    setSessionsLoading(true)
+    try {
+      const rows = await loadHalakaSessions(sessionsModalHalaka.id)
+      setSessionsList(rows)
+      if (rows.length > 0 && !activeSession) setActiveSession(rows[0])
+      if (activeSession?.id) {
+        const same = rows.find((r) => r.id === activeSession.id)
+        if (same) setActiveSession(same)
+      }
+    } finally {
+      setSessionsLoading(false)
+    }
+  }, [sessionsModalHalaka?.id, activeSession])
+
+  const saveSessionRow = useCallback(
+    async (row) => {
+      if (!user || !sessionsModalHalaka?.id || !activeSession?.id) return
+      await upsertSessionAttendance(user, sessionsModalHalaka.id, activeSession.id, row.userId, {
+        attendanceStatus: row.attendanceStatus,
+        memorizationVolumeId: row.memorizationVolumeId,
+        memorizedAmount: row.memorizedAmount,
+        memorizedUnit: 'pages',
+        notes: row.notes,
+      })
+    },
+    [user, sessionsModalHalaka?.id, activeSession?.id],
+  )
+
+  const sessionSummary = useMemo(() => {
+    const stats = {
+      total: sessionAttendanceRows.length,
+      present: 0,
+      absent: 0,
+      excused: 0,
+      permitted: 0,
+      late: 0,
+      other: 0,
+    }
+    const volumeTotals = {}
+    for (const row of sessionAttendanceRows) {
+      const s = row.attendanceStatus || HALAKA_ATTENDANCE_STATUSES.OTHER
+      if (s in stats) stats[s] += 1
+      else stats.other += 1
+      const vid = String(row.memorizationVolumeId || '').trim()
+      if (!vid) continue
+      volumeTotals[vid] = (volumeTotals[vid] || 0) + Number(row.memorizedAmount || 0)
+    }
+    return { stats, volumeTotals }
+  }, [sessionAttendanceRows])
+
   const crossItems = useMemo(() => {
     const items = [
       { to: appLink('/app'), label: str('layout.nav_home') },
@@ -558,6 +734,20 @@ export default function HalakatPage() {
                   المعرف: <code className="rh-plans__plan-id">{h.id}</code>
                 </p>
                 <div className="rh-plans__saved-actions">
+                  {canOpenSessions(h) && (
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      size="sm"
+                      onClick={() => {
+                        setSessionsModalHalaka(h)
+                        setActiveSession(null)
+                      }}
+                    >
+                      <RhIcon as={Users} size={16} strokeWidth={RH_ICON_STROKE} />
+                      الجلسات
+                    </Button>
+                  )}
                   {halakaCanManageMembers(h) && can(PH, 'halaka_card_members') && (
                     <Button type="button" variant="secondary" size="sm" onClick={() => setMembersModal(h)}>
                       <RhIcon as={Users} size={16} strokeWidth={RH_ICON_STROKE} />
@@ -773,6 +963,306 @@ export default function HalakatPage() {
       </Modal>
 
       <Modal
+        open={Boolean(sessionsModalHalaka)}
+        title={sessionsModalHalaka ? `جلسات الحلقة: ${sessionsModalHalaka.name}` : ''}
+        onClose={() => {
+          if (sessionSaveBusy || sessionAttendanceBusy) return
+          setSessionsModalHalaka(null)
+          setSessionsList([])
+          setActiveSession(null)
+          setSessionAttendanceRows([])
+        }}
+        size="lg"
+        closeOnBackdrop={!sessionSaveBusy && !sessionAttendanceBusy}
+        closeOnEsc={!sessionSaveBusy && !sessionAttendanceBusy}
+        showClose={!sessionSaveBusy && !sessionAttendanceBusy}
+      >
+        <div className="rh-plan-members-modal__body">
+          <section className="rh-plan-members-modal__section">
+            <h3 className="rh-plan-members-modal__heading">فتح جلسة جديدة</h3>
+            <div className="rh-plans__dates-grid">
+              <TextField
+                label="عنوان الجلسة (اختياري)"
+                value={sessionEditorTitle}
+                onChange={(e) => setSessionEditorTitle(e.target.value)}
+              />
+              <TextAreaField
+                label="ملاحظات عامة"
+                rows={2}
+                value={sessionEditorNotes}
+                onChange={(e) => setSessionEditorNotes(e.target.value)}
+              />
+            </div>
+            <div className="rh-plans__dates-grid">
+              <RhDateTimePickerField
+                label="بداية الجلسة"
+                selected={sessionEditorStart}
+                onChange={(d) => d && setSessionEditorStart(d)}
+                maxDate={sessionEditorEnd || undefined}
+                timeIntervals={5}
+              />
+              <RhDateTimePickerField
+                label="نهاية الجلسة"
+                selected={sessionEditorEnd}
+                onChange={(d) => d && setSessionEditorEnd(d)}
+                minDate={sessionEditorStart || undefined}
+                timeIntervals={5}
+              />
+            </div>
+            <p className="ui-field__hint">
+              مدة الجلسة: {halakaSessionDurationAr(sessionEditorStart, sessionEditorEnd)}
+            </p>
+            <div className="rh-plans__actions">
+              <Button
+                type="button"
+                variant="primary"
+                loading={sessionSaveBusy}
+                disabled={!canWriteSessionRows}
+                onClick={async () => {
+                  if (!user || !sessionsModalHalaka?.id) return
+                  if (
+                    !sessionEditorStart ||
+                    !sessionEditorEnd ||
+                    sessionEditorEnd.getTime() <= sessionEditorStart.getTime()
+                  ) {
+                    toast.warning('تاريخ ووقت نهاية الجلسة يجب أن يكونا بعد البداية.', '')
+                    return
+                  }
+                  setSessionSaveBusy(true)
+                  try {
+                    const savedSession = await saveHalakaSession(user, sessionsModalHalaka.id, {
+                      title: sessionEditorTitle,
+                      startedAt: sessionEditorStart.toISOString(),
+                      endedAt: sessionEditorEnd.toISOString(),
+                      notes: sessionEditorNotes,
+                      status: 'open',
+                    })
+                    await refreshSessions()
+                    setActiveSession(savedSession)
+                    toast.success('تم فتح الجلسة.', 'تم')
+                  } catch {
+                    toast.warning('تعذّر فتح الجلسة.', '')
+                  } finally {
+                    setSessionSaveBusy(false)
+                  }
+                }}
+              >
+                فتح جلسة
+              </Button>
+            </div>
+          </section>
+
+          <section className="rh-plan-members-modal__section">
+            <h3 className="rh-plan-members-modal__heading">الجلسات المسجلة</h3>
+            {sessionsLoading ? (
+              <p>جاري تحميل الجلسات…</p>
+            ) : sessionsList.length === 0 ? (
+              <p className="rh-plans__saved-meta">لا توجد جلسات بعد.</p>
+            ) : (
+              <ul className="rh-members-chat-list">
+                {sessionsList.map((s) => (
+                  <li key={s.id} className="rh-members-chat__item">
+                    <div className="rh-members-chat__main">
+                      <strong>{s.title || 'جلسة حلقة'}</strong>
+                      <span className="rh-plans__saved-badge">{s.status === 'closed' ? 'مغلقة' : 'مفتوحة'}</span>
+                      <span className="rh-plans__saved-meta">
+                        {new Date(s.startedAt).toLocaleString('ar-SA')} — {new Date(s.endedAt).toLocaleString('ar-SA')} (
+                        {halakaSessionDurationAr(new Date(s.startedAt), new Date(s.endedAt))})
+                      </span>
+                    </div>
+                    <div className="rh-members-chat__actions">
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant={activeSession?.id === s.id ? 'secondary' : 'ghost'}
+                        onClick={() => setActiveSession(s)}
+                      >
+                        فتح التفاصيل
+                      </Button>
+                      {s.status !== 'closed' && (
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="ghost"
+                          loading={sessionCloseBusyId === s.id}
+                          disabled={!canWriteSessionRows}
+                          onClick={async () => {
+                            if (!user || !sessionsModalHalaka?.id) return
+                            setSessionCloseBusyId(s.id)
+                            try {
+                              await closeHalakaSession(user, sessionsModalHalaka.id, s.id, user)
+                              await refreshSessions()
+                              toast.success('تم إغلاق الجلسة.', 'تم')
+                            } catch {
+                              toast.warning('تعذّر إغلاق الجلسة.', '')
+                            } finally {
+                              setSessionCloseBusyId('')
+                            }
+                          }}
+                        >
+                          إغلاق الجلسة
+                        </Button>
+                      )}
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </section>
+
+          {activeSession && (
+            <section className="rh-plan-members-modal__section">
+              <h3 className="rh-plan-members-modal__heading">تفاصيل الجلسة: {activeSession.title || 'جلسة حلقة'}</h3>
+              <p className="rh-plans__saved-meta">
+                {activeSession.notes || 'لا توجد ملاحظات عامة.'}
+              </p>
+              <div className="rh-plans__saved-meta">
+                <strong>تقرير سريع:</strong> إجمالي {sessionSummary.stats.total} طالب — حاضر {sessionSummary.stats.present}،
+                غائب {sessionSummary.stats.absent}، بعذر {sessionSummary.stats.excused}، مستأذن {sessionSummary.stats.permitted}
+                ، متأخر {sessionSummary.stats.late}، أخرى {sessionSummary.stats.other}.
+              </div>
+              {Object.keys(sessionSummary.volumeTotals).length > 0 && (
+                <ul className="rh-plans__saved-meta">
+                  {Object.entries(sessionSummary.volumeTotals).map(([vid, amount]) => (
+                    <li key={vid}>
+                      {VOLUME_BY_ID[vid]?.label || vid}: {amount} صفحة
+                    </li>
+                  ))}
+                </ul>
+              )}
+              {sessionAttendanceBusy ? (
+                <p>جاري تحميل سجلات الحضور…</p>
+              ) : (
+                <ul className="rh-members-chat-list">
+                  {sessionAttendanceRows.map((row) => {
+                    const isSelf = row.userId === user?.uid
+                    const disabledRow =
+                      !canWriteSessionRows || (!isSelf && !canManageRole(activeHalakaRole, row.role))
+                    const isStudentSelf = row.userId === viewUserId && normalizeRole(row.role) === HALAKA_MEMBER_ROLES.STUDENT
+                    return (
+                      <li key={row.userId} className="rh-members-chat__item">
+                        <div className="rh-members-chat__main">
+                          <strong>
+                            {row.displayName} {isStudentSelf ? '(سجلي)' : ''}
+                          </strong>
+                          <span className="rh-plans__saved-badge">{roleLabel(row.role)}</span>
+                        </div>
+                        <div style={{ display: 'grid', gap: '0.4rem', width: '100%' }}>
+                          <label className="ui-field__label">
+                            الحالة
+                            <select
+                              className="ui-input"
+                              value={row.attendanceStatus}
+                              disabled={disabledRow}
+                              onChange={(e) => {
+                                const value = e.target.value
+                                setSessionAttendanceRows((prev) =>
+                                  prev.map((x) =>
+                                    x.userId === row.userId ? { ...x, attendanceStatus: value } : x,
+                                  ),
+                                )
+                              }}
+                              onBlur={async () => {
+                                if (disabledRow) return
+                                try {
+                                  await saveSessionRow(row)
+                                } catch {
+                                  toast.warning('تعذّر حفظ الحضور.', '')
+                                }
+                              }}
+                            >
+                              {Object.values(HALAKA_ATTENDANCE_STATUSES).map((s) => (
+                                <option key={s} value={s}>
+                                  {attendanceStatusLabel(s)}
+                                </option>
+                              ))}
+                            </select>
+                          </label>
+                          <div className="rh-plans__dates-grid">
+                            <label className="ui-field__label">
+                              المجلد
+                              <select
+                                className="ui-input"
+                                value={row.memorizationVolumeId}
+                                disabled={disabledRow}
+                                onChange={(e) => {
+                                  const value = e.target.value
+                                  setSessionAttendanceRows((prev) =>
+                                    prev.map((x) =>
+                                      x.userId === row.userId ? { ...x, memorizationVolumeId: value } : x,
+                                    ),
+                                  )
+                                }}
+                                onBlur={async () => {
+                                  if (disabledRow) return
+                                  try {
+                                    await saveSessionRow(row)
+                                  } catch {
+                                    toast.warning('تعذّر حفظ المجلد.', '')
+                                  }
+                                }}
+                              >
+                                <option value="">—</option>
+                                {VOLUMES.map((v) => (
+                                  <option key={v.id} value={v.id}>
+                                    {v.label}
+                                  </option>
+                                ))}
+                              </select>
+                            </label>
+                            <TextField
+                              label="المقدار (صفحات)"
+                              type="number"
+                              value={String(row.memorizedAmount || 0)}
+                              disabled={disabledRow}
+                              onChange={(e) => {
+                                const value = Number(e.target.value || 0)
+                                setSessionAttendanceRows((prev) =>
+                                  prev.map((x) => (x.userId === row.userId ? { ...x, memorizedAmount: value } : x)),
+                                )
+                              }}
+                              onBlur={async () => {
+                                if (disabledRow) return
+                                try {
+                                  await saveSessionRow(row)
+                                } catch {
+                                  toast.warning('تعذّر حفظ المقدار.', '')
+                                }
+                              }}
+                            />
+                          </div>
+                          <TextAreaField
+                            label="ملاحظات"
+                            rows={2}
+                            value={row.notes}
+                            disabled={disabledRow}
+                            onChange={(e) => {
+                              const value = e.target.value
+                              setSessionAttendanceRows((prev) =>
+                                prev.map((x) => (x.userId === row.userId ? { ...x, notes: value } : x)),
+                              )
+                            }}
+                            onBlur={async () => {
+                              if (disabledRow) return
+                              try {
+                                await saveSessionRow(row)
+                              } catch {
+                                toast.warning('تعذّر حفظ الملاحظات.', '')
+                              }
+                            }}
+                          />
+                        </div>
+                      </li>
+                    )
+                  })}
+                </ul>
+              )}
+            </section>
+          )}
+        </div>
+      </Modal>
+
+      <Modal
         open={Boolean(membersModal)}
         title={membersModal ? `أعضاء: ${membersModal.name}` : ''}
         onClose={() => {
@@ -857,6 +1347,7 @@ export default function HalakatPage() {
               <ul className="rh-members-chat-list">
                 {membersList.map((row) => {
                   const isOwner = row.role === HALAKA_MEMBER_ROLES.OWNER
+                  const actorRole = normalizeRole(membersModal?.halakaRole)
                   return (
                     <li key={row.userId} className="rh-members-chat__item">
                       <div className="rh-members-chat__main">
@@ -866,31 +1357,113 @@ export default function HalakatPage() {
                       {!isOwner && (
                         <div className="rh-members-chat__actions">
                           {can(PH, 'halaka_member_promote') && (
-                            <Button
-                              type="button"
-                              size="sm"
-                              variant="secondary"
-                              loading={memberRowBusy?.uid === row.userId && memberRowBusy?.kind === 'admin'}
-                              disabled={Boolean(memberRowBusy)}
-                              onClick={async () => {
-                                if (!user || !membersModal?.id) return
-                                const next =
-                                  row.role === HALAKA_MEMBER_ROLES.ADMIN
-                                    ? HALAKA_MEMBER_ROLES.MEMBER
-                                    : HALAKA_MEMBER_ROLES.ADMIN
-                                setMemberRowBusy({ uid: row.userId, kind: 'admin' })
-                                try {
-                                  await setHalakaMemberRole(user, membersModal.id, row.userId, next, user)
-                                  refreshMembers()
-                                } catch {
-                                  toast.warning('تعذّر تغيير الدور.', '')
-                                } finally {
-                                  setMemberRowBusy(null)
+                            <>
+                              <Button
+                                type="button"
+                                size="sm"
+                                variant={row.role === HALAKA_MEMBER_ROLES.STUDENT ? 'secondary' : 'ghost'}
+                                loading={
+                                  memberRowBusy?.uid === row.userId &&
+                                  memberRowBusy?.kind === `role:${HALAKA_MEMBER_ROLES.STUDENT}`
                                 }
-                              }}
-                            >
-                              {row.role === HALAKA_MEMBER_ROLES.ADMIN ? 'إلغاء مشرف' : 'مشرف'}
-                            </Button>
+                                disabled={
+                                  Boolean(memberRowBusy) ||
+                                  row.role === HALAKA_MEMBER_ROLES.STUDENT ||
+                                  !canAssignRole(actorRole, row.role, HALAKA_MEMBER_ROLES.STUDENT)
+                                }
+                                onClick={async () => {
+                                  if (!user || !membersModal?.id) return
+                                  setMemberRowBusy({ uid: row.userId, kind: `role:${HALAKA_MEMBER_ROLES.STUDENT}` })
+                                  try {
+                                    await setHalakaMemberRole(
+                                      user,
+                                      membersModal.id,
+                                      row.userId,
+                                      HALAKA_MEMBER_ROLES.STUDENT,
+                                      user,
+                                    )
+                                    refreshMembers()
+                                  } catch {
+                                    toast.warning('تعذّر تغيير الدور.', '')
+                                  } finally {
+                                    setMemberRowBusy(null)
+                                  }
+                                }}
+                              >
+                                طالب
+                              </Button>
+                              <Button
+                                type="button"
+                                size="sm"
+                                variant={row.role === HALAKA_MEMBER_ROLES.TEACHER ? 'secondary' : 'ghost'}
+                                loading={
+                                  memberRowBusy?.uid === row.userId &&
+                                  memberRowBusy?.kind === `role:${HALAKA_MEMBER_ROLES.TEACHER}`
+                                }
+                                disabled={
+                                  Boolean(memberRowBusy) ||
+                                  row.role === HALAKA_MEMBER_ROLES.TEACHER ||
+                                  !canAssignRole(actorRole, row.role, HALAKA_MEMBER_ROLES.TEACHER)
+                                }
+                                onClick={async () => {
+                                  if (!user || !membersModal?.id) return
+                                  setMemberRowBusy({ uid: row.userId, kind: `role:${HALAKA_MEMBER_ROLES.TEACHER}` })
+                                  try {
+                                    await setHalakaMemberRole(
+                                      user,
+                                      membersModal.id,
+                                      row.userId,
+                                      HALAKA_MEMBER_ROLES.TEACHER,
+                                      user,
+                                    )
+                                    refreshMembers()
+                                  } catch {
+                                    toast.warning('تعذّر تغيير الدور.', '')
+                                  } finally {
+                                    setMemberRowBusy(null)
+                                  }
+                                }}
+                              >
+                                معلم
+                              </Button>
+                              <Button
+                                type="button"
+                                size="sm"
+                                variant={row.role === HALAKA_MEMBER_ROLES.SUPERVISOR ? 'secondary' : 'ghost'}
+                                loading={
+                                  memberRowBusy?.uid === row.userId &&
+                                  memberRowBusy?.kind === `role:${HALAKA_MEMBER_ROLES.SUPERVISOR}`
+                                }
+                                disabled={
+                                  Boolean(memberRowBusy) ||
+                                  row.role === HALAKA_MEMBER_ROLES.SUPERVISOR ||
+                                  !canAssignRole(actorRole, row.role, HALAKA_MEMBER_ROLES.SUPERVISOR)
+                                }
+                                onClick={async () => {
+                                  if (!user || !membersModal?.id) return
+                                  setMemberRowBusy({
+                                    uid: row.userId,
+                                    kind: `role:${HALAKA_MEMBER_ROLES.SUPERVISOR}`,
+                                  })
+                                  try {
+                                    await setHalakaMemberRole(
+                                      user,
+                                      membersModal.id,
+                                      row.userId,
+                                      HALAKA_MEMBER_ROLES.SUPERVISOR,
+                                      user,
+                                    )
+                                    refreshMembers()
+                                  } catch {
+                                    toast.warning('تعذّر تغيير الدور.', '')
+                                  } finally {
+                                    setMemberRowBusy(null)
+                                  }
+                                }}
+                              >
+                                مشرف
+                              </Button>
+                            </>
                           )}
                           {can(PH, 'halaka_member_remove') && (
                             <Button
@@ -898,7 +1471,9 @@ export default function HalakatPage() {
                               size="sm"
                               variant="ghost"
                               loading={memberRowBusy?.uid === row.userId && memberRowBusy?.kind === 'remove'}
-                              disabled={Boolean(memberRowBusy)}
+                              disabled={
+                                Boolean(memberRowBusy) || !canManageRole(actorRole, normalizeRole(row.role))
+                              }
                               onClick={async () => {
                                 if (!user || !membersModal?.id) return
                                 setMemberRowBusy({ uid: row.userId, kind: 'remove' })

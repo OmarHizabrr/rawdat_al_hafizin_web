@@ -298,6 +298,26 @@ class FirestoreApi {
     return this.getDocument("halakat", halakaId);
   }
 
+  /** sessions/{halakaId}/sessions */
+  getHalakaSessionsCollection(halakaId) {
+    return this.getSubCollection("sessions", halakaId, "sessions");
+  }
+
+  /** sessions/{halakaId}/sessions/{sessionId} */
+  getHalakaSessionDoc(halakaId, sessionId) {
+    return this.getSubDocument("sessions", halakaId, "sessions", sessionId);
+  }
+
+  /** attendance/{sessionId}/attendance */
+  getHalakaSessionAttendanceCollection(halakaId, sessionId) {
+    return collection(db, "attendance", sessionId, "attendance");
+  }
+
+  /** attendance/{sessionId}/attendance/{studentUid} */
+  getHalakaSessionAttendanceDoc(halakaId, sessionId, studentUid) {
+    return doc(db, "attendance", sessionId, "attendance", studentUid);
+  }
+
   static USER_HALAKAT_MIRROR_COLL = "Myhalakat";
   static USER_HALAKAT_MIRROR_SUB = "Myhalakat";
 
