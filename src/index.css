@@ -4117,6 +4117,17 @@ button.rh-home-quick-icon {
   border-inline-start: 3px solid color-mix(in srgb, var(--rh-primary) 55%, var(--rh-border));
 }
 
+.rh-halaka-sessions__toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--rh-space-2);
+  margin: 0 0 var(--rh-space-3);
+}
+
+.rh-halaka-sessions__toolbar .ui-btn {
+  min-height: 2.65rem;
+}
+
 .rh-halaka-sessions__attendee-list {
   list-style: none;
   margin: 0;
@@ -4168,6 +4179,11 @@ button.rh-home-quick-icon {
 
 .rh-halaka-sessions__attendee-form .ui-field {
   margin-bottom: 0;
+}
+
+.rh-halaka-sessions__row-actions {
+  display: flex;
+  justify-content: flex-end;
 }
 
 .rh-halaka-sessions__field-row {

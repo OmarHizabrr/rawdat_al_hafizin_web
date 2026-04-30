@@ -76,6 +76,9 @@ export default function HalakaSessionsPage() {
   const [workspaceSessionId, setWorkspaceSessionId] = useState('')
   const [workspaceOpen, setWorkspaceOpen] = useState(false)
   const [attendanceRows, setAttendanceRows] = useState([])
+  const [dirtyRowIds, setDirtyRowIds] = useState(() => new Set())
+  const [savingRowId, setSavingRowId] = useState('')
+  const [savingAll, setSavingAll] = useState(false)
   const [studentContexts, setStudentContexts] = useState({})
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
@@ -153,6 +156,7 @@ export default function HalakaSessionsPage() {
             }
           }),
         )
+        setDirtyRowIds(new Set())
       },
     )
   }, [workspaceSessionId, halakaId, workspaceOpen])
@@ -204,6 +208,18 @@ export default function HalakaSessionsPage() {
     return { ...stats, otherStatuses }
   }, [attendanceRows])
 
+  const draftPagesTotal = useMemo(
+    () =>
+      attendanceRows.reduce((sum, row) => {
+        if (row.role !== HALAKA_MEMBER_ROLES.STUDENT) return sum
+        const fp = row.fromPage === '' ? NaN : Number(row.fromPage)
+        const tp = row.toPage === '' ? NaN : Number(row.toPage)
+        if (!Number.isFinite(fp) || !Number.isFinite(tp) || tp < fp) return sum
+        return sum + (tp - fp + 1)
+      }, 0),
+    [attendanceRows],
+  )
+
   const crossItems = [
     { to: '/app', label: str('layout.nav_home') },
     { to: '/app/halakat', label: str('layout.nav_halakat') },
@@ -244,6 +260,68 @@ export default function HalakaSessionsPage() {
       notes: row.notes,
     }
   }
+
+  const markDirty = useCallback((userId) => {
+    setDirtyRowIds((prev) => {
+      const next = new Set(prev)
+      next.add(userId)
+      return next
+    })
+  }, [])
+
+  const updateRowDraft = useCallback(
+    (userId, patch) => {
+      setAttendanceRows((prev) => prev.map((x) => (x.userId === userId ? { ...x, ...patch } : x)))
+      markDirty(userId)
+    },
+    [markDirty],
+  )
+
+  const saveRow = useCallback(
+    async (row) => {
+      if (!user?.uid || !halakaId || !activeSession?.id || !row?.userId) return
+      setSavingRowId(row.userId)
+      try {
+        await upsertSessionAttendance(user, halakaId, activeSession.id, row.userId, rowPayload(row))
+        setDirtyRowIds((prev) => {
+          const next = new Set(prev)
+          next.delete(row.userId)
+          return next
+        })
+      } finally {
+        setSavingRowId('')
+      }
+    },
+    [activeSession?.id, halakaId, user],
+  )
+
+  const saveAllDirtyRows = useCallback(async () => {
+    if (!user?.uid || !halakaId || !activeSession?.id || dirtyRowIds.size === 0) return
+    setSavingAll(true)
+    try {
+      const rows = attendanceRows.filter((x) => dirtyRowIds.has(x.userId))
+      for (const row of rows) {
+        await upsertSessionAttendance(user, halakaId, activeSession.id, row.userId, rowPayload(row))
+      }
+      setDirtyRowIds(new Set())
+      toast.success('تم حفظ كل التعديلات في الجلسة.', 'تم')
+    } catch {
+      toast.warning('تعذر حفظ بعض التعديلات. حاول مرة أخرى.', 'تنبيه')
+    } finally {
+      setSavingAll(false)
+    }
+  }, [activeSession?.id, attendanceRows, dirtyRowIds, halakaId, toast, user])
+
+  const setAllPresent = useCallback(() => {
+    const ids = attendanceRows.map((x) => x.userId)
+    setAttendanceRows((prev) =>
+      prev.map((x) => ({
+        ...x,
+        attendanceStatus: HALAKA_ATTENDANCE_STATUSES.PRESENT,
+      })),
+    )
+    setDirtyRowIds(new Set(ids))
+  }, [attendanceRows])
 
   if (loading) {
     return (
@@ -404,10 +482,28 @@ export default function HalakaSessionsPage() {
                   <span className="rh-halaka-sessions__stat-value">{summary.otherStatuses}</span>
                   <span className="rh-halaka-sessions__stat-label">حالات أخرى</span>
                 </div>
+                <div className="rh-halaka-sessions__stat">
+                  <span className="rh-halaka-sessions__stat-value">{draftPagesTotal}</span>
+                  <span className="rh-halaka-sessions__stat-label">صفحات الجلسة الآن</span>
+                </div>
+              </div>
+              <div className="rh-halaka-sessions__toolbar">
+                <Button type="button" variant="secondary" disabled={!canWrite || savingAll} onClick={setAllPresent}>
+                  الكل حاضر
+                </Button>
+                <Button
+                  type="button"
+                  variant="primary"
+                  loading={savingAll}
+                  disabled={!canWrite || dirtyRowIds.size === 0}
+                  onClick={saveAllDirtyRows}
+                >
+                  حفظ الكل ({dirtyRowIds.size})
+                </Button>
               </div>
               <p className="rh-halaka-sessions__callout">
-                سجّل الحضور لجميع الأعضاء. للطلاب: اختر المجلد ثم سجّل من صفحة إلى صفحة داخل ذلك المجلد (نفس أسلوب تسجيل الورد اليومي في الخطط). يُعرض
-                إجمالي صفحات الكتاب، والصفحات المنجزة من خطط الطالب في هذا المجلد، وآخر ورد مسجّل يتقاطع مع المجلد.
+                عدّل البيانات أولاً ثم اضغط «حفظ» لكل طالب أو «حفظ الكل». للطلاب: اختر المجلد ثم سجّل من صفحة إلى صفحة داخل ذلك المجلد (نفس أسلوب تسجيل
+                الورد اليومي في الخطط). يُعرض إجمالي صفحات الكتاب، والصفحات المنجزة من خطط الطالب في هذا المجلد، وآخر ورد مسجّل يتقاطع مع المجلد.
               </p>
               <ul className="rh-halaka-sessions__attendee-list">
                 {attendanceRows.map((row) => {
@@ -431,6 +527,7 @@ export default function HalakaSessionsPage() {
                       <div className="rh-halaka-sessions__attendee-head">
                         <span className="rh-halaka-sessions__attendee-name">{row.displayName}</span>
                         {memberRoleLabel(row.role) ? <span className="rh-plans__saved-badge">{memberRoleLabel(row.role)}</span> : null}
+                        {dirtyRowIds.has(row.userId) ? <span className="rh-plans__saved-badge">غير محفوظ</span> : null}
                       </div>
                       <div className="rh-halaka-sessions__attendee-form">
                         <label className="ui-field">
@@ -439,13 +536,9 @@ export default function HalakaSessionsPage() {
                             className="ui-input"
                             value={row.attendanceStatus}
                             disabled={!canWrite}
-                            onChange={async (e) => {
+                            onChange={(e) => {
                               const next = e.target.value
-                              const updated = attendanceRows.map((x) => (x.userId === row.userId ? { ...x, attendanceStatus: next } : x))
-                              setAttendanceRows(updated)
-                              await upsertSessionAttendance(user, halakaId, activeSession.id, row.userId, {
-                                ...rowPayload({ ...row, attendanceStatus: next }),
-                              })
+                              updateRowDraft(row.userId, { attendanceStatus: next })
                             }}
                           >
                             {Object.values(HALAKA_ATTENDANCE_STATUSES).map((s) => (
@@ -463,7 +556,7 @@ export default function HalakaSessionsPage() {
                                 className="ui-input"
                                 value={row.memorizationVolumeId}
                                 disabled={!canWrite}
-                                onChange={async (e) => {
+                                onChange={(e) => {
                                   const next = e.target.value
                                   const c = studentContexts[row.userId]
                                   const suggestion = next && c ? aggregateVolumeProgress(next, c.plans, c.awrad) : null
@@ -473,12 +566,7 @@ export default function HalakaSessionsPage() {
                                     nf = suggestion.suggestedFromPage
                                     nt = suggestion.suggestedFromPage
                                   }
-                                  const updated = attendanceRows.map((x) =>
-                                    x.userId === row.userId ? { ...x, memorizationVolumeId: next, fromPage: nf, toPage: nt } : x,
-                                  )
-                                  setAttendanceRows(updated)
-                                  const nr = updated.find((x) => x.userId === row.userId)
-                                  await upsertSessionAttendance(user, halakaId, activeSession.id, row.userId, rowPayload(nr))
+                                  updateRowDraft(row.userId, { memorizationVolumeId: next, fromPage: nf, toPage: nt })
                                 }}
                               >
                                 <option value="">اختر المجلد</option>
@@ -524,19 +612,14 @@ export default function HalakaSessionsPage() {
                                 max={cap || undefined}
                                 value={row.fromPage === '' ? '' : String(row.fromPage)}
                                 disabled={!canWrite || !volId}
-                                onChange={async (e) => {
+                                onChange={(e) => {
                                   const raw = e.target.value
                                   const n = raw === '' ? '' : Math.max(1, Math.floor(Number(raw) || 0))
                                   const capped = cap && n !== '' ? Math.min(n, cap) : n
                                   let nextTo = row.toPage
                                   if (nextTo !== '' && capped !== '' && Number(nextTo) < capped) nextTo = capped
                                   if (nextTo !== '' && cap) nextTo = Math.min(Number(nextTo), cap)
-                                  const updated = attendanceRows.map((x) =>
-                                    x.userId === row.userId ? { ...x, fromPage: capped, toPage: nextTo } : x,
-                                  )
-                                  setAttendanceRows(updated)
-                                  const nr = updated.find((x) => x.userId === row.userId)
-                                  await upsertSessionAttendance(user, halakaId, activeSession.id, row.userId, rowPayload(nr))
+                                  updateRowDraft(row.userId, { fromPage: capped, toPage: nextTo })
                                 }}
                               />
                               <TextField
@@ -547,16 +630,13 @@ export default function HalakaSessionsPage() {
                                 max={cap || undefined}
                                 value={row.toPage === '' ? '' : String(row.toPage)}
                                 disabled={!canWrite || !volId}
-                                onChange={async (e) => {
+                                onChange={(e) => {
                                   const raw = e.target.value
                                   const n = raw === '' ? '' : Math.max(1, Math.floor(Number(raw) || 0))
                                   let v = n
                                   if (v !== '' && cap) v = Math.min(v, cap)
                                   if (v !== '' && row.fromPage !== '' && v < Number(row.fromPage)) v = Number(row.fromPage)
-                                  const updated = attendanceRows.map((x) => (x.userId === row.userId ? { ...x, toPage: v } : x))
-                                  setAttendanceRows(updated)
-                                  const nr = updated.find((x) => x.userId === row.userId)
-                                  await upsertSessionAttendance(user, halakaId, activeSession.id, row.userId, rowPayload(nr))
+                                  updateRowDraft(row.userId, { toPage: v })
                                 }}
                               />
                             </div>
@@ -570,19 +650,41 @@ export default function HalakaSessionsPage() {
                               rows={2}
                               value={row.notes}
                               disabled={!canWrite}
-                              onChange={async (e) => {
+                              onChange={(e) => {
                                 const next = e.target.value
-                                const updated = attendanceRows.map((x) => (x.userId === row.userId ? { ...x, notes: next } : x))
-                                setAttendanceRows(updated)
-                                await upsertSessionAttendance(user, halakaId, activeSession.id, row.userId, {
-                                  ...rowPayload({ ...row, notes: next }),
-                                })
+                                updateRowDraft(row.userId, { notes: next })
                               }}
                             />
+                            <div className="rh-halaka-sessions__row-actions">
+                              <Button
+                                type="button"
+                                size="sm"
+                                variant="secondary"
+                                loading={savingRowId === row.userId}
+                                disabled={!canWrite || !dirtyRowIds.has(row.userId)}
+                                onClick={() => saveRow(row)}
+                              >
+                                حفظ
+                              </Button>
+                            </div>
                           </>
                         ) : (
                           <p className="rh-halaka-sessions__non-student-hint">تسجيل الحفظ والمجلدات يقتصر على الطلاب.</p>
                         )}
+                        {!isStudent ? (
+                          <div className="rh-halaka-sessions__row-actions">
+                            <Button
+                              type="button"
+                              size="sm"
+                              variant="secondary"
+                              loading={savingRowId === row.userId}
+                              disabled={!canWrite || !dirtyRowIds.has(row.userId)}
+                              onClick={() => saveRow(row)}
+                            >
+                              حفظ
+                            </Button>
+                          </div>
+                        ) : null}
                       </div>
                     </li>
                   )
