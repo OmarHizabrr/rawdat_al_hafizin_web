@@ -491,6 +491,30 @@ export async function upsertSessionAttendance(actorUser, halakaId, sessionId, st
     pagesCount = Math.max(0, Math.floor(Number(input?.pagesCount ?? input?.memorizedAmount) || 0))
   }
   let nextHistory = Array.isArray(currentAttendance?.entryHistory) ? [...currentAttendance.entryHistory] : []
+  if (input?.removeEntryId) {
+    const removeId = String(input.removeEntryId).trim()
+    if (removeId) nextHistory = nextHistory.filter((x) => String(x?.id || '') !== removeId)
+  }
+  if (input?.updateEntry && input?.updateEntry?.id) {
+    const targetId = String(input.updateEntry.id).trim()
+    nextHistory = nextHistory.map((entry) => {
+      if (String(entry?.id || '') !== targetId) return entry
+      const ef = parsePage(input.updateEntry.fromPage)
+      const et = parsePage(input.updateEntry.toPage)
+      const ev = String(input.updateEntry.memorizationVolumeId || entry?.memorizationVolumeId || '').trim()
+      const valid = ev && ef != null && et != null && et >= ef
+      if (!valid) return entry
+      return {
+        ...entry,
+        memorizationVolumeId: ev,
+        fromPage: ef,
+        toPage: et,
+        pagesCount: et - ef + 1,
+        notes: String(input.updateEntry.notes || '').trim(),
+        updatedAt: new Date().toISOString(),
+      }
+    })
+  }
   if (input?.appendEntry && input?.entryPayload && !input?.excludedFromSession) {
     const e = input.entryPayload || {}
     const ef = parsePage(e.fromPage)

@@ -4225,6 +4225,19 @@ button.rh-home-quick-icon {
   color: var(--rh-text-muted);
 }
 
+.rh-halaka-sessions__history-btn {
+  border: none;
+  background: transparent;
+  color: var(--rh-primary);
+  cursor: pointer;
+  font-size: inherit;
+  padding: 0;
+}
+
+.rh-halaka-sessions__history-btn--danger {
+  color: var(--rh-danger);
+}
+
 .rh-halaka-sessions__field-row {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));

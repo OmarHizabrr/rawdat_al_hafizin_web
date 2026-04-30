@@ -66,6 +66,7 @@ export default function HalakaSessionWorkspacePage() {
   const [dirtyRowIds, setDirtyRowIds] = useState(() => new Set())
   const [savingRowId, setSavingRowId] = useState('')
   const [savingAll, setSavingAll] = useState(false)
+  const [editingEntryByUser, setEditingEntryByUser] = useState({})
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -173,6 +174,15 @@ export default function HalakaSessionWorkspacePage() {
       notes: row.notes,
     }
   }
+  const nextSuggestedRange = (fromPage, toPage, cap) => {
+    const fp = Number(fromPage)
+    const tp = Number(toPage)
+    if (!Number.isFinite(fp) || !Number.isFinite(tp) || tp < fp) return { fromPage: '', toPage: '' }
+    const span = tp - fp + 1
+    const nextFrom = cap > 0 ? Math.min(tp + 1, cap) : tp + 1
+    const nextTo = cap > 0 ? Math.min(nextFrom + span - 1, cap) : nextFrom + span - 1
+    return { fromPage: nextFrom, toPage: nextTo }
+  }
   const updateRowDraft = useCallback((uid, patch) => {
     setAttendanceRows((prev) => prev.map((x) => (x.userId === uid ? { ...x, ...patch } : x)))
     setDirtyRowIds((prev) => new Set(prev).add(uid))
@@ -202,10 +212,38 @@ export default function HalakaSessionWorkspacePage() {
         const entryPayload = row.role === HALAKA_MEMBER_ROLES.STUDENT ? buildEntryPayload(row) : null
         await upsertSessionAttendance(user, halakaId, sessionId, row.userId, {
           ...rowPayload(row),
-          appendEntry: Boolean(entryPayload),
+          appendEntry: Boolean(entryPayload) && !editingEntryByUser[row.userId],
           entryPayload,
+          updateEntry: editingEntryByUser[row.userId]
+            ? {
+                id: editingEntryByUser[row.userId],
+                memorizationVolumeId: row.memorizationVolumeId,
+                fromPage: row.fromPage,
+                toPage: row.toPage,
+                notes: row.notes,
+              }
+            : null,
         })
-        if (entryPayload) {
+        if (editingEntryByUser[row.userId] && entryPayload) {
+          setAttendanceRows((prev) =>
+            prev.map((x) =>
+              x.userId === row.userId
+                ? {
+                    ...x,
+                    entryHistory: (Array.isArray(x.entryHistory) ? x.entryHistory : []).map((h) =>
+                      h.id === editingEntryByUser[row.userId]
+                        ? { ...h, ...entryPayload, pagesCount: entryPayload.toPage - entryPayload.fromPage + 1 }
+                        : h,
+                    ),
+                    ...nextSuggestedRange(entryPayload.fromPage, entryPayload.toPage, VOLUME_BY_ID[entryPayload.memorizationVolumeId]?.pages || 0),
+                    notes: '',
+                  }
+                : x,
+            ),
+          )
+          setEditingEntryByUser((prev) => ({ ...prev, [row.userId]: '' }))
+        } else if (entryPayload) {
+          const nextRange = nextSuggestedRange(entryPayload.fromPage, entryPayload.toPage, VOLUME_BY_ID[entryPayload.memorizationVolumeId]?.pages || 0)
           setAttendanceRows((prev) =>
             prev.map((x) =>
               x.userId === row.userId
@@ -223,8 +261,8 @@ export default function HalakaSessionWorkspacePage() {
                         recordedAt: new Date().toISOString(),
                       },
                     ],
-                    fromPage: '',
-                    toPage: '',
+                    fromPage: nextRange.fromPage,
+                    toPage: nextRange.toPage,
                     notes: '',
                   }
                 : x,
@@ -255,6 +293,28 @@ export default function HalakaSessionWorkspacePage() {
       setSavingAll(false)
     }
   }, [attendanceRows, canWrite, dirtyRowIds, halakaId, sessionId, toast, user])
+  const deleteEntry = useCallback(
+    async (row, entryId) => {
+      if (!canWrite || !entryId || !user?.uid) return
+      setSavingRowId(row.userId)
+      try {
+        await upsertSessionAttendance(user, halakaId, sessionId, row.userId, {
+          ...rowPayload(row),
+          removeEntryId: entryId,
+        })
+        setAttendanceRows((prev) =>
+          prev.map((x) =>
+            x.userId === row.userId
+              ? { ...x, entryHistory: (Array.isArray(x.entryHistory) ? x.entryHistory : []).filter((h) => h.id !== entryId) }
+              : x,
+          ),
+        )
+      } finally {
+        setSavingRowId('')
+      }
+    },
+    [canWrite, halakaId, sessionId, user],
+  )
 
   if (loading) return <p className="rh-halaka-sessions__state">جاري التحميل…</p>
   if (!halaka || !session) return <p className="rh-halaka-sessions__state">تعذر العثور على الجلسة.</p>
@@ -346,6 +406,34 @@ export default function HalakaSessionWorkspacePage() {
                             <p key={h.id || `${h.recordedAt}_${h.fromPage}_${h.toPage}`} className="rh-halaka-sessions__history-item">
                               {formatRecordedAt(h.recordedAt)} — {VOLUME_BY_ID[h.memorizationVolumeId]?.label || h.memorizationVolumeId}:
                               {' '}من {h.fromPage} إلى {h.toPage} ({h.pagesCount} ص)
+                              {canWrite ? (
+                                <>
+                                  {' — '}
+                                  <button
+                                    type="button"
+                                    className="rh-halaka-sessions__history-btn"
+                                    onClick={() => {
+                                      updateRowDraft(row.userId, {
+                                        memorizationVolumeId: h.memorizationVolumeId || row.memorizationVolumeId,
+                                        fromPage: h.fromPage ?? '',
+                                        toPage: h.toPage ?? '',
+                                        notes: h.notes || '',
+                                      })
+                                      setEditingEntryByUser((prev) => ({ ...prev, [row.userId]: h.id || '' }))
+                                    }}
+                                  >
+                                    تعديل
+                                  </button>
+                                  {' / '}
+                                  <button
+                                    type="button"
+                                    className="rh-halaka-sessions__history-btn rh-halaka-sessions__history-btn--danger"
+                                    onClick={() => deleteEntry(row, h.id)}
+                                  >
+                                    حذف
+                                  </button>
+                                </>
+                              ) : null}
                             </p>
                           ))}
                         </div>
@@ -355,7 +443,7 @@ export default function HalakaSessionWorkspacePage() {
                   <TextAreaField label="ملاحظات" rows={2} value={row.notes} disabled={!canWrite} onChange={(e) => updateRowDraft(row.userId, { notes: e.target.value })} />
                   <div className="rh-halaka-sessions__row-actions">
                     <Button type="button" size="sm" variant="secondary" loading={savingRowId === row.userId} disabled={!canWrite || !dirtyRowIds.has(row.userId)} onClick={() => saveRow(row)}>
-                      {row.role === HALAKA_MEMBER_ROLES.STUDENT ? 'حفظ + تسجيل دفعة' : 'حفظ'}
+                      {row.role === HALAKA_MEMBER_ROLES.STUDENT ? (editingEntryByUser[row.userId] ? 'حفظ تعديل الدفعة' : 'حفظ + تسجيل دفعة') : 'حفظ'}
                     </Button>
                   </div>
                 </div>
