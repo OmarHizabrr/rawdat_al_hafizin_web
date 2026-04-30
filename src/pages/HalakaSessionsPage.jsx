@@ -7,7 +7,7 @@ import { usePermissions } from '../context/usePermissions.js'
 import { useSiteContent } from '../context/useSiteContent.js'
 import { VOLUMES, VOLUME_BY_ID } from '../data/volumes.js'
 import { RhIcon, RH_ICON_STROKE } from '../ui/RhIcon.jsx'
-import { Button, RhDateTimePickerField, TextAreaField, TextField, useToast } from '../ui/index.js'
+import { Button, Modal, RhDateTimePickerField, TextAreaField, TextField, useToast } from '../ui/index.js'
 import { halakaSessionDurationAr } from '../utils/datePeriodAr.js'
 import {
   HALAKA_ATTENDANCE_STATUSES,
@@ -58,6 +58,7 @@ export default function HalakaSessionsPage() {
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [closingId, setClosingId] = useState('')
+  const [sessionModalOpen, setSessionModalOpen] = useState(false)
 
   const [title, setTitle] = useState('')
   const [sessionType, setSessionType] = useState(HALAKA_SESSION_TYPES.MEMORIZATION)
@@ -154,21 +155,42 @@ export default function HalakaSessionsPage() {
 
       <section className="rh-settings-card">
         <div className="rh-settings-card__head">
-          <h2 className="rh-settings-card__title">فتح جلسة جديدة</h2>
+          <h2 className="rh-settings-card__title">إدارة فتح الجلسات</h2>
         </div>
-        <div className="rh-plans__dates-grid">
-          <TextField label="عنوان الجلسة (اختياري)" value={title} onChange={(e) => setTitle(e.target.value)} />
-          <label className="ui-field">
-            <span className="ui-field__label">نوع الجلسة</span>
-            <select className="ui-input" value={sessionType} onChange={(e) => setSessionType(e.target.value)} disabled={!canWrite}>
-              <option value={HALAKA_SESSION_TYPES.MEMORIZATION}>حفظ</option>
-              <option value={HALAKA_SESSION_TYPES.REVIEW}>مراجعة</option>
-              <option value={HALAKA_SESSION_TYPES.CONSOLIDATION}>تثبيت</option>
-              <option value={HALAKA_SESSION_TYPES.READING}>قراءة</option>
-              <option value={HALAKA_SESSION_TYPES.OTHER}>أخرى</option>
-            </select>
-          </label>
+        <p className="rh-settings-card__subtitle">فتح جلسة جديدة يتم من خلال نافذة منبثقة كما هو نمط المنصة.</p>
+        <div className="rh-plans__actions">
+          <Button
+            type="button"
+            variant="primary"
+            disabled={!canWrite}
+            onClick={() => setSessionModalOpen(true)}
+          >
+            <RhIcon as={Plus} size={16} strokeWidth={RH_ICON_STROKE} />
+            إضافة جلسة
+          </Button>
         </div>
+      </section>
+
+      <Modal
+        open={sessionModalOpen}
+        title="إضافة جلسة جديدة"
+        onClose={() => !saving && setSessionModalOpen(false)}
+        size="lg"
+        closeOnBackdrop={!saving}
+        closeOnEsc={!saving}
+        showClose={!saving}
+      >
+        <TextField label="عنوان الجلسة (اختياري)" value={title} onChange={(e) => setTitle(e.target.value)} />
+        <label className="ui-field">
+          <span className="ui-field__label">نوع الجلسة</span>
+          <select className="ui-input" value={sessionType} onChange={(e) => setSessionType(e.target.value)} disabled={!canWrite || saving}>
+            <option value={HALAKA_SESSION_TYPES.MEMORIZATION}>حفظ</option>
+            <option value={HALAKA_SESSION_TYPES.REVIEW}>مراجعة</option>
+            <option value={HALAKA_SESSION_TYPES.CONSOLIDATION}>تثبيت</option>
+            <option value={HALAKA_SESSION_TYPES.READING}>قراءة</option>
+            <option value={HALAKA_SESSION_TYPES.OTHER}>أخرى</option>
+          </select>
+        </label>
         {sessionType === HALAKA_SESSION_TYPES.OTHER && (
           <TextField label="وصف النوع الآخر" value={sessionTypeOther} onChange={(e) => setSessionTypeOther(e.target.value)} />
         )}
@@ -201,6 +223,7 @@ export default function HalakaSessionsPage() {
                 setActiveSessionId(s.id)
                 setSearchParams({ session: s.id })
                 toast.success('تم فتح الجلسة.', 'تم')
+                setSessionModalOpen(false)
               } catch {
                 toast.warning('تعذّر فتح الجلسة.', '')
               } finally {
@@ -208,11 +231,13 @@ export default function HalakaSessionsPage() {
               }
             }}
           >
-            <RhIcon as={Plus} size={16} strokeWidth={RH_ICON_STROKE} />
-            فتح جلسة
+            حفظ وفتح الجلسة
+          </Button>
+          <Button type="button" variant="ghost" disabled={saving} onClick={() => setSessionModalOpen(false)}>
+            إلغاء
           </Button>
         </div>
-      </section>
+      </Modal>
 
       <section className="rh-settings-card">
         <div className="rh-settings-card__head">
