@@ -3940,6 +3940,287 @@ button.rh-home-quick-icon {
   }
 }
 
+/* ——— صفحة جلسات الحلقة (ويب + لمس) ——— */
+.rh-halaka-sessions {
+  --rh-halaka-sessions-touch: 2.75rem;
+}
+
+.rh-halaka-sessions__lead {
+  max-width: 42rem;
+  line-height: var(--rh-leading-relaxed, 1.65);
+}
+
+.rh-halaka-sessions__hero-back {
+  flex-shrink: 0;
+}
+
+.rh-halaka-sessions__state {
+  margin: 0;
+  padding: var(--rh-space-6);
+  text-align: center;
+  color: var(--rh-text-muted);
+  font-size: var(--rh-text-base);
+}
+
+.rh-halaka-sessions__session-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--rh-space-3);
+}
+
+.rh-halaka-sessions__session {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: var(--rh-space-3);
+  padding: clamp(var(--rh-space-3), 2vw, var(--rh-space-4));
+  border-radius: var(--rh-radius-lg);
+  background: var(--rh-surface-elevated);
+  border: 1px solid color-mix(in srgb, var(--rh-border) 82%, transparent);
+  box-shadow: 0 1px 0 color-mix(in srgb, var(--rh-border) 35%, transparent);
+  color: var(--rh-text);
+  transition:
+    border-color 0.18s ease,
+    box-shadow 0.18s ease,
+    background 0.18s ease;
+}
+
+@media (hover: hover) {
+  .rh-halaka-sessions__session:hover {
+    border-color: color-mix(in srgb, var(--rh-primary) 22%, var(--rh-border));
+    box-shadow: 0 2px 12px color-mix(in srgb, var(--rh-text) 6%, transparent);
+  }
+}
+
+.rh-halaka-sessions__session--active {
+  border-color: color-mix(in srgb, var(--rh-primary) 38%, var(--rh-border));
+  background: color-mix(in srgb, var(--rh-primary-muted) 35%, var(--rh-surface-elevated));
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--rh-primary) 20%, transparent),
+    0 2px 14px color-mix(in srgb, var(--rh-primary) 12%, transparent);
+}
+
+.rh-halaka-sessions__session-main {
+  flex: 1 1 14rem;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--rh-space-2);
+}
+
+.rh-halaka-sessions__session-title {
+  font-size: clamp(0.95rem, 2.4vw, 1.05rem);
+  font-weight: 700;
+  line-height: var(--rh-leading-tight);
+  word-break: break-word;
+}
+
+.rh-halaka-sessions__session-badges {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--rh-space-2);
+}
+
+.rh-halaka-sessions__session-dates {
+  font-size: var(--rh-text-sm);
+  color: var(--rh-text-muted);
+  line-height: var(--rh-leading-normal);
+  word-break: break-word;
+}
+
+.rh-halaka-sessions__session-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--rh-space-2);
+  flex-shrink: 0;
+}
+
+.rh-halaka-sessions__session-actions .rh-peek-btn {
+  flex-shrink: 0;
+}
+
+.rh-halaka-sessions__empty {
+  margin: 0;
+  padding: var(--rh-space-4);
+  text-align: center;
+  font-size: var(--rh-text-sm);
+  color: var(--rh-text-muted);
+  background: color-mix(in srgb, var(--rh-surface-tint) 88%, var(--rh-surface));
+  border-radius: var(--rh-radius-md);
+  border: 1px dashed color-mix(in srgb, var(--rh-border) 90%, transparent);
+}
+
+.rh-halaka-sessions__workspace {
+  scroll-margin-top: max(0.85rem, env(safe-area-inset-top, 0px));
+}
+
+.rh-halaka-sessions__workspace-head {
+  margin-bottom: var(--rh-space-4);
+}
+
+.rh-halaka-sessions__stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(7.25rem, 1fr));
+  gap: var(--rh-space-3);
+  margin-bottom: var(--rh-space-4);
+}
+
+.rh-halaka-sessions__stat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  gap: 0.2rem;
+  padding: var(--rh-space-3) var(--rh-space-2);
+  border-radius: var(--rh-radius-md);
+  background: color-mix(in srgb, var(--rh-primary-muted) 45%, var(--rh-surface));
+  border: 1px solid color-mix(in srgb, var(--rh-border) 88%, transparent);
+  min-height: 4.25rem;
+  transition: transform 0.12s ease;
+}
+
+@media (hover: hover) {
+  .rh-halaka-sessions__stat:hover {
+    transform: translateY(-1px);
+  }
+}
+
+.rh-halaka-sessions__stat-value {
+  font-size: clamp(1.25rem, 4vw, 1.5rem);
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  color: var(--rh-text);
+  line-height: 1.1;
+}
+
+.rh-halaka-sessions__stat-label {
+  font-size: var(--rh-text-xs);
+  color: var(--rh-text-muted);
+  font-weight: 600;
+  line-height: var(--rh-leading-tight);
+}
+
+.rh-halaka-sessions__callout {
+  margin: 0 0 var(--rh-space-4);
+  padding: var(--rh-space-3) var(--rh-space-4);
+  font-size: var(--rh-text-sm);
+  color: var(--rh-text-muted);
+  line-height: var(--rh-leading-relaxed, 1.6);
+  background: color-mix(in srgb, var(--rh-info-bg) 55%, var(--rh-surface));
+  border-radius: var(--rh-radius-md);
+  border-inline-start: 3px solid color-mix(in srgb, var(--rh-primary) 55%, var(--rh-border));
+}
+
+.rh-halaka-sessions__attendee-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--rh-space-3);
+}
+
+.rh-halaka-sessions__attendee {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0;
+  padding: clamp(var(--rh-space-3), 2vw, var(--rh-space-4));
+  border-radius: var(--rh-radius-lg);
+  background: var(--rh-surface-elevated);
+  border: 1px solid color-mix(in srgb, var(--rh-border) 82%, transparent);
+  box-shadow: 0 1px 0 color-mix(in srgb, var(--rh-border) 30%, transparent);
+}
+
+.rh-halaka-sessions__attendee--student {
+  border-inline-start: 3px solid color-mix(in srgb, var(--rh-primary) 45%, var(--rh-border));
+}
+
+.rh-halaka-sessions__attendee-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--rh-space-2);
+  margin-bottom: var(--rh-space-3);
+  padding-bottom: var(--rh-space-2);
+  border-bottom: 1px solid color-mix(in srgb, var(--rh-border) 65%, transparent);
+}
+
+.rh-halaka-sessions__attendee-name {
+  font-size: var(--rh-text-base);
+  font-weight: 700;
+  word-break: break-word;
+}
+
+.rh-halaka-sessions__attendee-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--rh-space-3);
+  width: 100%;
+  min-width: 0;
+}
+
+.rh-halaka-sessions__attendee-form .ui-field {
+  margin-bottom: 0;
+}
+
+.rh-halaka-sessions__field-row {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--rh-space-3);
+  align-items: start;
+}
+
+@media (max-width: 640px) {
+  .rh-halaka-sessions__field-row {
+    grid-template-columns: 1fr;
+  }
+}
+
+.rh-halaka-sessions__non-student-hint {
+  margin: 0;
+  font-size: var(--rh-text-sm);
+  color: var(--rh-text-muted);
+  padding: var(--rh-space-2) var(--rh-space-3);
+  background: var(--rh-surface-tint);
+  border-radius: var(--rh-radius-sm);
+  line-height: var(--rh-leading-normal);
+}
+
+.rh-halaka-sessions select.ui-input,
+.rh-halaka-sessions .ui-input[type='number'] {
+  min-height: var(--rh-halaka-sessions-touch);
+}
+
+@media (max-width: 680px) {
+  .rh-halaka-sessions__hero-back {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .rh-halaka-sessions__session-actions {
+    flex: 1 1 100%;
+    justify-content: stretch;
+  }
+
+  .rh-halaka-sessions__session-actions .rh-peek-btn {
+    min-width: var(--rh-halaka-sessions-touch);
+    min-height: var(--rh-halaka-sessions-touch);
+  }
+
+  .rh-halaka-sessions__action-btn {
+    flex: 1 1 0;
+    min-height: var(--rh-halaka-sessions-touch);
+    justify-content: center;
+  }
+}
+
 /* ——— استكشاف الخطط العامة ——— */
 .rh-explore-plans {
   max-width: 56rem;

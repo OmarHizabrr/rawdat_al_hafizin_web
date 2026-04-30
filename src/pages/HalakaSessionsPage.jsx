@@ -6,7 +6,7 @@ import { PeekButton } from '../components/PeekButton.jsx'
 import { useAuth } from '../context/useAuth.js'
 import { usePermissions } from '../context/usePermissions.js'
 import { useSiteContent } from '../context/useSiteContent.js'
-import { VOLUMES, VOLUME_BY_ID } from '../data/volumes.js'
+import { VOLUMES } from '../data/volumes.js'
 import { RhIcon, RH_ICON_STROKE } from '../ui/RhIcon.jsx'
 import { Button, Modal, RhDateTimePickerField, TextAreaField, TextField, useToast } from '../ui/index.js'
 import { halakaSessionDurationAr } from '../utils/datePeriodAr.js'
@@ -142,7 +142,8 @@ export default function HalakaSessionsPage() {
       if (s in stats) stats[s] += 1
       else stats.other += 1
     }
-    return stats
+    const otherStatuses = stats.excused + stats.permitted + stats.late + stats.other
+    return { ...stats, otherStatuses }
   }, [attendanceRows])
 
   const crossItems = [
@@ -151,22 +152,34 @@ export default function HalakaSessionsPage() {
     ...(canAccessPage('halakat_explore') ? [{ to: '/app/halakat/explore', label: str('layout.nav_halakat_explore') }] : []),
   ]
 
-  if (loading) return <p className="rh-plans__empty">جاري التحميل…</p>
-  if (!halaka) return <p className="rh-plans__empty">تعذر العثور على الحلقة.</p>
+  if (loading) {
+    return (
+      <div className="rh-plans rh-halaka-sessions">
+        <p className="rh-halaka-sessions__state">جاري التحميل…</p>
+      </div>
+    )
+  }
+  if (!halaka) {
+    return (
+      <div className="rh-plans rh-halaka-sessions">
+        <p className="rh-halaka-sessions__state">تعذر العثور على الحلقة.</p>
+      </div>
+    )
+  }
 
   return (
-    <div className="rh-plans">
+    <div className="rh-plans rh-halaka-sessions">
       <header className="rh-plans__hero">
         <div className="rh-plans__hero-head">
           <div>
             <h1 className="rh-plans__title">جلسات الحلقة: {halaka.name}</h1>
-            <p className="rh-plans__desc">
+            <p className="rh-plans__desc rh-halaka-sessions__lead">
               بعد فتح جلسة، انقر أيقونة العين بجانبها لدخول مساحة الجلسة: التحضير، الحضور، وتسجيل الحفظ أو المراجعة أو التثبيت
               أو القراءة لكل طالب.
             </p>
             <CrossNav items={crossItems} className="rh-plans__cross" />
           </div>
-          <Link to="/app/halakat" className="ui-btn ui-btn--secondary">
+          <Link to="/app/halakat" className="rh-halaka-sessions__hero-back ui-btn ui-btn--secondary">
             <RhIcon as={ArrowRight} size={16} strokeWidth={RH_ICON_STROKE} />
             العودة للحلقات
           </Link>
@@ -266,83 +279,114 @@ export default function HalakaSessionsPage() {
         <div className="rh-settings-card__head">
           <h2 className="rh-settings-card__title">الجلسات</h2>
         </div>
-        <ul className="rh-members-chat-list">
-          {sessions.map((s) => (
-            <li key={s.id} className="rh-members-chat__item">
-              <div className="rh-members-chat__main">
-                <strong>{s.title || 'جلسة حلقة'}</strong>
-                <span className="rh-plans__saved-badge">{sessionTypeLabel(s.sessionType, s.sessionTypeOtherLabel)}</span>
-                <span className="rh-plans__saved-badge">{s.status === 'closed' ? 'مغلقة' : 'مفتوحة'}</span>
-                <span className="rh-plans__saved-meta">
-                  {new Date(s.startedAt).toLocaleString('ar-SA')} — {new Date(s.endedAt).toLocaleString('ar-SA')}
-                </span>
-              </div>
-              <div className="rh-members-chat__actions rh-members-chat__actions--peek">
-                <PeekButton
-                  className={activeSessionId === s.id ? 'rh-peek-btn--active' : ''}
-                  title={
-                    activeSessionId === s.id
-                      ? 'مساحة الجلسة مفتوحة — التمرير للتقرير'
-                      : 'دخول الجلسة — التحضير وتسجيل الحضور والحفظ أو المراجعة لكل طالب'
-                  }
-                  onClick={() => {
-                    setActiveSessionId(s.id)
-                    setSearchParams({ session: s.id })
-                    scrollToSessionWorkspace()
-                  }}
-                />
-                {s.status !== 'closed' && (
-                  <Button
-                    type="button"
-                    size="sm"
-                    variant="ghost"
-                    loading={closingId === s.id}
-                    disabled={!canWrite}
-                    onClick={async () => {
-                      if (!user?.uid) return
-                      setClosingId(s.id)
-                      try {
-                        await closeHalakaSession(user, halakaId, s.id, user)
-                        setSessions(await loadHalakaSessions(halakaId))
-                      } finally {
-                        setClosingId('')
-                      }
+        {sessions.length === 0 ? (
+          <p className="rh-halaka-sessions__empty">لا توجد جلسات بعد. اضغط «إضافة جلسة» للبدء.</p>
+        ) : (
+          <ul className="rh-halaka-sessions__session-list">
+            {sessions.map((s) => (
+              <li
+                key={s.id}
+                className={['rh-halaka-sessions__session', activeSessionId === s.id ? 'rh-halaka-sessions__session--active' : ''].filter(Boolean).join(' ')}
+              >
+                <div className="rh-halaka-sessions__session-main">
+                  <span className="rh-halaka-sessions__session-title">{s.title || 'جلسة حلقة'}</span>
+                  <div className="rh-halaka-sessions__session-badges">
+                    <span className="rh-plans__saved-badge">{sessionTypeLabel(s.sessionType, s.sessionTypeOtherLabel)}</span>
+                    <span className="rh-plans__saved-badge">{s.status === 'closed' ? 'مغلقة' : 'مفتوحة'}</span>
+                  </div>
+                  <span className="rh-halaka-sessions__session-dates">
+                    {new Date(s.startedAt).toLocaleString('ar-SA')} — {new Date(s.endedAt).toLocaleString('ar-SA')}
+                  </span>
+                </div>
+                <div className="rh-halaka-sessions__session-actions">
+                  <PeekButton
+                    className={activeSessionId === s.id ? 'rh-peek-btn--active' : ''}
+                    title={
+                      activeSessionId === s.id
+                        ? 'مساحة الجلسة مفتوحة — التمرير للتقرير'
+                        : 'دخول الجلسة — التحضير وتسجيل الحضور والحفظ أو المراجعة لكل طالب'
+                    }
+                    onClick={() => {
+                      setActiveSessionId(s.id)
+                      setSearchParams({ session: s.id })
+                      scrollToSessionWorkspace()
                     }}
-                  >
-                    <RhIcon as={Clock3} size={14} strokeWidth={RH_ICON_STROKE} />
-                    إغلاق
-                  </Button>
-                )}
-              </div>
-            </li>
-          ))}
-        </ul>
+                  />
+                  {s.status !== 'closed' && (
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="ghost"
+                      className="rh-halaka-sessions__action-btn"
+                      loading={closingId === s.id}
+                      disabled={!canWrite}
+                      onClick={async () => {
+                        if (!user?.uid) return
+                        setClosingId(s.id)
+                        try {
+                          await closeHalakaSession(user, halakaId, s.id, user)
+                          setSessions(await loadHalakaSessions(halakaId))
+                        } finally {
+                          setClosingId('')
+                        }
+                      }}
+                    >
+                      <RhIcon as={Clock3} size={14} strokeWidth={RH_ICON_STROKE} />
+                      إغلاق
+                    </Button>
+                  )}
+                </div>
+              </li>
+            ))}
+          </ul>
+        )}
       </section>
 
       {activeSession && (
-        <section ref={sessionReportRef} className="rh-settings-card">
-          <div className="rh-settings-card__head">
+        <section ref={sessionReportRef} className="rh-settings-card rh-halaka-sessions__workspace">
+          <div className="rh-settings-card__head rh-halaka-sessions__workspace-head">
             <h2 className="rh-settings-card__title">مساحة الجلسة — التحضير والتسجيل</h2>
+            <p className="rh-settings-card__subtitle">
+              النوع: <strong>{sessionTypeLabel(activeSession.sessionType, activeSession.sessionTypeOtherLabel)}</strong>
+            </p>
           </div>
-          <p className="rh-plans__saved-meta">
-            النوع: <strong>{sessionTypeLabel(activeSession.sessionType, activeSession.sessionTypeOtherLabel)}</strong>
+          <div className="rh-halaka-sessions__stats" aria-label="ملخص الحضور">
+            <div className="rh-halaka-sessions__stat">
+              <span className="rh-halaka-sessions__stat-value">{summary.total}</span>
+              <span className="rh-halaka-sessions__stat-label">المسجّلون</span>
+            </div>
+            <div className="rh-halaka-sessions__stat">
+              <span className="rh-halaka-sessions__stat-value">{summary.present}</span>
+              <span className="rh-halaka-sessions__stat-label">حاضر</span>
+            </div>
+            <div className="rh-halaka-sessions__stat">
+              <span className="rh-halaka-sessions__stat-value">{summary.absent}</span>
+              <span className="rh-halaka-sessions__stat-label">غائب</span>
+            </div>
+            <div className="rh-halaka-sessions__stat">
+              <span className="rh-halaka-sessions__stat-value">{summary.otherStatuses}</span>
+              <span className="rh-halaka-sessions__stat-label">حالات أخرى</span>
+            </div>
+          </div>
+          <p className="rh-halaka-sessions__callout">
+            سجّل الحضور لجميع الأعضاء؛ حقول المجلد والمقدار والملاحظات التفصيلية للطلاب فقط. على الشاشات الصغيرة تُرتب الحقول عموديًا
+            لتسهيل اللمس.
           </p>
-          <p className="rh-plans__saved-meta">إجمالي المسجّلين: {summary.total} — حاضر: {summary.present} — غائب: {summary.absent}</p>
-          <p className="rh-plans__saved-meta rh-plan-peek__hint">
-            سجّل الحضور لجميع الأعضاء؛ حقول المجلد والمقدار والملاحظات التفصيلية للطلاب فقط.
-          </p>
-          <ul className="rh-members-chat-list">
+          <ul className="rh-halaka-sessions__attendee-list">
             {attendanceRows.map((row) => {
               const isStudent = row.role === HALAKA_MEMBER_ROLES.STUDENT
               return (
-                <li key={row.userId} className="rh-members-chat__item">
-                  <div className="rh-members-chat__main">
-                    <strong>{row.displayName}</strong>
+                <li
+                  key={row.userId}
+                  className={['rh-halaka-sessions__attendee', isStudent ? 'rh-halaka-sessions__attendee--student' : ''].filter(Boolean).join(' ')}
+                >
+                  <div className="rh-halaka-sessions__attendee-head">
+                    <span className="rh-halaka-sessions__attendee-name">{row.displayName}</span>
                     {memberRoleLabel(row.role) ? (
                       <span className="rh-plans__saved-badge">{memberRoleLabel(row.role)}</span>
                     ) : null}
                   </div>
-                  <div style={{ display: 'grid', gap: '0.35rem', width: '100%' }}>
+                  <div className="rh-halaka-sessions__attendee-form">
                     <label className="ui-field">
                       <span className="ui-field__label">الحضور</span>
                       <select
@@ -368,7 +412,7 @@ export default function HalakaSessionsPage() {
                     </label>
                     {isStudent ? (
                       <>
-                        <div className="rh-plans__dates-grid">
+                        <div className="rh-halaka-sessions__field-row">
                           <label className="ui-field">
                             <span className="ui-field__label">المجلد</span>
                             <select
@@ -396,6 +440,7 @@ export default function HalakaSessionsPage() {
                           <TextField
                             label="المقدار (صفحات)"
                             type="number"
+                            inputMode="decimal"
                             value={String(row.memorizedAmount || 0)}
                             disabled={!canWrite}
                             onChange={async (e) => {
@@ -428,12 +473,9 @@ export default function HalakaSessionsPage() {
                             })
                           }}
                         />
-                        <p className="ui-field__hint">
-                          {row.memorizationVolumeId ? `${VOLUME_BY_ID[row.memorizationVolumeId]?.label || row.memorizationVolumeId}` : '—'}
-                        </p>
                       </>
                     ) : (
-                      <p className="ui-field__hint">تسجيل الحفظ والمجلدات يقتصر على الطلاب.</p>
+                      <p className="rh-halaka-sessions__non-student-hint">تسجيل الحفظ والمجلدات يقتصر على الطلاب.</p>
                     )}
                   </div>
                 </li>
