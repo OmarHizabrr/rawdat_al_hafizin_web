@@ -735,18 +735,13 @@ export default function HalakatPage() {
                 </p>
                 <div className="rh-plans__saved-actions">
                   {canOpenSessions(h) && (
-                    <Button
-                      type="button"
-                      variant="secondary"
-                      size="sm"
-                      onClick={() => {
-                        setSessionsModalHalaka(h)
-                        setActiveSession(null)
-                      }}
+                    <Link
+                      to={appLink(`/app/halakat/${encodeURIComponent(h.id)}/sessions`)}
+                      className="ui-btn ui-btn--secondary ui-btn--sm"
                     >
                       <RhIcon as={Users} size={16} strokeWidth={RH_ICON_STROKE} />
                       الجلسات
-                    </Button>
+                    </Link>
                   )}
                   {halakaCanManageMembers(h) && can(PH, 'halaka_card_members') && (
                     <Button type="button" variant="secondary" size="sm" onClick={() => setMembersModal(h)}>

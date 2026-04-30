@@ -18,6 +18,14 @@ export const HALAKA_ATTENDANCE_STATUSES = {
   OTHER: 'other',
 }
 
+export const HALAKA_SESSION_TYPES = {
+  MEMORIZATION: 'memorization',
+  REVIEW: 'review',
+  CONSOLIDATION: 'consolidation',
+  READING: 'reading',
+  OTHER: 'other',
+}
+
 const LEGACY_ROLE_MAP = {
   admin: HALAKA_MEMBER_ROLES.SUPERVISOR,
   member: HALAKA_MEMBER_ROLES.STUDENT,
@@ -413,8 +421,12 @@ export async function saveHalakaSession(actorUser, halakaId, sessionInput) {
   }
   const sessionId = sessionInput?.id || firestoreApi.getNewId('halaka_sessions')
   const nowIso = new Date().toISOString()
+  const sessionType = String(sessionInput?.sessionType || HALAKA_SESSION_TYPES.MEMORIZATION)
+  const allowedTypes = new Set(Object.values(HALAKA_SESSION_TYPES))
   const payload = {
     title: String(sessionInput?.title || '').trim(),
+    sessionType: allowedTypes.has(sessionType) ? sessionType : HALAKA_SESSION_TYPES.MEMORIZATION,
+    sessionTypeOtherLabel: String(sessionInput?.sessionTypeOtherLabel || '').trim(),
     startedAt,
     endedAt,
     durationMinutes: durationMinutes(startedAt, endedAt),

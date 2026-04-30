@@ -20,6 +20,7 @@ const ExplorePlansPage = lazy(() => import('./pages/ExplorePlansPage.jsx'))
 const PlansPage = lazy(() => import('./pages/PlansPage.jsx'))
 const ExploreHalakatPage = lazy(() => import('./pages/ExploreHalakatPage.jsx'))
 const HalakatPage = lazy(() => import('./pages/HalakatPage.jsx'))
+const HalakaSessionsPage = lazy(() => import('./pages/HalakaSessionsPage.jsx'))
 const ExploreDawratPage = lazy(() => import('./pages/ExploreDawratPage.jsx'))
 const DawratPage = lazy(() => import('./pages/DawratPage.jsx'))
 const AwradPage = lazy(() => import('./pages/AwradPage.jsx'))
@@ -100,6 +101,7 @@ export default function App() {
                     <Route path="plans" element={<PageGuard pageId="plans"><PlansPage /></PageGuard>} />
                     <Route path="halakat/explore" element={<PageGuard pageId="halakat_explore"><ExploreHalakatPage /></PageGuard>} />
                     <Route path="halakat" element={<PageGuard pageId="halakat"><HalakatPage /></PageGuard>} />
+                    <Route path="halakat/:halakaId/sessions" element={<PageGuard pageId="halakat"><HalakaSessionsPage /></PageGuard>} />
                     <Route path="dawrat/explore" element={<PageGuard pageId="dawrat_explore"><ExploreDawratPage /></PageGuard>} />
                     <Route path="dawrat" element={<PageGuard pageId="dawrat"><DawratPage /></PageGuard>} />
                     <Route path="awrad" element={<PageGuard pageId="awrad"><AwradPage /></PageGuard>} />
