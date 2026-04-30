@@ -4213,6 +4213,18 @@ button.rh-home-quick-icon {
   justify-content: flex-end;
 }
 
+.rh-halaka-sessions__history {
+  display: grid;
+  gap: 0.2rem;
+  margin-top: calc(var(--rh-space-2) * -0.25);
+}
+
+.rh-halaka-sessions__history-item {
+  margin: 0;
+  font-size: var(--rh-text-xs);
+  color: var(--rh-text-muted);
+}
+
 .rh-halaka-sessions__field-row {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));

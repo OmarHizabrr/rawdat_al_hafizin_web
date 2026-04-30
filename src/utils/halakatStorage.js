@@ -467,6 +467,7 @@ export async function upsertSessionAttendance(actorUser, halakaId, sessionId, st
   const actorRole = await assertHalakaManager(actorUser.uid, halakaId)
   const actorMem = await firestoreApi.getData(memberRef(halakaId, actorUser.uid))
   const targetMem = await firestoreApi.getData(memberRef(halakaId, studentUid))
+  const currentAttendance = await firestoreApi.getData(attendanceRef(halakaId, sessionId, studentUid))
   if (!targetMem) throw new Error('NOT_MEMBER')
   if (
     actorUser.uid !== studentUid &&
@@ -489,6 +490,27 @@ export async function upsertSessionAttendance(actorUser, halakaId, sessionId, st
   } else {
     pagesCount = Math.max(0, Math.floor(Number(input?.pagesCount ?? input?.memorizedAmount) || 0))
   }
+  let nextHistory = Array.isArray(currentAttendance?.entryHistory) ? [...currentAttendance.entryHistory] : []
+  if (input?.appendEntry && input?.entryPayload && !input?.excludedFromSession) {
+    const e = input.entryPayload || {}
+    const ef = parsePage(e.fromPage)
+    const et = parsePage(e.toPage)
+    const ev = String(e.memorizationVolumeId || input?.memorizationVolumeId || '').trim()
+    if (ev && ef != null && et != null && et >= ef) {
+      const ePages = et - ef + 1
+      nextHistory.push({
+        id: `entry_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
+        memorizationVolumeId: ev,
+        fromPage: ef,
+        toPage: et,
+        pagesCount: ePages,
+        notes: String(e.notes || '').trim(),
+        recordedAt: new Date().toISOString(),
+        recordedBy: actorUser.uid,
+      })
+    }
+  }
+
   const data = {
     attendanceStatus: finalStatus,
     memorizationVolumeId: String(input?.memorizationVolumeId || '').trim(),
@@ -499,6 +521,7 @@ export async function upsertSessionAttendance(actorUser, halakaId, sessionId, st
     memorizedAmount: pagesCount,
     memorizedUnit: String(input?.memorizedUnit || 'pages').trim() || 'pages',
     notes: String(input?.notes || '').trim(),
+    entryHistory: nextHistory,
     recordedBy: actorUser.uid,
     recordedByRole: normalizeHalakaRole(actorMem?.role),
     updatedAt: new Date().toISOString(),
