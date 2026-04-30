@@ -1,5 +1,5 @@
 import { ArrowRight, Clock3, Plus, Users } from 'lucide-react'
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useParams, useSearchParams } from 'react-router-dom'
 import { CrossNav } from '../components/CrossNav.jsx'
 import { useAuth } from '../context/useAuth.js'
@@ -46,6 +46,7 @@ function sessionTypeLabel(t, other) {
 export default function HalakaSessionsPage() {
   const { halakaId } = useParams()
   const [searchParams, setSearchParams] = useSearchParams()
+  const sessionQuery = searchParams.get('session') || ''
   const { user } = useAuth()
   const { canAccessPage } = usePermissions()
   const { str } = useSiteContent()
@@ -53,12 +54,13 @@ export default function HalakaSessionsPage() {
 
   const [halaka, setHalaka] = useState(null)
   const [sessions, setSessions] = useState([])
-  const [activeSessionId, setActiveSessionId] = useState(() => searchParams.get('session') || '')
+  const [activeSessionId, setActiveSessionId] = useState(() => sessionQuery)
   const [attendanceRows, setAttendanceRows] = useState([])
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [closingId, setClosingId] = useState('')
   const [sessionModalOpen, setSessionModalOpen] = useState(false)
+  const sessionReportRef = useRef(null)
 
   const [title, setTitle] = useState('')
   const [sessionType, setSessionType] = useState(HALAKA_SESSION_TYPES.MEMORIZATION)
@@ -79,11 +81,11 @@ export default function HalakaSessionsPage() {
         const h = halakat.find((x) => x.id === halakaId) || null
         setHalaka(h)
         setSessions(sessionRows)
-        const firstId = searchParams.get('session') || sessionRows[0]?.id || ''
+        const firstId = sessionQuery || sessionRows[0]?.id || ''
         setActiveSessionId(firstId)
       })
       .finally(() => setLoading(false))
-  }, [user?.uid, halakaId])
+  }, [user?.uid, halakaId, sessionQuery])
 
   const activeSession = useMemo(
     () => sessions.find((s) => s.id === activeSessionId) || null,
@@ -255,11 +257,20 @@ export default function HalakaSessionsPage() {
                 </span>
               </div>
               <div className="rh-members-chat__actions">
-                <Button type="button" size="sm" variant={activeSessionId === s.id ? 'secondary' : 'ghost'} onClick={() => {
-                  setActiveSessionId(s.id); setSearchParams({ session: s.id })
-                }}>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant={activeSessionId === s.id ? 'secondary' : 'ghost'}
+                  onClick={() => {
+                    setActiveSessionId(s.id)
+                    setSearchParams({ session: s.id })
+                    queueMicrotask(() => {
+                      sessionReportRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+                    })
+                  }}
+                >
                   <RhIcon as={Users} size={14} strokeWidth={RH_ICON_STROKE} />
-                  التفاصيل
+                  {activeSessionId === s.id ? 'مفتوح الآن' : 'التفاصيل'}
                 </Button>
                 {s.status !== 'closed' && (
                   <Button
@@ -290,7 +301,7 @@ export default function HalakaSessionsPage() {
       </section>
 
       {activeSession && (
-        <section className="rh-settings-card">
+        <section ref={sessionReportRef} className="rh-settings-card">
           <div className="rh-settings-card__head">
             <h2 className="rh-settings-card__title">تقرير الجلسة</h2>
           </div>
