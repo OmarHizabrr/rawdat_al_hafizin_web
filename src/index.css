@@ -3925,6 +3925,10 @@ button.rh-home-quick-icon {
   flex-shrink: 0;
 }
 
+.rh-members-chat__actions--peek {
+  align-items: center;
+}
+
 @media (max-width: 520px) {
   .rh-members-chat__item {
     flex-wrap: wrap;
@@ -4716,6 +4720,12 @@ a.rh-peek-btn {
 .rh-peek-btn:focus-visible {
   outline: none;
   box-shadow: var(--rh-focus-ring);
+}
+
+.rh-peek-btn--active {
+  background: color-mix(in srgb, var(--rh-primary-muted) 72%, var(--rh-surface-tint) 28%);
+  border-color: color-mix(in srgb, var(--rh-primary) 42%, var(--rh-border));
+  color: var(--rh-primary);
 }
 
 .rh-plan-peek__hint {
