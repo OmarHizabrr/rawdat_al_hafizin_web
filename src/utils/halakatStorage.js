@@ -492,6 +492,7 @@ export async function upsertSessionAttendance(actorUser, halakaId, sessionId, st
   const data = {
     attendanceStatus: finalStatus,
     memorizationVolumeId: String(input?.memorizationVolumeId || '').trim(),
+    excludedFromSession: Boolean(input?.excludedFromSession),
     fromPage: fromPage ?? null,
     toPage: toPage ?? null,
     pagesCount,
