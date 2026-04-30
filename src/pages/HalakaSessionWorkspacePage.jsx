@@ -87,6 +87,7 @@ export default function HalakaSessionWorkspacePage() {
             return {
               userId: m.userId,
               displayName: m.displayName || m.userId,
+              photoURL: m.photoURL || '',
               role: m.role,
               attendanceStatus: row.attendanceStatus || HALAKA_ATTENDANCE_STATUSES.PRESENT,
               memorizationVolumeId: String(row.memorizationVolumeId || '').trim(),
@@ -132,7 +133,7 @@ export default function HalakaSessionWorkspacePage() {
   ]
 
   const summary = useMemo(() => {
-    const stats = { active: 0, excluded: 0, present: 0, absent: 0 }
+    const stats = { active: 0, excluded: 0, present: 0, absent: 0, pages: 0 }
     for (const r of attendanceRows) {
       if (r.excludedFromSession) {
         stats.excluded += 1
@@ -141,6 +142,9 @@ export default function HalakaSessionWorkspacePage() {
       stats.active += 1
       if (r.attendanceStatus === HALAKA_ATTENDANCE_STATUSES.PRESENT) stats.present += 1
       if (r.attendanceStatus === HALAKA_ATTENDANCE_STATUSES.ABSENT) stats.absent += 1
+      const fp = Number(r.fromPage)
+      const tp = Number(r.toPage)
+      if (Number.isFinite(fp) && Number.isFinite(tp) && tp >= fp) stats.pages += tp - fp + 1
     }
     return stats
   }, [attendanceRows])
@@ -160,6 +164,23 @@ export default function HalakaSessionWorkspacePage() {
   const updateRowDraft = useCallback((uid, patch) => {
     setAttendanceRows((prev) => prev.map((x) => (x.userId === uid ? { ...x, ...patch } : x)))
     setDirtyRowIds((prev) => new Set(prev).add(uid))
+  }, [])
+  const applyBulkPatch = useCallback((patch, { includeExcluded = true } = {}) => {
+    setAttendanceRows((prev) => {
+      const updated = prev.map((x) => {
+        if (!includeExcluded && x.excludedFromSession) return x
+        return { ...x, ...patch }
+      })
+      const ids = updated
+        .filter((x) => includeExcluded || !x.excludedFromSession)
+        .map((x) => x.userId)
+      setDirtyRowIds((d) => {
+        const next = new Set(d)
+        for (const id of ids) next.add(id)
+        return next
+      })
+      return updated
+    })
   }, [])
   const saveRow = useCallback(
     async (row) => {
@@ -220,12 +241,26 @@ export default function HalakaSessionWorkspacePage() {
           <div className="rh-halaka-sessions__stat"><span className="rh-halaka-sessions__stat-value">{summary.excluded}</span><span className="rh-halaka-sessions__stat-label">مستثنى</span></div>
           <div className="rh-halaka-sessions__stat"><span className="rh-halaka-sessions__stat-value">{summary.present}</span><span className="rh-halaka-sessions__stat-label">حاضر</span></div>
           <div className="rh-halaka-sessions__stat"><span className="rh-halaka-sessions__stat-value">{summary.absent}</span><span className="rh-halaka-sessions__stat-label">غائب</span></div>
+          <div className="rh-halaka-sessions__stat"><span className="rh-halaka-sessions__stat-value">{summary.pages}</span><span className="rh-halaka-sessions__stat-label">صفحات مرصودة</span></div>
         </div>
         <div className="rh-halaka-sessions__toolbar">
+          <Button type="button" variant="secondary" disabled={!canWrite || savingAll} onClick={() => applyBulkPatch({ excludedFromSession: true })}>
+            استثناء الكل
+          </Button>
+          <Button type="button" variant="secondary" disabled={!canWrite || savingAll} onClick={() => applyBulkPatch({ excludedFromSession: false })}>
+            إلغاء استثناء الكل
+          </Button>
+          <Button type="button" variant="secondary" disabled={!canWrite || savingAll} onClick={() => applyBulkPatch({ attendanceStatus: HALAKA_ATTENDANCE_STATUSES.PRESENT }, { includeExcluded: false })}>
+            الكل حاضر
+          </Button>
+          <Button type="button" variant="secondary" disabled={!canWrite || savingAll} onClick={() => applyBulkPatch({ attendanceStatus: HALAKA_ATTENDANCE_STATUSES.ABSENT }, { includeExcluded: false })}>
+            الكل غائب
+          </Button>
           <Button type="button" variant="primary" loading={savingAll} disabled={!canWrite || dirtyRowIds.size === 0} onClick={saveAll}>
             حفظ الكل ({dirtyRowIds.size})
           </Button>
         </div>
+        <p className="rh-halaka-sessions__callout">تخطيط العمل الجماعي: عدّل عدة أعضاء بسرعة (استثناء/حضور/صفحات) ثم احفظ دفعة واحدة.</p>
         <ul className="rh-halaka-sessions__attendee-list">
           {attendanceRows.map((row) => {
             const isStudent = row.role === HALAKA_MEMBER_ROLES.STUDENT
@@ -237,6 +272,9 @@ export default function HalakaSessionWorkspacePage() {
             return (
               <li key={row.userId} className={['rh-halaka-sessions__attendee', row.excludedFromSession ? 'rh-halaka-sessions__attendee--excluded' : ''].filter(Boolean).join(' ')}>
                 <div className="rh-halaka-sessions__attendee-head">
+                  <span className="rh-halaka-sessions__avatar" aria-hidden>
+                    {row.photoURL ? <img src={row.photoURL} alt="" loading="lazy" /> : (row.displayName || row.userId).trim().slice(0, 1)}
+                  </span>
                   <span className="rh-halaka-sessions__attendee-name">{row.displayName}</span>
                   <span className="rh-plans__saved-badge">{memberRoleLabel(row.role)}</span>
                   {row.excludedFromSession ? <span className="rh-plans__saved-badge">مستثنى</span> : null}
