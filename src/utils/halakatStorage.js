@@ -477,10 +477,25 @@ export async function upsertSessionAttendance(actorUser, halakaId, sessionId, st
   const status = String(input?.attendanceStatus || HALAKA_ATTENDANCE_STATUSES.PRESENT)
   const allowed = new Set(Object.values(HALAKA_ATTENDANCE_STATUSES))
   const finalStatus = allowed.has(status) ? status : HALAKA_ATTENDANCE_STATUSES.OTHER
+  const parsePage = (v) => {
+    const n = Number(v)
+    return Number.isFinite(n) && n >= 1 ? Math.floor(n) : null
+  }
+  const fromPage = parsePage(input?.fromPage)
+  const toPage = parsePage(input?.toPage)
+  let pagesCount = 0
+  if (fromPage != null && toPage != null && toPage >= fromPage) {
+    pagesCount = toPage - fromPage + 1
+  } else {
+    pagesCount = Math.max(0, Math.floor(Number(input?.pagesCount ?? input?.memorizedAmount) || 0))
+  }
   const data = {
     attendanceStatus: finalStatus,
     memorizationVolumeId: String(input?.memorizationVolumeId || '').trim(),
-    memorizedAmount: Number(input?.memorizedAmount || 0),
+    fromPage: fromPage ?? null,
+    toPage: toPage ?? null,
+    pagesCount,
+    memorizedAmount: pagesCount,
     memorizedUnit: String(input?.memorizedUnit || 'pages').trim() || 'pages',
     notes: String(input?.notes || '').trim(),
     recordedBy: actorUser.uid,

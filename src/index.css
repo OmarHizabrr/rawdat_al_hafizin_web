@@ -4193,6 +4193,28 @@ button.rh-home-quick-icon {
   line-height: var(--rh-leading-normal);
 }
 
+.rh-halaka-sessions__volume-context {
+  margin: 0 0 var(--rh-space-3);
+  padding: var(--rh-space-3);
+  border-radius: var(--rh-radius-md);
+  background: color-mix(in srgb, var(--rh-surface-tint) 92%, var(--rh-surface));
+  border: 1px solid color-mix(in srgb, var(--rh-border) 75%, transparent);
+  font-size: var(--rh-text-sm);
+  line-height: var(--rh-leading-relaxed, 1.55);
+}
+
+.rh-halaka-sessions__volume-context-line {
+  margin: 0 0 var(--rh-space-2);
+}
+
+.rh-halaka-sessions__volume-context-last {
+  margin: 0;
+}
+
+.rh-halaka-sessions__volume-context-last--muted {
+  color: var(--rh-text-muted);
+}
+
 .rh-halaka-sessions select.ui-input,
 .rh-halaka-sessions .ui-input[type='number'] {
   min-height: var(--rh-halaka-sessions-touch);

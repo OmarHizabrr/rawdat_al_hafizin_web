@@ -556,6 +556,34 @@
   padding-inline-end: var(--rh-space-1);
 }
 
+/** مساحة جلسة الحلقة: رأس ثابت وجسم قابل للتمرير (موبايل) */
+.ui-modal__content--halaka-workspace {
+  width: min(1040px, 100%);
+  max-height: min(92dvh, calc(100dvh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px) - 1rem));
+  overflow: hidden;
+  padding: 0;
+}
+
+.ui-modal__content--halaka-workspace .ui-modal__head {
+  position: sticky;
+  top: 0;
+  z-index: 3;
+  margin: 0;
+  padding: var(--rh-space-4);
+  background: var(--rh-bg);
+  border-bottom: 1px solid var(--rh-border);
+}
+
+.ui-modal__content--halaka-workspace .rh-halaka-workspace-modal__body {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  padding: var(--rh-space-4);
+}
+
 .ui-modal__head {
   display: flex;
   align-items: center;
