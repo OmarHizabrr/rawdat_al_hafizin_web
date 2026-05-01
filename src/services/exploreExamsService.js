@@ -1,6 +1,11 @@
 import { onSnapshot, query, where } from 'firebase/firestore'
+import { examVolumeSpecsSearchHay } from '../utils/examVolumeSpec.js'
 import { firestoreApi } from './firestoreApi.js'
 import { EXPLORE_SORT_OPTIONS } from './explorePlansService.js'
+
+export function getPublicExamsQuery() {
+  return query(firestoreApi.getExamsCollection(), where('examVisibility', '==', 'public'))
+}
 
 function timestampMs(v) {
   if (!v) return 0
@@ -9,23 +14,16 @@ function timestampMs(v) {
   return Number.isFinite(n) ? n : 0
 }
 
-export function getPublicRemoteTasmeeQuery() {
-  return query(
-    firestoreApi.getRemoteTasmeeCollection(),
-    where('remoteTasmeeVisibility', '==', 'public'),
-  )
-}
-
-async function resolveMemberCount(broadcastId, stored) {
+async function resolveMemberCount(examId, stored) {
   if (typeof stored === 'number' && Number.isFinite(stored) && stored >= 0) return stored
   try {
-    return await firestoreApi.getSubCollectionCount('members', broadcastId, 'members')
+    return await firestoreApi.getSubCollectionCount('members', examId, 'members')
   } catch {
     return 0
   }
 }
 
-export async function enrichPublicRemoteTasmeeDocs(docs) {
+export async function enrichPublicExamDocs(docs) {
   const rows = docs.map((d) => ({ id: d.id, ...d.data() }))
   const ownerUids = [...new Set(rows.map((p) => p.ownerUid).filter(Boolean))]
   const profiles = await Promise.all(
@@ -51,14 +49,14 @@ export async function enrichPublicRemoteTasmeeDocs(docs) {
   )
 }
 
-export function subscribePublicRemoteTasmeeForExplore(onNext, onError) {
-  const q = getPublicRemoteTasmeeQuery()
+export function subscribePublicExamsForExplore(onNext, onError) {
+  const q = getPublicExamsQuery()
   return onSnapshot(
     q,
     (snapshot) => {
       ;(async () => {
         try {
-          const rows = await enrichPublicRemoteTasmeeDocs(snapshot.docs)
+          const rows = await enrichPublicExamDocs(snapshot.docs)
           onNext(rows)
         } catch (e) {
           onError?.(e)
@@ -69,26 +67,26 @@ export function subscribePublicRemoteTasmeeForExplore(onNext, onError) {
   )
 }
 
-export function filterPublicRemoteTasmeeBySearch(rows, searchRaw) {
+export function filterPublicExamsBySearch(rows, searchRaw) {
   const q = (searchRaw || '').trim().toLowerCase()
   if (!q) return rows
   return rows.filter((p) => {
-    const title = (p.title || '').toLowerCase()
+    const name = (p.name || '').toLowerCase()
     const desc = (p.description || '').toLowerCase()
     const id = (p.id || '').toLowerCase()
     const creator = `${p.creatorDisplayName || ''} ${p.creatorEmail || ''}`.toLowerCase()
-    const linkedExam = `${p.linkedExamId || ''} ${p.linkedExamTitle || ''}`.toLowerCase()
+    const volumesHay = examVolumeSpecsSearchHay(p.examVolumeSpecs)
     return (
-      title.includes(q) ||
+      name.includes(q) ||
       desc.includes(q) ||
       id.includes(q) ||
       creator.includes(q) ||
-      linkedExam.includes(q)
+      volumesHay.includes(q)
     )
   })
 }
 
-export function sortPublicRemoteTasmee(rows, sortValue) {
+export function sortPublicExams(rows, sortValue) {
   const list = [...rows]
   const byCreatedDesc = (a, b) => timestampMs(b.createdAt) - timestampMs(a.createdAt)
   const byCreatedAsc = (a, b) => timestampMs(a.createdAt) - timestampMs(b.createdAt)
@@ -96,7 +94,7 @@ export function sortPublicRemoteTasmee(rows, sortValue) {
   const byUpdatedAsc = (a, b) => timestampMs(a.updatedAt) - timestampMs(b.updatedAt)
   const byMembersDesc = (a, b) => (Number(b.memberCount) || 0) - (Number(a.memberCount) || 0)
   const byMembersAsc = (a, b) => (Number(a.memberCount) || 0) - (Number(b.memberCount) || 0)
-  const title = (r) => (r.title || r.name || '').toString()
+  const title = (r) => (r.name || '').toString()
   const byNameAsc = (a, b) => title(a).localeCompare(title(b), 'ar', { sensitivity: 'base' })
   const byNameDesc = (a, b) => byNameAsc(b, a)
 

@@ -1,8 +1,7 @@
-import { ClipboardPaste, Compass, Pencil, Plus, Trash2, UserPlus, Users, Video } from 'lucide-react'
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { Compass, Pencil, Plus, Trash2, UserPlus, Users, Video } from 'lucide-react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Link, useLocation, useSearchParams } from 'react-router-dom'
 import { CrossNav } from '../components/CrossNav.jsx'
-import { MeetingProviderLaunchRow } from '../components/MeetingProviderLaunchRow.jsx'
 import { PERMISSION_PAGE_IDS } from '../config/permissionRegistry.js'
 import { isAdmin } from '../config/roles.js'
 import { useAuth } from '../context/useAuth.js'
@@ -11,32 +10,28 @@ import { useSiteContent } from '../context/useSiteContent.js'
 import { firestoreApi } from '../services/firestoreApi.js'
 import { subscribeAllUsers } from '../services/adminUsersService.js'
 import { HALAKA_MEMBER_ROLES } from '../utils/halakatStorage.js'
+import {
+  addUserToExam,
+  joinPublicExam,
+  loadExamMembersWithProfiles,
+  loadExams,
+  removeExamForUser,
+  removeExamMember,
+  saveExams,
+  setExamMemberRole,
+  subscribeExams,
+} from '../utils/examsStorage.js'
+import { VOLUME_BY_ID } from '../data/volumes.js'
+import {
+  EXAM_VOLUME_SCOPE,
+  formatExamVolumeSpecsSummaryLines,
+  normalizeExamVolumeSpecs,
+  totalResolvedPagesFromExamVolumeSpecs,
+  VOLUMES,
+} from '../utils/examVolumeSpec.js'
 import { leavingUserDeletesWholeGroup } from '../utils/groupMembership.js'
 import { mergeUserDirectoryRows } from '../utils/userDirectoryMerge.js'
 import { getImpersonateUid, withImpersonationQuery } from '../utils/impersonation.js'
-import {
-  formatExamVolumeSpecsSummaryLines,
-  totalResolvedPagesFromExamVolumeSpecs,
-} from '../utils/examVolumeSpec.js'
-import { loadExams } from '../utils/examsStorage.js'
-import {
-  REMOTE_TASMEE_MEDIA,
-  REMOTE_TASMEE_PROVIDER,
-  addUserToRemoteTasmee,
-  joinPublicRemoteTasmee,
-  loadRemoteTasmeeBroadcasts,
-  loadRemoteTasmeeMembersWithProfiles,
-  normalizeMeetingUrl,
-  normalizeRemoteTasmeeMedia,
-  normalizeRemoteTasmeeProvider,
-  remoteTasmeeMediaLabelAr,
-  remoteTasmeeProviderLabelAr,
-  removeRemoteTasmeeForUser,
-  removeRemoteTasmeeMember,
-  saveRemoteTasmeeBroadcast,
-  setRemoteTasmeeMemberRole,
-  subscribeRemoteTasmeeBroadcasts,
-} from '../utils/remoteTasmeeStorage.js'
 import {
   Button,
   Modal,
@@ -49,17 +44,17 @@ import {
 import { RhIcon, RH_ICON_STROKE } from '../ui/RhIcon.jsx'
 
 function newId() {
-  return firestoreApi.getNewId('remote_tasmee')
+  return firestoreApi.getNewId('exams')
 }
 
-const PH = PERMISSION_PAGE_IDS.remote_tasmee
+const PH = PERMISSION_PAGE_IDS.exams
 
-function broadcastCanEdit(b) {
-  return b?.broadcastRole !== HALAKA_MEMBER_ROLES.STUDENT
+function examCanEdit(ex) {
+  return ex?.examRole !== HALAKA_MEMBER_ROLES.STUDENT
 }
 
-function broadcastCanManageMembers(b) {
-  const r = b?.broadcastRole
+function examCanManageMembers(ex) {
+  const r = ex?.examRole
   return r === HALAKA_MEMBER_ROLES.OWNER || r === HALAKA_MEMBER_ROLES.SUPERVISOR
 }
 
@@ -106,23 +101,43 @@ function canAssignRole(actorRole, targetRole, nextRole) {
   )
 }
 
-const PROVIDER_OPTIONS = [
-  { value: REMOTE_TASMEE_PROVIDER.GOOGLE_MEET, label: 'جوجل ميت' },
-  { value: REMOTE_TASMEE_PROVIDER.ZOOM, label: 'زووم' },
-  { value: REMOTE_TASMEE_PROVIDER.TEAMS, label: 'مايكروسوفت تيمز' },
-  { value: REMOTE_TASMEE_PROVIDER.JITSI, label: 'جيتسي' },
-  { value: REMOTE_TASMEE_PROVIDER.DISCORD, label: 'ديسكورد' },
-  { value: REMOTE_TASMEE_PROVIDER.WEBEX, label: 'Webex' },
-  { value: REMOTE_TASMEE_PROVIDER.OTHER, label: 'أخرى / رابط مباشر' },
+const EXAM_SCOPE_SELECT_OPTIONS = [
+  { value: EXAM_VOLUME_SCOPE.FULL, label: 'المجلد كاملاً' },
+  { value: EXAM_VOLUME_SCOPE.THREE_QUARTERS, label: 'ثلاثة أرباع المجلد' },
+  { value: EXAM_VOLUME_SCOPE.HALF, label: 'نصف المجلد' },
+  { value: EXAM_VOLUME_SCOPE.QUARTER, label: 'ربع المجلد' },
+  { value: EXAM_VOLUME_SCOPE.CUSTOM, label: 'عدد صفحات محدد' },
 ]
 
-export default function RemoteTasmeePage() {
+function newVolumeRowKey() {
+  return `v-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 9)}`
+}
+
+function editorRowsFromSpecs(specs) {
+  const n = normalizeExamVolumeSpecs(specs)
+  return n.map((s) => ({
+    key: newVolumeRowKey(),
+    volumeId: s.volumeId,
+    scope: s.scope,
+    customPages: s.customPages != null ? String(s.customPages) : '',
+  }))
+}
+
+function specsFromEditorRows(rows) {
+  return rows.map((r) => ({
+    volumeId: r.volumeId,
+    scope: r.scope,
+    customPages: r.scope === EXAM_VOLUME_SCOPE.CUSTOM ? r.customPages : null,
+  }))
+}
+
+export default function ExamsPage() {
   const { user } = useAuth()
   const { can, canAccessPage } = usePermissions()
   const { branding, str } = useSiteContent()
   const toast = useToast()
   const { search } = useLocation()
-  const [searchParams, setSearchParams] = useSearchParams()
+  const [searchParams] = useSearchParams()
   const uidParam = searchParams.get('uid')?.trim() || ''
   const impersonateUid = getImpersonateUid(user, search)
   const appLink = useCallback((path) => withImpersonationQuery(path, impersonateUid), [impersonateUid])
@@ -135,29 +150,20 @@ export default function RemoteTasmeePage() {
 
   const actingAsUser = Boolean(user?.uid && viewUserId && viewUserId !== user.uid)
   const readOnly = Boolean(actingAsUser && !isAdmin(user))
-  const exploreHref = appLink('/app/remote-tasmee/explore')
+  const exploreHref = appLink('/app/exams/explore')
 
   const [saved, setSaved] = useState([])
   const [editorOpen, setEditorOpen] = useState(false)
   const [editingId, setEditingId] = useState(null)
   const [deleting, setDeleting] = useState(null)
-  const [title, setTitle] = useState('')
+  const [name, setName] = useState('')
   const [description, setDescription] = useState('')
-  const [mediaType, setMediaType] = useState(REMOTE_TASMEE_MEDIA.VIDEO)
-  const [provider, setProvider] = useState(REMOTE_TASMEE_PROVIDER.GOOGLE_MEET)
-  const [meetingUrl, setMeetingUrl] = useState('')
-  const [meetingCode, setMeetingCode] = useState('')
-  const [remoteVisibility, setRemoteVisibility] = useState('private')
+  const [examVisibility, setExamVisibility] = useState('private')
+  const [volumeRows, setVolumeRows] = useState([])
   const [saveBusy, setSaveBusy] = useState(false)
   const [deleteBusy, setDeleteBusy] = useState(false)
   const [joinId, setJoinId] = useState('')
   const [joinBusy, setJoinBusy] = useState(false)
-
-  const [linkedExamId, setLinkedExamId] = useState('')
-  const [linkedExamTitle, setLinkedExamTitle] = useState('')
-  const processedFromExamRef = useRef('')
-
-  const fromExamParam = searchParams.get('fromExam')?.trim() || ''
 
   const [membersModal, setMembersModal] = useState(null)
   const [membersList, setMembersList] = useState([])
@@ -169,19 +175,19 @@ export default function RemoteTasmeePage() {
 
   useEffect(() => {
     document.title = readOnly
-      ? `التسميع عن بعد (عرض) — ${branding.siteTitle}`
+      ? `الاختبار (عرض) — ${branding.siteTitle}`
       : actingAsUser
-        ? `التسميع عن بعد (نيابة) — ${branding.siteTitle}`
-        : `التسميع عن بعد — ${branding.siteTitle}`
+        ? `الاختبار (نيابة) — ${branding.siteTitle}`
+        : `الاختبار — ${branding.siteTitle}`
   }, [readOnly, actingAsUser, branding.siteTitle])
 
   useEffect(() => {
     if (!viewUserId) return undefined
     let mounted = true
-    loadRemoteTasmeeBroadcasts(viewUserId).then((rows) => {
+    loadExams(viewUserId).then((rows) => {
       if (mounted) setSaved(rows)
     })
-    const unsub = subscribeRemoteTasmeeBroadcasts(viewUserId, (rows) => {
+    const unsub = subscribeExams(viewUserId, (rows) => {
       if (mounted) setSaved(rows)
     })
     return () => {
@@ -191,63 +197,10 @@ export default function RemoteTasmeePage() {
   }, [viewUserId])
 
   useEffect(() => {
-    if (!fromExamParam) processedFromExamRef.current = ''
-  }, [fromExamParam])
-
-  useEffect(() => {
-    if (!fromExamParam || !viewUserId || readOnly) return undefined
-    if (processedFromExamRef.current === fromExamParam) return undefined
-    let cancelled = false
-    loadExams(viewUserId).then((rows) => {
-      if (cancelled) return
-      const ex = rows.find((r) => r.id === fromExamParam)
-      if (!ex) {
-        toast.warning('لم نعثر على الاختبار أو لست عضواً فيه.', '')
-        processedFromExamRef.current = fromExamParam
-        setSearchParams(
-          (prev) => {
-            const n = new URLSearchParams(prev)
-            n.delete('fromExam')
-            return n
-          },
-          { replace: true },
-        )
-        return
-      }
-      setTitle(`تسميع — ${ex.name || 'اختبار'}`)
-      const lines = formatExamVolumeSpecsSummaryLines(ex.examVolumeSpecs)
-      const total = totalResolvedPagesFromExamVolumeSpecs(ex.examVolumeSpecs)
-      const block =
-        lines.length > 0
-          ? ['— مجلدات الاختبار —', ...lines, total ? `المجموع التقريبي: ${total} صفحة` : '']
-              .filter(Boolean)
-              .join('\n')
-          : ''
-      const baseDesc = (ex.description || '').trim()
-      setDescription(baseDesc ? (block ? `${baseDesc}\n\n${block}` : baseDesc) : block)
-      setLinkedExamId(ex.id)
-      setLinkedExamTitle(ex.name || '')
-      setEditorOpen(true)
-      processedFromExamRef.current = fromExamParam
-      setSearchParams(
-        (prev) => {
-          const n = new URLSearchParams(prev)
-          n.delete('fromExam')
-          return n
-        },
-        { replace: true },
-      )
-    })
-    return () => {
-      cancelled = true
-    }
-  }, [fromExamParam, viewUserId, readOnly, setSearchParams, toast])
-
-  useEffect(() => {
     if (!membersModal?.id || !user?.uid) return undefined
     let cancelled = false
     setMembersLoading(true)
-    loadRemoteTasmeeMembersWithProfiles(membersModal.id)
+    loadExamMembersWithProfiles(membersModal.id)
       .then((rows) => {
         if (!cancelled) setMembersList(rows)
       })
@@ -299,6 +252,11 @@ export default function RemoteTasmeePage() {
     [directoryUsers, memberDirectoryExtras],
   )
 
+  const draftExamTotalPages = useMemo(
+    () => totalResolvedPagesFromExamVolumeSpecs(specsFromEditorRows(volumeRows)),
+    [volumeRows],
+  )
+
   const filteredPickerUsers = useMemo(() => {
     const q = memberPickerQuery.trim().toLowerCase()
     let list = mergedDirectoryUsers
@@ -319,72 +277,70 @@ export default function RemoteTasmeePage() {
   const refreshMembers = () => {
     if (!membersModal?.id) return
     setMembersLoading(true)
-    loadRemoteTasmeeMembersWithProfiles(membersModal.id)
+    loadExamMembersWithProfiles(membersModal.id)
       .then(setMembersList)
       .finally(() => setMembersLoading(false))
   }
 
   const openAdd = () => {
     setEditingId(null)
-    setTitle('')
+    setName('')
     setDescription('')
-    setMediaType(REMOTE_TASMEE_MEDIA.VIDEO)
-    setProvider(REMOTE_TASMEE_PROVIDER.GOOGLE_MEET)
-    setMeetingUrl('')
-    setMeetingCode('')
-    setRemoteVisibility('private')
-    setLinkedExamId('')
-    setLinkedExamTitle('')
+    setExamVisibility('private')
+    setVolumeRows([])
     setEditorOpen(true)
   }
 
-  const openEdit = (b) => {
-    if (!broadcastCanEdit(b)) return
-    setEditingId(b.id)
-    setTitle(b.title || '')
-    setDescription(b.description || '')
-    setMediaType(normalizeRemoteTasmeeMedia(b.mediaType))
-    setProvider(normalizeRemoteTasmeeProvider(b.provider))
-    setMeetingUrl(b.meetingUrl || '')
-    setMeetingCode(b.meetingCode || '')
-    setRemoteVisibility(b.remoteTasmeeVisibility === 'public' ? 'public' : 'private')
-    setLinkedExamId(b.linkedExamId || '')
-    setLinkedExamTitle(b.linkedExamTitle || '')
+  const openEdit = (ex) => {
+    if (!examCanEdit(ex)) return
+    setEditingId(ex.id)
+    setName(ex.name || '')
+    setDescription(ex.description || '')
+    setExamVisibility(ex.examVisibility === 'public' ? 'public' : 'private')
+    setVolumeRows(editorRowsFromSpecs(ex.examVolumeSpecs))
     setEditorOpen(true)
+  }
+
+  const addVolumeRow = () => {
+    const firstId = VOLUMES[0]?.id || ''
+    if (!firstId) return
+    setVolumeRows((prev) => [
+      ...prev,
+      { key: newVolumeRowKey(), volumeId: firstId, scope: EXAM_VOLUME_SCOPE.FULL, customPages: '' },
+    ])
+  }
+
+  const patchVolumeRow = (key, patch) => {
+    setVolumeRows((prev) => prev.map((r) => (r.key === key ? { ...r, ...patch } : r)))
+  }
+
+  const removeVolumeRow = (key) => {
+    setVolumeRows((prev) => prev.filter((r) => r.key !== key))
   }
 
   const handleSave = async () => {
     if (!viewUserId) return
-    const url = normalizeMeetingUrl(meetingUrl)
-    if (!url) {
-      toast.warning('أدخل رابط الاجتماع (مثل رابط جوجل ميت أو زووم).', '')
-      return
-    }
     const nowIso = new Date().toISOString()
+    const examVolumeSpecs = normalizeExamVolumeSpecs(specsFromEditorRows(volumeRows))
     const row = {
       id: editingId || newId(),
       createdAt: editingId ? saved.find((x) => x.id === editingId)?.createdAt ?? nowIso : nowIso,
       updatedAt: nowIso,
-      title: title.trim() || `بث عن بعد ${new Date().toLocaleDateString('ar-SA')}`,
+      name: name.trim() || `اختبار ${new Date().toLocaleDateString('ar-SA')}`,
       description: description.trim(),
-      mediaType: normalizeRemoteTasmeeMedia(mediaType),
-      provider: normalizeRemoteTasmeeProvider(provider),
-      meetingUrl: url,
-      meetingCode: meetingCode.trim(),
-      remoteTasmeeVisibility: remoteVisibility,
-      linkedExamId: linkedExamId.trim(),
-      linkedExamTitle: linkedExamTitle.trim(),
+      examVolumeSpecs,
+      examVisibility,
     }
     const next = editingId ? saved.map((x) => (x.id === editingId ? { ...x, ...row } : x)) : [row, ...saved]
     setSaveBusy(true)
     try {
-      await saveRemoteTasmeeBroadcast(viewUserId, next, user ?? {})
-      toast.success(editingId ? 'تم تحديث البث.' : 'تم إنشاء البث.', 'تم')
+      await saveExams(viewUserId, next, user ?? {})
+      toast.success(editingId ? 'تم التحديث.' : 'تم إنشاء مجموعة الاختبار.', 'تم')
       setEditorOpen(false)
       setEditingId(null)
-    } catch (e) {
-      if (e?.message === 'REMOTE_TASMEE_URL_REQUIRED') toast.warning('الرابط مطلوب.', '')
-      else toast.warning('تعذّر الحفظ.', 'تنبيه')
+      setVolumeRows([])
+    } catch {
+      toast.warning('تعذّر الحفظ.', 'تنبيه')
     } finally {
       setSaveBusy(false)
     }
@@ -395,7 +351,7 @@ export default function RemoteTasmeePage() {
     setDeleteBusy(true)
     let outcome = 'noop'
     try {
-      outcome = await removeRemoteTasmeeForUser(viewUserId, deleting.id)
+      outcome = await removeExamForUser(viewUserId, deleting.id)
     } catch {
       toast.warning('تعذّر التنفيذ.', 'تنبيه')
       setDeleting(null)
@@ -408,58 +364,23 @@ export default function RemoteTasmeePage() {
       setDeleting(null)
       return
     }
-    toast.info(outcome === 'deletedFully' ? 'حُذف البث للجميع.' : 'غادرت البث.', '')
+    toast.info(outcome === 'deletedFully' ? 'حُذفت المجموعة للجميع.' : 'غادرت المجموعة.', '')
     setDeleting(null)
   }
-
-  const onMeetingProviderLaunched = useCallback(
-    (mode) => {
-      if (mode === 'filled') {
-        toast.success('تم إنشاء رابط جيتسي وملء الحقل ونسخه إلى الحافظة.', 'تم')
-      } else {
-        toast.info(
-          'تم فتح التطبيق في تبويب جديد. بعد ظهور رابط الاجتماع انسخه والصقه في حقل «رابط الاجتماع».',
-          '',
-        )
-      }
-    },
-    [toast],
-  )
-
-  const pasteMeetingUrlFromClipboard = useCallback(async () => {
-    if (typeof navigator === 'undefined' || !navigator.clipboard?.readText) {
-      toast.warning('المتصفح لا يدعم قراءة الحافظة. استخدم لصق يدوي (Ctrl+V).', '')
-      return
-    }
-    try {
-      const raw = (await navigator.clipboard.readText()).trim()
-      if (!raw) {
-        toast.info('الحافظة فارغة.', '')
-        return
-      }
-      setMeetingUrl(normalizeMeetingUrl(raw))
-      toast.success('تم لصق الرابط في الحقل.', 'تم')
-    } catch {
-      toast.warning(
-        'تعذّر قراءة الحافظة. امنح الموقع إذن اللصق من المتصفح، أو الصق الرابط يدوياً في الحقل.',
-        '',
-      )
-    }
-  }, [toast])
 
   const handleJoin = async () => {
     const id = joinId.trim()
     if (!id || !viewUserId || !user) return
     setJoinBusy(true)
     try {
-      await joinPublicRemoteTasmee(viewUserId, id, user)
+      await joinPublicExam(viewUserId, id, user)
       setJoinId('')
       toast.success('تم الانضمام.', 'تم')
     } catch (e) {
       const m = e?.message
-      if (m === 'REMOTE_TASMEE_NOT_PUBLIC') toast.warning('البث ليس عاماً.', '')
+      if (m === 'EXAM_NOT_PUBLIC') toast.warning('المجموعة ليست عامة.', '')
       else if (m === 'ALREADY_MEMBER') toast.info('أنت مضاف مسبقاً.', '')
-      else if (m === 'REMOTE_TASMEE_NOT_FOUND') toast.warning('لم يُعثر على بث بهذا المعرف.', '')
+      else if (m === 'EXAM_NOT_FOUND') toast.warning('لم يُعثر على مجموعة بهذا المعرف.', '')
       else toast.warning('تعذّر الانضمام.', '')
     } finally {
       setJoinBusy(false)
@@ -471,11 +392,7 @@ export default function RemoteTasmeePage() {
       { to: appLink('/app'), label: str('layout.nav_home') },
       { to: appLink('/app/plans'), label: str('layout.nav_plans') },
       { to: appLink('/app/halakat'), label: str('layout.nav_halakat') },
-      { to: exploreHref, label: str('layout.nav_remote_tasmee_explore') },
-      ...(canAccessPage('exams') ? [{ to: appLink('/app/exams'), label: str('layout.nav_exams') }] : []),
-      ...(canAccessPage('exams_explore')
-        ? [{ to: appLink('/app/exams/explore'), label: str('layout.nav_exams_explore') }]
-        : []),
+      { to: exploreHref, label: str('layout.nav_exams_explore') },
       { to: appLink('/app/dawrat'), label: str('layout.nav_dawrat') },
     ]
     if (canAccessPage('leave_request')) {
@@ -490,33 +407,33 @@ export default function RemoteTasmeePage() {
       <header className="rh-plans__hero">
         <div className="rh-plans__hero-head">
           <div>
-            <h1 className="rh-plans__title">{readOnly ? 'التسميع عن بعد (عرض)' : 'التسميع عن بعد'}</h1>
+            <h1 className="rh-plans__title">{readOnly ? 'الاختبار (عرض)' : 'الاختبار'}</h1>
             <p className="rh-plans__desc">
               {readOnly
                 ? 'عرض للقراءة فقط.'
-                : 'أنشئ جلسة تسميع عن بعد (صوتية أو مرئية)، اربطها بتطبيق اجتماعات (جوجل ميت، زووم، تيمز…)، وأضف الأعضاء ليصلهم الرابط والتفاصيل بسهولة. من صفحة الاختبارات يمكنك «بث تسميع» لربط البث بمجموعة الاختبار ونسخ مجلداتها إلى الوصف.'}
+                : 'مجموعات اختبار بنفس هيكل الأعضاء (مالك، مشرف، معلم، طالب): ربط عدة مجلدات مع نطاق صفحات (ربع، نصف، … أو عدد مخصص)، عامة أو خاصة.'}
             </p>
             <CrossNav items={crossItems} className="rh-plans__cross" />
           </div>
-          {!readOnly && can(PH, 'remote_tasmee_create') && (
+          {!readOnly && can(PH, 'exam_create') && (
             <div className="rh-plans__hero-actions">
               <Button type="button" variant="primary" className="rh-plans__add-btn" onClick={openAdd}>
                 <RhIcon as={Plus} size={18} strokeWidth={RH_ICON_STROKE} />
-                بث جديد
+                مجموعة جديدة
               </Button>
             </div>
           )}
         </div>
       </header>
 
-      {!readOnly && can(PH, 'remote_tasmee_join_public') && (
+      {!readOnly && can(PH, 'exam_join_public') && (
         <section className="rh-settings-card rh-plans__join-card">
           <div className="rh-settings-card__head">
-            <h2 className="rh-settings-card__title">الانضمام لبث عام</h2>
-            <p className="rh-settings-card__subtitle">أدخل معرف البث إن كان معروضاً كعام.</p>
+            <h2 className="rh-settings-card__title">الانضمام لمجموعة عامة</h2>
+            <p className="rh-settings-card__subtitle">أدخل المعرف إن كانت المجموعة معروضة كعامة.</p>
           </div>
           <div className="rh-plans__join-row">
-            <TextField label="معرف البث" value={joinId} onChange={(e) => setJoinId(e.target.value)} />
+            <TextField label="معرف المجموعة" value={joinId} onChange={(e) => setJoinId(e.target.value)} />
             <Button
               type="button"
               variant="secondary"
@@ -532,7 +449,7 @@ export default function RemoteTasmeePage() {
           <div className="rh-plans__join-explore">
             <Link className="ui-btn ui-btn--secondary rh-plans__explore-link" to={exploreHref}>
               <RhIcon as={Compass} size={18} strokeWidth={RH_ICON_STROKE} />
-              استكشاف البث العام
+              استكشاف الاختبارات العامة
             </Link>
           </div>
         </section>
@@ -540,84 +457,90 @@ export default function RemoteTasmeePage() {
 
       {saved.length > 0 ? (
         <section className="rh-plans__saved">
-          <h2 className="rh-plans__saved-title">بثوثك والجلسات المضافة</h2>
+          <h2 className="rh-plans__saved-title">مجموعاتك</h2>
           <ul className="rh-plans__saved-list">
-            {saved.map((b) => (
-              <li key={b.id} className="rh-plans__saved-card">
+            {saved.map((ex) => {
+              const volLines = formatExamVolumeSpecsSummaryLines(ex.examVolumeSpecs)
+              const volTotal = totalResolvedPagesFromExamVolumeSpecs(ex.examVolumeSpecs)
+              return (
+              <li key={ex.id} className="rh-plans__saved-card">
                 <div className="rh-plans__saved-head">
                   <div className="rh-plans__saved-head-main">
-                    <strong>{b.title}</strong>
+                    <strong>{ex.name}</strong>
                     <span className="rh-plans__saved-badges">
                       <span className="rh-plans__saved-badge">
-                        {b.remoteTasmeeVisibility === 'public' ? 'عام' : 'خاص'}
+                        {ex.examVisibility === 'public' ? 'عامة' : 'خاصة'}
                       </span>
-                      <span className="rh-plans__saved-badge">{roleLabel(b.broadcastRole)}</span>
-                      <span className="rh-plans__saved-badge">{remoteTasmeeMediaLabelAr(b.mediaType)}</span>
-                      <span className="rh-plans__saved-badge">{remoteTasmeeProviderLabelAr(b.provider)}</span>
+                      <span className="rh-plans__saved-badge">{roleLabel(ex.examRole)}</span>
                     </span>
                   </div>
                 </div>
+                {ex.description && <p className="rh-plans__saved-desc">{ex.description}</p>}
+                {volLines.length > 0 && (
+                  <>
+                    <ul className="rh-plans__saved-vols">
+                      {volLines.map((line, i) => (
+                        <li key={i}>{line}</li>
+                      ))}
+                    </ul>
+                    {volTotal > 0 ? (
+                      <p className="rh-plans__saved-meta rh-exam-volumes-total">
+                        المجموع التقريبي للاختبار: <strong>{volTotal}</strong> صفحة
+                      </p>
+                    ) : null}
+                  </>
+                )}
                 <p className="rh-plans__saved-meta">
-                  <RhIcon as={Video} size={16} strokeWidth={RH_ICON_STROKE} aria-hidden style={{ verticalAlign: 'middle' }} />{' '}
-                  افتح صفحة البث لنسخ الرابط والانضمام السريع.
-                </p>
-                {b.description && <p className="rh-plans__saved-desc">{b.description}</p>}
-                {b.linkedExamId ? (
-                  <p className="rh-plans__saved-meta">
-                    مرتبط باختبار: {b.linkedExamTitle ? <strong>{b.linkedExamTitle}</strong> : null}
-                    {b.linkedExamTitle ? ' · ' : null}
-                    <code className="rh-plans__plan-id">{b.linkedExamId}</code>
-                  </p>
-                ) : null}
-                <p className="rh-plans__saved-meta">
-                  المعرف: <code className="rh-plans__plan-id">{b.id}</code>
+                  المعرف: <code className="rh-plans__plan-id">{ex.id}</code>
                 </p>
                 <div className="rh-plans__saved-actions">
-                  <Link
-                    to={appLink(`/app/remote-tasmee/${encodeURIComponent(b.id)}`)}
-                    className="ui-btn ui-btn--secondary ui-btn--sm"
-                  >
-                    <RhIcon as={Video} size={16} strokeWidth={RH_ICON_STROKE} />
-                    صفحة البث
-                  </Link>
-                  {broadcastCanManageMembers(b) && can(PH, 'remote_tasmee_card_members') && (
-                    <Button type="button" variant="secondary" size="sm" onClick={() => setMembersModal(b)}>
+                  {examCanEdit(ex) && !readOnly && canAccessPage('remote_tasmee') && (
+                    <Link
+                      className="ui-btn ui-btn--secondary ui-btn--sm"
+                      to={appLink(`/app/remote-tasmee?fromExam=${encodeURIComponent(ex.id)}`)}
+                    >
+                      <RhIcon as={Video} size={16} strokeWidth={RH_ICON_STROKE} />
+                      بث تسميع
+                    </Link>
+                  )}
+                  {examCanManageMembers(ex) && can(PH, 'exam_card_members') && (
+                    <Button type="button" variant="secondary" size="sm" onClick={() => setMembersModal(ex)}>
                       <RhIcon as={Users} size={16} strokeWidth={RH_ICON_STROKE} />
                       الأعضاء
                     </Button>
                   )}
-                  {broadcastCanEdit(b) && can(PH, 'remote_tasmee_card_edit') && (
-                    <Button type="button" variant="ghost" size="sm" onClick={() => openEdit(b)}>
+                  {examCanEdit(ex) && can(PH, 'exam_card_edit') && (
+                    <Button type="button" variant="ghost" size="sm" onClick={() => openEdit(ex)}>
                       <RhIcon as={Pencil} size={16} strokeWidth={RH_ICON_STROKE} />
                       تعديل
                     </Button>
                   )}
-                  {can(PH, 'remote_tasmee_card_delete_leave') && (
-                    <Button type="button" variant="ghost" size="sm" onClick={() => setDeleting(b)}>
+                  {can(PH, 'exam_card_delete_leave') && (
+                    <Button type="button" variant="ghost" size="sm" onClick={() => setDeleting(ex)}>
                       <RhIcon as={Trash2} size={16} strokeWidth={RH_ICON_STROKE} />
-                      {leavingUserDeletesWholeGroup(viewUserId, b.ownerUid, b.broadcastRole, HALAKA_MEMBER_ROLES)
+                      {leavingUserDeletesWholeGroup(viewUserId, ex.ownerUid, ex.examRole, HALAKA_MEMBER_ROLES)
                         ? 'حذف'
                         : 'مغادرة'}
                     </Button>
                   )}
                 </div>
               </li>
-            ))}
+              )
+            })}
           </ul>
         </section>
       ) : (
-        <p className="rh-plans__empty">لا توجد جلسات عن بعد بعد. أنشئ بثاً أو انضم لبث عام.</p>
+        <p className="rh-plans__empty">لا توجد مجموعات بعد. أنشئ مجموعة أو انضم لعامة من الاستكشاف.</p>
       )}
 
       <Modal
         open={editorOpen}
-        title={editingId ? 'تعديل البث' : 'بث تسميع عن بعد جديد'}
+        title={editingId ? 'تعديل مجموعة الاختبار' : 'مجموعة اختبار جديدة'}
         onClose={() => {
           if (!saveBusy) {
             setEditorOpen(false)
             setEditingId(null)
-            setLinkedExamId('')
-            setLinkedExamTitle('')
+            setVolumeRows([])
           }
         }}
         size="lg"
@@ -626,116 +549,110 @@ export default function RemoteTasmeePage() {
         showClose={!saveBusy}
       >
         <ScrollArea className="rh-plans__editor-scroll" padded>
-          <TextField label="عنوان الجلسة" value={title} onChange={(e) => setTitle(e.target.value)} />
+          <TextField label="اسم المجموعة" value={name} onChange={(e) => setName(e.target.value)} />
           <TextAreaField label="وصف (اختياري)" value={description} onChange={(e) => setDescription(e.target.value)} rows={3} />
-          {linkedExamId ? (
-            <div className="rh-remote-tasmee-linked-exam">
-              <p className="rh-plans__field-label">مرتبط بمجموعة اختبار</p>
-              <p className="rh-plans__saved-meta">
-                {linkedExamTitle ? <strong>{linkedExamTitle}</strong> : null}
-                {linkedExamTitle ? ' · ' : null}
-                <code className="rh-plans__plan-id">{linkedExamId}</code>
+          <section className="rh-exam-volume-editor" aria-label="مجلدات الاختبار">
+            <p className="rh-plans__field-label">مجلدات الاختبار</p>
+            <p className="rh-exam-volume-editor__hint">
+              أضف مجلداً أو أكثر؛ لكل مجلد اختر النطاق (ربع، نصف، ثلاثة أرباع، كامل، أو عدد صفحات لا يتجاوز إجمالي
+              المجلد).
+            </p>
+            {volumeRows.length === 0 ? (
+              <p className="rh-exam-volume-editor__empty">
+                لم تُضف مجلدات. يمكنك الحفظ بدون مجلدات أو الضغط على «إضافة مجلد».
               </p>
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                onClick={() => {
-                  setLinkedExamId('')
-                  setLinkedExamTitle('')
-                }}
-              >
-                إلغاء الربط
-              </Button>
-            </div>
-          ) : null}
-          <p className="rh-plans__field-label">نوع البث</p>
-          <div className="rh-segment rh-segment--plans">
-            <button
-              type="button"
-              className={['rh-segment__btn', mediaType === REMOTE_TASMEE_MEDIA.VIDEO ? 'rh-segment__btn--active' : '']
-                .filter(Boolean)
-                .join(' ')}
-              onClick={() => setMediaType(REMOTE_TASMEE_MEDIA.VIDEO)}
-            >
-              <span className="rh-segment__label">مرئي</span>
-            </button>
-            <button
-              type="button"
-              className={['rh-segment__btn', mediaType === REMOTE_TASMEE_MEDIA.AUDIO ? 'rh-segment__btn--active' : '']
-                .filter(Boolean)
-                .join(' ')}
-              onClick={() => setMediaType(REMOTE_TASMEE_MEDIA.AUDIO)}
-            >
-              <span className="rh-segment__label">صوتي</span>
-            </button>
-          </div>
-          <label className="rh-plans__field-label" htmlFor="remote-provider">
-            تطبيق الاجتماع
-          </label>
-          <MeetingProviderLaunchRow
-            mediaType={mediaType}
-            setMeetingUrl={setMeetingUrl}
-            setProvider={setProvider}
-            onLaunched={onMeetingProviderLaunched}
-            disabled={saveBusy}
-          />
-          <select
-            id="remote-provider"
-            className="ui-input"
-            style={{ width: '100%', marginBottom: '1rem' }}
-            value={provider}
-            onChange={(e) => setProvider(e.target.value)}
-          >
-            {PROVIDER_OPTIONS.map((o) => (
-              <option key={o.value} value={o.value}>
-                {o.label}
-              </option>
-            ))}
-          </select>
-          <div className="rh-plans__join-row">
-            <TextField
-              id="remote-meeting-url"
-              label="رابط الاجتماع"
-              hint="بعد نسخ الرابط من التطبيق استخدم «لصق من الحافظة» أو Ctrl+V."
-              value={meetingUrl}
-              onChange={(e) => setMeetingUrl(e.target.value)}
-              placeholder="https://meet.google.com/… أو رابط زووم / تيمز"
-            />
-            <Button
-              type="button"
-              variant="secondary"
-              className="rh-plans__join-btn"
-              disabled={saveBusy}
-              onClick={() => {
-                void pasteMeetingUrlFromClipboard()
-              }}
-            >
-              <RhIcon as={ClipboardPaste} size={18} strokeWidth={RH_ICON_STROKE} />
-              لصق من الحافظة
+            ) : (
+              <ul className="rh-exam-volume-editor__rows">
+                {volumeRows.map((r) => {
+                  const maxP = VOLUME_BY_ID[r.volumeId]?.pages ?? 1
+                  return (
+                    <li key={r.key} className="rh-exam-volume-row">
+                      <div className="rh-exam-volume-row__fields">
+                        <div className="ui-field">
+                          <label className="ui-field__label" htmlFor={`exam-vol-${r.key}`}>
+                            المجلد
+                          </label>
+                          <select
+                            id={`exam-vol-${r.key}`}
+                            className="ui-input"
+                            value={r.volumeId}
+                            onChange={(e) => patchVolumeRow(r.key, { volumeId: e.target.value })}
+                          >
+                            {VOLUMES.map((v) => (
+                              <option key={v.id} value={v.id}>
+                                {v.label} — {v.pages} صفحة
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                        <div className="ui-field">
+                          <label className="ui-field__label" htmlFor={`exam-scope-${r.key}`}>
+                            نطاق الصفحات
+                          </label>
+                          <select
+                            id={`exam-scope-${r.key}`}
+                            className="ui-input"
+                            value={r.scope}
+                            onChange={(e) => patchVolumeRow(r.key, { scope: e.target.value })}
+                          >
+                            {EXAM_SCOPE_SELECT_OPTIONS.map((o) => (
+                              <option key={o.value} value={o.value}>
+                                {o.label}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                        {r.scope === EXAM_VOLUME_SCOPE.CUSTOM && (
+                          <div className="ui-field">
+                            <label className="ui-field__label" htmlFor={`exam-pages-${r.key}`}>
+                              عدد الصفحات (حدّ أقصى {maxP})
+                            </label>
+                            <input
+                              id={`exam-pages-${r.key}`}
+                              type="number"
+                              className="ui-input"
+                              min={1}
+                              max={maxP}
+                              value={r.customPages}
+                              onChange={(e) => patchVolumeRow(r.key, { customPages: e.target.value })}
+                            />
+                          </div>
+                        )}
+                      </div>
+                      <Button type="button" variant="ghost" size="sm" onClick={() => removeVolumeRow(r.key)}>
+                        <RhIcon as={Trash2} size={16} strokeWidth={RH_ICON_STROKE} />
+                        إزالة
+                      </Button>
+                    </li>
+                  )
+                })}
+              </ul>
+            )}
+            <Button type="button" variant="secondary" size="sm" onClick={addVolumeRow} disabled={!VOLUMES.length}>
+              <RhIcon as={Plus} size={16} strokeWidth={RH_ICON_STROKE} />
+              إضافة مجلد
             </Button>
-          </div>
-          <TextField
-            label="رمز الاجتماع (اختياري)"
-            value={meetingCode}
-            onChange={(e) => setMeetingCode(e.target.value)}
-            placeholder="مثال: 123 456 7890"
-          />
+            {draftExamTotalPages > 0 ? (
+              <p className="rh-exam-volume-editor__total" role="status">
+                المجموع التقريبي قبل الحفظ: <strong>{draftExamTotalPages}</strong> صفحة
+              </p>
+            ) : null}
+          </section>
           <p className="rh-plans__field-label">الظهور</p>
           <div className="rh-segment rh-segment--plans">
             <button
               type="button"
-              className={['rh-segment__btn', remoteVisibility === 'private' ? 'rh-segment__btn--active' : ''].join(' ')}
-              onClick={() => setRemoteVisibility('private')}
+              className={['rh-segment__btn', examVisibility === 'private' ? 'rh-segment__btn--active' : ''].join(' ')}
+              onClick={() => setExamVisibility('private')}
             >
-              <span className="rh-segment__label">خاص (أعضاء فقط يرون الرابط)</span>
+              <span className="rh-segment__label">خاصة</span>
             </button>
             <button
               type="button"
-              className={['rh-segment__btn', remoteVisibility === 'public' ? 'rh-segment__btn--active' : ''].join(' ')}
-              onClick={() => setRemoteVisibility('public')}
+              className={['rh-segment__btn', examVisibility === 'public' ? 'rh-segment__btn--active' : ''].join(' ')}
+              onClick={() => setExamVisibility('public')}
             >
-              <span className="rh-segment__label">عام (يمكن الانضمام من الاستكشاف)</span>
+              <span className="rh-segment__label">عامة (استكشاف + انضمام بالمعرف)</span>
             </button>
           </div>
           <div className="rh-plans__editor-actions">
@@ -749,8 +666,7 @@ export default function RemoteTasmeePage() {
               onClick={() => {
                 setEditorOpen(false)
                 setEditingId(null)
-                setLinkedExamId('')
-                setLinkedExamTitle('')
+                setVolumeRows([])
               }}
             >
               إلغاء
@@ -771,9 +687,9 @@ export default function RemoteTasmeePage() {
       >
         <p>
           {deleting &&
-          leavingUserDeletesWholeGroup(viewUserId, deleting.ownerUid, deleting.broadcastRole, HALAKA_MEMBER_ROLES)
-            ? 'حذف البث نهائياً لجميع الأعضاء؟'
-            : 'مغادرة هذا البث؟'}
+          leavingUserDeletesWholeGroup(viewUserId, deleting.ownerUid, deleting.examRole, HALAKA_MEMBER_ROLES)
+            ? 'حذف المجموعة نهائياً لجميع الأعضاء؟'
+            : 'مغادرة هذه المجموعة؟'}
         </p>
         <div className="rh-plans__editor-actions">
           <Button type="button" variant="danger" loading={deleteBusy} onClick={doDelete}>
@@ -787,7 +703,7 @@ export default function RemoteTasmeePage() {
 
       <Modal
         open={Boolean(membersModal)}
-        title={membersModal ? `أعضاء: ${membersModal.title}` : ''}
+        title={membersModal ? `أعضاء: ${membersModal.name}` : ''}
         onClose={() => {
           if (memberRowBusy || addingMemberUid) return
           setMembersModal(null)
@@ -804,12 +720,32 @@ export default function RemoteTasmeePage() {
           <p className="rh-plans__saved-meta">
             المعرف: <code className="rh-plans__plan-id">{membersModal?.id}</code>
           </p>
-          {can(PH, 'remote_tasmee_member_add') && (
+          {membersModal
+            ? (() => {
+                const mVolLines = formatExamVolumeSpecsSummaryLines(membersModal.examVolumeSpecs)
+                const mVolTotal = totalResolvedPagesFromExamVolumeSpecs(membersModal.examVolumeSpecs)
+                if (mVolLines.length === 0) return null
+                return (
+                  <div className="rh-exam-members-volumes">
+                    <p className="rh-plan-members-modal__heading">مجلدات الاختبار</p>
+                    <ul className="rh-plans__saved-vols">
+                      {mVolLines.map((line, i) => (
+                        <li key={i}>{line}</li>
+                      ))}
+                    </ul>
+                    {mVolTotal > 0 ? (
+                      <p className="rh-plans__saved-meta">
+                        المجموع التقريبي: <strong>{mVolTotal}</strong> صفحة
+                      </p>
+                    ) : null}
+                  </div>
+                )
+              })()
+            : null}
+          {can(PH, 'exam_member_add') && (
             <section className="rh-plan-members-modal__section">
               <h3 className="rh-plan-members-modal__heading">إضافة عضو</h3>
-              <p className="rh-plan-members-modal__hint">
-                يستطيع الأعضاء المضافون رؤية رابط الاجتماع وتفاصيل البث في صفحة البث.
-              </p>
+              <p className="rh-plan-members-modal__hint">يُضاف الطلاب أو المعلمون كأعضاء في مجموعة الاختبار.</p>
               <SearchField
                 label="بحث"
                 value={memberPickerQuery}
@@ -837,7 +773,7 @@ export default function RemoteTasmeePage() {
                               if (!user || !membersModal?.id) return
                               setAddingMemberUid(u.uid)
                               try {
-                                await addUserToRemoteTasmee(user, membersModal.id, u.uid, user)
+                                await addUserToExam(user, membersModal.id, u.uid, user)
                                 toast.success('تمت الإضافة.', 'تم')
                                 refreshMembers()
                               } catch (e) {
@@ -867,7 +803,7 @@ export default function RemoteTasmeePage() {
               <ul className="rh-members-chat-list">
                 {membersList.map((row) => {
                   const isOwner = row.role === HALAKA_MEMBER_ROLES.OWNER
-                  const actorRole = normalizeRole(membersModal?.broadcastRole)
+                  const actorRole = normalizeRole(membersModal?.examRole)
                   return (
                     <li key={row.userId} className="rh-members-chat__item">
                       <div className="rh-members-chat__main">
@@ -876,7 +812,7 @@ export default function RemoteTasmeePage() {
                       </div>
                       {!isOwner && (
                         <div className="rh-members-chat__actions">
-                          {can(PH, 'remote_tasmee_member_promote') && (
+                          {can(PH, 'exam_member_promote') && (
                             <>
                               <Button
                                 type="button"
@@ -895,7 +831,7 @@ export default function RemoteTasmeePage() {
                                   if (!user || !membersModal?.id) return
                                   setMemberRowBusy({ uid: row.userId, kind: `role:${HALAKA_MEMBER_ROLES.STUDENT}` })
                                   try {
-                                    await setRemoteTasmeeMemberRole(
+                                    await setExamMemberRole(
                                       user,
                                       membersModal.id,
                                       row.userId,
@@ -929,7 +865,7 @@ export default function RemoteTasmeePage() {
                                   if (!user || !membersModal?.id) return
                                   setMemberRowBusy({ uid: row.userId, kind: `role:${HALAKA_MEMBER_ROLES.TEACHER}` })
                                   try {
-                                    await setRemoteTasmeeMemberRole(
+                                    await setExamMemberRole(
                                       user,
                                       membersModal.id,
                                       row.userId,
@@ -966,7 +902,7 @@ export default function RemoteTasmeePage() {
                                     kind: `role:${HALAKA_MEMBER_ROLES.SUPERVISOR}`,
                                   })
                                   try {
-                                    await setRemoteTasmeeMemberRole(
+                                    await setExamMemberRole(
                                       user,
                                       membersModal.id,
                                       row.userId,
@@ -985,7 +921,7 @@ export default function RemoteTasmeePage() {
                               </Button>
                             </>
                           )}
-                          {can(PH, 'remote_tasmee_member_remove') && (
+                          {can(PH, 'exam_member_remove') && (
                             <Button
                               type="button"
                               size="sm"
@@ -998,7 +934,7 @@ export default function RemoteTasmeePage() {
                                 if (!user || !membersModal?.id) return
                                 setMemberRowBusy({ uid: row.userId, kind: 'remove' })
                                 try {
-                                  await removeRemoteTasmeeMember(user, membersModal.id, row.userId)
+                                  await removeExamMember(user, membersModal.id, row.userId)
                                   refreshMembers()
                                 } catch {
                                   toast.warning('تعذّر الإزالة.', '')

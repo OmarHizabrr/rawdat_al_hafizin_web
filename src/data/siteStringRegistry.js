@@ -33,6 +33,13 @@ export const SITE_STRING_REGISTRY = [
     label: 'قائمة: استكشاف التسميع عن بعد',
     defaultValue: 'استكشاف عن بعد',
   },
+  { key: 'layout.nav_exams', group: 'التنقل', label: 'قائمة: الاختبار', defaultValue: 'الاختبار' },
+  {
+    key: 'layout.nav_exams_explore',
+    group: 'التنقل',
+    label: 'قائمة: استكشاف الاختبارات',
+    defaultValue: 'استكشاف الاختبارات',
+  },
   { key: 'layout.nav_dawrat', group: 'التنقل', label: 'قائمة: الدورات', defaultValue: 'الدورات' },
   {
     key: 'layout.nav_dawrat_explore',

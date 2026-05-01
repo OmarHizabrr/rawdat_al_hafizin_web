@@ -203,6 +203,22 @@ export default function RemoteTasmeeBroadcastPage() {
         </section>
       ) : null}
 
+      {!loading && canon?.linkedExamId ? (
+        <section className="rh-settings-card" style={{ marginBottom: '1.25rem' }}>
+          <h2 className="rh-settings-card__title">اختبار مرتبط</h2>
+          <p className="rh-plans__saved-meta">
+            {canon.linkedExamTitle ? <strong>{canon.linkedExamTitle}</strong> : null}
+            {canon.linkedExamTitle ? ' · ' : null}
+            <code className="rh-plans__plan-id">{canon.linkedExamId}</code>
+          </p>
+          {canAccessPage('exams') ? (
+            <Link className="ui-btn ui-btn--secondary ui-btn--sm" to={appLink('/app/exams')} style={{ marginTop: '0.5rem' }}>
+              صفحة الاختبارات
+            </Link>
+          ) : null}
+        </section>
+      ) : null}
+
       {!loading && !isMember && isPublic && (
         <section className="rh-settings-card rh-plans__join-card">
           <h2 className="rh-settings-card__title">انضم لرؤية رابط الاجتماع</h2>

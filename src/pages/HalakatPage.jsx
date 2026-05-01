@@ -632,6 +632,12 @@ export default function HalakatPage() {
         label: str('layout.nav_remote_tasmee_explore'),
       })
     }
+    if (canAccessPage('exams')) {
+      items.push({ to: appLink('/app/exams'), label: str('layout.nav_exams') })
+    }
+    if (canAccessPage('exams_explore')) {
+      items.push({ to: appLink('/app/exams/explore'), label: str('layout.nav_exams_explore') })
+    }
     items.push({ to: appLink('/app/dawrat'), label: str('layout.nav_dawrat') })
     if (canAccessPage('leave_request')) {
       items.push({ to: appLink('/app/leave-request'), label: str('layout.nav_leave_request') })

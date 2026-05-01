@@ -50,10 +50,22 @@ function timestampMs(v) {
   return Number.isFinite(n) ? n : 0
 }
 
+/**
+ * توحيد رابط الاجتماع: يدعم https://meet.google.com/xxx-yyy-zzz وكود الميت وحده (ثلاث مقاطع على الأقل مفصولة بشرطة).
+ */
 export function normalizeMeetingUrl(raw) {
-  const s = String(raw || '').trim()
+  let s = String(raw || '').trim()
+  if (!s) return ''
+  s = s.replace(/^<([^>]+)>$/,'$1').replace(/^["'](.+)["']$/,'$1').trim()
   if (!s) return ''
   if (/^https?:\/\//i.test(s)) return s
+  const hasHostish = s.includes('.') || s.includes('/') || s.includes(':')
+  if (
+    !hasHostish &&
+    /^[a-z0-9]+(?:-[a-z0-9]+){2,}$/i.test(s)
+  ) {
+    return `https://meet.google.com/${s}`
+  }
   return `https://${s}`
 }
 
@@ -65,6 +77,16 @@ export function normalizeRemoteTasmeeProvider(v) {
 export function normalizeRemoteTasmeeMedia(v) {
   const k = String(v || '').trim()
   return MEDIA_SET.has(k) ? k : REMOTE_TASMEE_MEDIA.VIDEO
+}
+
+/** معرّف مجموعة الاختبار المرتبطة بالبث (اختياري). */
+export function normalizeLinkedExamId(raw) {
+  return String(raw || '').trim()
+}
+
+/** اسم الاختبار لحظة الربط (للعرض دون جلب إضافي). */
+export function normalizeLinkedExamTitle(raw) {
+  return String(raw || '').trim()
 }
 
 function canonicalPayload(row) {
@@ -185,6 +207,10 @@ async function upsertRemoteTasmeeForUser(userId, broadcast, userData) {
 
   if (!existingCanon) {
     if (!meetingUrl) throw new Error('REMOTE_TASMEE_URL_REQUIRED')
+    const linkedExamId = normalizeLinkedExamId(payload.linkedExamId ?? broadcast.linkedExamId)
+    const linkedExamTitle = linkedExamId
+      ? normalizeLinkedExamTitle(payload.linkedExamTitle ?? broadcast.linkedExamTitle)
+      : ''
     const data = {
       ...payload,
       mediaType,
@@ -194,6 +220,8 @@ async function upsertRemoteTasmeeForUser(userId, broadcast, userData) {
       ownerUid: userId,
       remoteTasmeeVisibility:
         broadcast.remoteTasmeeVisibility === 'public' ? 'public' : 'private',
+      linkedExamId: linkedExamId || '',
+      linkedExamTitle: linkedExamTitle || '',
     }
     await firestoreApi.setData({
       docRef: canonRef,
@@ -234,9 +262,23 @@ async function upsertRemoteTasmeeForUser(userId, broadcast, userData) {
   }
   if (!data.meetingUrl) throw new Error('REMOTE_TASMEE_URL_REQUIRED')
 
+  const linkedExamId = normalizeLinkedExamId(payload.linkedExamId ?? broadcast.linkedExamId)
+  const linkedExamTitle = linkedExamId
+    ? normalizeLinkedExamTitle(
+        payload.linkedExamTitle ??
+          broadcast.linkedExamTitle ??
+          existingCanon.linkedExamTitle ??
+          '',
+      )
+    : ''
+
   await firestoreApi.updateData({
     docRef: canonRef,
-    data,
+    data: {
+      ...data,
+      linkedExamId: linkedExamId || '',
+      linkedExamTitle: linkedExamTitle || '',
+    },
     userData,
   })
 }

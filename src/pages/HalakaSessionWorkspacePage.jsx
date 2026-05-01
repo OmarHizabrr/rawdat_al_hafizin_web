@@ -136,6 +136,10 @@ export default function HalakaSessionWorkspacePage() {
     ...(canAccessPage('remote_tasmee_explore')
       ? [{ to: '/app/remote-tasmee/explore', label: str('layout.nav_remote_tasmee_explore') }]
       : []),
+    ...(canAccessPage('exams') ? [{ to: '/app/exams', label: str('layout.nav_exams') }] : []),
+    ...(canAccessPage('exams_explore')
+      ? [{ to: '/app/exams/explore', label: str('layout.nav_exams_explore') }]
+      : []),
   ]
 
   const summary = useMemo(() => {

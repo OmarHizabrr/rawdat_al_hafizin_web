@@ -46,6 +46,11 @@ const db = getFirestore(app);
  *   members/{broadcastId}/members/{userId} — الأعضاء
  *   MyremoteTasmee/{userId}/MyremoteTasmee/{broadcastId} — مرآة قائمة المستخدم
  *
+ * الاختبارات (examId):
+ *   exams/{examId} — بيانات مجموعة الاختبار
+ *   members/{examId}/members/{userId} — الأعضاء (أدوار الحلقة)
+ *   Myexams/{userId}/Myexams/{examId} — مرآة قائمة المستخدم
+ *
  * الدورات (dawraId):
  *   dawrat/{dawraId} — بيانات الدورة
  *   members/{dawraId}/members/{userId} — الأعضاء
@@ -374,6 +379,38 @@ class FirestoreApi {
       userId,
       FirestoreApi.USER_REMOTE_TASMEE_MIRROR_SUB,
       broadcastId,
+    );
+  }
+
+  static USER_EXAMS_MIRROR_COLL = "Myexams";
+  static USER_EXAMS_MIRROR_SUB = "Myexams";
+
+  /** exams — جذر مجموعات الاختبار */
+  getExamsCollection() {
+    return this.getCollection("exams");
+  }
+
+  /** exams/{examId} */
+  getExamCanonicalDoc(examId) {
+    return this.getDocument("exams", examId);
+  }
+
+  /** Myexams/{userId}/Myexams */
+  getUserExamsCollection(userId) {
+    return this.getSubCollection(
+      FirestoreApi.USER_EXAMS_MIRROR_COLL,
+      userId,
+      FirestoreApi.USER_EXAMS_MIRROR_SUB,
+    );
+  }
+
+  /** Myexams/{userId}/Myexams/{examId} */
+  getUserExamDoc(userId, examId) {
+    return this.getSubDocument(
+      FirestoreApi.USER_EXAMS_MIRROR_COLL,
+      userId,
+      FirestoreApi.USER_EXAMS_MIRROR_SUB,
+      examId,
     );
   }
 

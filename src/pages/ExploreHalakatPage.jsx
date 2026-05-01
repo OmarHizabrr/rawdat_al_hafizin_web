@@ -136,6 +136,12 @@ export default function ExploreHalakatPage() {
         label: str('layout.nav_remote_tasmee_explore'),
       })
     }
+    if (canAccessPage('exams')) {
+      base.push({ to: appLink('/app/exams'), label: str('layout.nav_exams') })
+    }
+    if (canAccessPage('exams_explore')) {
+      base.push({ to: appLink('/app/exams/explore'), label: str('layout.nav_exams_explore') })
+    }
     base.push(
       { to: appLink('/app/plans'), label: str('layout.nav_plans') },
       { to: appLink('/app/dawrat'), label: str('layout.nav_dawrat') },

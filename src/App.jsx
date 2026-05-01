@@ -25,6 +25,8 @@ const HalakaSessionWorkspacePage = lazy(() => import('./pages/HalakaSessionWorks
 const RemoteTasmeePage = lazy(() => import('./pages/RemoteTasmeePage.jsx'))
 const ExploreRemoteTasmeePage = lazy(() => import('./pages/ExploreRemoteTasmeePage.jsx'))
 const RemoteTasmeeBroadcastPage = lazy(() => import('./pages/RemoteTasmeeBroadcastPage.jsx'))
+const ExamsPage = lazy(() => import('./pages/ExamsPage.jsx'))
+const ExploreExamsPage = lazy(() => import('./pages/ExploreExamsPage.jsx'))
 const ExploreDawratPage = lazy(() => import('./pages/ExploreDawratPage.jsx'))
 const DawratPage = lazy(() => import('./pages/DawratPage.jsx'))
 const AwradPage = lazy(() => import('./pages/AwradPage.jsx'))
@@ -117,6 +119,15 @@ export default function App() {
                     />
                     <Route path="remote-tasmee" element={<PageGuard pageId="remote_tasmee"><RemoteTasmeePage /></PageGuard>} />
                     <Route path="remote-tasmee/:broadcastId" element={<RemoteTasmeeBroadcastPage />} />
+                    <Route
+                      path="exams/explore"
+                      element={
+                        <PageGuard pageId="exams_explore">
+                          <ExploreExamsPage />
+                        </PageGuard>
+                      }
+                    />
+                    <Route path="exams" element={<PageGuard pageId="exams"><ExamsPage /></PageGuard>} />
                     <Route path="dawrat/explore" element={<PageGuard pageId="dawrat_explore"><ExploreDawratPage /></PageGuard>} />
                     <Route path="dawrat" element={<PageGuard pageId="dawrat"><DawratPage /></PageGuard>} />
                     <Route path="awrad" element={<PageGuard pageId="awrad"><AwradPage /></PageGuard>} />
