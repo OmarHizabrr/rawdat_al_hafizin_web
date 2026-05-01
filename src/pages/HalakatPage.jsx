@@ -622,8 +622,17 @@ export default function HalakatPage() {
       { to: appLink('/app'), label: str('layout.nav_home') },
       { to: appLink('/app/plans'), label: str('layout.nav_plans') },
       { to: exploreHref, label: str('layout.nav_halakat_explore') },
-      { to: appLink('/app/dawrat'), label: str('layout.nav_dawrat') },
     ]
+    if (canAccessPage('remote_tasmee')) {
+      items.push({ to: appLink('/app/remote-tasmee'), label: str('layout.nav_remote_tasmee') })
+    }
+    if (canAccessPage('remote_tasmee_explore')) {
+      items.push({
+        to: appLink('/app/remote-tasmee/explore'),
+        label: str('layout.nav_remote_tasmee_explore'),
+      })
+    }
+    items.push({ to: appLink('/app/dawrat'), label: str('layout.nav_dawrat') })
     if (canAccessPage('leave_request')) {
       items.push({ to: appLink('/app/leave-request'), label: str('layout.nav_leave_request') })
     }

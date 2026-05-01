@@ -132,6 +132,10 @@ export default function HalakaSessionWorkspacePage() {
     { to: '/app/halakat', label: str('layout.nav_halakat') },
     { to: `/app/halakat/${halakaId}/sessions`, label: 'جلسات الحلقة' },
     ...(canAccessPage('halakat_explore') ? [{ to: '/app/halakat/explore', label: str('layout.nav_halakat_explore') }] : []),
+    ...(canAccessPage('remote_tasmee') ? [{ to: '/app/remote-tasmee', label: str('layout.nav_remote_tasmee') }] : []),
+    ...(canAccessPage('remote_tasmee_explore')
+      ? [{ to: '/app/remote-tasmee/explore', label: str('layout.nav_remote_tasmee_explore') }]
+      : []),
   ]
 
   const summary = useMemo(() => {
