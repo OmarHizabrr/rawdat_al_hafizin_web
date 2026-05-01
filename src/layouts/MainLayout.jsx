@@ -17,6 +17,7 @@ import {
   Settings,
   Users,
   UsersRound,
+  Video,
 } from 'lucide-react'
 import { NavLink, Outlet, useLocation } from 'react-router-dom'
 import { UserNotificationsMenu } from '../components/UserNotificationsMenu.jsx'
@@ -48,6 +49,13 @@ export function MainLayout() {
       { to: '/app/plans/explore', label: str('layout.nav_plans_explore'), Icon: Compass, pageId: 'plans_explore' },
       { to: '/app/halakat', label: str('layout.nav_halakat'), Icon: UsersRound, pageId: 'halakat' },
       { to: '/app/halakat/explore', label: str('layout.nav_halakat_explore'), Icon: Compass, pageId: 'halakat_explore' },
+      { to: '/app/remote-tasmee', label: str('layout.nav_remote_tasmee'), Icon: Video, pageId: 'remote_tasmee' },
+      {
+        to: '/app/remote-tasmee/explore',
+        label: str('layout.nav_remote_tasmee_explore'),
+        Icon: Compass,
+        pageId: 'remote_tasmee_explore',
+      },
       { to: '/app/dawrat', label: str('layout.nav_dawrat'), Icon: GraduationCap, pageId: 'dawrat' },
       { to: '/app/dawrat/explore', label: str('layout.nav_dawrat_explore'), Icon: Compass, pageId: 'dawrat_explore' },
       { to: '/app/awrad', label: str('layout.nav_awrad'), Icon: NotebookPen, pageId: 'awrad' },

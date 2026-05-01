@@ -41,6 +41,11 @@ const db = getFirestore(app);
  *   members/{halakaId}/members/{userId} — الأعضاء (نفس هيكل members للخطط)
  *   Myhalakat/{userId}/Myhalakat/{halakaId} — مرآة قائمة المستخدم
  *
+ * التسميع عن بعد (broadcastId):
+ *   remoteTasmee/{broadcastId} — بيانات البث
+ *   members/{broadcastId}/members/{userId} — الأعضاء
+ *   MyremoteTasmee/{userId}/MyremoteTasmee/{broadcastId} — مرآة قائمة المستخدم
+ *
  * الدورات (dawraId):
  *   dawrat/{dawraId} — بيانات الدورة
  *   members/{dawraId}/members/{userId} — الأعضاء
@@ -337,6 +342,38 @@ class FirestoreApi {
       userId,
       FirestoreApi.USER_HALAKAT_MIRROR_SUB,
       halakaId,
+    );
+  }
+
+  static USER_REMOTE_TASMEE_MIRROR_COLL = "MyremoteTasmee";
+  static USER_REMOTE_TASMEE_MIRROR_SUB = "MyremoteTasmee";
+
+  /** remoteTasmee — جذر جلسات التسميع عن بعد */
+  getRemoteTasmeeCollection() {
+    return this.getCollection("remoteTasmee");
+  }
+
+  /** remoteTasmee/{broadcastId} */
+  getRemoteTasmeeCanonicalDoc(broadcastId) {
+    return this.getDocument("remoteTasmee", broadcastId);
+  }
+
+  /** MyremoteTasmee/{userId}/MyremoteTasmee */
+  getUserRemoteTasmeeCollection(userId) {
+    return this.getSubCollection(
+      FirestoreApi.USER_REMOTE_TASMEE_MIRROR_COLL,
+      userId,
+      FirestoreApi.USER_REMOTE_TASMEE_MIRROR_SUB,
+    );
+  }
+
+  /** MyremoteTasmee/{userId}/MyremoteTasmee/{broadcastId} */
+  getUserRemoteTasmeeDoc(userId, broadcastId) {
+    return this.getSubDocument(
+      FirestoreApi.USER_REMOTE_TASMEE_MIRROR_COLL,
+      userId,
+      FirestoreApi.USER_REMOTE_TASMEE_MIRROR_SUB,
+      broadcastId,
     );
   }
 

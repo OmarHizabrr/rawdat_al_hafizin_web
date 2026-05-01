@@ -557,3 +557,5 @@ export async function upsertSessionAttendance(actorUser, halakaId, sessionId, st
     userData: actorUser,
   })
 }
+
+export { normalizeHalakaRole, canManageRole, assertCanAssignRole }

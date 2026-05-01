@@ -21,6 +21,18 @@ export const SITE_STRING_REGISTRY = [
     label: 'قائمة: استكشاف الحلقات',
     defaultValue: 'استكشاف الحلقات',
   },
+  {
+    key: 'layout.nav_remote_tasmee',
+    group: 'التنقل',
+    label: 'قائمة: التسميع عن بعد',
+    defaultValue: 'التسميع عن بعد',
+  },
+  {
+    key: 'layout.nav_remote_tasmee_explore',
+    group: 'التنقل',
+    label: 'قائمة: استكشاف التسميع عن بعد',
+    defaultValue: 'استكشاف عن بعد',
+  },
   { key: 'layout.nav_dawrat', group: 'التنقل', label: 'قائمة: الدورات', defaultValue: 'الدورات' },
   {
     key: 'layout.nav_dawrat_explore',

@@ -22,6 +22,9 @@ const ExploreHalakatPage = lazy(() => import('./pages/ExploreHalakatPage.jsx'))
 const HalakatPage = lazy(() => import('./pages/HalakatPage.jsx'))
 const HalakaSessionsPage = lazy(() => import('./pages/HalakaSessionsPage.jsx'))
 const HalakaSessionWorkspacePage = lazy(() => import('./pages/HalakaSessionWorkspacePage.jsx'))
+const RemoteTasmeePage = lazy(() => import('./pages/RemoteTasmeePage.jsx'))
+const ExploreRemoteTasmeePage = lazy(() => import('./pages/ExploreRemoteTasmeePage.jsx'))
+const RemoteTasmeeBroadcastPage = lazy(() => import('./pages/RemoteTasmeeBroadcastPage.jsx'))
 const ExploreDawratPage = lazy(() => import('./pages/ExploreDawratPage.jsx'))
 const DawratPage = lazy(() => import('./pages/DawratPage.jsx'))
 const AwradPage = lazy(() => import('./pages/AwradPage.jsx'))
@@ -104,6 +107,16 @@ export default function App() {
                     <Route path="halakat" element={<PageGuard pageId="halakat"><HalakatPage /></PageGuard>} />
                     <Route path="halakat/:halakaId/sessions" element={<PageGuard pageId="halakat"><HalakaSessionsPage /></PageGuard>} />
                     <Route path="halakat/:halakaId/sessions/:sessionId" element={<PageGuard pageId="halakat"><HalakaSessionWorkspacePage /></PageGuard>} />
+                    <Route
+                      path="remote-tasmee/explore"
+                      element={
+                        <PageGuard pageId="remote_tasmee_explore">
+                          <ExploreRemoteTasmeePage />
+                        </PageGuard>
+                      }
+                    />
+                    <Route path="remote-tasmee" element={<PageGuard pageId="remote_tasmee"><RemoteTasmeePage /></PageGuard>} />
+                    <Route path="remote-tasmee/:broadcastId" element={<RemoteTasmeeBroadcastPage />} />
                     <Route path="dawrat/explore" element={<PageGuard pageId="dawrat_explore"><ExploreDawratPage /></PageGuard>} />
                     <Route path="dawrat" element={<PageGuard pageId="dawrat"><DawratPage /></PageGuard>} />
                     <Route path="awrad" element={<PageGuard pageId="awrad"><AwradPage /></PageGuard>} />
