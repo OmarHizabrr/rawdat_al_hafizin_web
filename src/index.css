@@ -1145,6 +1145,79 @@ a.rh-sidebar__brand-link.rh-sidebar__brand-link--active {
   gap: var(--rh-space-3);
 }
 
+@keyframes rh-app-home-join-fab-pulse {
+  0%,
+  100% {
+    transform: scale(1);
+    box-shadow:
+      0 0 0 0 color-mix(in srgb, var(--rh-primary, #2563eb) 45%, transparent),
+      0 6px 18px rgba(0, 0, 0, 0.18);
+    filter: brightness(1);
+  }
+  50% {
+    transform: scale(1.06);
+    box-shadow:
+      0 0 0 12px color-mix(in srgb, var(--rh-primary, #2563eb) 0%, transparent),
+      0 10px 28px color-mix(in srgb, var(--rh-primary, #2563eb) 38%, transparent);
+    filter: brightness(1.08);
+  }
+}
+
+.rh-app-home-join-fab {
+  position: fixed;
+  z-index: 45;
+  bottom: max(1rem, env(safe-area-inset-bottom, 0px));
+  inset-inline-end: max(1rem, env(safe-area-inset-end, 0px));
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.65rem 1rem;
+  border-radius: 999px;
+  font-size: var(--rh-text-sm, 0.875rem);
+  font-weight: 700;
+  text-decoration: none;
+  color: #fff;
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--rh-primary, #2563eb) 92%, #000) 0%,
+    var(--rh-primary, #2563eb) 100%
+  );
+  border: 1px solid color-mix(in srgb, #fff 22%, transparent);
+  cursor: pointer;
+  animation: rh-app-home-join-fab-pulse 2.1s ease-in-out infinite;
+  transition: transform 0.15s ease, filter 0.15s ease;
+}
+
+.rh-app-home-join-fab:hover {
+  animation-play-state: paused;
+  transform: scale(1.08);
+  filter: brightness(1.12);
+}
+
+.rh-app-home-join-fab:focus-visible {
+  outline: 3px solid color-mix(in srgb, var(--rh-primary, #2563eb) 65%, #fff);
+  outline-offset: 3px;
+}
+
+.rh-app-home-join-fab__label {
+  white-space: nowrap;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rh-app-home-join-fab {
+    animation: none;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+  }
+}
+
+@media (max-width: 380px) {
+  .rh-app-home-join-fab__label {
+    max-width: 7.5rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+}
+
 .rh-home-dash__top {
   padding: var(--rh-space-4);
   border: 1px solid var(--rh-border);
