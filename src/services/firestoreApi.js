@@ -51,6 +51,11 @@ const db = getFirestore(app);
  *   members/{examId}/members/{userId} — الأعضاء (أدوار الحلقة)
  *   Myexams/{userId}/Myexams/{examId} — مرآة قائمة المستخدم
  *
+ * الأنشطة (activityId):
+ *   activities/{activityId} — بيانات مجموعة النشاط
+ *   members/{activityId}/members/{userId} — الأعضاء (أدوار الحلقة)
+ *   Myactivities/{userId}/Myactivities/{activityId} — مرآة قائمة المستخدم
+ *
  * الدورات (dawraId):
  *   dawrat/{dawraId} — بيانات الدورة
  *   members/{dawraId}/members/{userId} — الأعضاء
@@ -411,6 +416,38 @@ class FirestoreApi {
       userId,
       FirestoreApi.USER_EXAMS_MIRROR_SUB,
       examId,
+    );
+  }
+
+  static USER_ACTIVITIES_MIRROR_COLL = "Myactivities";
+  static USER_ACTIVITIES_MIRROR_SUB = "Myactivities";
+
+  /** activities — جذر مجموعات الأنشطة */
+  getActivitiesCollection() {
+    return this.getCollection("activities");
+  }
+
+  /** activities/{activityId} */
+  getActivityCanonicalDoc(activityId) {
+    return this.getDocument("activities", activityId);
+  }
+
+  /** Myactivities/{userId}/Myactivities */
+  getUserActivitiesCollection(userId) {
+    return this.getSubCollection(
+      FirestoreApi.USER_ACTIVITIES_MIRROR_COLL,
+      userId,
+      FirestoreApi.USER_ACTIVITIES_MIRROR_SUB,
+    );
+  }
+
+  /** Myactivities/{userId}/Myactivities/{activityId} */
+  getUserActivityDoc(userId, activityId) {
+    return this.getSubDocument(
+      FirestoreApi.USER_ACTIVITIES_MIRROR_COLL,
+      userId,
+      FirestoreApi.USER_ACTIVITIES_MIRROR_SUB,
+      activityId,
     );
   }
 

@@ -478,6 +478,10 @@ export default function RemoteTasmeePage() {
       ...(canAccessPage('exams_explore')
         ? [{ to: appLink('/app/exams/explore'), label: str('layout.nav_exams_explore') }]
         : []),
+      ...(canAccessPage('activities') ? [{ to: appLink('/app/activities'), label: str('layout.nav_activities') }] : []),
+      ...(canAccessPage('activities_explore')
+        ? [{ to: appLink('/app/activities/explore'), label: str('layout.nav_activities_explore') }]
+        : []),
       { to: appLink('/app/dawrat'), label: str('layout.nav_dawrat') },
     ]
     if (canAccessPage('leave_request')) {

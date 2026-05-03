@@ -709,6 +709,14 @@ export default function AppHomePage() {
               {str("app.home_impersonation_dawrat")}
             </Link>
             {" · "}
+            <Link to={`/app/exams?uid=${encodeURIComponent(contextUserId)}`}>
+              {str("app.home_impersonation_exams")}
+            </Link>
+            {" · "}
+            <Link to={`/app/activities?uid=${encodeURIComponent(contextUserId)}`}>
+              {str("app.home_impersonation_activities")}
+            </Link>
+            {" · "}
             <Link to={`/app/awrad?uid=${encodeURIComponent(contextUserId)}`}>
               {str("app.home_impersonation_awrad")}
             </Link>

@@ -12,6 +12,7 @@ import {
   NotebookPen,
   Home,
   Bird,
+  CalendarDays,
   Menu,
   Puzzle,
   ScrollText,
@@ -67,6 +68,13 @@ export function MainLayout() {
       { to: '/app/dawrat', label: str('layout.nav_dawrat'), Icon: GraduationCap, pageId: 'dawrat' },
       { to: '/app/dawrat/explore', label: str('layout.nav_dawrat_explore'), Icon: Compass, pageId: 'dawrat_explore' },
       { to: '/app/awrad', label: str('layout.nav_awrad'), Icon: NotebookPen, pageId: 'awrad' },
+      { to: '/app/activities', label: str('layout.nav_activities'), Icon: CalendarDays, pageId: 'activities' },
+      {
+        to: '/app/activities/explore',
+        label: str('layout.nav_activities_explore'),
+        Icon: Compass,
+        pageId: 'activities_explore',
+      },
       { to: '/app/feelings', label: str('layout.nav_feelings'), Icon: Bird, pageId: 'feelings' },
       {
         to: '/app/leave-request',

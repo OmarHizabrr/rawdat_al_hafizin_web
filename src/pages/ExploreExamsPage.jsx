@@ -114,6 +114,12 @@ export default function ExploreExamsPage() {
       { to: appLink('/app/halakat'), label: str('layout.nav_halakat') },
       { to: appLink('/app/plans'), label: str('layout.nav_plans') },
     ]
+    if (canAccessPage('activities')) {
+      base.push({ to: appLink('/app/activities'), label: str('layout.nav_activities') })
+    }
+    if (canAccessPage('activities_explore')) {
+      base.push({ to: appLink('/app/activities/explore'), label: str('layout.nav_activities_explore') })
+    }
     if (canAccessPage('leave_request')) {
       base.push({ to: appLink('/app/leave-request'), label: str('layout.nav_leave_request') })
     }

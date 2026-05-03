@@ -30,6 +30,8 @@ const ExploreExamsPage = lazy(() => import('./pages/ExploreExamsPage.jsx'))
 const ExploreDawratPage = lazy(() => import('./pages/ExploreDawratPage.jsx'))
 const DawratPage = lazy(() => import('./pages/DawratPage.jsx'))
 const AwradPage = lazy(() => import('./pages/AwradPage.jsx'))
+const ActivitiesPage = lazy(() => import('./pages/ActivitiesPage.jsx'))
+const ExploreActivitiesPage = lazy(() => import('./pages/ExploreActivitiesPage.jsx'))
 const SettingsPage = lazy(() => import('./pages/SettingsPage.jsx'))
 const LeaveRequestPage = lazy(() => import('./pages/LeaveRequestPage.jsx'))
 const CertificatesPage = lazy(() => import('./pages/CertificatesPage.jsx'))
@@ -131,6 +133,15 @@ export default function App() {
                     <Route path="dawrat/explore" element={<PageGuard pageId="dawrat_explore"><ExploreDawratPage /></PageGuard>} />
                     <Route path="dawrat" element={<PageGuard pageId="dawrat"><DawratPage /></PageGuard>} />
                     <Route path="awrad" element={<PageGuard pageId="awrad"><AwradPage /></PageGuard>} />
+                    <Route
+                      path="activities/explore"
+                      element={
+                        <PageGuard pageId="activities_explore">
+                          <ExploreActivitiesPage />
+                        </PageGuard>
+                      }
+                    />
+                    <Route path="activities" element={<PageGuard pageId="activities"><ActivitiesPage /></PageGuard>} />
                     <Route path="foundation" element={<PageGuard pageId="foundation"><FoundationPage /></PageGuard>} />
                     <Route
                       path="leave-request"

@@ -142,6 +142,12 @@ export default function ExploreHalakatPage() {
     if (canAccessPage('exams_explore')) {
       base.push({ to: appLink('/app/exams/explore'), label: str('layout.nav_exams_explore') })
     }
+    if (canAccessPage('activities')) {
+      base.push({ to: appLink('/app/activities'), label: str('layout.nav_activities') })
+    }
+    if (canAccessPage('activities_explore')) {
+      base.push({ to: appLink('/app/activities/explore'), label: str('layout.nav_activities_explore') })
+    }
     base.push(
       { to: appLink('/app/plans'), label: str('layout.nav_plans') },
       { to: appLink('/app/dawrat'), label: str('layout.nav_dawrat') },

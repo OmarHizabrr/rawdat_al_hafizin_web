@@ -390,6 +390,18 @@ export default function DawratPage() {
       { to: exploreHref, label: str('layout.nav_dawrat_explore') },
       { to: appLink('/app/plans'), label: str('layout.nav_plans') },
     ]
+    if (canAccessPage('exams')) {
+      items.push({ to: appLink('/app/exams'), label: str('layout.nav_exams') })
+    }
+    if (canAccessPage('exams_explore')) {
+      items.push({ to: appLink('/app/exams/explore'), label: str('layout.nav_exams_explore') })
+    }
+    if (canAccessPage('activities')) {
+      items.push({ to: appLink('/app/activities'), label: str('layout.nav_activities') })
+    }
+    if (canAccessPage('activities_explore')) {
+      items.push({ to: appLink('/app/activities/explore'), label: str('layout.nav_activities_explore') })
+    }
     if (canAccessPage('leave_request')) {
       items.push({ to: appLink('/app/leave-request'), label: str('layout.nav_leave_request') })
     }

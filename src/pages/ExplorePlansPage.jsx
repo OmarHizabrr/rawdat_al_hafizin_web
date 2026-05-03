@@ -125,6 +125,18 @@ export default function ExplorePlansPage() {
     if (canAccessPage('dawrat')) {
       base.push({ to: appLink('/app/dawrat'), label: str('layout.nav_dawrat') })
     }
+    if (canAccessPage('exams')) {
+      base.push({ to: appLink('/app/exams'), label: str('layout.nav_exams') })
+    }
+    if (canAccessPage('exams_explore')) {
+      base.push({ to: appLink('/app/exams/explore'), label: str('layout.nav_exams_explore') })
+    }
+    if (canAccessPage('activities')) {
+      base.push({ to: appLink('/app/activities'), label: str('layout.nav_activities') })
+    }
+    if (canAccessPage('activities_explore')) {
+      base.push({ to: appLink('/app/activities/explore'), label: str('layout.nav_activities_explore') })
+    }
     base.push(
       { to: appLink('/app/awrad'), label: str('layout.nav_awrad') },
       { to: appLink('/app/welcome'), label: str('layout.nav_welcome') },

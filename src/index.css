@@ -4412,6 +4412,26 @@ button.rh-home-quick-icon {
   align-self: flex-start;
 }
 
+.rh-explore-plans__hero-aside {
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: var(--rh-space-2);
+}
+
+.rh-explore-plans__print-btn {
+  width: 100%;
+  justify-content: center;
+}
+
+@media (min-width: 520px) {
+  .rh-explore-plans__print-btn {
+    width: auto;
+    justify-content: flex-start;
+  }
+}
+
 .rh-explore-plans__toolbar {
   margin-bottom: var(--rh-space-4);
 }
@@ -4937,6 +4957,16 @@ button.rh-home-quick-icon {
 
 .rh-plans__saved-vols li {
   margin-bottom: var(--rh-space-1);
+}
+
+.rh-plans__saved-vols--activity-details {
+  list-style: disc;
+  padding-inline-start: 1.25rem;
+  margin-top: var(--rh-space-2);
+}
+
+.rh-plans__segment-tight {
+  margin-top: 0.35rem;
 }
 
 .rh-plans__card-actions {
@@ -7898,5 +7928,101 @@ a.rh-peek-btn {
     width: 100%;
     min-width: 0;
     justify-content: center;
+  }
+}
+
+/* ——— طباعة: إخفاء واجهة التشغيل وإظهار ترويسة الطباعة ——— */
+.rh-print-only {
+  display: none;
+}
+
+@media print {
+  @page {
+    margin: 12mm;
+  }
+
+  body {
+    background: #fff !important;
+    color: #000 !important;
+  }
+
+  .rh-sidebar,
+  .rh-topbar,
+  .rh-backdrop,
+  .ui-toast-region,
+  .ui-modal,
+  .no-print {
+    display: none !important;
+  }
+
+  .rh-app {
+    display: block !important;
+    min-height: 0 !important;
+    background: #fff !important;
+  }
+
+  .rh-main {
+    display: block !important;
+    min-height: 0 !important;
+  }
+
+  .rh-content,
+  .rh-mob-app-scaffold {
+    padding: 0 !important;
+    margin: 0 !important;
+    max-width: none !important;
+  }
+
+  .rh-print-only {
+    display: block !important;
+    margin-bottom: 1rem;
+    padding-bottom: 0.65rem;
+    border-bottom: 1px solid #bbb;
+  }
+
+  .rh-print-only__title {
+    font-size: 1.2rem;
+    font-weight: 700;
+    margin: 0 0 0.2rem;
+    color: #000;
+  }
+
+  .rh-print-only__meta {
+    font-size: 0.8rem;
+    margin: 0;
+    color: #333;
+  }
+
+  .rh-plans__saved-card,
+  .rh-explore-plans__card {
+    break-inside: avoid;
+    page-break-inside: avoid;
+    box-shadow: none !important;
+    background: #fff !important;
+    border: 1px solid #ccc !important;
+  }
+
+  .rh-plans__saved-actions,
+  .rh-explore-plans__card .ui-btn,
+  .rh-explore-plans__to-mine {
+    display: none !important;
+  }
+
+  .rh-explore-plans__scroll {
+    max-height: none !important;
+    overflow: visible !important;
+  }
+
+  .rh-plans,
+  .rh-explore-plans {
+    max-width: none !important;
+    padding-inline: 0 !important;
+    color: #000;
+  }
+
+  .rh-settings-card {
+    box-shadow: none !important;
+    border: 1px solid #ccc !important;
+    background: #fff !important;
   }
 }

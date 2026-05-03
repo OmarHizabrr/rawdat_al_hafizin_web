@@ -638,6 +638,12 @@ export default function HalakatPage() {
     if (canAccessPage('exams_explore')) {
       items.push({ to: appLink('/app/exams/explore'), label: str('layout.nav_exams_explore') })
     }
+    if (canAccessPage('activities')) {
+      items.push({ to: appLink('/app/activities'), label: str('layout.nav_activities') })
+    }
+    if (canAccessPage('activities_explore')) {
+      items.push({ to: appLink('/app/activities/explore'), label: str('layout.nav_activities_explore') })
+    }
     items.push({ to: appLink('/app/dawrat'), label: str('layout.nav_dawrat') })
     if (canAccessPage('leave_request')) {
       items.push({ to: appLink('/app/leave-request'), label: str('layout.nav_leave_request') })

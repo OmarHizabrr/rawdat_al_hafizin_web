@@ -140,6 +140,10 @@ export default function HalakaSessionWorkspacePage() {
     ...(canAccessPage('exams_explore')
       ? [{ to: '/app/exams/explore', label: str('layout.nav_exams_explore') }]
       : []),
+    ...(canAccessPage('activities') ? [{ to: '/app/activities', label: str('layout.nav_activities') }] : []),
+    ...(canAccessPage('activities_explore')
+      ? [{ to: '/app/activities/explore', label: str('layout.nav_activities_explore') }]
+      : []),
   ]
 
   const summary = useMemo(() => {
