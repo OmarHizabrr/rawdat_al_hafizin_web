@@ -4482,11 +4482,20 @@ button.rh-home-quick-icon {
   margin-bottom: var(--rh-space-3);
 }
 
+.rh-explore-plans__card-title-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.65rem;
+  min-width: 0;
+  flex: 1;
+}
+
 .rh-explore-plans__card-title-block {
   display: flex;
   flex-direction: column;
   gap: var(--rh-space-2);
   min-width: 0;
+  flex: 1;
 }
 
 .rh-explore-plans__card-name {
@@ -4841,6 +4850,21 @@ button.rh-home-quick-icon {
   flex: 1;
 }
 
+.rh-plans__saved-head-titlerow {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.65rem;
+  min-width: 0;
+}
+
+.rh-plans__saved-head-text {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  min-width: 0;
+  flex: 1;
+}
+
 .rh-plans__admin-banner {
   margin-top: var(--rh-space-3);
   font-size: var(--rh-text-sm);
@@ -5033,23 +5057,37 @@ button.rh-home-quick-icon {
   display: flex;
   flex-wrap: wrap;
   gap: 0.5rem;
-  align-items: center;
+  align-items: stretch;
 }
 
 .rh-meeting-launch__btn {
   display: inline-flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
-  width: 2.75rem;
-  height: 2.75rem;
-  min-width: 2.75rem;
-  min-height: 2.75rem;
-  padding: 0;
+  gap: 0.15rem;
+  min-width: 3.35rem;
+  min-height: 3.35rem;
+  padding: 0.35rem 0.4rem 0.3rem;
   border-radius: var(--rh-radius-md, 0.6rem);
   border: 1px solid color-mix(in srgb, currentColor 35%, transparent);
   color: #fff;
   cursor: pointer;
   transition: transform 0.12s ease, box-shadow 0.12s ease, filter 0.12s ease;
+}
+
+.rh-meeting-launch__btn-icon {
+  flex-shrink: 0;
+}
+
+.rh-meeting-launch__btn-label {
+  font-size: 0.65rem;
+  font-weight: 700;
+  line-height: 1.1;
+  letter-spacing: 0.02em;
+  text-align: center;
+  max-width: 4.2rem;
+  word-break: break-word;
 }
 
 .rh-meeting-launch__btn:hover:not(:disabled) {
@@ -5092,6 +5130,51 @@ button.rh-home-quick-icon {
 
 .rh-meeting-launch__btn--webex {
   background: linear-gradient(135deg, #049fd9 0%, #00c853 120%);
+}
+
+/* شارة تطبيق الاجتماع في بطاقات التسميع عن بعد */
+.rh-remote-tasmee-provider-mark {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.35rem;
+  height: 2.35rem;
+  min-width: 2.35rem;
+  flex-shrink: 0;
+  border-radius: var(--rh-radius-md, 0.6rem);
+  border: 1px solid color-mix(in srgb, currentColor 30%, transparent);
+  color: #fff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
+}
+
+.rh-remote-tasmee-provider-mark--google {
+  background: linear-gradient(135deg, #00832d 0%, #00ac47 100%);
+}
+
+.rh-remote-tasmee-provider-mark--zoom {
+  background: linear-gradient(135deg, #0b5cff 0%, #2d8cff 100%);
+}
+
+.rh-remote-tasmee-provider-mark--teams {
+  background: linear-gradient(135deg, #464eb8 0%, #6264a7 100%);
+}
+
+.rh-remote-tasmee-provider-mark--jitsi {
+  background: linear-gradient(135deg, #1a5fb4 0%, #3584e4 100%);
+}
+
+.rh-remote-tasmee-provider-mark--discord {
+  background: linear-gradient(135deg, #4752c4 0%, #5865f2 100%);
+}
+
+.rh-remote-tasmee-provider-mark--webex {
+  background: linear-gradient(135deg, #049fd9 0%, #00c853 120%);
+}
+
+.rh-remote-tasmee-provider-mark--other {
+  background: color-mix(in srgb, var(--rh-border) 55%, var(--rh-surface));
+  color: var(--rh-text);
+  border-color: var(--rh-border);
 }
 
 .rh-plans__volume-picks {

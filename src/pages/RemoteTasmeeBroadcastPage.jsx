@@ -1,4 +1,5 @@
 import { ArrowRight, Copy, Link2, Users, Video } from 'lucide-react'
+import { RemoteTasmeeProviderIcon } from '../components/RemoteTasmeeProviderIcon.jsx'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Link, Navigate, useLocation, useParams } from 'react-router-dom'
 import { CrossNav } from '../components/CrossNav.jsx'
@@ -176,7 +177,16 @@ export default function RemoteTasmeeBroadcastPage() {
         <div className="rh-plans__hero-head">
           <div>
             <h1 className="rh-plans__title">
-              <RhIcon as={Video} size={28} strokeWidth={RH_ICON_STROKE} style={{ verticalAlign: 'middle' }} />{' '}
+              {loading ? (
+                <RhIcon as={Video} size={28} strokeWidth={RH_ICON_STROKE} style={{ verticalAlign: 'middle' }} />
+              ) : (
+                <RemoteTasmeeProviderIcon
+                  provider={canon?.provider}
+                  size={28}
+                  style={{ verticalAlign: 'middle' }}
+                  aria-hidden
+                />
+              )}{' '}
               {loading ? '…' : canon?.title || 'بث عن بعد'}
             </h1>
             <p className="rh-plans__desc">

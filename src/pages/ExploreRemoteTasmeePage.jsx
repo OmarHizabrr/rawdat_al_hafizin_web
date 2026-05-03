@@ -1,4 +1,5 @@
 import { Compass, UserPlus } from 'lucide-react'
+import { RemoteTasmeeProviderIcon } from '../components/RemoteTasmeeProviderIcon.jsx'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import { CrossNav } from '../components/CrossNav.jsx'
@@ -14,6 +15,7 @@ import {
   subscribePublicRemoteTasmeeForExplore,
 } from '../services/exploreRemoteTasmeeService.js'
 import { getImpersonateUid, withImpersonationQuery } from '../utils/impersonation.js'
+import { remoteTasmeeProviderBrandSuffix } from '../utils/remoteTasmeeProviderIcons.js'
 import {
   joinPublicRemoteTasmee,
   loadRemoteTasmeeBroadcasts,
@@ -224,13 +226,25 @@ export default function ExploreRemoteTasmeePage() {
               return (
                 <li key={p.id} className="rh-explore-plans__card">
                   <div className="rh-explore-plans__card-head">
-                    <div className="rh-explore-plans__card-title-block">
-                      <strong className="rh-explore-plans__card-name">{p.title || 'بث بدون عنوان'}</strong>
-                      <span className="rh-plans__saved-badges">
-                        <span className="rh-plans__saved-badge">{remoteTasmeeMediaLabelAr(p.mediaType)}</span>
-                        <span className="rh-plans__saved-badge">{remoteTasmeeProviderLabelAr(p.provider)}</span>
-                        <span className="rh-plans__saved-badge">{p.memberCount ?? 0} عضواً</span>
+                    <div className="rh-explore-plans__card-title-row">
+                      <span
+                        className={[
+                          'rh-remote-tasmee-provider-mark',
+                          `rh-remote-tasmee-provider-mark--${remoteTasmeeProviderBrandSuffix(p.provider)}`,
+                        ].join(' ')}
+                        title={remoteTasmeeProviderLabelAr(p.provider)}
+                        aria-label={remoteTasmeeProviderLabelAr(p.provider)}
+                      >
+                        <RemoteTasmeeProviderIcon provider={p.provider} size={18} aria-hidden />
                       </span>
+                      <div className="rh-explore-plans__card-title-block">
+                        <strong className="rh-explore-plans__card-name">{p.title || 'بث بدون عنوان'}</strong>
+                        <span className="rh-plans__saved-badges">
+                          <span className="rh-plans__saved-badge">{remoteTasmeeMediaLabelAr(p.mediaType)}</span>
+                          <span className="rh-plans__saved-badge">{remoteTasmeeProviderLabelAr(p.provider)}</span>
+                          <span className="rh-plans__saved-badge">{p.memberCount ?? 0} عضواً</span>
+                        </span>
+                      </div>
                     </div>
                     {can(PE, 'explore_join_card') ? (
                       <Button

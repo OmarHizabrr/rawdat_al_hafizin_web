@@ -3,6 +3,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useLocation, useSearchParams } from 'react-router-dom'
 import { CrossNav } from '../components/CrossNav.jsx'
 import { MeetingProviderLaunchRow } from '../components/MeetingProviderLaunchRow.jsx'
+import { RemoteTasmeeProviderIcon } from '../components/RemoteTasmeeProviderIcon.jsx'
 import { PERMISSION_PAGE_IDS } from '../config/permissionRegistry.js'
 import { isAdmin } from '../config/roles.js'
 import { useAuth } from '../context/useAuth.js'
@@ -19,6 +20,7 @@ import {
   totalResolvedPagesFromExamVolumeSpecs,
 } from '../utils/examVolumeSpec.js'
 import { loadExams } from '../utils/examsStorage.js'
+import { remoteTasmeeProviderBrandSuffix } from '../utils/remoteTasmeeProviderIcons.js'
 import {
   REMOTE_TASMEE_MEDIA,
   REMOTE_TASMEE_PROVIDER,
@@ -546,15 +548,29 @@ export default function RemoteTasmeePage() {
               <li key={b.id} className="rh-plans__saved-card">
                 <div className="rh-plans__saved-head">
                   <div className="rh-plans__saved-head-main">
-                    <strong>{b.title}</strong>
-                    <span className="rh-plans__saved-badges">
-                      <span className="rh-plans__saved-badge">
-                        {b.remoteTasmeeVisibility === 'public' ? 'عام' : 'خاص'}
+                    <div className="rh-plans__saved-head-titlerow">
+                      <span
+                        className={[
+                          'rh-remote-tasmee-provider-mark',
+                          `rh-remote-tasmee-provider-mark--${remoteTasmeeProviderBrandSuffix(b.provider)}`,
+                        ].join(' ')}
+                        title={remoteTasmeeProviderLabelAr(b.provider)}
+                        aria-label={remoteTasmeeProviderLabelAr(b.provider)}
+                      >
+                        <RemoteTasmeeProviderIcon provider={b.provider} size={18} aria-hidden />
                       </span>
-                      <span className="rh-plans__saved-badge">{roleLabel(b.broadcastRole)}</span>
-                      <span className="rh-plans__saved-badge">{remoteTasmeeMediaLabelAr(b.mediaType)}</span>
-                      <span className="rh-plans__saved-badge">{remoteTasmeeProviderLabelAr(b.provider)}</span>
-                    </span>
+                      <div className="rh-plans__saved-head-text">
+                        <strong>{b.title}</strong>
+                        <span className="rh-plans__saved-badges">
+                          <span className="rh-plans__saved-badge">
+                            {b.remoteTasmeeVisibility === 'public' ? 'عام' : 'خاص'}
+                          </span>
+                          <span className="rh-plans__saved-badge">{roleLabel(b.broadcastRole)}</span>
+                          <span className="rh-plans__saved-badge">{remoteTasmeeMediaLabelAr(b.mediaType)}</span>
+                          <span className="rh-plans__saved-badge">{remoteTasmeeProviderLabelAr(b.provider)}</span>
+                        </span>
+                      </div>
+                    </div>
                   </div>
                 </div>
                 <p className="rh-plans__saved-meta">
@@ -577,7 +593,7 @@ export default function RemoteTasmeePage() {
                     to={appLink(`/app/remote-tasmee/${encodeURIComponent(b.id)}`)}
                     className="ui-btn ui-btn--secondary ui-btn--sm"
                   >
-                    <RhIcon as={Video} size={16} strokeWidth={RH_ICON_STROKE} />
+                    <RemoteTasmeeProviderIcon provider={b.provider} size={16} aria-hidden />
                     صفحة البث
                   </Link>
                   {broadcastCanManageMembers(b) && can(PH, 'remote_tasmee_card_members') && (
