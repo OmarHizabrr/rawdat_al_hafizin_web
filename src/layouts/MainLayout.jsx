@@ -181,9 +181,12 @@ export function MainLayout() {
   const profileStatus = String(user?.profileRequestStatus || '').trim()
   const approved = profileStatus === PROFILE_REQUEST_STATUS.APPROVED
   const isWelcomePath = pathname === '/app/welcome' || pathname === '/app/welcome/'
-  const pendingWelcome = isStudent && !approved && isWelcomePath
+  const isApplicationPath = pathname === '/app/application' || pathname === '/app/application/'
+  /** طالب لم يُعتمد طلبه: واجهة مبسطة بدون شريط التنقل الكامل على البداية وصفحة الطلب فقط */
+  const pendingPreApprovalShell =
+    isStudent && !approved && (isWelcomePath || isApplicationPath)
 
-  if (pendingWelcome) {
+  if (pendingPreApprovalShell) {
     return (
       <div className="rh-app rh-app--pending-welcome">
         <header className="rh-pending-welcome__bar">

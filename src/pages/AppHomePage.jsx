@@ -9,7 +9,6 @@ import {
   Sparkles,
   Sunrise,
   Bird,
-  UserPlus,
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link, useLocation, useSearchParams } from "react-router-dom";
@@ -1204,15 +1203,6 @@ export default function AppHomePage() {
           </div>
         </section>
       )}
-
-      <Link
-        to={appPath("/app/application")}
-        className="rh-app-home-join-fab"
-        aria-label="طلب الانضمام — فتح صفحة طلب الالتحاق"
-      >
-        <RhIcon as={UserPlus} size={22} strokeWidth={2.25} aria-hidden />
-        <span className="rh-app-home-join-fab__label">طلب الانضمام</span>
-      </Link>
     </div>
   );
 }

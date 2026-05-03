@@ -1,4 +1,6 @@
+import { UserPlus } from 'lucide-react'
 import { useEffect, useMemo } from 'react'
+import { Link } from 'react-router-dom'
 import { CrossNav } from '../components/CrossNav.jsx'
 import { ProgramSections } from '../components/ProgramSections.jsx'
 import { isAdmin, normalizeRole } from '../config/roles.js'
@@ -6,6 +8,7 @@ import { useAuth } from '../context/useAuth.js'
 import { usePermissions } from '../context/usePermissions.js'
 import { useSiteContent } from '../context/useSiteContent.js'
 import { PROFILE_REQUEST_STATUS } from '../services/profileRequestService.js'
+import { RhIcon, RH_ICON_STROKE } from '../ui/RhIcon.jsx'
 
 export default function WelcomePage() {
   const { user } = useAuth()
@@ -61,6 +64,17 @@ export default function WelcomePage() {
         <CrossNav items={welcomeCrossItems} className="rh-app-welcome__cross" />
       </header>
       <ProgramSections />
+
+      {isPendingPreApproval ? (
+        <Link
+          to="/app/application"
+          className="rh-join-request-fab"
+          aria-label="طلب الالتحاق — فتح صفحة نموذج الانضمام"
+        >
+          <RhIcon as={UserPlus} size={22} strokeWidth={2.25} aria-hidden />
+          <span className="rh-join-request-fab__label">طلب الالتحاق</span>
+        </Link>
+      ) : null}
     </div>
   )
 }

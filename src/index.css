@@ -1145,7 +1145,7 @@ a.rh-sidebar__brand-link.rh-sidebar__brand-link--active {
   gap: var(--rh-space-3);
 }
 
-@keyframes rh-app-home-join-fab-pulse {
+@keyframes rh-join-request-fab-pulse {
   0%,
   100% {
     transform: scale(1);
@@ -1163,7 +1163,8 @@ a.rh-sidebar__brand-link.rh-sidebar__brand-link--active {
   }
 }
 
-.rh-app-home-join-fab {
+/* زر عائم طلب الالتحاق — صفحة البداية (قبل اعتماد الطلب) فقط */
+.rh-join-request-fab {
   position: fixed;
   z-index: 45;
   bottom: max(1rem, env(safe-area-inset-bottom, 0px));
@@ -1184,34 +1185,34 @@ a.rh-sidebar__brand-link.rh-sidebar__brand-link--active {
   );
   border: 1px solid color-mix(in srgb, #fff 22%, transparent);
   cursor: pointer;
-  animation: rh-app-home-join-fab-pulse 2.1s ease-in-out infinite;
+  animation: rh-join-request-fab-pulse 2.1s ease-in-out infinite;
   transition: transform 0.15s ease, filter 0.15s ease;
 }
 
-.rh-app-home-join-fab:hover {
+.rh-join-request-fab:hover {
   animation-play-state: paused;
   transform: scale(1.08);
   filter: brightness(1.12);
 }
 
-.rh-app-home-join-fab:focus-visible {
+.rh-join-request-fab:focus-visible {
   outline: 3px solid color-mix(in srgb, var(--rh-primary, #2563eb) 65%, #fff);
   outline-offset: 3px;
 }
 
-.rh-app-home-join-fab__label {
+.rh-join-request-fab__label {
   white-space: nowrap;
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .rh-app-home-join-fab {
+  .rh-join-request-fab {
     animation: none;
     box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
   }
 }
 
 @media (max-width: 380px) {
-  .rh-app-home-join-fab__label {
+  .rh-join-request-fab__label {
     max-width: 7.5rem;
     overflow: hidden;
     text-overflow: ellipsis;

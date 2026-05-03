@@ -1,7 +1,8 @@
 import { ChevronDown } from 'lucide-react'
 import { useCallback, useEffect, useId, useRef, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { isAdmin } from '../config/roles.js'
+import { isAdmin, normalizeRole } from '../config/roles.js'
+import { PROFILE_REQUEST_STATUS } from '../services/profileRequestService.js'
 import { signOut } from '../services/authService.js'
 import { useOnClickOutside } from '../ui/hooks/useOnClickOutside.js'
 import { RhIcon, RH_ICON_STROKE } from '../ui/RhIcon.jsx'
@@ -34,6 +35,11 @@ export function UserMenu({ user }) {
   const photo = user?.photoURL
   const initial = name.charAt(0)
 
+  const isStudent = normalizeRole(user?.role) === 'student'
+  const profileApproved =
+    String(user?.profileRequestStatus || '').trim() === PROFILE_REQUEST_STATUS.APPROVED
+  const pendingPreApprovalMenu = isStudent && !profileApproved
+
   return (
     <div className="rh-user-menu" ref={wrapRef}>
       <button
@@ -62,23 +68,41 @@ export function UserMenu({ user }) {
             <span className="rh-user-dropdown__head-name">{name}</span>
             {email && <span className="rh-user-dropdown__head-email">{email}</span>}
           </div>
-          <Link to="/app/settings" className="rh-user-dropdown__item" role="menuitem" onClick={() => setOpen(false)}>
-            الإعدادات
-          </Link>
-          {isAdmin(user) && (
-            <Link to="/app/admin/users" className="rh-user-dropdown__item" role="menuitem" onClick={() => setOpen(false)}>
-              إدارة المستخدمين
-            </Link>
+          {pendingPreApprovalMenu ? (
+            <>
+              <Link
+                to="/app/application"
+                className="rh-user-dropdown__item"
+                role="menuitem"
+                onClick={() => setOpen(false)}
+              >
+                طلب الالتحاق
+              </Link>
+              <Link to="/app/welcome" className="rh-user-dropdown__item" role="menuitem" onClick={() => setOpen(false)}>
+                صفحة البداية
+              </Link>
+            </>
+          ) : (
+            <>
+              <Link to="/app/settings" className="rh-user-dropdown__item" role="menuitem" onClick={() => setOpen(false)}>
+                الإعدادات
+              </Link>
+              {isAdmin(user) && (
+                <Link to="/app/admin/users" className="rh-user-dropdown__item" role="menuitem" onClick={() => setOpen(false)}>
+                  إدارة المستخدمين
+                </Link>
+              )}
+              <Link to="/app/plans" className="rh-user-dropdown__item" role="menuitem" onClick={() => setOpen(false)}>
+                الخطط
+              </Link>
+              <Link to="/app/awrad" className="rh-user-dropdown__item" role="menuitem" onClick={() => setOpen(false)}>
+                الأوراد
+              </Link>
+              <Link to="/app/welcome" className="rh-user-dropdown__item" role="menuitem" onClick={() => setOpen(false)}>
+                صفحة البداية
+              </Link>
+            </>
           )}
-          <Link to="/app/plans" className="rh-user-dropdown__item" role="menuitem" onClick={() => setOpen(false)}>
-            الخطط
-          </Link>
-          <Link to="/app/awrad" className="rh-user-dropdown__item" role="menuitem" onClick={() => setOpen(false)}>
-            الأوراد
-          </Link>
-          <Link to="/app/welcome" className="rh-user-dropdown__item" role="menuitem" onClick={() => setOpen(false)}>
-            صفحة البداية
-          </Link>
           <button type="button" className="rh-user-dropdown__item rh-user-dropdown__item--danger" role="menuitem" onClick={handleLogout}>
             تسجيل الخروج
           </button>
