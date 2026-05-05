@@ -5532,6 +5532,14 @@ a.rh-peek-btn {
   gap: var(--rh-space-3);
 }
 
+.rh-admin-users__bulk-top {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--rh-space-2);
+}
+
 .rh-admin-users__bulk-check {
   display: inline-flex;
   align-items: center;
@@ -5554,6 +5562,8 @@ a.rh-peek-btn {
 .rh-admin-users__bulk-actions {
   display: flex;
   justify-content: flex-start;
+  flex-wrap: wrap;
+  gap: var(--rh-space-2);
 }
 
 .rh-admin-applications__toolbar {
@@ -5656,6 +5666,12 @@ a.rh-peek-btn {
   display: inline-flex;
   align-items: center;
   padding-top: 0.2rem;
+}
+
+.rh-admin-users__select-check input {
+  width: 1.05rem;
+  height: 1.05rem;
+  accent-color: var(--rh-primary);
 }
 
 .rh-admin-users__avatar {
@@ -5846,6 +5862,12 @@ a.rh-peek-btn {
   display: flex;
   flex-wrap: wrap;
   gap: var(--rh-space-2);
+}
+
+@media (min-width: 1280px) {
+  .rh-admin-users {
+    max-width: min(72rem, 100%);
+  }
 }
 
 .rh-admin-user-types__layout {

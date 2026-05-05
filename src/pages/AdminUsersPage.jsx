@@ -39,6 +39,7 @@ export default function AdminUsersPage() {
   const [displayModalUser, setDisplayModalUser] = useState(null)
   const [editDisplayName, setEditDisplayName] = useState('')
   const [displayModalBusyKind, setDisplayModalBusyKind] = useState(null)
+  const [bulkConfirm, setBulkConfirm] = useState(null)
   const adminPhotoInputRef = useRef(null)
 
   useEffect(() => {
@@ -94,6 +95,14 @@ export default function AdminUsersPage() {
   )
   const allSelectableChecked = selectableRows.length > 0 && selectableRows.every((u) => selectedUids.has(u.uid))
 
+  useEffect(() => {
+    const allowed = new Set(users.map((u) => u.uid).filter(Boolean))
+    setSelectedUids((prev) => {
+      const next = new Set([...prev].filter((uid) => allowed.has(uid)))
+      return next.size === prev.size ? prev : next
+    })
+  }, [users])
+
   const runBusy = async (uid, fn) => {
     setBusyUid(uid)
     try {
@@ -127,17 +136,12 @@ export default function AdminUsersPage() {
     setSelectedUids(new Set())
   }
 
-  const runBulkRoleUpdate = async () => {
-    if (!actor || !bulkRole) return
+  const applyBulkRoleUpdate = async () => {
+    if (!actor || !bulkRole) return { done: 0, total: 0, failed: [] }
     const targets = users.filter((u) => selectedUids.has(u.uid) && u.uid !== actor.uid)
     if (!targets.length) {
-      toast.info('حدّد مستخدمين أولاً.', '')
-      return
+      return { done: 0, total: 0, failed: [] }
     }
-    const roleLabel = USER_ROLES.find((r) => r.value === bulkRole)?.label || bulkRole
-    const ok = window.confirm(`تأكيد تغيير الدور إلى "${roleLabel}" لعدد ${targets.length} مستخدم؟`)
-    if (!ok) return
-    setBulkBusy(true)
     let done = 0
     const failed = []
     for (const target of targets) {
@@ -148,29 +152,15 @@ export default function AdminUsersPage() {
         failed.push(target.uid)
       }
     }
-    setBulkBusy(false)
-    if (failed.length) {
-      toast.warning(`تم تحديث ${done} من ${targets.length}. فشل: ${failed.slice(0, 5).join('، ')}`, 'تنبيه')
-    } else {
-      toast.success(`تم تحديث الدور لـ ${done} من ${targets.length}.`, 'تم')
-      clearSelection()
-    }
+    return { done, total: targets.length, failed }
   }
 
-  const runBulkProfileUpdate = async () => {
-    if (!actor) return
+  const applyBulkProfileUpdate = async () => {
+    if (!actor) return { done: 0, total: 0, failed: [] }
     const targets = users.filter((u) => selectedUids.has(u.uid) && u.uid !== actor.uid)
     if (!targets.length) {
-      toast.info('حدّد مستخدمين أولاً.', '')
-      return
+      return { done: 0, total: 0, failed: [] }
     }
-    const profileLabel =
-      bulkProfile === '__none__'
-        ? 'بدون نوع'
-        : permissionProfiles.find((p) => p.id === bulkProfile)?.name || bulkProfile
-    const ok = window.confirm(`تأكيد تغيير نوع الصلاحيات إلى "${profileLabel}" لعدد ${targets.length} مستخدم؟`)
-    if (!ok) return
-    setBulkBusy(true)
     let done = 0
     const failed = []
     const nextProfileId = bulkProfile === '__none__' ? '' : bulkProfile
@@ -182,11 +172,58 @@ export default function AdminUsersPage() {
         failed.push(target.uid)
       }
     }
+    return { done, total: targets.length, failed }
+  }
+
+  const runBulkRoleUpdate = () => {
+    if (!actor || !bulkRole) return
+    const targets = users.filter((u) => selectedUids.has(u.uid) && u.uid !== actor.uid)
+    if (!targets.length) {
+      toast.info('حدّد مستخدمين أولاً.', '')
+      return
+    }
+    const roleLabel = USER_ROLES.find((r) => r.value === bulkRole)?.label || bulkRole
+    setBulkConfirm({
+      kind: 'role',
+      title: 'تأكيد التحديث الجماعي',
+      body: `تأكيد تغيير الدور إلى "${roleLabel}" لعدد ${targets.length} مستخدم؟`,
+    })
+  }
+
+  const runBulkProfileUpdate = () => {
+    if (!actor) return
+    const targets = users.filter((u) => selectedUids.has(u.uid) && u.uid !== actor.uid)
+    if (!targets.length) {
+      toast.info('حدّد مستخدمين أولاً.', '')
+      return
+    }
+    const profileLabel =
+      bulkProfile === '__none__'
+        ? 'بدون نوع'
+        : permissionProfiles.find((p) => p.id === bulkProfile)?.name || bulkProfile
+    setBulkConfirm({
+      kind: 'profile',
+      title: 'تأكيد التحديث الجماعي',
+      body: `تأكيد تغيير نوع الصلاحيات إلى "${profileLabel}" لعدد ${targets.length} مستخدم؟`,
+    })
+  }
+
+  const confirmBulkUpdate = async () => {
+    if (!bulkConfirm) return
+    setBulkBusy(true)
+    const result = bulkConfirm.kind === 'role' ? await applyBulkRoleUpdate() : await applyBulkProfileUpdate()
     setBulkBusy(false)
-    if (failed.length) {
-      toast.warning(`تم تحديث ${done} من ${targets.length}. فشل: ${failed.slice(0, 5).join('، ')}`, 'تنبيه')
+    setBulkConfirm(null)
+    if (!result.total) return
+    if (result.failed.length) {
+      toast.warning(`تم تحديث ${result.done} من ${result.total}. فشل: ${result.failed.slice(0, 5).join('، ')}`, 'تنبيه')
     } else {
-      toast.success(`تم تحديث نوع الصلاحيات لـ ${done} من ${targets.length}.`, 'تم')
+      toast.success(
+        bulkConfirm.kind === 'role'
+          ? `تم تحديث الدور لـ ${result.done} من ${result.total}.`
+          : `تم تحديث نوع الصلاحيات لـ ${result.done} من ${result.total}.`,
+        'تم',
+      )
       clearSelection()
     }
   }
@@ -364,18 +401,20 @@ export default function AdminUsersPage() {
       </section>
 
       <section className="rh-admin-users__bulk card">
-        <label className="rh-admin-users__bulk-check">
-          <input
-            type="checkbox"
-            checked={allSelectableChecked}
-            disabled={!selectableRows.length || bulkBusy}
-            onChange={(e) => toggleAllSelectable(e.target.checked)}
-          />
-          <span>تحديد الكل (مع استثناء حسابك الحالي)</span>
-        </label>
-        <p className="rh-admin-users__profile-meta rh-admin-users__profile-meta--compact">
-          المحددون: {selectedUids.size}
-        </p>
+        <div className="rh-admin-users__bulk-top">
+          <label className="rh-admin-users__bulk-check">
+            <input
+              type="checkbox"
+              checked={allSelectableChecked}
+              disabled={!selectableRows.length || bulkBusy}
+              onChange={(e) => toggleAllSelectable(e.target.checked)}
+            />
+            <span>تحديد الكل (مع استثناء حسابك الحالي)</span>
+          </label>
+          <p className="rh-admin-users__profile-meta rh-admin-users__profile-meta--compact">
+            الإجمالي: {users.length} · المعروض: {filtered.length} · المحددون: {selectedUids.size}
+          </p>
+        </div>
         <div className="rh-admin-users__bulk-actions">
           <Button type="button" variant="ghost" size="sm" disabled={!selectedUids.size || bulkBusy} onClick={clearSelection}>
             إلغاء تحديد الكل
@@ -656,6 +695,26 @@ export default function AdminUsersPage() {
             disabled={Boolean(deleteTarget) && busyUid === deleteTarget?.uid}
             onClick={() => setDeleteTarget(null)}
           >
+            إلغاء
+          </Button>
+        </div>
+      </Modal>
+
+      <Modal
+        open={Boolean(bulkConfirm)}
+        title={bulkConfirm?.title || 'تأكيد'}
+        onClose={() => !bulkBusy && setBulkConfirm(null)}
+        size="sm"
+        closeOnBackdrop={!bulkBusy}
+        closeOnEsc={!bulkBusy}
+        showClose={!bulkBusy}
+      >
+        <p className="rh-admin-users__warn">{bulkConfirm?.body}</p>
+        <div className="rh-admin-users__modal-actions">
+          <Button type="button" variant="primary" loading={bulkBusy} onClick={confirmBulkUpdate}>
+            نعم، نفّذ
+          </Button>
+          <Button type="button" variant="ghost" disabled={bulkBusy} onClick={() => setBulkConfirm(null)}>
             إلغاء
           </Button>
         </div>
