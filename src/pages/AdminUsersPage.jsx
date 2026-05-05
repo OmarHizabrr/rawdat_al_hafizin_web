@@ -27,6 +27,12 @@ export default function AdminUsersPage() {
   const toast = useToast()
   const [users, setUsers] = useState([])
   const [query, setQuery] = useState('')
+  const [roleFilter, setRoleFilter] = useState('all')
+  const [profileFilter, setProfileFilter] = useState('all')
+  const [selectedUids, setSelectedUids] = useState(() => new Set())
+  const [bulkRole, setBulkRole] = useState('')
+  const [bulkProfile, setBulkProfile] = useState('')
+  const [bulkBusy, setBulkBusy] = useState(false)
   const [deleteTarget, setDeleteTarget] = useState(null)
   const [busyUid, setBusyUid] = useState(null)
   const [permissionProfiles, setPermissionProfiles] = useState([])
@@ -70,12 +76,23 @@ export default function AdminUsersPage() {
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase()
-    if (!q) return users
     return users.filter((u) => {
+      if (roleFilter !== 'all' && normalizeRole(u.role) !== roleFilter) return false
+      if (profileFilter === '__none__' && (u.permissionProfileId || '')) return false
+      if (profileFilter !== 'all' && profileFilter !== '__none__' && (u.permissionProfileId || '') !== profileFilter) {
+        return false
+      }
+      if (!q) return true
       const hay = `${u.displayName || ''} ${u.email || ''} ${u.uid || ''}`.toLowerCase()
       return hay.includes(q)
     })
-  }, [users, query])
+  }, [users, query, roleFilter, profileFilter])
+
+  const selectableRows = useMemo(
+    () => filtered.filter((u) => u.uid && u.uid !== actor?.uid),
+    [filtered, actor?.uid],
+  )
+  const allSelectableChecked = selectableRows.length > 0 && selectableRows.every((u) => selectedUids.has(u.uid))
 
   const runBusy = async (uid, fn) => {
     setBusyUid(uid)
@@ -83,6 +100,94 @@ export default function AdminUsersPage() {
       await fn()
     } finally {
       setBusyUid(null)
+    }
+  }
+
+  const toggleSelected = (uid, checked) => {
+    setSelectedUids((prev) => {
+      const next = new Set(prev)
+      if (checked) next.add(uid)
+      else next.delete(uid)
+      return next
+    })
+  }
+
+  const toggleAllSelectable = (checked) => {
+    setSelectedUids((prev) => {
+      const next = new Set(prev)
+      for (const row of selectableRows) {
+        if (checked) next.add(row.uid)
+        else next.delete(row.uid)
+      }
+      return next
+    })
+  }
+
+  const clearSelection = () => {
+    setSelectedUids(new Set())
+  }
+
+  const runBulkRoleUpdate = async () => {
+    if (!actor || !bulkRole) return
+    const targets = users.filter((u) => selectedUids.has(u.uid) && u.uid !== actor.uid)
+    if (!targets.length) {
+      toast.info('حدّد مستخدمين أولاً.', '')
+      return
+    }
+    const roleLabel = USER_ROLES.find((r) => r.value === bulkRole)?.label || bulkRole
+    const ok = window.confirm(`تأكيد تغيير الدور إلى "${roleLabel}" لعدد ${targets.length} مستخدم؟`)
+    if (!ok) return
+    setBulkBusy(true)
+    let done = 0
+    const failed = []
+    for (const target of targets) {
+      try {
+        await adminUpdateUserRole(actor, target.uid, bulkRole)
+        done += 1
+      } catch {
+        failed.push(target.uid)
+      }
+    }
+    setBulkBusy(false)
+    if (failed.length) {
+      toast.warning(`تم تحديث ${done} من ${targets.length}. فشل: ${failed.slice(0, 5).join('، ')}`, 'تنبيه')
+    } else {
+      toast.success(`تم تحديث الدور لـ ${done} من ${targets.length}.`, 'تم')
+      clearSelection()
+    }
+  }
+
+  const runBulkProfileUpdate = async () => {
+    if (!actor) return
+    const targets = users.filter((u) => selectedUids.has(u.uid) && u.uid !== actor.uid)
+    if (!targets.length) {
+      toast.info('حدّد مستخدمين أولاً.', '')
+      return
+    }
+    const profileLabel =
+      bulkProfile === '__none__'
+        ? 'بدون نوع'
+        : permissionProfiles.find((p) => p.id === bulkProfile)?.name || bulkProfile
+    const ok = window.confirm(`تأكيد تغيير نوع الصلاحيات إلى "${profileLabel}" لعدد ${targets.length} مستخدم؟`)
+    if (!ok) return
+    setBulkBusy(true)
+    let done = 0
+    const failed = []
+    const nextProfileId = bulkProfile === '__none__' ? '' : bulkProfile
+    for (const target of targets) {
+      try {
+        await adminUpdateUserPermissionProfile(actor, target.uid, nextProfileId)
+        done += 1
+      } catch {
+        failed.push(target.uid)
+      }
+    }
+    setBulkBusy(false)
+    if (failed.length) {
+      toast.warning(`تم تحديث ${done} من ${targets.length}. فشل: ${failed.slice(0, 5).join('، ')}`, 'تنبيه')
+    } else {
+      toast.success(`تم تحديث نوع الصلاحيات لـ ${done} من ${targets.length}.`, 'تم')
+      clearSelection()
     }
   }
 
@@ -219,12 +324,110 @@ export default function AdminUsersPage() {
       </header>
 
       <section className="rh-admin-users__toolbar card">
-        <SearchField
-          label="بحث"
-          placeholder="اسم، بريد، أو معرّف…"
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-        />
+        <div className="rh-admin-users__toolbar-grid">
+          <SearchField
+            label="بحث"
+            placeholder="اسم، بريد، أو معرّف…"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+          />
+          <div className="ui-field">
+            <label className="ui-field__label" htmlFor="users-role-filter">فلتر الدور</label>
+            <select
+              id="users-role-filter"
+              className="ui-input"
+              value={roleFilter}
+              onChange={(e) => setRoleFilter(e.target.value)}
+            >
+              <option value="all">الكل</option>
+              {USER_ROLES.map((r) => (
+                <option key={r.value} value={r.value}>{r.label}</option>
+              ))}
+            </select>
+          </div>
+          <div className="ui-field">
+            <label className="ui-field__label" htmlFor="users-profile-filter">فلتر نوع الصلاحيات</label>
+            <select
+              id="users-profile-filter"
+              className="ui-input"
+              value={profileFilter}
+              onChange={(e) => setProfileFilter(e.target.value)}
+            >
+              <option value="all">الكل</option>
+              <option value="__none__">بدون نوع</option>
+              {permissionProfiles.map((p) => (
+                <option key={p.id} value={p.id}>{p.name || p.id}</option>
+              ))}
+            </select>
+          </div>
+        </div>
+      </section>
+
+      <section className="rh-admin-users__bulk card">
+        <label className="rh-admin-users__bulk-check">
+          <input
+            type="checkbox"
+            checked={allSelectableChecked}
+            disabled={!selectableRows.length || bulkBusy}
+            onChange={(e) => toggleAllSelectable(e.target.checked)}
+          />
+          <span>تحديد الكل (مع استثناء حسابك الحالي)</span>
+        </label>
+        <p className="rh-admin-users__profile-meta rh-admin-users__profile-meta--compact">
+          المحددون: {selectedUids.size}
+        </p>
+        <div className="rh-admin-users__bulk-actions">
+          <Button type="button" variant="ghost" size="sm" disabled={!selectedUids.size || bulkBusy} onClick={clearSelection}>
+            إلغاء تحديد الكل
+          </Button>
+        </div>
+        <div className="rh-admin-users__bulk-row">
+          <div className="ui-field">
+            <label className="ui-field__label" htmlFor="users-bulk-role">تغيير الدور للمحدد</label>
+            <select
+              id="users-bulk-role"
+              className="ui-input"
+              value={bulkRole}
+              onChange={(e) => setBulkRole(e.target.value)}
+              disabled={bulkBusy}
+            >
+              <option value="">اختر الدور…</option>
+              {USER_ROLES.map((r) => (
+                <option key={r.value} value={r.value}>{r.label}</option>
+              ))}
+            </select>
+          </div>
+          <Button type="button" variant="secondary" disabled={!bulkRole || bulkBusy} loading={bulkBusy} onClick={runBulkRoleUpdate}>
+            تطبيق الدور على المحدد
+          </Button>
+        </div>
+        <div className="rh-admin-users__bulk-row">
+          <div className="ui-field">
+            <label className="ui-field__label" htmlFor="users-bulk-profile">تغيير نوع الصلاحيات للمحدد</label>
+            <select
+              id="users-bulk-profile"
+              className="ui-input"
+              value={bulkProfile}
+              onChange={(e) => setBulkProfile(e.target.value)}
+              disabled={bulkBusy}
+            >
+              <option value="">اختر النوع…</option>
+              <option value="__none__">بدون نوع</option>
+              {permissionProfiles.map((p) => (
+                <option key={p.id} value={p.id}>{p.name || p.id}</option>
+              ))}
+            </select>
+          </div>
+          <Button
+            type="button"
+            variant="secondary"
+            disabled={!bulkProfile || bulkBusy}
+            loading={bulkBusy}
+            onClick={runBulkProfileUpdate}
+          >
+            تطبيق النوع على المحدد
+          </Button>
+        </div>
       </section>
 
       <ul className="rh-admin-users__grid">
@@ -239,6 +442,14 @@ export default function AdminUsersPage() {
           return (
             <li key={u.uid} className="rh-admin-users__card card">
               <div className="rh-admin-users__card-top">
+                <label className="rh-admin-users__select-check">
+                  <input
+                    type="checkbox"
+                    checked={selectedUids.has(u.uid)}
+                    disabled={u.uid === actor?.uid || bulkBusy}
+                    onChange={(e) => toggleSelected(u.uid, e.target.checked)}
+                  />
+                </label>
                 <span className="rh-admin-users__avatar" aria-hidden>
                   {photo ? <img src={photo} alt="" width={48} height={48} /> : initial}
                 </span>
