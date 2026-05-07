@@ -34,7 +34,9 @@ export async function savePermissionProfile(actorUser, profileId, payload) {
       pages: payload.pages && typeof payload.pages === 'object' ? payload.pages : {},
       roleBinding: normalizeRoleBinding(payload.roleBinding),
     },
-    merge: true,
+    // مهم: نكتب المستند كاملاً حتى تُحذف الصفحات/الإجراءات التي أُزيلت من المسودة.
+    // مع merge=true تبقى مفاتيح pages القديمة في Firestore ولا يظهر إلغاء التفعيل.
+    merge: false,
     userData: actorUser,
   })
 }
