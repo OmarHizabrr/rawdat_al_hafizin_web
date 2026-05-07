@@ -19,6 +19,7 @@ export const PERMISSION_PAGE_IDS = {
   awrad: 'awrad',
   activities: 'activities',
   activities_explore: 'activities_explore',
+  reports: 'reports',
   settings: 'settings',
   notifications: 'notifications',
   feelings: 'feelings',
@@ -205,6 +206,22 @@ export const PERMISSION_PAGES = [
     actions: [
       { id: 'explore_join_by_id', label: 'انضمام بمعرّف' },
       { id: 'explore_join_card', label: 'زر الانضمام على البطاقة' },
+    ],
+  },
+  {
+    id: PERMISSION_PAGE_IDS.reports,
+    path: '/app/reports',
+    label: 'التقارير',
+    actions: [
+      { id: 'student_report', label: 'تقرير: طالب مفصل' },
+      { id: 'halaka_report', label: 'تقرير: حلقة مفصل' },
+      { id: 'plan_report', label: 'تقرير: خطة مفصل' },
+      { id: 'activity_report', label: 'تقرير: نشاط مفصل' },
+      { id: 'exam_report', label: 'تقرير: اختبار مفصل' },
+      { id: 'dawra_report', label: 'تقرير: دورة مفصل' },
+      { id: 'remote_tasmee_report', label: 'تقرير: تسميع عن بعد مفصل' },
+      { id: 'reports_print', label: 'التقارير: طباعة' },
+      { id: 'reports_export_csv', label: 'التقارير: تنزيل CSV' },
     ],
   },
   {

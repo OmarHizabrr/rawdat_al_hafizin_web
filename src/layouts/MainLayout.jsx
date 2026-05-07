@@ -6,6 +6,7 @@ import {
   ChevronsRight,
   ClipboardList,
   Compass,
+  FileText,
   GraduationCap,
   LayoutDashboard,
   ListChecks,
@@ -77,6 +78,7 @@ export function MainLayout() {
         pageId: 'activities_explore',
       },
       { to: '/app/feelings', label: str('layout.nav_feelings'), Icon: Bird, pageId: 'feelings' },
+      { to: '/app/reports', label: str('layout.nav_reports'), Icon: FileText, pageId: 'reports' },
       {
         to: '/app/leave-request',
         label: str('layout.nav_leave_request'),

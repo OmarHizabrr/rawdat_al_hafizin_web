@@ -5,6 +5,7 @@ import {
   CalendarDays,
   ClipboardList,
   Compass,
+  FileText,
   GraduationCap,
   Home,
   LayoutDashboard,
@@ -37,6 +38,7 @@ function iconForPath(path) {
   if (p.includes('/awrad')) return NotebookPen
   if (p.includes('/activities/explore')) return Compass
   if (p.includes('/activities')) return CalendarDays
+  if (p.includes('/reports')) return FileText
   if (p.includes('/notifications')) return Bell
   if (p.includes('/leave-request')) return CalendarClock
   if (p.includes('/settings')) return Settings
