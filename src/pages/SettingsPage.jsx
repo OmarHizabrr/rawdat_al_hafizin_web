@@ -14,6 +14,11 @@ import {
   readFeelingsFlightMode,
   writeFeelingsFlightMode,
 } from '../utils/feelingsFlightPrefs.js'
+import {
+  NOTIFICATIONS_MODE,
+  readNotificationsMode,
+  writeNotificationsMode,
+} from '../utils/notificationsPrefs.js'
 import { messageForProfilePhotoError } from '../services/profilePhotoStorage.js'
 import {
   clearMyProfilePhoto,
@@ -35,6 +40,7 @@ export default function SettingsPage() {
   const [uploadingPhoto, setUploadingPhoto] = useState(false)
   const [clearingPhoto, setClearingPhoto] = useState(false)
   const [feelingsFlightMode, setFeelingsFlightMode] = useState(() => readFeelingsFlightMode())
+  const [notificationsMode, setNotificationsMode] = useState(() => readNotificationsMode())
   const photoInputRef = useRef(null)
 
   const settingsCrossItems = useMemo(() => {
@@ -134,6 +140,15 @@ export default function SettingsPage() {
     writeFeelingsFlightMode(mode)
   }
 
+  const onChangeNotificationsMode = (mode) => {
+    setNotificationsMode(mode)
+    writeNotificationsMode(mode)
+    toast.success(
+      mode === NOTIFICATIONS_MODE.OFF ? 'تم إيقاف الإشعارات لهذا الجهاز.' : 'تم تفعيل الإشعارات.',
+      'تم',
+    )
+  }
+
   return (
     <div className="rh-settings">
       <header className="rh-settings-header">
@@ -208,6 +223,36 @@ export default function SettingsPage() {
               >
                 <span className="rh-segment__label">تسريع</span>
                 <span className="rh-segment__hint">حركة أسرع وكثافة أعلى</span>
+              </button>
+            </div>
+            <div className="rh-settings-card__head" style={{ marginTop: 'var(--rh-space-4)' }}>
+              <h3 className="rh-settings-card__title">الإشعارات</h3>
+              <p className="rh-settings-card__subtitle">
+                عند الإيقاف لن تظهر إشعارات المنصة (التنبيهات العائمة والجرس والتنبيهات المحلية) على هذا الجهاز.
+              </p>
+            </div>
+            <div className="rh-segment" role="radiogroup" aria-label="وضع الإشعارات">
+              <button
+                type="button"
+                className={['rh-segment__btn', notificationsMode === NOTIFICATIONS_MODE.ON ? 'rh-segment__btn--active' : '']
+                  .filter(Boolean)
+                  .join(' ')}
+                onClick={() => onChangeNotificationsMode(NOTIFICATIONS_MODE.ON)}
+                aria-pressed={notificationsMode === NOTIFICATIONS_MODE.ON}
+              >
+                <span className="rh-segment__label">تشغيل</span>
+                <span className="rh-segment__hint">إظهار الإشعارات بشكل طبيعي</span>
+              </button>
+              <button
+                type="button"
+                className={['rh-segment__btn', notificationsMode === NOTIFICATIONS_MODE.OFF ? 'rh-segment__btn--active' : '']
+                  .filter(Boolean)
+                  .join(' ')}
+                onClick={() => onChangeNotificationsMode(NOTIFICATIONS_MODE.OFF)}
+                aria-pressed={notificationsMode === NOTIFICATIONS_MODE.OFF}
+              >
+                <span className="rh-segment__label">إيقاف</span>
+                <span className="rh-segment__hint">إخفاء كل إشعارات المنصة على هذا الجهاز</span>
               </button>
             </div>
           </>

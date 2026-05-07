@@ -6,6 +6,7 @@ import { planAppliesToYmd, planScheduleStartYmd } from '../utils/planDailyQuota.
 import { prevHijriYmd } from '../utils/hijriDates.js'
 import { useToast } from '../ui/useToast.js'
 import { localYmd } from '../utils/planDailyQuota.js'
+import { notificationsEnabled } from '../utils/notificationsPrefs.js'
 
 const TICK_MS = 30_000
 const FIRED_PREFIX = 'rh.reminderFired'
@@ -79,6 +80,7 @@ export function usePlanReminders(user, { iconSrc } = {}) {
     if (!userId) return
 
     const tick = async () => {
+      const enabled = notificationsEnabled()
       const hm = nowHm()
       const day = localYmd()
       let plans
@@ -110,9 +112,9 @@ export function usePlanReminders(user, { iconSrc } = {}) {
           ? `${plan.name} — ${plan.dailyPages} صفحة`
           : `وردك اليومي: ${plan.dailyPages} صفحة`
 
-        toastRef.current.info(body, title)
+        if (enabled) toastRef.current.info(body, title)
 
-        if ('Notification' in window && Notification.permission === 'granted') {
+        if (enabled && 'Notification' in window && Notification.permission === 'granted') {
           try {
             new Notification(title, {
               body,
@@ -144,19 +146,21 @@ export function usePlanReminders(user, { iconSrc } = {}) {
           ? `${plan.name}: لديك ${owedPages} صفحة متأخرة${overdueSinceYmd ? ` (متأخر منذ ${overdueSinceYmd})` : ''}.`
           : `لديك ${owedPages} صفحة متأخرة${overdueSinceYmd ? ` (متأخر منذ ${overdueSinceYmd})` : ''}.`
 
-        toastRef.current.warning(overdueBody, overdueTitle)
+        if (enabled) toastRef.current.warning(overdueBody, overdueTitle)
 
-        try {
-          window.dispatchEvent(
-            new CustomEvent('rh:wird-overdue-detected', {
-              detail: { planId: plan.id, planName: plan.name || '', owedPages, overdueSinceYmd, day },
-            }),
-          )
-        } catch {
-          /* ignore */
+        if (enabled) {
+          try {
+            window.dispatchEvent(
+              new CustomEvent('rh:wird-overdue-detected', {
+                detail: { planId: plan.id, planName: plan.name || '', owedPages, overdueSinceYmd, day },
+              }),
+            )
+          } catch {
+            /* ignore */
+          }
         }
 
-        if ('Notification' in window && Notification.permission === 'granted') {
+        if (enabled && 'Notification' in window && Notification.permission === 'granted') {
           try {
             new Notification(overdueTitle, {
               body: overdueBody,

@@ -32,6 +32,7 @@ import { usePlanReminders } from '../hooks/usePlanReminders.js'
 import { PROFILE_REQUEST_STATUS } from '../services/profileRequestService.js'
 import { upsertUserNotification } from '../services/userNotificationsService.js'
 import { getImpersonateUid, withImpersonationQuery } from '../utils/impersonation.js'
+import { notificationsEnabled } from '../utils/notificationsPrefs.js'
 import { RhIcon, RH_ICON_STROKE } from '../ui/RhIcon.jsx'
 
 const STORAGE_KEY = 'rh.sidebarCollapsed'
@@ -135,6 +136,7 @@ export function MainLayout() {
 
   useEffect(() => {
     if (typeof window === 'undefined' || impersonateUid) return undefined
+    if (!notificationsEnabled()) return undefined
     const askPermission = () => {
       if (!('Notification' in window)) return
       if (Notification.permission !== 'default') return
@@ -157,6 +159,7 @@ export function MainLayout() {
   useEffect(() => {
     if (!user?.uid || impersonateUid) return undefined
     const onOverdue = (e) => {
+      if (!notificationsEnabled()) return
       const detail = e?.detail || {}
       const planId = String(detail.planId || '').trim()
       const day = String(detail.day || '').trim()

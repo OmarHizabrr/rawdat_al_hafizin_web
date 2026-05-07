@@ -1,6 +1,10 @@
 import { AlertTriangle, Check, Info, X, XCircle } from 'lucide-react'
-import { useCallback, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { firestoreApi } from '../services/firestoreApi.js'
+import {
+  notificationsEnabled,
+  notificationsModeChangeEvent,
+} from '../utils/notificationsPrefs.js'
 import { ToastContext } from './toastContext.js'
 import { RhIcon, RH_ICON_STROKE } from './RhIcon.jsx'
 
@@ -31,6 +35,13 @@ function ToastItem({ id, variant, title, message, onDismiss }) {
 
 export function ToastProvider({ children }) {
   const [toasts, setToasts] = useState([])
+  const [enabled, setEnabled] = useState(() => notificationsEnabled())
+
+  useEffect(() => {
+    const sync = () => setEnabled(notificationsEnabled())
+    window.addEventListener(notificationsModeChangeEvent(), sync)
+    return () => window.removeEventListener(notificationsModeChangeEvent(), sync)
+  }, [])
 
   const dismiss = useCallback((id) => {
     setToasts((t) => t.filter((x) => x.id !== id))
@@ -38,6 +49,7 @@ export function ToastProvider({ children }) {
 
   const push = useCallback(
     (opts) => {
+      if (!enabled) return ''
       const id = firestoreApi.getNewId('toasts')
       const duration = opts.duration ?? 4500
       const entry = { id, variant: 'info', title: '', message: '', ...opts }
@@ -47,7 +59,7 @@ export function ToastProvider({ children }) {
       }
       return id
     },
-    [dismiss],
+    [dismiss, enabled],
   )
 
   const api = useMemo(

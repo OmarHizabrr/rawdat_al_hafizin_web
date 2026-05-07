@@ -8,6 +8,10 @@ import {
   markUserNotificationRead,
   subscribeUserNotifications,
 } from '../services/userNotificationsService.js'
+import {
+  notificationsEnabled,
+  notificationsModeChangeEvent,
+} from '../utils/notificationsPrefs.js'
 import { useOnClickOutside } from '../ui/hooks/useOnClickOutside.js'
 import { RH_ICON_STROKE, RhIcon } from '../ui/RhIcon.jsx'
 
@@ -29,15 +33,24 @@ export function UserNotificationsMenu({ user }) {
   const userId = user?.uid || ''
   const [open, setOpen] = useState(false)
   const [items, setItems] = useState([])
+  const [enabled, setEnabled] = useState(() => notificationsEnabled())
   const rootRef = useRef(null)
   useOnClickOutside(rootRef, () => setOpen(false), open)
 
   useEffect(() => {
-    if (!userId) return undefined
+    if (!userId || !enabled) return undefined
     return subscribeUserNotifications(userId, setItems)
-  }, [userId])
+  }, [userId, enabled])
+
+  useEffect(() => {
+    const sync = () => setEnabled(notificationsEnabled())
+    window.addEventListener(notificationsModeChangeEvent(), sync)
+    return () => window.removeEventListener(notificationsModeChangeEvent(), sync)
+  }, [])
 
   const unreadCount = useMemo(() => items.filter((n) => !n.isRead).length, [items])
+
+  if (!enabled) return null
 
   return (
     <div className="rh-notify" ref={rootRef}>
