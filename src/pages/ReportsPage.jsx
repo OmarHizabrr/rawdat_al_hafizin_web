@@ -404,6 +404,15 @@ export default function ReportsPage() {
 
   const canBuild = Boolean(entityId && canRunForKind(kind))
   const selectedEntityName = entityMap.get(entityId) || ''
+  const halakaMemberNameMap = useMemo(() => {
+    const map = new Map()
+    for (const m of reportData?.members || []) {
+      const uid = String(m?.userId || '').trim()
+      if (!uid) continue
+      map.set(uid, m.displayName || uid)
+    }
+    return map
+  }, [reportData?.members])
   const viewLinkByKind = useCallback(
     (k, id) => {
       if (!id) return ''
@@ -824,10 +833,17 @@ export default function ReportsPage() {
                 { key: 'remoteTasmeeCount', label: 'تسميعه عن بعد' },
                 { key: 'awradCount', label: 'عدد أوراده' },
                 { key: 'pagesInAwrad', label: 'صفحات الأوراد' },
+                { key: 'latestAwradAt', label: 'آخر ورد' },
                 { key: 'attendanceRecordsInHalaka', label: 'حضوره في هذه الحلقة' },
                 { key: 'pagesInHalakaSessions', label: 'صفحاته في جلسات الحلقة' },
+                { key: 'latestAttendanceAt', label: 'آخر حضور' },
               ]}
-              rows={(reportData.memberDetails || []).map((r) => ({ ...r, role: roleLabelAr(r.role) }))}
+              rows={(reportData.memberDetails || []).map((r) => ({
+                ...r,
+                role: roleLabelAr(r.role),
+                latestAwradAt: formatArDateTime(r.latestAwradAt),
+                latestAttendanceAt: formatArDateTime(r.latestAttendanceAt),
+              }))}
             />
           )}
           {reportData.kind === 'halaka' && (
@@ -853,7 +869,7 @@ export default function ReportsPage() {
                 title="سجل الحضور والتسميع"
                 columns={[
                   { key: 'sessionId', label: 'الجلسة' },
-                  { key: 'userId', label: 'المستخدم' },
+                  { key: 'userName', label: 'المستخدم' },
                   { key: 'attendanceStatus', label: 'الحضور' },
                   { key: 'pagesCount', label: 'الصفحات' },
                   { key: 'fromPage', label: 'من' },
@@ -861,7 +877,7 @@ export default function ReportsPage() {
                 ]}
                 rows={(reportData.attendanceRows || []).map((a) => ({
                   sessionId: a.sessionId || '',
-                  userId: a.userId || '',
+                  userName: halakaMemberNameMap.get(String(a.userId || '').trim()) || a.userId || '',
                   attendanceStatus: a.attendanceStatus || '',
                   pagesCount: a.pagesCount ?? 0,
                   fromPage: a.fromPage ?? '—',

@@ -518,8 +518,14 @@ export async function buildGroupReport(kind, entityId, range = {}) {
           remoteTasmeeCount: mRemoteTasmee.length,
           awradCount: awradInRange.length,
           pagesInAwrad: awradInRange.reduce((sum, r) => sum + Math.max(0, Number(r.pagesCount) || 0), 0),
+          latestAwradAt: awradInRange
+            .map((r) => pickFirstDate(r.recordedAt, r.updatedAt, r.createdAt))
+            .sort((a, b) => asMs(b) - asMs(a))[0] || '',
           attendanceRecordsInHalaka: memberAttendanceInHalaka.length,
           pagesInHalakaSessions: memberAttendanceInHalaka.reduce((sum, a) => sum + Math.max(0, Number(a.pagesCount) || 0), 0),
+          latestAttendanceAt: memberAttendanceInHalaka
+            .map((a) => pickFirstDate(a.updatedAt, a.recordedAt))
+            .sort((a, b) => asMs(b) - asMs(a))[0] || '',
         }
       }),
     )
