@@ -261,6 +261,9 @@ export default function ReportsPage() {
         })),
       )
     } else {
+      if (reportData.entityDetails) {
+        rows.push({ القسم: 'تفاصيل الكيان', ...reportData.entityDetails })
+      }
       for (const m of reportData.members || []) {
         rows.push({
           القسم: 'الأعضاء',
@@ -513,6 +516,31 @@ export default function ReportsPage() {
               </>
             )}
           </div>
+          <SectionTable
+            title="تفاصيل الكيان"
+            columns={[
+              { key: 'id', label: 'المعرّف' },
+              { key: 'name', label: 'الاسم' },
+              { key: 'visibility', label: 'الظهور' },
+              { key: 'ownerUid', label: 'المالك' },
+              { key: 'createdAt', label: 'الإنشاء' },
+              { key: 'updatedAt', label: 'آخر تحديث' },
+              { key: 'startAt', label: 'البداية' },
+              { key: 'endAt', label: 'النهاية' },
+              { key: 'location', label: 'الموقع/الرابط' },
+              { key: 'provider', label: 'المزود' },
+              { key: 'mediaType', label: 'النوع' },
+            ]}
+            rows={[
+              {
+                ...reportData.entityDetails,
+                createdAt: formatArDateTime(reportData.entityDetails?.createdAt),
+                updatedAt: formatArDateTime(reportData.entityDetails?.updatedAt),
+                startAt: formatArDateTime(reportData.entityDetails?.startAt),
+                endAt: formatArDateTime(reportData.entityDetails?.endAt),
+              },
+            ]}
+          />
           <div className="rh-settings-card">
             <div className="rh-settings-card__head">
               <h3 className="rh-settings-card__title">{str('reports.members_title')}</h3>

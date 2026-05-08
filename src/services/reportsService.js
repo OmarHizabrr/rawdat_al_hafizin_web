@@ -323,6 +323,21 @@ export async function buildGroupReport(kind, entityId, range = {}) {
     membersLoaderByKind(kind)?.(id),
   ])
   if (!entity) return null
+  const baseDetails = {
+    id,
+    name: entity.name || entity.title || entity.subject || entity.meetingCode || '',
+    visibility:
+      entity.halakaVisibility ||
+      entity.planVisibility ||
+      entity.activityVisibility ||
+      entity.examVisibility ||
+      entity.dawraVisibility ||
+      entity.remoteTasmeeVisibility ||
+      '',
+    ownerUid: entity.ownerUid || '',
+    createdAt: pickFirstDate(entity.createdAt, entity.createTimes),
+    updatedAt: pickFirstDate(entity.updatedAt, entity.updatedTimes),
+  }
 
   if (kind === 'halaka') {
     const sessionsRaw = await loadHalakaSessions(id)
@@ -340,6 +355,10 @@ export async function buildGroupReport(kind, entityId, range = {}) {
     return {
       kind,
       entity: { id, ...entity },
+      entityDetails: {
+        ...baseDetails,
+        location: entity.location || '',
+      },
       members: members || [],
       sessions,
       attendanceRows,
@@ -355,6 +374,14 @@ export async function buildGroupReport(kind, entityId, range = {}) {
   return {
     kind,
     entity: { id, ...entity },
+    entityDetails: {
+      ...baseDetails,
+      startAt: entity.startAt || entity.courseStart || entity.registrationStart || '',
+      endAt: entity.endAt || entity.courseEnd || entity.registrationEnd || '',
+      location: entity.location || entity.meetingUrl || '',
+      provider: entity.provider || '',
+      mediaType: entity.mediaType || '',
+    },
     members: members || [],
     summary: {
       members: (members || []).length,
