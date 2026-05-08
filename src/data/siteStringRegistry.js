@@ -488,6 +488,7 @@ export const SITE_STRING_REGISTRY = [
   { key: 'reports.loading_entities', group: 'التقارير', label: 'تحميل الكيانات', defaultValue: 'جاري تحميل الخيارات…' },
   { key: 'reports.btn_build', group: 'التقارير', label: 'زر إنشاء', defaultValue: 'إنشاء التقرير' },
   { key: 'reports.btn_clear_filters', group: 'التقارير', label: 'زر مسح الفلاتر', defaultValue: 'مسح الفلاتر' },
+  { key: 'reports.btn_copy_link', group: 'التقارير', label: 'زر نسخ الرابط', defaultValue: 'نسخ رابط التقرير' },
   { key: 'reports.btn_print', group: 'التقارير', label: 'زر طباعة', defaultValue: 'طباعة' },
   { key: 'reports.btn_csv', group: 'التقارير', label: 'زر CSV', defaultValue: 'تنزيل CSV' },
   {
@@ -505,6 +506,13 @@ export const SITE_STRING_REGISTRY = [
   { key: 'reports.members_title', group: 'التقارير', label: 'عنوان قسم الأعضاء', defaultValue: 'الأعضاء' },
   { key: 'reports.toast_failed', group: 'التقارير', label: 'تنبيه فشل التقرير', defaultValue: 'تعذر إنشاء التقرير. حاول مرة أخرى.' },
   { key: 'reports.toast_csv_empty', group: 'التقارير', label: 'تنبيه CSV فارغ', defaultValue: 'لا توجد بيانات للتصدير.' },
+  { key: 'reports.toast_link_copied', group: 'التقارير', label: 'تنبيه نسخ الرابط', defaultValue: 'تم نسخ رابط التقرير.' },
+  {
+    key: 'reports.toast_link_copy_failed',
+    group: 'التقارير',
+    label: 'تنبيه فشل نسخ الرابط',
+    defaultValue: 'تعذر نسخ الرابط. انسخه يدويًا من شريط العنوان.',
+  },
   {
     key: 'reports.toast_invalid_range',
     group: 'التقارير',

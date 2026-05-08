@@ -1,4 +1,4 @@
-import { Download, Eye, FileText, Filter, Printer } from 'lucide-react'
+import { Download, Eye, FileText, Filter, Link2, Printer } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { CrossNav } from '../components/CrossNav.jsx'
@@ -477,6 +477,30 @@ export default function ReportsPage() {
     downloadCsvFile(rows, `report-${kind}-${entityId}-${stamp}.csv`)
   }
 
+  const onCopyReportLink = async () => {
+    if (typeof window === 'undefined' || !window?.location?.href) return
+    const url = window.location.href
+    try {
+      if (navigator?.clipboard?.writeText) {
+        await navigator.clipboard.writeText(url)
+      } else {
+        const area = document.createElement('textarea')
+        area.value = url
+        area.setAttribute('readonly', 'true')
+        area.style.position = 'fixed'
+        area.style.opacity = '0'
+        document.body.appendChild(area)
+        area.focus()
+        area.select()
+        document.execCommand('copy')
+        document.body.removeChild(area)
+      }
+      toast.success(str('reports.toast_link_copied'))
+    } catch {
+      toast.warning(str('reports.toast_link_copy_failed'))
+    }
+  }
+
   const canBuild = Boolean(entityId && canRunForKind(kind) && !isRangeInvalid)
   const clearFilters = useCallback(() => {
     setFromDate('')
@@ -576,6 +600,10 @@ export default function ReportsPage() {
             <CrossNav items={crossItems} className="rh-plans__cross" />
           </div>
           <div className="rh-plans__hero-actions">
+            <Button type="button" variant="secondary" onClick={onCopyReportLink}>
+              <RhIcon as={Link2} size={18} strokeWidth={RH_ICON_STROKE} />
+              {str('reports.btn_copy_link')}
+            </Button>
             <Button type="button" variant="secondary" onClick={onPrint} disabled={!canPrint || !reportData}>
               <RhIcon as={Printer} size={18} strokeWidth={RH_ICON_STROKE} />
               {str('reports.btn_print')}
