@@ -270,6 +270,12 @@ export default function ReportsPage() {
     () => ({ from: normalizeDateInputStart(fromDate), to: normalizeDateInputEnd(toDate) }),
     [fromDate, toDate],
   )
+  const isRangeInvalid = useMemo(() => {
+    const fromMs = Date.parse(String(range.from || ''))
+    const toMs = Date.parse(String(range.to || ''))
+    if (!Number.isFinite(fromMs) || !Number.isFinite(toMs)) return false
+    return fromMs > toMs
+  }, [range.from, range.to])
 
   const appLink = useCallback(
     (path) => withImpersonationQuery(path, getImpersonateUid(user, search)),
@@ -289,6 +295,10 @@ export default function ReportsPage() {
 
   const build = async () => {
     if (!entityId || !canRunForKind(kind)) return
+    if (isRangeInvalid) {
+      toast.warning(str('reports.toast_invalid_range'))
+      return
+    }
     setLoadingReport(true)
     try {
       const result =
@@ -418,7 +428,12 @@ export default function ReportsPage() {
     downloadCsvFile(rows, `report-${kind}-${entityId}-${stamp}.csv`)
   }
 
-  const canBuild = Boolean(entityId && canRunForKind(kind))
+  const canBuild = Boolean(entityId && canRunForKind(kind) && !isRangeInvalid)
+  const clearFilters = useCallback(() => {
+    setFromDate('')
+    setToDate('')
+    setRangePreset('all')
+  }, [])
   const rangePresetLabel = useCallback(
     (preset) => {
       if (preset === 'today') return str('reports.range_today')
@@ -581,7 +596,11 @@ export default function ReportsPage() {
             </Button>
           ))}
         </div>
+        {isRangeInvalid && <p className="rh-reports__range-error">{str('reports.range_invalid_hint')}</p>}
         <div className="rh-reports__filters-actions">
+          <Button type="button" variant="ghost" onClick={clearFilters}>
+            {str('reports.btn_clear_filters')}
+          </Button>
           <Button type="button" variant="primary" disabled={!canBuild} loading={loadingReport} onClick={build}>
             <RhIcon as={FileText} size={18} strokeWidth={RH_ICON_STROKE} />
             {str('reports.btn_build')}

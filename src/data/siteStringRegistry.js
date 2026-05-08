@@ -487,8 +487,15 @@ export const SITE_STRING_REGISTRY = [
   { key: 'reports.search_empty', group: 'التقارير', label: 'لا نتائج للبحث', defaultValue: 'لا نتائج' },
   { key: 'reports.loading_entities', group: 'التقارير', label: 'تحميل الكيانات', defaultValue: 'جاري تحميل الخيارات…' },
   { key: 'reports.btn_build', group: 'التقارير', label: 'زر إنشاء', defaultValue: 'إنشاء التقرير' },
+  { key: 'reports.btn_clear_filters', group: 'التقارير', label: 'زر مسح الفلاتر', defaultValue: 'مسح الفلاتر' },
   { key: 'reports.btn_print', group: 'التقارير', label: 'زر طباعة', defaultValue: 'طباعة' },
   { key: 'reports.btn_csv', group: 'التقارير', label: 'زر CSV', defaultValue: 'تنزيل CSV' },
+  {
+    key: 'reports.range_invalid_hint',
+    group: 'التقارير',
+    label: 'رسالة نطاق غير صحيح',
+    defaultValue: 'تأكد أن تاريخ البداية يسبق أو يساوي تاريخ النهاية.',
+  },
   { key: 'reports.empty', group: 'التقارير', label: 'حالة فارغة', defaultValue: 'اختر نوع التقرير والكيان ثم اضغط إنشاء التقرير.' },
   { key: 'reports.no_access', group: 'التقارير', label: 'منع الوصول', defaultValue: 'لا تملك صلاحية الوصول إلى صفحة التقارير.' },
   { key: 'reports.kpi_members', group: 'التقارير', label: 'KPI الأعضاء', defaultValue: 'عدد الأعضاء' },
@@ -498,6 +505,12 @@ export const SITE_STRING_REGISTRY = [
   { key: 'reports.members_title', group: 'التقارير', label: 'عنوان قسم الأعضاء', defaultValue: 'الأعضاء' },
   { key: 'reports.toast_failed', group: 'التقارير', label: 'تنبيه فشل التقرير', defaultValue: 'تعذر إنشاء التقرير. حاول مرة أخرى.' },
   { key: 'reports.toast_csv_empty', group: 'التقارير', label: 'تنبيه CSV فارغ', defaultValue: 'لا توجد بيانات للتصدير.' },
+  {
+    key: 'reports.toast_invalid_range',
+    group: 'التقارير',
+    label: 'تنبيه نطاق غير صحيح',
+    defaultValue: 'نطاق التاريخ غير صحيح. تحقق من حقلي من/إلى.',
+  },
   { key: 'reports.print_title', group: 'التقارير', label: 'عنوان الطباعة', defaultValue: 'تقرير شامل' },
   {
     key: 'reports.print_meta',

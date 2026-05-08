@@ -8093,6 +8093,12 @@ a.rh-peek-btn {
   gap: var(--rh-space-2);
 }
 
+.rh-reports__range-error {
+  margin: 0.45rem 0 0;
+  color: var(--rh-danger-700);
+  font-size: 0.85rem;
+}
+
 .rh-reports__kpis {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(9.5rem, 1fr));
