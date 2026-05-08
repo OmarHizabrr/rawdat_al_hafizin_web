@@ -1,6 +1,6 @@
 import { Download, Eye, FileText, Filter, Printer } from 'lucide-react'
-import { useCallback, useEffect, useMemo, useState } from 'react'
-import { useLocation } from 'react-router-dom'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useLocation, useNavigate } from 'react-router-dom'
 import { CrossNav } from '../components/CrossNav.jsx'
 import { PERMISSION_PAGE_IDS } from '../config/permissionRegistry.js'
 import { useAuth } from '../context/useAuth.js'
@@ -182,7 +182,9 @@ export default function ReportsPage() {
   const { can, canAccessPage } = usePermissions()
   const { str, branding } = useSiteContent()
   const toast = useToast()
+  const navigate = useNavigate()
   const { search } = useLocation()
+  const didHydrateFromQueryRef = useRef(false)
 
   const [kind, setKind] = useState('student')
   const [entityId, setEntityId] = useState('')
@@ -209,6 +211,22 @@ export default function ReportsPage() {
     },
     [can],
   )
+
+  useEffect(() => {
+    if (didHydrateFromQueryRef.current) return
+    const params = new URLSearchParams(search)
+    const kindParam = String(params.get('reportKind') || '').trim()
+    const entityParam = String(params.get('reportEntity') || '').trim()
+    const fromParam = String(params.get('from') || '').trim()
+    const toParam = String(params.get('to') || '').trim()
+    const presetParam = String(params.get('rangePreset') || '').trim()
+    if (kindParam && REPORT_KIND_OPTIONS.some((k) => k.value === kindParam)) setKind(kindParam)
+    if (entityParam) setEntityId(entityParam)
+    if (fromParam) setFromDate(fromParam)
+    if (toParam) setToDate(toParam)
+    if (presetParam) setRangePreset(presetParam)
+    didHydrateFromQueryRef.current = true
+  }, [search])
 
   useEffect(() => {
     document.title = str('reports.doc_title', { siteTitle: branding.siteTitle })
@@ -276,6 +294,25 @@ export default function ReportsPage() {
     if (!Number.isFinite(fromMs) || !Number.isFinite(toMs)) return false
     return fromMs > toMs
   }, [range.from, range.to])
+
+  useEffect(() => {
+    if (!didHydrateFromQueryRef.current) return
+    const params = new URLSearchParams(search)
+    if (kind) params.set('reportKind', kind)
+    else params.delete('reportKind')
+    if (entityId) params.set('reportEntity', entityId)
+    else params.delete('reportEntity')
+    if (fromDate) params.set('from', fromDate)
+    else params.delete('from')
+    if (toDate) params.set('to', toDate)
+    else params.delete('to')
+    if (rangePreset && rangePreset !== 'custom') params.set('rangePreset', rangePreset)
+    else params.delete('rangePreset')
+    const nextSearch = params.toString()
+    const currentSearch = String(search || '').replace(/^\?/, '')
+    if (nextSearch === currentSearch) return
+    navigate({ search: nextSearch ? `?${nextSearch}` : '' }, { replace: true })
+  }, [kind, entityId, fromDate, toDate, rangePreset, search, navigate])
 
   const appLink = useCallback(
     (path) => withImpersonationQuery(path, getImpersonateUid(user, search)),
