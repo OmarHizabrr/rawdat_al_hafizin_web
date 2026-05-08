@@ -818,13 +818,13 @@ export default function ReportsPage() {
           <SectionTable
             title="سجلات الحضور التي أدخلها المعلم"
             columns={[
-              { key: 'userId', label: 'المستخدم' },
+              { key: 'userName', label: 'المستخدم' },
               { key: 'attendanceStatus', label: 'الحضور' },
               { key: 'pagesCount', label: 'الصفحات' },
               { key: 'updatedAt', label: 'آخر تحديث' },
             ]}
             rows={(reportData.attendanceRecorded || []).map((a) => ({
-              userId: a.userId || '',
+              userName: a.userName || a.userId || '',
               attendanceStatus: a.attendanceStatus || '',
               pagesCount: a.pagesCount ?? 0,
               updatedAt: formatArDateTime(a.updatedAt),
@@ -833,13 +833,14 @@ export default function ReportsPage() {
           <SectionTable
             title="ملخص تسجيلات المعلم حسب كل طالب"
             columns={[
-              { key: 'userId', label: 'المستخدم' },
+              { key: 'userName', label: 'المستخدم' },
               { key: 'recordsCount', label: 'عدد التسجيلات' },
               { key: 'pagesTotal', label: 'إجمالي الصفحات' },
               { key: 'latestUpdatedAt', label: 'آخر تحديث' },
             ]}
             rows={(reportData.attendanceByStudent || []).map((r) => ({
               ...r,
+              userName: r.userName || r.userId || '',
               latestUpdatedAt: formatArDateTime(r.latestUpdatedAt),
             }))}
           />

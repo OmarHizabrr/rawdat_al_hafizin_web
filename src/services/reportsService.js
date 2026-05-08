@@ -39,6 +39,10 @@ function maybeFilterByRange(rows, datePicker, range) {
   return rows.filter((row) => inRange(datePicker(row), fromMs, toMs))
 }
 
+function sortByRecent(rows, datePicker) {
+  return [...(rows || [])].sort((a, b) => asMs(datePicker(b)) - asMs(datePicker(a)))
+}
+
 function pickFirstDate(...values) {
   for (const v of values) {
     if (asMs(v)) return v
@@ -264,6 +268,27 @@ async function loadUserMembershipRows(userId, kind) {
   return rows.filter(Boolean)
 }
 
+async function loadUserNamesByIds(userIds = []) {
+  const map = new Map()
+  const unique = [...new Set((userIds || []).map((id) => String(id || '').trim()).filter(Boolean))]
+  if (!unique.length) return map
+  const profiles = await Promise.all(
+    unique.map(async (uid) => {
+      try {
+        const doc = await firestoreApi.getData(firestoreApi.getUserDoc(uid))
+        return { uid, doc }
+      } catch {
+        return { uid, doc: null }
+      }
+    }),
+  )
+  for (const entry of profiles) {
+    const displayName = String(entry?.doc?.displayName || entry?.doc?.name || entry.uid).trim() || entry.uid
+    map.set(entry.uid, displayName)
+  }
+  return map
+}
+
 export async function buildStudentReport(user, range = {}) {
   const uid = String(user?.uid || '').trim()
   if (!uid) return null
@@ -285,7 +310,7 @@ export async function buildStudentReport(user, range = {}) {
     range,
   )
   const studentRows = {
-    plans: plans.map((r) => ({
+    plans: sortByRecent(plans, (r) => pickFirstDate(r.updatedAt, r.createdAt, r.joinedAt)).map((r) => ({
       id: r.id,
       name: r.name || '',
       role: r.planRole || '',
@@ -294,7 +319,7 @@ export async function buildStudentReport(user, range = {}) {
       updatedAt: pickFirstDate(r.updatedAt, r.updatedTimes),
       joinedAt: r.joinedAt || '',
     })),
-    halakat: halakat.map((r) => ({
+    halakat: sortByRecent(halakat, (r) => pickFirstDate(r.updatedAt, r.createdAt, r.joinedAt)).map((r) => ({
       id: r.id,
       name: r.name || '',
       role: r.halakaRole || '',
@@ -303,7 +328,7 @@ export async function buildStudentReport(user, range = {}) {
       updatedAt: pickFirstDate(r.updatedAt, r.updatedTimes),
       joinedAt: r.joinedAt || '',
     })),
-    exams: exams.map((r) => ({
+    exams: sortByRecent(exams, (r) => pickFirstDate(r.updatedAt, r.createdAt, r.joinedAt)).map((r) => ({
       id: r.id,
       name: r.name || '',
       role: r.examRole || '',
@@ -312,7 +337,7 @@ export async function buildStudentReport(user, range = {}) {
       updatedAt: pickFirstDate(r.updatedAt, r.updatedTimes),
       joinedAt: r.joinedAt || '',
     })),
-    activities: activities.map((r) => ({
+    activities: sortByRecent(activities, (r) => pickFirstDate(r.updatedAt, r.startAt, r.createdAt, r.joinedAt)).map((r) => ({
       id: r.id,
       name: r.name || '',
       role: r.activityRole || '',
@@ -323,7 +348,7 @@ export async function buildStudentReport(user, range = {}) {
       updatedAt: pickFirstDate(r.updatedAt, r.updatedTimes),
       joinedAt: r.joinedAt || '',
     })),
-    dawrat: dawrat.map((r) => ({
+    dawrat: sortByRecent(dawrat, (r) => pickFirstDate(r.updatedAt, r.courseStart, r.createdAt, r.joinedAt)).map((r) => ({
       id: r.id,
       name: r.name || '',
       role: r.dawraRole || '',
@@ -336,7 +361,7 @@ export async function buildStudentReport(user, range = {}) {
       updatedAt: pickFirstDate(r.updatedAt, r.updatedTimes),
       joinedAt: r.joinedAt || '',
     })),
-    remoteTasmee: remoteTasmee.map((r) => ({
+    remoteTasmee: sortByRecent(remoteTasmee, (r) => pickFirstDate(r.updatedAt, r.createdAt, r.joinedAt)).map((r) => ({
       id: r.id,
       name: r.name || r.meetingCode || '',
       role: r.broadcastRole || '',
@@ -355,8 +380,8 @@ export async function buildStudentReport(user, range = {}) {
     entity: user,
     modules: { plans, halakat, exams, activities, dawrat, remoteTasmee },
     studentRows,
-    awrad,
-    notifications,
+    awrad: sortByRecent(awrad, (r) => pickFirstDate(r.recordedAt, r.updatedAt, r.createdAt)),
+    notifications: sortByRecent(notifications, (r) => pickFirstDate(r.createdAt, r.updatedAt)),
     summary: {
       plans: plans.length,
       halakat: halakat.length,
@@ -384,21 +409,32 @@ export async function buildTeacherReport(user, range = {}) {
   ])
 
   const sessionsRaw = await firestoreApi.getCollectionGroupDocuments('sessions')
-  const sessions = maybeFilterByRange(
+  const sessions = sortByRecent(
+    maybeFilterByRange(
     sessionsRaw
       .map((d) => ({ id: d.id, ...d.data() }))
       .filter((s) => String(s.teacherUid || '') === uid),
     (s) => s.startedAt || s.createdAt || s.updatedAt,
     range,
+    ),
+    (s) => pickFirstDate(s.startedAt, s.updatedAt, s.createdAt),
   )
 
   const attendanceRaw = await firestoreApi.getCollectionGroupDocuments('attendance')
-  const attendanceRecorded = maybeFilterByRange(
+  const attendanceRecordedRaw = maybeFilterByRange(
     attendanceRaw
       .map((d) => ({ id: d.id, ...d.data() }))
       .filter((a) => String(a.recordedBy || '') === uid),
     (a) => a.updatedAt || a.recordedAt,
     range,
+  )
+  const userNameMap = await loadUserNamesByIds(attendanceRecordedRaw.map((a) => a.userId))
+  const attendanceRecorded = sortByRecent(
+    attendanceRecordedRaw.map((a) => ({
+      ...a,
+      userName: userNameMap.get(String(a.userId || '').trim()) || String(a.userId || '').trim(),
+    })),
+    (a) => pickFirstDate(a.updatedAt, a.recordedAt),
   )
   const attendanceByStudentMap = new Map()
   for (const row of attendanceRecorded) {
@@ -412,6 +448,7 @@ export async function buildTeacherReport(user, range = {}) {
     }
     const next = {
       ...prev,
+      userName: row.userName || prev.userName || studentUid,
       recordsCount: prev.recordsCount + 1,
       pagesTotal: prev.pagesTotal + Math.max(0, Number(row.pagesCount) || 0),
       latestUpdatedAt:
@@ -419,17 +456,16 @@ export async function buildTeacherReport(user, range = {}) {
     }
     attendanceByStudentMap.set(studentUid, next)
   }
-  const attendanceByStudent = [...attendanceByStudentMap.values()].sort(
-    (a, b) => (b.recordsCount - a.recordsCount) || (b.pagesTotal - a.pagesTotal),
-  )
+  const attendanceByStudent = [...attendanceByStudentMap.values()].sort((a, b) =>
+    (b.recordsCount - a.recordsCount) || (b.pagesTotal - a.pagesTotal) || (asMs(b.latestUpdatedAt) - asMs(a.latestUpdatedAt)))
 
   const teacherRows = {
-    plans: plans.map((r) => ({ id: r.id, name: r.name || '', role: r.planRole || '', visibility: r.planVisibility || '' })),
-    halakat: halakat.map((r) => ({ id: r.id, name: r.name || '', role: r.halakaRole || '', visibility: r.halakaVisibility || '' })),
-    exams: exams.map((r) => ({ id: r.id, name: r.name || '', role: r.examRole || '', visibility: r.examVisibility || '' })),
-    activities: activities.map((r) => ({ id: r.id, name: r.name || '', role: r.activityRole || '', visibility: r.activityVisibility || '' })),
-    dawrat: dawrat.map((r) => ({ id: r.id, name: r.name || '', role: r.dawraRole || '', visibility: r.dawraVisibility || '' })),
-    remoteTasmee: remoteTasmee.map((r) => ({ id: r.id, name: r.name || r.meetingCode || '', role: r.broadcastRole || '' })),
+    plans: sortByRecent(plans, (r) => pickFirstDate(r.updatedAt, r.createdAt, r.joinedAt)).map((r) => ({ id: r.id, name: r.name || '', role: r.planRole || '', visibility: r.planVisibility || '' })),
+    halakat: sortByRecent(halakat, (r) => pickFirstDate(r.updatedAt, r.createdAt, r.joinedAt)).map((r) => ({ id: r.id, name: r.name || '', role: r.halakaRole || '', visibility: r.halakaVisibility || '' })),
+    exams: sortByRecent(exams, (r) => pickFirstDate(r.updatedAt, r.createdAt, r.joinedAt)).map((r) => ({ id: r.id, name: r.name || '', role: r.examRole || '', visibility: r.examVisibility || '' })),
+    activities: sortByRecent(activities, (r) => pickFirstDate(r.updatedAt, r.startAt, r.createdAt, r.joinedAt)).map((r) => ({ id: r.id, name: r.name || '', role: r.activityRole || '', visibility: r.activityVisibility || '' })),
+    dawrat: sortByRecent(dawrat, (r) => pickFirstDate(r.updatedAt, r.courseStart, r.createdAt, r.joinedAt)).map((r) => ({ id: r.id, name: r.name || '', role: r.dawraRole || '', visibility: r.dawraVisibility || '' })),
+    remoteTasmee: sortByRecent(remoteTasmee, (r) => pickFirstDate(r.updatedAt, r.createdAt, r.joinedAt)).map((r) => ({ id: r.id, name: r.name || r.meetingCode || '', role: r.broadcastRole || '' })),
   }
 
   return {
@@ -480,15 +516,21 @@ export async function buildGroupReport(kind, entityId, range = {}) {
 
   if (kind === 'halaka') {
     const sessionsRaw = await loadHalakaSessions(id)
-    const sessions = maybeFilterByRange(sessionsRaw, (s) => s.startedAt || s.createdAt || s.updatedAt, range)
+    const sessions = sortByRecent(
+      maybeFilterByRange(sessionsRaw, (s) => s.startedAt || s.createdAt || s.updatedAt, range),
+      (s) => pickFirstDate(s.startedAt, s.updatedAt, s.createdAt),
+    )
     const attendanceBySession = await Promise.all(
       sessions.map(async (s) => ({
         sessionId: s.id,
         rows: await loadSessionAttendance(id, s.id),
       })),
     )
-    const attendanceRows = attendanceBySession.flatMap((entry) =>
-      (entry.rows || []).map((row) => ({ sessionId: entry.sessionId, ...row })),
+    const attendanceRows = sortByRecent(
+      attendanceBySession.flatMap((entry) =>
+        (entry.rows || []).map((row) => ({ sessionId: entry.sessionId, ...row })),
+      ),
+      (a) => pickFirstDate(a.updatedAt, a.recordedAt, a.createdAt),
     )
     const pagesTotal = attendanceRows.reduce((sum, r) => sum + Math.max(0, Number(r.pagesCount) || 0), 0)
     const memberDetails = await Promise.all(
@@ -538,7 +580,12 @@ export async function buildGroupReport(kind, entityId, range = {}) {
         location: entity.location || '',
       },
       members: members || [],
-      memberDetails,
+      memberDetails: [...memberDetails].sort(
+        (a, b) =>
+          (b.attendanceRecordsInHalaka - a.attendanceRecordsInHalaka) ||
+          (b.pagesInHalakaSessions - a.pagesInHalakaSessions) ||
+          (asMs(b.latestAttendanceAt) - asMs(a.latestAttendanceAt)),
+      ),
       sessions,
       attendanceRows,
       summary: {
