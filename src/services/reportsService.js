@@ -400,6 +400,28 @@ export async function buildTeacherReport(user, range = {}) {
     (a) => a.updatedAt || a.recordedAt,
     range,
   )
+  const attendanceByStudentMap = new Map()
+  for (const row of attendanceRecorded) {
+    const studentUid = String(row.userId || '').trim()
+    if (!studentUid) continue
+    const prev = attendanceByStudentMap.get(studentUid) || {
+      userId: studentUid,
+      recordsCount: 0,
+      pagesTotal: 0,
+      latestUpdatedAt: '',
+    }
+    const next = {
+      ...prev,
+      recordsCount: prev.recordsCount + 1,
+      pagesTotal: prev.pagesTotal + Math.max(0, Number(row.pagesCount) || 0),
+      latestUpdatedAt:
+        asMs(row.updatedAt) > asMs(prev.latestUpdatedAt) ? String(row.updatedAt || '') : prev.latestUpdatedAt,
+    }
+    attendanceByStudentMap.set(studentUid, next)
+  }
+  const attendanceByStudent = [...attendanceByStudentMap.values()].sort(
+    (a, b) => (b.recordsCount - a.recordsCount) || (b.pagesTotal - a.pagesTotal),
+  )
 
   const teacherRows = {
     plans: plans.map((r) => ({ id: r.id, name: r.name || '', role: r.planRole || '', visibility: r.planVisibility || '' })),
@@ -416,6 +438,7 @@ export async function buildTeacherReport(user, range = {}) {
     teacherRows,
     sessions,
     attendanceRecorded,
+    attendanceByStudent,
     summary: {
       plans: plans.length,
       halakat: halakat.length,
@@ -426,6 +449,7 @@ export async function buildTeacherReport(user, range = {}) {
       sessions: sessions.length,
       attendanceRecorded: attendanceRecorded.length,
       pagesRecorded: attendanceRecorded.reduce((sum, a) => sum + Math.max(0, Number(a.pagesCount) || 0), 0),
+      studentsRecorded: attendanceByStudent.length,
     },
   }
 }

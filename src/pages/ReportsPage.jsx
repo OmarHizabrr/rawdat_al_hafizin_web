@@ -672,6 +672,7 @@ export default function ReportsPage() {
             <div className="card rh-reports__kpi"><strong>{reportData.summary.exams}</strong><span>{str('layout.nav_exams')}</span></div>
             <div className="card rh-reports__kpi"><strong>{reportData.summary.sessions}</strong><span>جلسات مسجلة</span></div>
             <div className="card rh-reports__kpi"><strong>{reportData.summary.attendanceRecorded}</strong><span>تسجيلات حضور</span></div>
+            <div className="card rh-reports__kpi"><strong>{reportData.summary.studentsRecorded}</strong><span>طلاب تم تسجيلهم</span></div>
             <div className="card rh-reports__kpi"><strong>{reportData.summary.pagesRecorded}</strong><span>{str('reports.kpi_pages')}</span></div>
           </div>
           <SectionTable
@@ -732,6 +733,19 @@ export default function ReportsPage() {
               attendanceStatus: a.attendanceStatus || '',
               pagesCount: a.pagesCount ?? 0,
               updatedAt: formatArDateTime(a.updatedAt),
+            }))}
+          />
+          <SectionTable
+            title="ملخص تسجيلات المعلم حسب كل طالب"
+            columns={[
+              { key: 'userId', label: 'المستخدم' },
+              { key: 'recordsCount', label: 'عدد التسجيلات' },
+              { key: 'pagesTotal', label: 'إجمالي الصفحات' },
+              { key: 'latestUpdatedAt', label: 'آخر تحديث' },
+            ]}
+            rows={(reportData.attendanceByStudent || []).map((r) => ({
+              ...r,
+              latestUpdatedAt: formatArDateTime(r.latestUpdatedAt),
             }))}
           />
         </section>
