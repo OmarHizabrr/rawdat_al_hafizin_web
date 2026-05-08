@@ -8127,6 +8127,12 @@ a.rh-peek-btn {
   margin-bottom: var(--rh-space-3);
 }
 
+.rh-reports__section-actions {
+  display: flex;
+  gap: var(--rh-space-2);
+  flex-wrap: wrap;
+}
+
 .rh-reports__table td,
 .rh-reports__table th {
   white-space: nowrap;

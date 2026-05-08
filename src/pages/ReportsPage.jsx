@@ -137,13 +137,38 @@ function printSingleTable(title, columns, rows) {
   win.print()
 }
 
+function downloadSingleTableCsv(title, columns, rows) {
+  if (!Array.isArray(rows) || !rows.length) return
+  const headerColumns = (columns || []).filter((c) => c?.key)
+  if (!headerColumns.length) return
+  const csvRows = rows.map((row) => {
+    const out = {}
+    for (const col of headerColumns) out[col.label || col.key] = row?.[col.key] ?? ''
+    return out
+  })
+  const stamp = new Date().toISOString().slice(0, 10)
+  const safeTitle = String(title || 'table')
+    .replace(/[^\u0600-\u06FFa-zA-Z0-9_-]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+  downloadCsvFile(csvRows, `report-table-${safeTitle || 'table'}-${stamp}.csv`)
+}
+
 function SectionTable({ title, columns, rows, actions }) {
   if (!rows?.length) return null
   return (
     <div className="rh-settings-card rh-reports__section">
       <div className="rh-settings-card__head">
         <h3 className="rh-settings-card__title">{title}</h3>
-        <div className="no-print">
+        <div className="no-print rh-reports__section-actions">
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            onClick={() => downloadSingleTableCsv(title, columns, rows)}
+          >
+            <RhIcon as={Download} size={16} strokeWidth={RH_ICON_STROKE} />
+            CSV الجدول
+          </Button>
           <Button
             type="button"
             variant="ghost"
