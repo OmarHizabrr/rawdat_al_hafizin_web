@@ -414,10 +414,21 @@ export default function ReportsPage() {
         'تسجيلات الحضور',
         (reportData.attendanceRecorded || []).map((a) => ({
           id: a.id,
+          userName: a.userName || a.userId || '',
           userId: a.userId || '',
           attendanceStatus: a.attendanceStatus || '',
           pagesCount: a.pagesCount ?? '',
           updatedAt: a.updatedAt || '',
+        })),
+      )
+      addRows(
+        'ملخص التسجيلات حسب الطالب',
+        (reportData.attendanceByStudent || []).map((a) => ({
+          userName: a.userName || a.userId || '',
+          userId: a.userId || '',
+          recordsCount: a.recordsCount ?? '',
+          pagesTotal: a.pagesTotal ?? '',
+          latestUpdatedAt: a.latestUpdatedAt || '',
         })),
       )
     } else {
@@ -448,6 +459,7 @@ export default function ReportsPage() {
           rows.push({
             القسم: 'حضور الحلقة',
             sessionId: a.sessionId || '',
+            userName: halakaMemberNameMap.get(String(a.userId || '').trim()) || a.userId || '',
             userId: a.userId || '',
             attendanceStatus: a.attendanceStatus || '',
             pagesCount: a.pagesCount ?? '',
