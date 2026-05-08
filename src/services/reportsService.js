@@ -1,5 +1,5 @@
-import { subscribeAllUsers } from './adminUsersService.js'
 import { firestoreApi } from './firestoreApi.js'
+import { normalizeRole } from '../config/roles.js'
 import { loadAwrad } from '../utils/awradStorage.js'
 import { loadPlanMembersWithProfiles } from '../utils/plansStorage.js'
 import {
@@ -81,19 +81,80 @@ export async function listEntitiesByKind(kind) {
   return normalizeEntityRows(docs)
 }
 
-export function loadUsersDirectory() {
-  return new Promise((resolve) => {
-    const unsub = subscribeAllUsers(
-      (rows) => {
-        resolve(rows || [])
-        unsub()
-      },
-      () => {
-        resolve([])
-        unsub()
-      },
-    )
-  })
+function mapStudentCandidate(row) {
+  const uid = String(row?.uid || row?.id || '').trim()
+  if (!uid) return null
+  const role = normalizeRole(row?.role)
+  if (role !== 'student') return null
+  return {
+    uid,
+    id: uid,
+    role,
+    displayName: String(row?.displayName || row?.createdByName || uid).trim() || uid,
+    email: String(row?.email || '').trim(),
+    photoURL: String(row?.photoURL || row?.createdByImageUrl || '').trim(),
+  }
+}
+
+async function loadStudentsFromUsersCollection() {
+  const docs = await firestoreApi.getDocuments(firestoreApi.getUsersCollection())
+  return docs
+    .map((d) => mapStudentCandidate({ uid: d.id, ...d.data() }))
+    .filter(Boolean)
+}
+
+async function loadStudentsFromMembershipsFallback() {
+  const docs = await firestoreApi.getCollectionGroupDocuments('members')
+  const map = new Map()
+  for (const d of docs) {
+    const row = mapStudentCandidate({ uid: d.id, ...d.data() })
+    if (!row) continue
+    if (!map.has(row.uid)) map.set(row.uid, row)
+  }
+  return [...map.values()]
+}
+
+function mergeUniqueStudents(...lists) {
+  const map = new Map()
+  for (const list of lists) {
+    for (const row of list || []) {
+      const uid = String(row?.uid || row?.id || '').trim()
+      if (!uid) continue
+      if (!map.has(uid)) {
+        map.set(uid, row)
+        continue
+      }
+      const prev = map.get(uid)
+      map.set(uid, {
+        ...prev,
+        ...row,
+        displayName: row.displayName || prev.displayName || uid,
+        email: row.email || prev.email || '',
+      })
+    }
+  }
+  return [...map.values()].sort((a, b) =>
+    String(a.displayName || a.uid || '').localeCompare(String(b.displayName || b.uid || ''), 'ar'),
+  )
+}
+
+export async function loadUsersDirectory(currentUser = null) {
+  let fromUsers = []
+  let fromMembers = []
+  try {
+    fromUsers = await loadStudentsFromUsersCollection()
+  } catch {
+    fromUsers = []
+  }
+  if (fromUsers.length <= 1) {
+    try {
+      fromMembers = await loadStudentsFromMembershipsFallback()
+    } catch {
+      fromMembers = []
+    }
+  }
+  const selfStudent = mapStudentCandidate(currentUser || {})
+  return mergeUniqueStudents(fromUsers, fromMembers, selfStudent ? [selfStudent] : [])
 }
 
 async function loadUserMembershipRows(userId, kind) {

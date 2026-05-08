@@ -124,7 +124,7 @@ export default function ReportsPage() {
     const run = async () => {
       try {
         if (kind === 'student') {
-          const users = await loadUsersDirectory()
+          const users = await loadUsersDirectory(user)
           if (!cancelled) setEntities(users)
           return
         }
@@ -140,7 +140,7 @@ export default function ReportsPage() {
     return () => {
       cancelled = true
     }
-  }, [kind, canAccessPage])
+  }, [kind, canAccessPage, user])
 
   const entityOptions = useMemo(() => toEntityOptions(entities), [entities])
   const entityMap = useMemo(
