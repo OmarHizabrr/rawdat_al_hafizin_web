@@ -1,4 +1,4 @@
-import { Download, FileText, Filter, Printer } from 'lucide-react'
+import { Download, Eye, FileText, Filter, Printer } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useLocation } from 'react-router-dom'
 import { CrossNav } from '../components/CrossNav.jsx'
@@ -6,7 +6,14 @@ import { PERMISSION_PAGE_IDS } from '../config/permissionRegistry.js'
 import { useAuth } from '../context/useAuth.js'
 import { usePermissions } from '../context/usePermissions.js'
 import { useSiteContent } from '../context/useSiteContent.js'
-import { buildGroupReport, buildStudentReport, listEntitiesByKind, loadUsersDirectory } from '../services/reportsService.js'
+import {
+  buildGroupReport,
+  buildStudentReport,
+  buildTeacherReport,
+  listEntitiesByKind,
+  loadTeachersDirectory,
+  loadUsersDirectory,
+} from '../services/reportsService.js'
 import { getImpersonateUid, withImpersonationQuery } from '../utils/impersonation.js'
 import { Button, SearchableSelect, TextField, useToast } from '../ui/index.js'
 import { RH_ICON_STROKE, RhIcon } from '../ui/RhIcon.jsx'
@@ -15,6 +22,7 @@ const PAGE_ID = PERMISSION_PAGE_IDS.reports
 
 const REPORT_KIND_OPTIONS = [
   { value: 'student', label: 'تقرير طالب' },
+  { value: 'teacher', label: 'تقرير معلم' },
   { value: 'halaka', label: 'تقرير حلقة' },
   { value: 'plan', label: 'تقرير خطة' },
   { value: 'activity', label: 'تقرير نشاط' },
@@ -78,22 +86,73 @@ function formatArDateTime(v) {
   return d.toLocaleString('ar-SA', { dateStyle: 'medium', timeStyle: 'short' })
 }
 
-function SectionTable({ title, columns, rows }) {
+function roleLabelAr(role) {
+  const r = String(role || '').trim().toLowerCase()
+  if (r === 'teacher') return 'معلم'
+  if (r === 'student') return 'طالب'
+  if (r === 'member') return 'عضو'
+  if (r === 'owner') return 'مالك'
+  if (r === 'supervisor') return 'مشرف'
+  if (r === 'admin') return 'أدمن'
+  return role || '—'
+}
+
+function printSingleTable(title, columns, rows) {
+  if (!rows?.length) return
+  const head = columns.map((c) => `<th>${String(c.label || '')}</th>`).join('')
+  const body = rows
+    .map((row) => {
+      const cells = columns.map((c) => `<td>${String(row?.[c.key] ?? '—')}</td>`).join('')
+      return `<tr>${cells}</tr>`
+    })
+    .join('')
+  const html = `<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"/><title>${title}</title><style>
+  body{font-family:Tahoma,Arial,sans-serif;padding:20px;color:#111}
+  h2{margin:0 0 12px}
+  table{width:100%;border-collapse:collapse}
+  th,td{border:1px solid #bbb;padding:8px;text-align:right;font-size:13px}
+  th{background:#f4f4f4}
+  </style></head><body><h2>${title}</h2><table><thead><tr>${head}</tr></thead><tbody>${body}</tbody></table></body></html>`
+  const win = window.open('', '_blank', 'noopener,noreferrer,width=1200,height=900')
+  if (!win) return
+  win.document.open()
+  win.document.write(html)
+  win.document.close()
+  win.focus()
+  win.print()
+}
+
+function SectionTable({ title, columns, rows, actions }) {
   if (!rows?.length) return null
   return (
     <div className="rh-settings-card rh-reports__section">
       <div className="rh-settings-card__head">
         <h3 className="rh-settings-card__title">{title}</h3>
+        <div className="no-print">
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            onClick={() => printSingleTable(title, columns, rows)}
+          >
+            <RhIcon as={Printer} size={16} strokeWidth={RH_ICON_STROKE} />
+            طباعة الجدول
+          </Button>
+        </div>
       </div>
       <div className="rh-admin-plan-types__table-wrap">
         <table className="rh-admin-plan-types__table rh-reports__table">
           <thead>
-            <tr>{columns.map((c) => <th key={c.key}>{c.label}</th>)}</tr>
+            <tr>
+              {columns.map((c) => <th key={c.key}>{c.label}</th>)}
+              {actions && <th className="no-print">عرض</th>}
+            </tr>
           </thead>
           <tbody>
             {rows.map((row, i) => (
               <tr key={`${title}-${i}`}>
                 {columns.map((c) => <td key={c.key}>{row[c.key] ?? '—'}</td>)}
+                {actions && <td className="no-print">{actions(row)}</td>}
               </tr>
             ))}
           </tbody>
@@ -124,6 +183,7 @@ export default function ReportsPage() {
   const canRunForKind = useCallback(
     (k) => {
       if (k === 'student') return can(PAGE_ID, 'student_report')
+      if (k === 'teacher') return can(PAGE_ID, 'teacher_report')
       if (k === 'halaka') return can(PAGE_ID, 'halaka_report')
       if (k === 'plan') return can(PAGE_ID, 'plan_report')
       if (k === 'activity') return can(PAGE_ID, 'activity_report')
@@ -157,6 +217,11 @@ export default function ReportsPage() {
         if (kind === 'student') {
           const users = await loadUsersDirectory(user)
           if (!cancelled) setEntities(users)
+          return
+        }
+        if (kind === 'teacher') {
+          const teachers = await loadTeachersDirectory(user)
+          if (!cancelled) setEntities(teachers)
           return
         }
         const rows = await listEntitiesByKind(kind)
@@ -213,7 +278,9 @@ export default function ReportsPage() {
       const result =
         kind === 'student'
           ? await buildStudentReport(entities.find((u) => (u.uid || u.id) === entityId), range)
-          : await buildGroupReport(kind, entityId, range)
+          : kind === 'teacher'
+            ? await buildTeacherReport(entities.find((u) => (u.uid || u.id) === entityId), range)
+            : await buildGroupReport(kind, entityId, range)
       setReportData(result)
     } catch {
       toast.warning(str('reports.toast_failed'))
@@ -260,6 +327,36 @@ export default function ReportsPage() {
           isRead: r.isRead ? 'نعم' : 'لا',
         })),
       )
+    } else if (reportData.kind === 'teacher') {
+      const addRows = (section, sectionRows) => {
+        for (const row of sectionRows || []) rows.push({ القسم: section, ...row })
+      }
+      addRows('الخطط', reportData.teacherRows?.plans)
+      addRows('الحلقات', reportData.teacherRows?.halakat)
+      addRows('الأنشطة', reportData.teacherRows?.activities)
+      addRows('الاختبارات', reportData.teacherRows?.exams)
+      addRows('الدورات', reportData.teacherRows?.dawrat)
+      addRows('التسميع عن بعد', reportData.teacherRows?.remoteTasmee)
+      addRows(
+        'جلسات المعلم',
+        (reportData.sessions || []).map((s) => ({
+          id: s.id,
+          title: s.title || '',
+          startedAt: s.startedAt || '',
+          endedAt: s.endedAt || '',
+          status: s.status || '',
+        })),
+      )
+      addRows(
+        'تسجيلات الحضور',
+        (reportData.attendanceRecorded || []).map((a) => ({
+          id: a.id,
+          userId: a.userId || '',
+          attendanceStatus: a.attendanceStatus || '',
+          pagesCount: a.pagesCount ?? '',
+          updatedAt: a.updatedAt || '',
+        })),
+      )
     } else {
       if (reportData.entityDetails) {
         rows.push({ القسم: 'تفاصيل الكيان', ...reportData.entityDetails })
@@ -270,7 +367,7 @@ export default function ReportsPage() {
           المعرّف: m.userId,
           الاسم: m.displayName || '',
           البريد: m.email || '',
-          الدور: m.role || '',
+          الدور: roleLabelAr(m.role),
         })
       }
       if (reportData.kind === 'halaka') {
@@ -307,6 +404,19 @@ export default function ReportsPage() {
 
   const canBuild = Boolean(entityId && canRunForKind(kind))
   const selectedEntityName = entityMap.get(entityId) || ''
+  const viewLinkByKind = useCallback(
+    (k, id) => {
+      if (!id) return ''
+      if (k === 'plan') return appLink(`/app/plans?focus=${id}`)
+      if (k === 'halaka') return appLink(`/app/halakat?focus=${id}`)
+      if (k === 'activity') return appLink(`/app/activities?focus=${id}`)
+      if (k === 'exam') return appLink(`/app/exams?focus=${id}`)
+      if (k === 'dawra') return appLink(`/app/dawrat?focus=${id}`)
+      if (k === 'remote_tasmee') return appLink(`/app/remote-tasmee?focus=${id}`)
+      return ''
+    },
+    [appLink],
+  )
 
   if (!canAccessPage(PAGE_ID)) {
     return <p className="rh-plans__empty">{str('reports.no_access')}</p>
@@ -399,29 +509,44 @@ export default function ReportsPage() {
           <SectionTable
             title="الخطط"
             columns={[
-              { key: 'id', label: 'المعرّف' },
               { key: 'name', label: 'الاسم' },
               { key: 'role', label: 'الدور' },
               { key: 'visibility', label: 'الظهور' },
               { key: 'joinedAt', label: 'تاريخ الانضمام' },
             ]}
-            rows={reportData.studentRows?.plans}
+            rows={(reportData.studentRows?.plans || []).map((r) => ({ ...r, role: roleLabelAr(r.role) }))}
+            actions={(row) => {
+              const to = viewLinkByKind('plan', row.id)
+              if (!to) return null
+              return (
+                <a href={to} className="ui-btn ui-btn--ghost ui-btn--sm">
+                  <RhIcon as={Eye} size={14} strokeWidth={RH_ICON_STROKE} />
+                </a>
+              )
+            }}
           />
           <SectionTable
             title="الحلقات"
             columns={[
-              { key: 'id', label: 'المعرّف' },
               { key: 'name', label: 'الاسم' },
               { key: 'role', label: 'الدور' },
               { key: 'visibility', label: 'الظهور' },
               { key: 'joinedAt', label: 'تاريخ الانضمام' },
             ]}
-            rows={reportData.studentRows?.halakat}
+            rows={(reportData.studentRows?.halakat || []).map((r) => ({ ...r, role: roleLabelAr(r.role) }))}
+            actions={(row) => {
+              const to = viewLinkByKind('halaka', row.id)
+              if (!to) return null
+              return (
+                <a href={to} className="ui-btn ui-btn--ghost ui-btn--sm">
+                  <RhIcon as={Eye} size={14} strokeWidth={RH_ICON_STROKE} />
+                </a>
+              )
+            }}
           />
           <SectionTable
             title="الأنشطة"
             columns={[
-              { key: 'id', label: 'المعرّف' },
               { key: 'name', label: 'الاسم' },
               { key: 'role', label: 'الدور' },
               { key: 'startAt', label: 'البداية' },
@@ -429,24 +554,41 @@ export default function ReportsPage() {
             ]}
             rows={(reportData.studentRows?.activities || []).map((r) => ({
               ...r,
+              role: roleLabelAr(r.role),
               startAt: formatArDateTime(r.startAt),
               endAt: formatArDateTime(r.endAt),
             }))}
+            actions={(row) => {
+              const to = viewLinkByKind('activity', row.id)
+              if (!to) return null
+              return (
+                <a href={to} className="ui-btn ui-btn--ghost ui-btn--sm">
+                  <RhIcon as={Eye} size={14} strokeWidth={RH_ICON_STROKE} />
+                </a>
+              )
+            }}
           />
           <SectionTable
             title="الاختبارات"
             columns={[
-              { key: 'id', label: 'المعرّف' },
               { key: 'name', label: 'الاسم' },
               { key: 'role', label: 'الدور' },
               { key: 'visibility', label: 'الظهور' },
             ]}
-            rows={reportData.studentRows?.exams}
+            rows={(reportData.studentRows?.exams || []).map((r) => ({ ...r, role: roleLabelAr(r.role) }))}
+            actions={(row) => {
+              const to = viewLinkByKind('exam', row.id)
+              if (!to) return null
+              return (
+                <a href={to} className="ui-btn ui-btn--ghost ui-btn--sm">
+                  <RhIcon as={Eye} size={14} strokeWidth={RH_ICON_STROKE} />
+                </a>
+              )
+            }}
           />
           <SectionTable
             title="الدورات"
             columns={[
-              { key: 'id', label: 'المعرّف' },
               { key: 'name', label: 'الاسم' },
               { key: 'role', label: 'الدور' },
               { key: 'courseStart', label: 'بداية الدورة' },
@@ -454,20 +596,38 @@ export default function ReportsPage() {
             ]}
             rows={(reportData.studentRows?.dawrat || []).map((r) => ({
               ...r,
+              role: roleLabelAr(r.role),
               courseStart: formatArDateTime(r.courseStart),
               courseEnd: formatArDateTime(r.courseEnd),
             }))}
+            actions={(row) => {
+              const to = viewLinkByKind('dawra', row.id)
+              if (!to) return null
+              return (
+                <a href={to} className="ui-btn ui-btn--ghost ui-btn--sm">
+                  <RhIcon as={Eye} size={14} strokeWidth={RH_ICON_STROKE} />
+                </a>
+              )
+            }}
           />
           <SectionTable
             title="التسميع عن بعد"
             columns={[
-              { key: 'id', label: 'المعرّف' },
               { key: 'name', label: 'الاسم' },
               { key: 'role', label: 'الدور' },
               { key: 'provider', label: 'المزوّد' },
               { key: 'mediaType', label: 'النوع' },
             ]}
-            rows={reportData.studentRows?.remoteTasmee}
+            rows={(reportData.studentRows?.remoteTasmee || []).map((r) => ({ ...r, role: roleLabelAr(r.role) }))}
+            actions={(row) => {
+              const to = viewLinkByKind('remote_tasmee', row.id)
+              if (!to) return null
+              return (
+                <a href={to} className="ui-btn ui-btn--ghost ui-btn--sm">
+                  <RhIcon as={Eye} size={14} strokeWidth={RH_ICON_STROKE} />
+                </a>
+              )
+            }}
           />
           <SectionTable
             title="الأوراد"
@@ -504,6 +664,77 @@ export default function ReportsPage() {
             }))}
           />
         </section>
+      ) : reportData.kind === 'teacher' ? (
+        <section className="rh-reports__result">
+          <div className="rh-reports__kpis">
+            <div className="card rh-reports__kpi"><strong>{reportData.summary.halakat}</strong><span>{str('layout.nav_halakat')}</span></div>
+            <div className="card rh-reports__kpi"><strong>{reportData.summary.plans}</strong><span>{str('layout.nav_plans')}</span></div>
+            <div className="card rh-reports__kpi"><strong>{reportData.summary.exams}</strong><span>{str('layout.nav_exams')}</span></div>
+            <div className="card rh-reports__kpi"><strong>{reportData.summary.sessions}</strong><span>جلسات مسجلة</span></div>
+            <div className="card rh-reports__kpi"><strong>{reportData.summary.attendanceRecorded}</strong><span>تسجيلات حضور</span></div>
+            <div className="card rh-reports__kpi"><strong>{reportData.summary.pagesRecorded}</strong><span>{str('reports.kpi_pages')}</span></div>
+          </div>
+          <SectionTable
+            title="حلقات المعلم"
+            columns={[
+              { key: 'name', label: 'الاسم' },
+              { key: 'role', label: 'الدور' },
+              { key: 'visibility', label: 'الظهور' },
+            ]}
+            rows={(reportData.teacherRows?.halakat || []).map((r) => ({ ...r, role: roleLabelAr(r.role) }))}
+            actions={(row) => {
+              const to = viewLinkByKind('halaka', row.id)
+              if (!to) return null
+              return <a href={to} className="ui-btn ui-btn--ghost ui-btn--sm"><RhIcon as={Eye} size={14} strokeWidth={RH_ICON_STROKE} /></a>
+            }}
+          />
+          <SectionTable
+            title="باقي ارتباطات المعلم"
+            columns={[
+              { key: 'section', label: 'القسم' },
+              { key: 'name', label: 'الاسم' },
+              { key: 'role', label: 'الدور' },
+              { key: 'visibility', label: 'الظهور' },
+            ]}
+            rows={[
+              ...(reportData.teacherRows?.plans || []).map((r) => ({ section: 'الخطط', ...r, role: roleLabelAr(r.role) })),
+              ...(reportData.teacherRows?.activities || []).map((r) => ({ section: 'الأنشطة', ...r, role: roleLabelAr(r.role) })),
+              ...(reportData.teacherRows?.exams || []).map((r) => ({ section: 'الاختبارات', ...r, role: roleLabelAr(r.role) })),
+              ...(reportData.teacherRows?.dawrat || []).map((r) => ({ section: 'الدورات', ...r, role: roleLabelAr(r.role) })),
+              ...(reportData.teacherRows?.remoteTasmee || []).map((r) => ({ section: 'التسميع عن بعد', ...r, role: roleLabelAr(r.role) })),
+            ]}
+          />
+          <SectionTable
+            title="جلسات سجّلها المعلم"
+            columns={[
+              { key: 'title', label: 'العنوان' },
+              { key: 'startedAt', label: 'البداية' },
+              { key: 'endedAt', label: 'النهاية' },
+              { key: 'status', label: 'الحالة' },
+            ]}
+            rows={(reportData.sessions || []).map((s) => ({
+              title: s.title || '',
+              startedAt: formatArDateTime(s.startedAt),
+              endedAt: formatArDateTime(s.endedAt),
+              status: s.status || '',
+            }))}
+          />
+          <SectionTable
+            title="سجلات الحضور التي أدخلها المعلم"
+            columns={[
+              { key: 'userId', label: 'المستخدم' },
+              { key: 'attendanceStatus', label: 'الحضور' },
+              { key: 'pagesCount', label: 'الصفحات' },
+              { key: 'updatedAt', label: 'آخر تحديث' },
+            ]}
+            rows={(reportData.attendanceRecorded || []).map((a) => ({
+              userId: a.userId || '',
+              attendanceStatus: a.attendanceStatus || '',
+              pagesCount: a.pagesCount ?? 0,
+              updatedAt: formatArDateTime(a.updatedAt),
+            }))}
+          />
+        </section>
       ) : (
         <section className="rh-reports__result">
           <div className="rh-reports__kpis">
@@ -519,7 +750,6 @@ export default function ReportsPage() {
           <SectionTable
             title="تفاصيل الكيان"
             columns={[
-              { key: 'id', label: 'المعرّف' },
               { key: 'name', label: 'الاسم' },
               { key: 'visibility', label: 'الظهور' },
               { key: 'ownerUid', label: 'المالك' },
@@ -540,6 +770,15 @@ export default function ReportsPage() {
                 endAt: formatArDateTime(reportData.entityDetails?.endAt),
               },
             ]}
+            actions={() => {
+              const to = viewLinkByKind(reportData.kind, reportData.entityDetails?.id)
+              if (!to) return null
+              return (
+                <a href={to} className="ui-btn ui-btn--ghost ui-btn--sm">
+                  <RhIcon as={Eye} size={14} strokeWidth={RH_ICON_STROKE} />
+                </a>
+              )
+            }}
           />
           <div className="rh-settings-card">
             <div className="rh-settings-card__head">
@@ -550,13 +789,33 @@ export default function ReportsPage() {
                 <li key={m.userId} className="rh-members-chat__item">
                   <div className="rh-members-chat__main">
                     <strong>{m.displayName || m.userId}</strong>
-                    <span className="rh-plans__saved-badge">{m.role || '—'}</span>
+                    <span className="rh-plans__saved-badge">{roleLabelAr(m.role)}</span>
                   </div>
                   <span>{m.email || ''}</span>
                 </li>
               ))}
             </ul>
           </div>
+          {reportData.kind === 'halaka' && (
+            <SectionTable
+              title="تفاصيل أعضاء الحلقة (شامل)"
+              columns={[
+                { key: 'displayName', label: 'الاسم' },
+                { key: 'role', label: 'دوره في الحلقة' },
+                { key: 'plansCount', label: 'خططه' },
+                { key: 'halakatCount', label: 'حلقاته' },
+                { key: 'activitiesCount', label: 'أنشطته' },
+                { key: 'examsCount', label: 'اختباراته' },
+                { key: 'dawratCount', label: 'دوراته' },
+                { key: 'remoteTasmeeCount', label: 'تسميعه عن بعد' },
+                { key: 'awradCount', label: 'عدد أوراده' },
+                { key: 'pagesInAwrad', label: 'صفحات الأوراد' },
+                { key: 'attendanceRecordsInHalaka', label: 'حضوره في هذه الحلقة' },
+                { key: 'pagesInHalakaSessions', label: 'صفحاته في جلسات الحلقة' },
+              ]}
+              rows={(reportData.memberDetails || []).map((r) => ({ ...r, role: roleLabelAr(r.role) }))}
+            />
+          )}
           {reportData.kind === 'halaka' && (
             <>
               <SectionTable

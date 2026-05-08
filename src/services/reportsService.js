@@ -103,10 +103,32 @@ function mapStudentCandidate(row) {
   }
 }
 
+function mapTeacherCandidate(row) {
+  const uid = String(row?.uid || row?.id || '').trim()
+  if (!uid) return null
+  const role = normalizeRole(row?.role)
+  if (role !== 'teacher') return null
+  return {
+    uid,
+    id: uid,
+    role,
+    displayName: String(row?.displayName || row?.createdByName || uid).trim() || uid,
+    email: String(row?.email || '').trim(),
+    photoURL: String(row?.photoURL || row?.createdByImageUrl || '').trim(),
+  }
+}
+
 async function loadStudentsFromUsersCollection() {
   const docs = await firestoreApi.getDocuments(firestoreApi.getUsersCollection())
   return docs
     .map((d) => mapStudentCandidate({ uid: d.id, ...d.data() }))
+    .filter(Boolean)
+}
+
+async function loadTeachersFromUsersCollection() {
+  const docs = await firestoreApi.getDocuments(firestoreApi.getUsersCollection())
+  return docs
+    .map((d) => mapTeacherCandidate({ uid: d.id, ...d.data() }))
     .filter(Boolean)
 }
 
@@ -115,6 +137,17 @@ async function loadStudentsFromMembershipsFallback() {
   const map = new Map()
   for (const d of docs) {
     const row = mapStudentCandidate({ uid: d.id, ...d.data() })
+    if (!row) continue
+    if (!map.has(row.uid)) map.set(row.uid, row)
+  }
+  return [...map.values()]
+}
+
+async function loadTeachersFromMembershipsFallback() {
+  const docs = await firestoreApi.getCollectionGroupDocuments('members')
+  const map = new Map()
+  for (const d of docs) {
+    const row = mapTeacherCandidate({ uid: d.id, ...d.data() })
     if (!row) continue
     if (!map.has(row.uid)) map.set(row.uid, row)
   }
@@ -145,6 +178,10 @@ function mergeUniqueStudents(...lists) {
   )
 }
 
+function mergeUniquePeople(...lists) {
+  return mergeUniqueStudents(...lists)
+}
+
 export async function loadUsersDirectory(currentUser = null) {
   let fromUsers = []
   let fromMembers = []
@@ -162,6 +199,25 @@ export async function loadUsersDirectory(currentUser = null) {
   }
   const selfStudent = mapStudentCandidate(currentUser || {})
   return mergeUniqueStudents(fromUsers, fromMembers, selfStudent ? [selfStudent] : [])
+}
+
+export async function loadTeachersDirectory(currentUser = null) {
+  let fromUsers = []
+  let fromMembers = []
+  try {
+    fromUsers = await loadTeachersFromUsersCollection()
+  } catch {
+    fromUsers = []
+  }
+  if (fromUsers.length <= 1) {
+    try {
+      fromMembers = await loadTeachersFromMembershipsFallback()
+    } catch {
+      fromMembers = []
+    }
+  }
+  const selfTeacher = mapTeacherCandidate(currentUser || {})
+  return mergeUniquePeople(fromUsers, fromMembers, selfTeacher ? [selfTeacher] : [])
 }
 
 async function loadUserMembershipRows(userId, kind) {
@@ -315,6 +371,65 @@ export async function buildStudentReport(user, range = {}) {
   }
 }
 
+export async function buildTeacherReport(user, range = {}) {
+  const uid = String(user?.uid || '').trim()
+  if (!uid) return null
+  const [plans, halakat, exams, activities, dawrat, remoteTasmee] = await Promise.all([
+    loadUserMembershipRows(uid, 'plan'),
+    loadUserMembershipRows(uid, 'halaka'),
+    loadUserMembershipRows(uid, 'exam'),
+    loadUserMembershipRows(uid, 'activity'),
+    loadUserMembershipRows(uid, 'dawra'),
+    loadUserMembershipRows(uid, 'remote_tasmee'),
+  ])
+
+  const sessionsRaw = await firestoreApi.getCollectionGroupDocuments('sessions')
+  const sessions = maybeFilterByRange(
+    sessionsRaw
+      .map((d) => ({ id: d.id, ...d.data() }))
+      .filter((s) => String(s.teacherUid || '') === uid),
+    (s) => s.startedAt || s.createdAt || s.updatedAt,
+    range,
+  )
+
+  const attendanceRaw = await firestoreApi.getCollectionGroupDocuments('attendance')
+  const attendanceRecorded = maybeFilterByRange(
+    attendanceRaw
+      .map((d) => ({ id: d.id, ...d.data() }))
+      .filter((a) => String(a.recordedBy || '') === uid),
+    (a) => a.updatedAt || a.recordedAt,
+    range,
+  )
+
+  const teacherRows = {
+    plans: plans.map((r) => ({ id: r.id, name: r.name || '', role: r.planRole || '', visibility: r.planVisibility || '' })),
+    halakat: halakat.map((r) => ({ id: r.id, name: r.name || '', role: r.halakaRole || '', visibility: r.halakaVisibility || '' })),
+    exams: exams.map((r) => ({ id: r.id, name: r.name || '', role: r.examRole || '', visibility: r.examVisibility || '' })),
+    activities: activities.map((r) => ({ id: r.id, name: r.name || '', role: r.activityRole || '', visibility: r.activityVisibility || '' })),
+    dawrat: dawrat.map((r) => ({ id: r.id, name: r.name || '', role: r.dawraRole || '', visibility: r.dawraVisibility || '' })),
+    remoteTasmee: remoteTasmee.map((r) => ({ id: r.id, name: r.name || r.meetingCode || '', role: r.broadcastRole || '' })),
+  }
+
+  return {
+    kind: 'teacher',
+    entity: user,
+    teacherRows,
+    sessions,
+    attendanceRecorded,
+    summary: {
+      plans: plans.length,
+      halakat: halakat.length,
+      exams: exams.length,
+      activities: activities.length,
+      dawrat: dawrat.length,
+      remoteTasmee: remoteTasmee.length,
+      sessions: sessions.length,
+      attendanceRecorded: attendanceRecorded.length,
+      pagesRecorded: attendanceRecorded.reduce((sum, a) => sum + Math.max(0, Number(a.pagesCount) || 0), 0),
+    },
+  }
+}
+
 export async function buildGroupReport(kind, entityId, range = {}) {
   const id = String(entityId || '').trim()
   if (!id) return null
@@ -352,6 +467,39 @@ export async function buildGroupReport(kind, entityId, range = {}) {
       (entry.rows || []).map((row) => ({ sessionId: entry.sessionId, ...row })),
     )
     const pagesTotal = attendanceRows.reduce((sum, r) => sum + Math.max(0, Number(r.pagesCount) || 0), 0)
+    const memberDetails = await Promise.all(
+      (members || []).map(async (m) => {
+        const memberUid = String(m.userId || '').trim()
+        const [mPlans, mHalakat, mExams, mActivities, mDawrat, mRemoteTasmee, mAwrad] = await Promise.all([
+          loadUserMembershipRows(memberUid, 'plan'),
+          loadUserMembershipRows(memberUid, 'halaka'),
+          loadUserMembershipRows(memberUid, 'exam'),
+          loadUserMembershipRows(memberUid, 'activity'),
+          loadUserMembershipRows(memberUid, 'dawra'),
+          loadUserMembershipRows(memberUid, 'remote_tasmee'),
+          loadAwrad(memberUid),
+        ])
+        const memberAttendanceInHalaka = attendanceRows.filter((a) => String(a.userId || '') === memberUid)
+        const awradInRange = maybeFilterByRange(mAwrad, (r) => r.recordedAt || r.updatedAt || r.createdAt, range)
+        return {
+          userId: memberUid,
+          displayName: m.displayName || memberUid,
+          email: m.email || '',
+          role: m.role || '',
+          plansCount: mPlans.length,
+          halakatCount: mHalakat.length,
+          examsCount: mExams.length,
+          activitiesCount: mActivities.length,
+          dawratCount: mDawrat.length,
+          remoteTasmeeCount: mRemoteTasmee.length,
+          awradCount: awradInRange.length,
+          pagesInAwrad: awradInRange.reduce((sum, r) => sum + Math.max(0, Number(r.pagesCount) || 0), 0),
+          attendanceRecordsInHalaka: memberAttendanceInHalaka.length,
+          pagesInHalakaSessions: memberAttendanceInHalaka.reduce((sum, a) => sum + Math.max(0, Number(a.pagesCount) || 0), 0),
+        }
+      }),
+    )
+
     return {
       kind,
       entity: { id, ...entity },
@@ -360,6 +508,7 @@ export async function buildGroupReport(kind, entityId, range = {}) {
         location: entity.location || '',
       },
       members: members || [],
+      memberDetails,
       sessions,
       attendanceRows,
       summary: {

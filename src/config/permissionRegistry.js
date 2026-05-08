@@ -214,6 +214,7 @@ export const PERMISSION_PAGES = [
     label: 'التقارير',
     actions: [
       { id: 'student_report', label: 'تقرير: طالب مفصل' },
+      { id: 'teacher_report', label: 'تقرير: معلم مفصل' },
       { id: 'halaka_report', label: 'تقرير: حلقة مفصل' },
       { id: 'plan_report', label: 'تقرير: خطة مفصل' },
       { id: 'activity_report', label: 'تقرير: نشاط مفصل' },
