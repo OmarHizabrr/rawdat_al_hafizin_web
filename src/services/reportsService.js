@@ -39,6 +39,13 @@ function maybeFilterByRange(rows, datePicker, range) {
   return rows.filter((row) => inRange(datePicker(row), fromMs, toMs))
 }
 
+function pickFirstDate(...values) {
+  for (const v of values) {
+    if (asMs(v)) return v
+  }
+  return ''
+}
+
 function normalizeEntityRows(docs, titleField = 'name') {
   return docs
     .map((d) => ({ id: d.id, ...d.data() }))
@@ -221,11 +228,77 @@ export async function buildStudentReport(user, range = {}) {
     (r) => r.createdAt || r.updatedAt,
     range,
   )
+  const studentRows = {
+    plans: plans.map((r) => ({
+      id: r.id,
+      name: r.name || '',
+      role: r.planRole || '',
+      visibility: r.planVisibility || '',
+      createdAt: pickFirstDate(r.createdAt, r.createTimes),
+      updatedAt: pickFirstDate(r.updatedAt, r.updatedTimes),
+      joinedAt: r.joinedAt || '',
+    })),
+    halakat: halakat.map((r) => ({
+      id: r.id,
+      name: r.name || '',
+      role: r.halakaRole || '',
+      visibility: r.halakaVisibility || '',
+      createdAt: pickFirstDate(r.createdAt, r.createTimes),
+      updatedAt: pickFirstDate(r.updatedAt, r.updatedTimes),
+      joinedAt: r.joinedAt || '',
+    })),
+    exams: exams.map((r) => ({
+      id: r.id,
+      name: r.name || '',
+      role: r.examRole || '',
+      visibility: r.examVisibility || '',
+      createdAt: pickFirstDate(r.createdAt, r.createTimes),
+      updatedAt: pickFirstDate(r.updatedAt, r.updatedTimes),
+      joinedAt: r.joinedAt || '',
+    })),
+    activities: activities.map((r) => ({
+      id: r.id,
+      name: r.name || '',
+      role: r.activityRole || '',
+      visibility: r.activityVisibility || '',
+      startAt: r.startAt || '',
+      endAt: r.endAt || '',
+      createdAt: pickFirstDate(r.createdAt, r.createTimes),
+      updatedAt: pickFirstDate(r.updatedAt, r.updatedTimes),
+      joinedAt: r.joinedAt || '',
+    })),
+    dawrat: dawrat.map((r) => ({
+      id: r.id,
+      name: r.name || '',
+      role: r.dawraRole || '',
+      visibility: r.dawraVisibility || '',
+      registrationStart: r.registrationStart || '',
+      registrationEnd: r.registrationEnd || '',
+      courseStart: r.courseStart || '',
+      courseEnd: r.courseEnd || '',
+      createdAt: pickFirstDate(r.createdAt, r.createTimes),
+      updatedAt: pickFirstDate(r.updatedAt, r.updatedTimes),
+      joinedAt: r.joinedAt || '',
+    })),
+    remoteTasmee: remoteTasmee.map((r) => ({
+      id: r.id,
+      name: r.name || r.meetingCode || '',
+      role: r.broadcastRole || '',
+      visibility: r.remoteTasmeeVisibility || '',
+      provider: r.provider || '',
+      mediaType: r.mediaType || '',
+      meetingUrl: r.meetingUrl || '',
+      createdAt: pickFirstDate(r.createdAt, r.createTimes),
+      updatedAt: pickFirstDate(r.updatedAt, r.updatedTimes),
+      joinedAt: r.joinedAt || '',
+    })),
+  }
 
   return {
     kind: 'student',
     entity: user,
     modules: { plans, halakat, exams, activities, dawrat, remoteTasmee },
+    studentRows,
     awrad,
     notifications,
     summary: {

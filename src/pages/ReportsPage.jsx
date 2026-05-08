@@ -72,6 +72,37 @@ function toEntityOptions(rows) {
   }))
 }
 
+function formatArDateTime(v) {
+  const d = new Date(String(v || ''))
+  if (Number.isNaN(d.getTime())) return '—'
+  return d.toLocaleString('ar-SA', { dateStyle: 'medium', timeStyle: 'short' })
+}
+
+function SectionTable({ title, columns, rows }) {
+  if (!rows?.length) return null
+  return (
+    <div className="rh-settings-card rh-reports__section">
+      <div className="rh-settings-card__head">
+        <h3 className="rh-settings-card__title">{title}</h3>
+      </div>
+      <div className="rh-admin-plan-types__table-wrap">
+        <table className="rh-admin-plan-types__table rh-reports__table">
+          <thead>
+            <tr>{columns.map((c) => <th key={c.key}>{c.label}</th>)}</tr>
+          </thead>
+          <tbody>
+            {rows.map((row, i) => (
+              <tr key={`${title}-${i}`}>
+                {columns.map((c) => <td key={c.key}>{row[c.key] ?? '—'}</td>)}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  )
+}
+
 export default function ReportsPage() {
   const { user } = useAuth()
   const { can, canAccessPage } = usePermissions()
@@ -198,27 +229,71 @@ export default function ReportsPage() {
 
   const onExportCsv = () => {
     if (!canExportCsv || !reportData) return
-    const rows =
-      reportData.kind === 'student'
-        ? [
-            ...reportData.modules.plans.map((r) => ({ القسم: 'الخطط', المعرّف: r.id, الاسم: r.name || '', الدور: r.planRole || '' })),
-            ...reportData.modules.halakat.map((r) => ({ القسم: 'الحلقات', المعرّف: r.id, الاسم: r.name || '', الدور: r.halakaRole || '' })),
-            ...reportData.modules.activities.map((r) => ({ القسم: 'الأنشطة', المعرّف: r.id, الاسم: r.name || '', الدور: r.activityRole || '' })),
-            ...reportData.modules.exams.map((r) => ({ القسم: 'الاختبارات', المعرّف: r.id, الاسم: r.name || '', الدور: r.examRole || '' })),
-            ...reportData.modules.dawrat.map((r) => ({ القسم: 'الدورات', المعرّف: r.id, الاسم: r.name || '', الدور: r.dawraRole || '' })),
-            ...reportData.modules.remoteTasmee.map((r) => ({
-              القسم: 'التسميع عن بعد',
-              المعرّف: r.id,
-              الاسم: r.name || r.meetingCode || '',
-              الدور: r.broadcastRole || '',
-            })),
-          ]
-        : (reportData.members || []).map((m) => ({
-            المعرّف: m.userId,
-            الاسم: m.displayName || '',
-            البريد: m.email || '',
-            الدور: m.role || '',
-          }))
+    const rows = []
+    if (reportData.kind === 'student') {
+      const addRows = (section, sectionRows) => {
+        for (const row of sectionRows || []) rows.push({ القسم: section, ...row })
+      }
+      addRows('الخطط', reportData.studentRows?.plans)
+      addRows('الحلقات', reportData.studentRows?.halakat)
+      addRows('الأنشطة', reportData.studentRows?.activities)
+      addRows('الاختبارات', reportData.studentRows?.exams)
+      addRows('الدورات', reportData.studentRows?.dawrat)
+      addRows('التسميع عن بعد', reportData.studentRows?.remoteTasmee)
+      addRows(
+        'الأوراد',
+        (reportData.awrad || []).map((r) => ({
+          id: r.id,
+          recordedAt: r.recordedAt || '',
+          pagesCount: r.pagesCount ?? '',
+          fromPage: r.fromPage ?? '',
+          toPage: r.toPage ?? '',
+        })),
+      )
+      addRows(
+        'الإشعارات',
+        (reportData.notifications || []).map((r) => ({
+          id: r.id,
+          notificationType: r.notificationType || '',
+          title: r.title || '',
+          createdAt: r.createdAt || '',
+          isRead: r.isRead ? 'نعم' : 'لا',
+        })),
+      )
+    } else {
+      for (const m of reportData.members || []) {
+        rows.push({
+          القسم: 'الأعضاء',
+          المعرّف: m.userId,
+          الاسم: m.displayName || '',
+          البريد: m.email || '',
+          الدور: m.role || '',
+        })
+      }
+      if (reportData.kind === 'halaka') {
+        for (const s of reportData.sessions || []) {
+          rows.push({
+            القسم: 'جلسات الحلقة',
+            المعرّف: s.id,
+            الاسم: s.title || '',
+            startedAt: s.startedAt || '',
+            endedAt: s.endedAt || '',
+            status: s.status || '',
+          })
+        }
+        for (const a of reportData.attendanceRows || []) {
+          rows.push({
+            القسم: 'حضور الحلقة',
+            sessionId: a.sessionId || '',
+            userId: a.userId || '',
+            attendanceStatus: a.attendanceStatus || '',
+            pagesCount: a.pagesCount ?? '',
+            fromPage: a.fromPage ?? '',
+            toPage: a.toPage ?? '',
+          })
+        }
+      }
+    }
     if (!rows.length) {
       toast.info(str('reports.toast_csv_empty'))
       return
@@ -318,6 +393,113 @@ export default function ReportsPage() {
             <div className="card rh-reports__kpi"><strong>{reportData.summary.awrad}</strong><span>{str('layout.nav_awrad')}</span></div>
             <div className="card rh-reports__kpi"><strong>{reportData.summary.totalPages}</strong><span>{str('reports.kpi_pages')}</span></div>
           </div>
+          <SectionTable
+            title="الخطط"
+            columns={[
+              { key: 'id', label: 'المعرّف' },
+              { key: 'name', label: 'الاسم' },
+              { key: 'role', label: 'الدور' },
+              { key: 'visibility', label: 'الظهور' },
+              { key: 'joinedAt', label: 'تاريخ الانضمام' },
+            ]}
+            rows={reportData.studentRows?.plans}
+          />
+          <SectionTable
+            title="الحلقات"
+            columns={[
+              { key: 'id', label: 'المعرّف' },
+              { key: 'name', label: 'الاسم' },
+              { key: 'role', label: 'الدور' },
+              { key: 'visibility', label: 'الظهور' },
+              { key: 'joinedAt', label: 'تاريخ الانضمام' },
+            ]}
+            rows={reportData.studentRows?.halakat}
+          />
+          <SectionTable
+            title="الأنشطة"
+            columns={[
+              { key: 'id', label: 'المعرّف' },
+              { key: 'name', label: 'الاسم' },
+              { key: 'role', label: 'الدور' },
+              { key: 'startAt', label: 'البداية' },
+              { key: 'endAt', label: 'النهاية' },
+            ]}
+            rows={(reportData.studentRows?.activities || []).map((r) => ({
+              ...r,
+              startAt: formatArDateTime(r.startAt),
+              endAt: formatArDateTime(r.endAt),
+            }))}
+          />
+          <SectionTable
+            title="الاختبارات"
+            columns={[
+              { key: 'id', label: 'المعرّف' },
+              { key: 'name', label: 'الاسم' },
+              { key: 'role', label: 'الدور' },
+              { key: 'visibility', label: 'الظهور' },
+            ]}
+            rows={reportData.studentRows?.exams}
+          />
+          <SectionTable
+            title="الدورات"
+            columns={[
+              { key: 'id', label: 'المعرّف' },
+              { key: 'name', label: 'الاسم' },
+              { key: 'role', label: 'الدور' },
+              { key: 'courseStart', label: 'بداية الدورة' },
+              { key: 'courseEnd', label: 'نهاية الدورة' },
+            ]}
+            rows={(reportData.studentRows?.dawrat || []).map((r) => ({
+              ...r,
+              courseStart: formatArDateTime(r.courseStart),
+              courseEnd: formatArDateTime(r.courseEnd),
+            }))}
+          />
+          <SectionTable
+            title="التسميع عن بعد"
+            columns={[
+              { key: 'id', label: 'المعرّف' },
+              { key: 'name', label: 'الاسم' },
+              { key: 'role', label: 'الدور' },
+              { key: 'provider', label: 'المزوّد' },
+              { key: 'mediaType', label: 'النوع' },
+            ]}
+            rows={reportData.studentRows?.remoteTasmee}
+          />
+          <SectionTable
+            title="الأوراد"
+            columns={[
+              { key: 'id', label: 'المعرّف' },
+              { key: 'recordedAt', label: 'تاريخ الورد' },
+              { key: 'pagesCount', label: 'عدد الصفحات' },
+              { key: 'fromPage', label: 'من صفحة' },
+              { key: 'toPage', label: 'إلى صفحة' },
+            ]}
+            rows={(reportData.awrad || []).map((r) => ({
+              id: r.id,
+              recordedAt: formatArDateTime(r.recordedAt),
+              pagesCount: r.pagesCount ?? 0,
+              fromPage: r.fromPage ?? '—',
+              toPage: r.toPage ?? '—',
+            }))}
+          />
+          <SectionTable
+            title="الإشعارات"
+            columns={[
+              { key: 'id', label: 'المعرّف' },
+              { key: 'title', label: 'العنوان' },
+              { key: 'notificationType', label: 'النوع' },
+              { key: 'createdAt', label: 'التاريخ' },
+              { key: 'isRead', label: 'مقروء' },
+            ]}
+            rows={(reportData.notifications || []).map((r) => ({
+              id: r.id,
+              title: r.title || '',
+              notificationType: r.notificationType || '',
+              createdAt: formatArDateTime(r.createdAt),
+              isRead: r.isRead ? 'نعم' : 'لا',
+            }))}
+          />
         </section>
       ) : (
         <section className="rh-reports__result">
@@ -347,6 +529,46 @@ export default function ReportsPage() {
               ))}
             </ul>
           </div>
+          {reportData.kind === 'halaka' && (
+            <>
+              <SectionTable
+                title="جلسات الحلقة"
+                columns={[
+                  { key: 'id', label: 'المعرّف' },
+                  { key: 'title', label: 'العنوان' },
+                  { key: 'startedAt', label: 'البداية' },
+                  { key: 'endedAt', label: 'النهاية' },
+                  { key: 'status', label: 'الحالة' },
+                ]}
+                rows={(reportData.sessions || []).map((s) => ({
+                  id: s.id,
+                  title: s.title || '',
+                  startedAt: formatArDateTime(s.startedAt),
+                  endedAt: formatArDateTime(s.endedAt),
+                  status: s.status || '',
+                }))}
+              />
+              <SectionTable
+                title="سجل الحضور والتسميع"
+                columns={[
+                  { key: 'sessionId', label: 'الجلسة' },
+                  { key: 'userId', label: 'المستخدم' },
+                  { key: 'attendanceStatus', label: 'الحضور' },
+                  { key: 'pagesCount', label: 'الصفحات' },
+                  { key: 'fromPage', label: 'من' },
+                  { key: 'toPage', label: 'إلى' },
+                ]}
+                rows={(reportData.attendanceRows || []).map((a) => ({
+                  sessionId: a.sessionId || '',
+                  userId: a.userId || '',
+                  attendanceStatus: a.attendanceStatus || '',
+                  pagesCount: a.pagesCount ?? 0,
+                  fromPage: a.fromPage ?? '—',
+                  toPage: a.toPage ?? '—',
+                }))}
+              />
+            </>
+          )}
         </section>
       )}
     </div>

@@ -8110,6 +8110,15 @@ a.rh-peek-btn {
   font-size: 0.86rem;
 }
 
+.rh-reports__section {
+  margin-bottom: var(--rh-space-3);
+}
+
+.rh-reports__table td,
+.rh-reports__table th {
+  white-space: nowrap;
+}
+
 @media (max-width: 980px) {
   .rh-reports__filters-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -8219,5 +8228,10 @@ a.rh-peek-btn {
     box-shadow: none !important;
     border: 1px solid #ccc !important;
     background: #fff !important;
+  }
+
+  .rh-reports__table td,
+  .rh-reports__table th {
+    white-space: normal;
   }
 }
