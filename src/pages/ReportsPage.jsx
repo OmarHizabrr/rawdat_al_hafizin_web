@@ -31,6 +31,13 @@ const REPORT_KIND_OPTIONS = [
   { value: 'remote_tasmee', label: 'تقرير تسميع عن بُعد' },
 ]
 
+const RANGE_PRESETS = [
+  { value: 'today' },
+  { value: 'week' },
+  { value: 'month' },
+  { value: 'all' },
+]
+
 function normalizeDateInputStart(v) {
   const s = String(v || '').trim()
   if (!s) return ''
@@ -45,6 +52,14 @@ function normalizeDateInputEnd(v) {
   const d = new Date(`${s}T23:59:59.999`)
   if (Number.isNaN(d.getTime())) return ''
   return d.toISOString()
+}
+
+function toDateInputValue(date) {
+  if (!(date instanceof Date) || Number.isNaN(date.getTime())) return ''
+  const y = date.getFullYear()
+  const m = String(date.getMonth() + 1).padStart(2, '0')
+  const d = String(date.getDate()).padStart(2, '0')
+  return `${y}-${m}-${d}`
 }
 
 function csvEscape(value) {
@@ -173,6 +188,7 @@ export default function ReportsPage() {
   const [entityId, setEntityId] = useState('')
   const [fromDate, setFromDate] = useState('')
   const [toDate, setToDate] = useState('')
+  const [rangePreset, setRangePreset] = useState('all')
   const [entities, setEntities] = useState([])
   const [loadingEntities, setLoadingEntities] = useState(false)
   const [loadingReport, setLoadingReport] = useState(false)
@@ -403,6 +419,47 @@ export default function ReportsPage() {
   }
 
   const canBuild = Boolean(entityId && canRunForKind(kind))
+  const rangePresetLabel = useCallback(
+    (preset) => {
+      if (preset === 'today') return str('reports.range_today')
+      if (preset === 'week') return str('reports.range_week')
+      if (preset === 'month') return str('reports.range_month')
+      return str('reports.range_all')
+    },
+    [str],
+  )
+
+  const applyRangePreset = useCallback((preset) => {
+    const now = new Date()
+    if (preset === 'all') {
+      setFromDate('')
+      setToDate('')
+      setRangePreset('all')
+      return
+    }
+    if (preset === 'today') {
+      const today = toDateInputValue(now)
+      setFromDate(today)
+      setToDate(today)
+      setRangePreset('today')
+      return
+    }
+    if (preset === 'week') {
+      const from = new Date(now)
+      from.setDate(from.getDate() - 6)
+      setFromDate(toDateInputValue(from))
+      setToDate(toDateInputValue(now))
+      setRangePreset('week')
+      return
+    }
+    if (preset === 'month') {
+      const from = new Date(now.getFullYear(), now.getMonth(), 1)
+      setFromDate(toDateInputValue(from))
+      setToDate(toDateInputValue(now))
+      setRangePreset('month')
+    }
+  }, [])
+
   const selectedEntityName = entityMap.get(entityId) || ''
   const halakaMemberNameMap = useMemo(() => {
     const map = new Map()
@@ -492,8 +549,37 @@ export default function ReportsPage() {
             searchPlaceholder={str('reports.search_placeholder')}
             emptyText={str('reports.search_empty')}
           />
-          <TextField label={str('reports.field_from')} type="date" value={fromDate} onChange={(e) => setFromDate(e.target.value)} />
-          <TextField label={str('reports.field_to')} type="date" value={toDate} onChange={(e) => setToDate(e.target.value)} />
+          <TextField
+            label={str('reports.field_from')}
+            type="date"
+            value={fromDate}
+            onChange={(e) => {
+              setFromDate(e.target.value)
+              setRangePreset('custom')
+            }}
+          />
+          <TextField
+            label={str('reports.field_to')}
+            type="date"
+            value={toDate}
+            onChange={(e) => {
+              setToDate(e.target.value)
+              setRangePreset('custom')
+            }}
+          />
+        </div>
+        <div className="rh-reports__range-presets">
+          {RANGE_PRESETS.map((preset) => (
+            <Button
+              key={preset.value}
+              type="button"
+              variant={rangePreset === preset.value ? 'primary' : 'ghost'}
+              size="sm"
+              onClick={() => applyRangePreset(preset.value)}
+            >
+              {rangePresetLabel(preset.value)}
+            </Button>
+          ))}
         </div>
         <div className="rh-reports__filters-actions">
           <Button type="button" variant="primary" disabled={!canBuild} loading={loadingReport} onClick={build}>
