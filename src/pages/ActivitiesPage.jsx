@@ -2,6 +2,7 @@ import { Compass, Pencil, Plus, Printer, Trash2, UserPlus, Users } from 'lucide-
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Link, useLocation, useSearchParams } from 'react-router-dom'
 import { CrossNav } from '../components/CrossNav.jsx'
+import { PrintDocumentChrome } from '../components/PrintDocumentChrome.jsx'
 import { PERMISSION_PAGE_IDS } from '../config/permissionRegistry.js'
 import { isAdmin } from '../config/roles.js'
 import { useAuth } from '../context/useAuth.js'
@@ -439,19 +440,15 @@ export default function ActivitiesPage() {
     return items
   }, [str, exploreHref, appLink, canAccessPage])
 
+  const printedAt = new Date().toLocaleString('ar-SA', { dateStyle: 'medium', timeStyle: 'short' })
+  const printStamp = str('layout.print_doc_stamp', { date: printedAt, siteTitle: branding.siteTitle })
+  const printFooter = str('layout.print_doc_footer', {
+    siteTitle: branding.siteTitle,
+    date: printedAt,
+  })
+
   return (
     <div className="rh-plans rh-activities-page">
-      <div className="rh-print-only" aria-hidden="true">
-        <p className="rh-print-only__title">
-          {readOnly ? str('activities.hero_title_readonly') : str('activities.hero_title')}
-        </p>
-        <p className="rh-print-only__meta">
-          {str('activities.print_stamp', {
-            date: new Date().toLocaleString('ar-SA', { dateStyle: 'medium', timeStyle: 'short' }),
-            siteTitle: branding.siteTitle,
-          })}
-        </p>
-      </div>
       <header className="rh-plans__hero no-print">
         <div className="rh-plans__hero-head">
           <div>
@@ -466,7 +463,7 @@ export default function ActivitiesPage() {
           <div className="rh-plans__hero-actions no-print">
             <Button type="button" variant="secondary" className="rh-plans__print-btn" onClick={onPrint}>
               <RhIcon as={Printer} size={18} strokeWidth={RH_ICON_STROKE} />
-              {str('activities.print_btn')}
+              {str('layout.print_btn')}
             </Button>
             {!readOnly && can(PA, 'activity_create') && (
               <Button type="button" variant="primary" className="rh-plans__add-btn" onClick={openAdd}>
@@ -507,7 +504,14 @@ export default function ActivitiesPage() {
         </section>
       )}
 
-      {saved.length > 0 ? (
+      <div className="rh-print-capture rh-activities__print-capture">
+        <PrintDocumentChrome
+          brandTitle={branding.siteTitle}
+          title={readOnly ? str('activities.hero_title_readonly') : str('activities.hero_title')}
+          meta={printStamp}
+          footer={printFooter}
+        >
+          {saved.length > 0 ? (
         <section className="rh-plans__saved">
           <h2 className="rh-plans__saved-title">{str('activities.section_yours')}</h2>
           <ul className="rh-plans__saved-list">
@@ -611,7 +615,9 @@ export default function ActivitiesPage() {
         </section>
       ) : (
         <p className="rh-plans__empty">{str('activities.empty_list')}</p>
-      )}
+          )}
+        </PrintDocumentChrome>
+      </div>
 
       <Modal
         open={editorOpen}

@@ -2,6 +2,7 @@ import { Compass, Printer, UserPlus } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import { CrossNav } from '../components/CrossNav.jsx'
+import { PrintDocumentChrome } from '../components/PrintDocumentChrome.jsx'
 import { PERMISSION_PAGE_IDS } from '../config/permissionRegistry.js'
 import { isAdmin } from '../config/roles.js'
 import { useAuth } from '../context/useAuth.js'
@@ -139,17 +140,15 @@ export default function ExploreActivitiesPage() {
     return base
   }, [user, str, appLink, canAccessPage])
 
+  const printedAt = new Date().toLocaleString('ar-SA', { dateStyle: 'medium', timeStyle: 'short' })
+  const printStamp = str('layout.print_doc_stamp', { date: printedAt, siteTitle: branding.siteTitle })
+  const printFooter = str('layout.print_doc_footer', {
+    siteTitle: branding.siteTitle,
+    date: printedAt,
+  })
+
   return (
     <div className="rh-explore-plans rh-activities-explore-page">
-      <div className="rh-print-only" aria-hidden="true">
-        <p className="rh-print-only__title">{str('activities.explore.hero_title')}</p>
-        <p className="rh-print-only__meta">
-          {str('activities.print_stamp', {
-            date: new Date().toLocaleString('ar-SA', { dateStyle: 'medium', timeStyle: 'short' }),
-            siteTitle: branding.siteTitle,
-          })}
-        </p>
-      </div>
       <header className="rh-plans__hero no-print">
         <div className="rh-plans__hero-head">
           <div>
@@ -166,7 +165,7 @@ export default function ExploreActivitiesPage() {
           <div className="rh-explore-plans__hero-aside no-print">
             <Button type="button" variant="secondary" className="rh-explore-plans__print-btn" onClick={onPrint}>
               <RhIcon as={Printer} size={18} strokeWidth={RH_ICON_STROKE} />
-              {str('activities.print_btn')}
+              {str('layout.print_btn')}
             </Button>
             <Link className="ui-btn ui-btn--secondary rh-explore-plans__to-mine" to={appLink('/app/activities')}>
               {str('activities.explore.btn_mine')}
@@ -233,7 +232,14 @@ export default function ExploreActivitiesPage() {
             })}
       </p>
 
-      {displayed.length === 0 ? (
+      <div className="rh-print-capture rh-explore-activities__print-capture">
+        <PrintDocumentChrome
+          brandTitle={branding.siteTitle}
+          title={str('activities.explore.hero_title')}
+          meta={printStamp}
+          footer={printFooter}
+        >
+          {displayed.length === 0 ? (
         <section className="rh-settings-card rh-plans__empty">
           <h2 className="rh-settings-card__title">{str('activities.explore.empty_title')}</h2>
           <p className="rh-settings-card__subtitle">
@@ -260,22 +266,24 @@ export default function ExploreActivitiesPage() {
                         <span className="rh-plans__saved-badge">{activityMemberCountBadge(p.memberCount)}</span>
                       </span>
                     </div>
-                    {can(PE, 'explore_join_card') ? (
-                      <Button
-                        type="button"
-                        variant={inItem ? 'secondary' : 'primary'}
-                        size="sm"
-                        loading={joiningCardId === p.id}
-                        disabled={inItem || joiningCardId !== null}
-                        onClick={() => !inItem && handleJoinCard(p.id)}
-                      >
-                        {inItem ? str('activities.explore.card_joined') : str('activities.explore.card_join')}
-                      </Button>
-                    ) : (
-                      <span className="rh-plans__saved-badge">
-                        {inItem ? str('activities.explore.card_joined') : str('activities.explore.card_view_only')}
-                      </span>
-                    )}
+                    <div className="no-print">
+                      {can(PE, 'explore_join_card') ? (
+                        <Button
+                          type="button"
+                          variant={inItem ? 'secondary' : 'primary'}
+                          size="sm"
+                          loading={joiningCardId === p.id}
+                          disabled={inItem || joiningCardId !== null}
+                          onClick={() => !inItem && handleJoinCard(p.id)}
+                        >
+                          {inItem ? str('activities.explore.card_joined') : str('activities.explore.card_join')}
+                        </Button>
+                      ) : (
+                        <span className="rh-plans__saved-badge">
+                          {inItem ? str('activities.explore.card_joined') : str('activities.explore.card_view_only')}
+                        </span>
+                      )}
+                    </div>
                   </div>
 
                   {p.description ? <p className="rh-plans__saved-desc">{p.description}</p> : null}
@@ -350,7 +358,9 @@ export default function ExploreActivitiesPage() {
             })}
           </ul>
         </ScrollArea>
-      )}
+          )}
+        </PrintDocumentChrome>
+      </div>
     </div>
   )
 }

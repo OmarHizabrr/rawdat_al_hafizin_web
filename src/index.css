@@ -8133,6 +8133,26 @@ a.rh-peek-btn {
   flex-wrap: wrap;
 }
 
+/* رأس/تذييل المستند داخل منطقة التقاط PDF — نفس فئات rh-print-doc__* */
+.rh-reports__capture-doc-head {
+  margin-bottom: var(--rh-space-4);
+}
+
+.rh-reports__capture-doc-foot {
+  margin-top: var(--rh-space-4);
+}
+
+.rh-print-capture .rh-print-doc__header {
+  padding-bottom: var(--rh-space-3);
+  border-bottom: 2px solid var(--rh-border-strong, rgba(0, 0, 0, 0.28));
+}
+
+.rh-print-capture .rh-print-doc__footer {
+  font-size: 0.78rem;
+  color: var(--rh-text-muted);
+  text-align: center;
+}
+
 .rh-reports__table td,
 .rh-reports__table th {
   white-space: nowrap;
@@ -8199,22 +8219,44 @@ a.rh-peek-btn {
 
   .rh-print-only {
     display: block !important;
-    margin-bottom: 1rem;
-    padding-bottom: 0.65rem;
-    border-bottom: 1px solid #bbb;
   }
 
-  .rh-print-only__title {
-    font-size: 1.2rem;
+  /* غلاف طباعة موحّد للتقارير — يُمكن إعادة استخدام الفئات في صفحات أخرى */
+  .rh-print-doc__header {
+    margin-bottom: 1rem;
+    padding-bottom: 0.75rem;
+    border-bottom: 2px solid #000;
+  }
+
+  .rh-print-doc__brand {
+    font-size: 10px;
+    letter-spacing: 0.04em;
+    color: #444;
+    margin-bottom: 6px;
+    text-transform: none;
+  }
+
+  .rh-print-doc__h1 {
+    font-size: 1.25rem;
     font-weight: 700;
-    margin: 0 0 0.2rem;
+    margin: 0 0 0.35rem;
     color: #000;
   }
 
-  .rh-print-only__meta {
+  .rh-print-doc__meta {
     font-size: 0.8rem;
     margin: 0;
-    color: #333;
+    color: #222;
+    line-height: 1.55;
+  }
+
+  .rh-print-doc__footer {
+    margin-top: 14mm;
+    padding-top: 8px;
+    border-top: 1px solid #999;
+    font-size: 9px;
+    color: #444;
+    text-align: center;
   }
 
   .rh-plans__saved-card,

@@ -1,4 +1,4 @@
-import { Compass, UserPlus } from 'lucide-react'
+import { Compass, Printer, UserPlus } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import { useAuth } from '../context/useAuth.js'
@@ -18,6 +18,7 @@ import { getImpersonateUid, withImpersonationQuery } from '../utils/impersonatio
 import { Button, ScrollArea, TextField, useToast } from '../ui/index.js'
 import { RhIcon, RH_ICON_STROKE } from '../ui/RhIcon.jsx'
 import { CrossNav } from '../components/CrossNav.jsx'
+import { PrintDocumentChrome } from '../components/PrintDocumentChrome.jsx'
 import { PlanResourceLinksBlock } from '../components/PlanResourceLinksBlock.jsx'
 
 function formatReminderAr(hhmm) {
@@ -37,6 +38,9 @@ export default function ExplorePlansPage() {
   const { search } = useLocation()
   const { typeLabel, branding, str } = useSiteContent()
   const toast = useToast()
+  const onPrint = useCallback(() => {
+    if (typeof window !== 'undefined') window.print()
+  }, [])
   const impersonateUid = getImpersonateUid(user, search)
   const viewUserId = impersonateUid || user?.uid || ''
   const actingAsUser = Boolean(user?.uid && impersonateUid && impersonateUid !== user.uid)
@@ -155,14 +159,19 @@ export default function ExplorePlansPage() {
     return base
   }, [user, str, appLink, canAccessPage])
 
+  const printedAt = new Date().toLocaleString('ar-SA', { dateStyle: 'medium', timeStyle: 'short' })
+  const printStamp = str('layout.print_doc_stamp', { date: printedAt, siteTitle: branding.siteTitle })
+  const printFooter = str('layout.print_doc_footer', { siteTitle: branding.siteTitle, date: printedAt })
+  const explorePrintTitle = 'استكشاف الخطط العامة'
+
   return (
     <div className="rh-explore-plans">
-      <header className="rh-plans__hero">
+      <header className="rh-plans__hero no-print">
         <div className="rh-plans__hero-head">
           <div>
             <h1 className="rh-plans__title rh-explore-plans__title">
               <RhIcon as={Compass} size={28} strokeWidth={RH_ICON_STROKE} className="rh-explore-plans__title-icon" />
-              استكشاف الخطط العامة
+              {explorePrintTitle}
             </h1>
             <p className="rh-plans__desc">
               خطط معلنة كعامة من قبل المستخدمين. يمكنك البحث والفرز، ثم الانضمام بزر واحد أو بمعرف الخطة.
@@ -170,13 +179,19 @@ export default function ExplorePlansPage() {
             </p>
             <CrossNav items={crossItems} className="rh-plans__cross" />
           </div>
-          <Link className="ui-btn ui-btn--secondary rh-explore-plans__to-mine" to={appLink('/app/plans')}>
-            خططي
-          </Link>
+          <div className="rh-explore-plans__hero-aside no-print">
+            <Button type="button" variant="secondary" className="rh-explore-plans__print-btn" onClick={onPrint}>
+              <RhIcon as={Printer} size={18} strokeWidth={RH_ICON_STROKE} />
+              {str('layout.print_btn')}
+            </Button>
+            <Link className="ui-btn ui-btn--secondary rh-explore-plans__to-mine" to={appLink('/app/plans')}>
+              خططي
+            </Link>
+          </div>
         </div>
       </header>
 
-      <section className="rh-settings-card rh-explore-plans__toolbar">
+      <section className="rh-settings-card rh-explore-plans__toolbar no-print">
         <div className="rh-explore-plans__toolbar-grid">
           <TextField
             label="بحث"
@@ -225,13 +240,20 @@ export default function ExplorePlansPage() {
         )}
       </section>
 
-      <p className="rh-explore-plans__count">
+      <p className="rh-explore-plans__count no-print">
         {displayed.length === rawPlans.length
           ? `${rawPlans.length} خطة عامة`
           : `${displayed.length} من ${rawPlans.length} خطة`}
       </p>
 
-      {displayed.length === 0 ? (
+      <div className="rh-print-capture">
+        <PrintDocumentChrome
+          brandTitle={branding.siteTitle}
+          title={explorePrintTitle}
+          meta={printStamp}
+          footer={printFooter}
+        >
+          {displayed.length === 0 ? (
         <section className="rh-settings-card rh-plans__empty">
           <h2 className="rh-settings-card__title">لا توجد نتائج</h2>
           <p className="rh-settings-card__subtitle">
@@ -256,20 +278,22 @@ export default function ExplorePlansPage() {
                         <span className="rh-plans__saved-badge">{p.memberCount ?? 0} عضواً</span>
                       </span>
                     </div>
-                    {can(PE, 'explore_join_card') ? (
-                    <Button
-                      type="button"
-                      variant={inPlan ? 'secondary' : 'primary'}
-                      size="sm"
-                      loading={joiningCardId === p.id}
-                      disabled={inPlan || joiningCardId !== null}
-                      onClick={() => !inPlan && handleJoinCard(p.id)}
-                    >
-                      {inPlan ? 'أنت منضم' : 'انضمام'}
-                    </Button>
-                    ) : (
-                      <span className="rh-plans__saved-badge">{inPlan ? 'منضم' : 'عرض فقط'}</span>
-                    )}
+                    <div className="no-print">
+                      {can(PE, 'explore_join_card') ? (
+                        <Button
+                          type="button"
+                          variant={inPlan ? 'secondary' : 'primary'}
+                          size="sm"
+                          loading={joiningCardId === p.id}
+                          disabled={inPlan || joiningCardId !== null}
+                          onClick={() => !inPlan && handleJoinCard(p.id)}
+                        >
+                          {inPlan ? 'أنت منضم' : 'انضمام'}
+                        </Button>
+                      ) : (
+                        <span className="rh-plans__saved-badge">{inPlan ? 'منضم' : 'عرض فقط'}</span>
+                      )}
+                    </div>
                   </div>
 
                   <p className="rh-plans__saved-meta">
@@ -365,7 +389,9 @@ export default function ExplorePlansPage() {
             })}
           </ul>
         </ScrollArea>
-      )}
+          )}
+        </PrintDocumentChrome>
+      </div>
     </div>
   )
 }

@@ -75,6 +75,19 @@ export const SITE_STRING_REGISTRY = [
   { key: 'layout.collapse_expand', group: 'التنقل', label: 'تلميح طي: توسيع', defaultValue: 'توسيع القائمة' },
   { key: 'layout.collapse_collapse', group: 'التنقل', label: 'تلميح طي: طي', defaultValue: 'طي القائمة' },
   { key: 'layout.collapse_label', group: 'التنقل', label: 'نص زر طي القائمة', defaultValue: 'طي القائمة' },
+  {
+    key: 'layout.print_doc_footer',
+    group: 'التنقل',
+    label: 'تذييل الطباعة الموحد (غير التقارير)',
+    defaultValue: '{siteTitle} · طُبع في {date}',
+  },
+  { key: 'layout.print_btn', group: 'التنقل', label: 'زر الطباعة الموحد', defaultValue: 'طباعة' },
+  {
+    key: 'layout.print_doc_stamp',
+    group: 'التنقل',
+    label: 'سطر ترويسة الطباعة (تاريخ واسم الموقع)',
+    defaultValue: 'طُبع في {date} · {siteTitle}',
+  },
 
   { key: 'landing.logo_alt', group: 'الصفحة العامة', label: 'وصف شعار الصفحة الرئيسية', defaultValue: 'شعار روضة الحافظين' },
   { key: 'landing.eyebrow', group: 'الصفحة العامة', label: 'سطر فوق العنوان', defaultValue: 'بجمع الشيخ يحيى بن عبد العزيز اليحيى' },
@@ -479,6 +492,12 @@ export const SITE_STRING_REGISTRY = [
   { key: 'reports.field_entity', group: 'التقارير', label: 'حقل الكيان', defaultValue: 'الطالب / الكيان' },
   { key: 'reports.field_from', group: 'التقارير', label: 'حقل من', defaultValue: 'من تاريخ' },
   { key: 'reports.field_to', group: 'التقارير', label: 'حقل إلى', defaultValue: 'إلى تاريخ' },
+  {
+    key: 'reports.hijri_placeholder',
+    group: 'التقارير',
+    label: 'تلميح التاريخ الهجري',
+    defaultValue: 'اختر التاريخ الهجري…',
+  },
   { key: 'reports.range_today', group: 'التقارير', label: 'زر فترة: اليوم', defaultValue: 'اليوم' },
   { key: 'reports.range_week', group: 'التقارير', label: 'زر فترة: آخر 7 أيام', defaultValue: 'آخر 7 أيام' },
   { key: 'reports.range_month', group: 'التقارير', label: 'زر فترة: هذا الشهر', defaultValue: 'هذا الشهر' },
@@ -489,6 +508,12 @@ export const SITE_STRING_REGISTRY = [
   { key: 'reports.btn_build', group: 'التقارير', label: 'زر إنشاء', defaultValue: 'إنشاء التقرير' },
   { key: 'reports.btn_clear_filters', group: 'التقارير', label: 'زر مسح الفلاتر', defaultValue: 'مسح الفلاتر' },
   { key: 'reports.btn_copy_link', group: 'التقارير', label: 'زر نسخ الرابط', defaultValue: 'نسخ رابط التقرير' },
+  {
+    key: 'reports.btn_share_pdf',
+    group: 'التقارير',
+    label: 'زر مشاركة PDF',
+    defaultValue: 'مشاركة PDF',
+  },
   { key: 'reports.btn_print', group: 'التقارير', label: 'زر طباعة', defaultValue: 'طباعة' },
   { key: 'reports.btn_csv', group: 'التقارير', label: 'زر CSV', defaultValue: 'تنزيل CSV' },
   {
@@ -524,7 +549,31 @@ export const SITE_STRING_REGISTRY = [
     key: 'reports.print_meta',
     group: 'التقارير',
     label: 'سطر الطباعة',
-    defaultValue: '{type} · {entity} · من {from} إلى {to} · طُبع في {date} · {siteTitle}',
+    defaultValue: '{type} · {entity} · من {from} إلى {to} (هجري) · طُبع في {date} · {siteTitle}',
+  },
+  {
+    key: 'reports.print_footer',
+    group: 'التقارير',
+    label: 'تذييل الطباعة الموحد',
+    defaultValue: '{siteTitle} — تقرير من النظام · {date}',
+  },
+  {
+    key: 'reports.toast_pdf_generating',
+    group: 'التقارير',
+    label: 'تنبيه جاري إنشاء PDF',
+    defaultValue: 'جاري إعداد ملف PDF…',
+  },
+  {
+    key: 'reports.toast_pdf_done',
+    group: 'التقارير',
+    label: 'تنبيه اكتمل PDF',
+    defaultValue: 'تم إعداد ملف PDF.',
+  },
+  {
+    key: 'reports.toast_pdf_failed',
+    group: 'التقارير',
+    label: 'تنبيه فشل PDF',
+    defaultValue: 'تعذر إنشاء ملف PDF. حاول مرة أخرى.',
   },
 ]
 

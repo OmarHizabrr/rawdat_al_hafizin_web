@@ -100,6 +100,22 @@ export function isoFromHijriYmd(ymd) {
   return d.toISOString()
 }
 
+/** بداية اليوم المحلي ليوم هجري معيّن (ISO UTC) — للفلاتر الزمنية */
+export function hijriYmdLocalDayStartIso(ymd) {
+  const noon = hijriYmdToLocalNoonDate(ymd)
+  if (!noon || Number.isNaN(noon.getTime())) return ''
+  const d = new Date(noon.getFullYear(), noon.getMonth(), noon.getDate(), 0, 0, 0, 0)
+  return d.toISOString()
+}
+
+/** نهاية اليوم المحلي ليوم هجري معيّن (ISO UTC) — للفلاتر الزمنية */
+export function hijriYmdLocalDayEndIso(ymd) {
+  const noon = hijriYmdToLocalNoonDate(ymd)
+  if (!noon || Number.isNaN(noon.getTime())) return ''
+  const d = new Date(noon.getFullYear(), noon.getMonth(), noon.getDate(), 23, 59, 59, 999)
+  return d.toISOString()
+}
+
 /** @param {Record<string, unknown>} plan */
 export function normalizePlanCalendarDays(plan) {
   if (!plan || typeof plan !== 'object') return plan

@@ -1,7 +1,9 @@
-import { Download, Eye, FileText, Filter, Link2, Printer } from 'lucide-react'
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { CalendarDate } from '@internationalized/date'
+import { Download, Eye, FileText, Filter, Link2, Printer, Share2 } from 'lucide-react'
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { CrossNav } from '../components/CrossNav.jsx'
+import { PrintDocumentChrome } from '../components/PrintDocumentChrome.jsx'
 import { PERMISSION_PAGE_IDS } from '../config/permissionRegistry.js'
 import { useAuth } from '../context/useAuth.js'
 import { usePermissions } from '../context/usePermissions.js'
@@ -15,7 +17,18 @@ import {
   loadUsersDirectory,
 } from '../services/reportsService.js'
 import { getImpersonateUid, withImpersonationQuery } from '../utils/impersonation.js'
-import { Button, SearchableSelect, TextField, useToast } from '../ui/index.js'
+import {
+  HIJRI,
+  formatHijriYmd,
+  gregorianYmdStringToHijriYmd,
+  hijriYmdLocalDayEndIso,
+  hijriYmdLocalDayStartIso,
+  localHijriYmd,
+  parseHijriYmdString,
+} from '../utils/hijriDates.js'
+import { elementToPdfBlob, shareOrDownloadPdf } from '../utils/reportPdf.js'
+import { buildStandaloneReportPrintHtml } from '../utils/reportPrintDocumentHtml.js'
+import { Button, RhDatePickerField, SearchableSelect, useToast } from '../ui/index.js'
 import { RH_ICON_STROKE, RhIcon } from '../ui/RhIcon.jsx'
 
 const PAGE_ID = PERMISSION_PAGE_IDS.reports
@@ -38,29 +51,8 @@ const RANGE_PRESETS = [
   { value: 'all' },
 ]
 
-function normalizeDateInputStart(v) {
-  const s = String(v || '').trim()
-  if (!s) return ''
-  const d = new Date(`${s}T00:00:00`)
-  if (Number.isNaN(d.getTime())) return ''
-  return d.toISOString()
-}
-
-function normalizeDateInputEnd(v) {
-  const s = String(v || '').trim()
-  if (!s) return ''
-  const d = new Date(`${s}T23:59:59.999`)
-  if (Number.isNaN(d.getTime())) return ''
-  return d.toISOString()
-}
-
-function toDateInputValue(date) {
-  if (!(date instanceof Date) || Number.isNaN(date.getTime())) return ''
-  const y = date.getFullYear()
-  const m = String(date.getMonth() + 1).padStart(2, '0')
-  const d = String(date.getDate()).padStart(2, '0')
-  return `${y}-${m}-${d}`
-}
+/** سياق للطباعة الموحّدة داخل أقسام التقرير */
+const ReportPrintContext = createContext(null)
 
 function csvEscape(value) {
   const s = String(value ?? '')
@@ -112,22 +104,29 @@ function roleLabelAr(role) {
   return role || '—'
 }
 
-function printSingleTable(title, columns, rows) {
+function printSingleTable(title, columns, rows, printContext) {
   if (!rows?.length) return
-  const head = columns.map((c) => `<th>${String(c.label || '')}</th>`).join('')
-  const body = rows
-    .map((row) => {
-      const cells = columns.map((c) => `<td>${String(row?.[c.key] ?? '—')}</td>`).join('')
-      return `<tr>${cells}</tr>`
-    })
-    .join('')
-  const html = `<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"/><title>${title}</title><style>
-  body{font-family:Tahoma,Arial,sans-serif;padding:20px;color:#111}
-  h2{margin:0 0 12px}
-  table{width:100%;border-collapse:collapse}
-  th,td{border:1px solid #bbb;padding:8px;text-align:right;font-size:13px}
-  th{background:#f4f4f4}
-  </style></head><body><h2>${title}</h2><table><thead><tr>${head}</tr></thead><tbody>${body}</tbody></table></body></html>`
+  const headerLines = []
+  if (printContext?.reportTypeLabel) headerLines.push(`نوع التقرير: ${printContext.reportTypeLabel}`)
+  if (printContext?.entityName) headerLines.push(`الكيان: ${printContext.entityName}`)
+  if (printContext?.fromYmd || printContext?.toYmd) {
+    headerLines.push(
+      `الفترة (تقويم أم القرى): ${printContext.fromYmd || '—'} → ${printContext.toYmd || '—'}`,
+    )
+  }
+  const footerLine = printContext?.siteTitle
+    ? `${printContext.siteTitle} · ${new Date().toLocaleString('ar-SA', { dateStyle: 'medium', timeStyle: 'short' })}`
+    : new Date().toLocaleString('ar-SA', { dateStyle: 'medium', timeStyle: 'short' })
+
+  const html = buildStandaloneReportPrintHtml({
+    documentTitle: title,
+    brandTitle: printContext?.siteTitle,
+    headerLines,
+    tableTitle: title,
+    columns,
+    rows,
+    footerLine,
+  })
   const win = window.open('', '_blank', 'noopener,noreferrer,width=1200,height=900')
   if (!win) return
   win.document.open()
@@ -153,7 +152,9 @@ function downloadSingleTableCsv(title, columns, rows) {
   downloadCsvFile(csvRows, `report-table-${safeTitle || 'table'}-${stamp}.csv`)
 }
 
-function SectionTable({ title, columns, rows, actions }) {
+function SectionTable({ title, columns, rows, actions, printContext: printContextProp }) {
+  const ctxPrint = useContext(ReportPrintContext)
+  const printContext = printContextProp ?? ctxPrint
   if (!rows?.length) return null
   return (
     <div className="rh-settings-card rh-reports__section">
@@ -173,7 +174,7 @@ function SectionTable({ title, columns, rows, actions }) {
             type="button"
             variant="ghost"
             size="sm"
-            onClick={() => printSingleTable(title, columns, rows)}
+            onClick={() => printSingleTable(title, columns, rows, printContext)}
           >
             <RhIcon as={Printer} size={16} strokeWidth={RH_ICON_STROKE} />
             طباعة الجدول
@@ -220,6 +221,7 @@ export default function ReportsPage() {
   const [loadingEntities, setLoadingEntities] = useState(false)
   const [loadingReport, setLoadingReport] = useState(false)
   const [reportData, setReportData] = useState(null)
+  const reportCaptureRef = useRef(null)
 
   const canPrint = can(PAGE_ID, 'reports_print')
   const canExportCsv = can(PAGE_ID, 'reports_export_csv')
@@ -247,8 +249,14 @@ export default function ReportsPage() {
     const presetParam = String(params.get('rangePreset') || '').trim()
     if (kindParam && REPORT_KIND_OPTIONS.some((k) => k.value === kindParam)) setKind(kindParam)
     if (entityParam) setEntityId(entityParam)
-    if (fromParam) setFromDate(fromParam)
-    if (toParam) setToDate(toParam)
+    if (fromParam) {
+      const y = Number(fromParam.slice(0, 4))
+      setFromDate(y >= 1900 && y <= 2199 ? gregorianYmdStringToHijriYmd(fromParam) : fromParam)
+    }
+    if (toParam) {
+      const y = Number(toParam.slice(0, 4))
+      setToDate(y >= 1900 && y <= 2199 ? gregorianYmdStringToHijriYmd(toParam) : toParam)
+    }
     if (presetParam) setRangePreset(presetParam)
     didHydrateFromQueryRef.current = true
   }, [search])
@@ -310,15 +318,19 @@ export default function ReportsPage() {
   )
 
   const range = useMemo(
-    () => ({ from: normalizeDateInputStart(fromDate), to: normalizeDateInputEnd(toDate) }),
+    () => ({
+      from: fromDate ? hijriYmdLocalDayStartIso(fromDate) : '',
+      to: toDate ? hijriYmdLocalDayEndIso(toDate) : '',
+    }),
     [fromDate, toDate],
   )
   const isRangeInvalid = useMemo(() => {
-    const fromMs = Date.parse(String(range.from || ''))
-    const toMs = Date.parse(String(range.to || ''))
-    if (!Number.isFinite(fromMs) || !Number.isFinite(toMs)) return false
-    return fromMs > toMs
-  }, [range.from, range.to])
+    if (!fromDate || !toDate) return false
+    const a = parseHijriYmdString(fromDate)
+    const b = parseHijriYmdString(toDate)
+    if (!a || !b) return false
+    return a.compare(b) > 0
+  }, [fromDate, toDate])
 
   useEffect(() => {
     if (!didHydrateFromQueryRef.current) return
@@ -398,7 +410,6 @@ export default function ReportsPage() {
       addRows(
         'الأوراد',
         (reportData.awrad || []).map((r) => ({
-          id: r.id,
           recordedAt: r.recordedAt || '',
           pagesCount: r.pagesCount ?? '',
           fromPage: r.fromPage ?? '',
@@ -543,37 +554,49 @@ export default function ReportsPage() {
   )
 
   const applyRangePreset = useCallback((preset) => {
-    const now = new Date()
     if (preset === 'all') {
       setFromDate('')
       setToDate('')
       setRangePreset('all')
       return
     }
+    const todayCd = parseHijriYmdString(localHijriYmd())
+    if (!todayCd) return
     if (preset === 'today') {
-      const today = toDateInputValue(now)
-      setFromDate(today)
-      setToDate(today)
+      const t = formatHijriYmd(todayCd)
+      setFromDate(t)
+      setToDate(t)
       setRangePreset('today')
       return
     }
     if (preset === 'week') {
-      const from = new Date(now)
-      from.setDate(from.getDate() - 6)
-      setFromDate(toDateInputValue(from))
-      setToDate(toDateInputValue(now))
+      const from = todayCd.subtract({ days: 6 })
+      setFromDate(formatHijriYmd(from))
+      setToDate(formatHijriYmd(todayCd))
       setRangePreset('week')
       return
     }
     if (preset === 'month') {
-      const from = new Date(now.getFullYear(), now.getMonth(), 1)
-      setFromDate(toDateInputValue(from))
-      setToDate(toDateInputValue(now))
+      const monthStart = new CalendarDate(HIJRI, todayCd.year, todayCd.month, 1)
+      setFromDate(formatHijriYmd(monthStart))
+      setToDate(formatHijriYmd(todayCd))
       setRangePreset('month')
     }
   }, [])
 
   const selectedEntityName = entityMap.get(entityId) || ''
+
+  const sectionPrintContext = useMemo(
+    () => ({
+      siteTitle: branding.siteTitle,
+      reportTypeLabel: REPORT_KIND_OPTIONS.find((k) => k.value === kind)?.label || '',
+      entityName: selectedEntityName,
+      fromYmd: fromDate,
+      toYmd: toDate,
+    }),
+    [branding.siteTitle, kind, selectedEntityName, fromDate, toDate],
+  )
+
   const halakaMemberNameMap = useMemo(() => {
     const map = new Map()
     for (const m of reportData?.members || []) {
@@ -597,26 +620,24 @@ export default function ReportsPage() {
     [appLink],
   )
 
+  const onSharePdf = async () => {
+    if (!canPrint || !reportData || !reportCaptureRef.current) return
+    try {
+      toast.info(str('reports.toast_pdf_generating'))
+      const blob = await elementToPdfBlob(reportCaptureRef.current)
+      await shareOrDownloadPdf(blob, `report-${kind}-${entityId}.pdf`)
+      toast.success(str('reports.toast_pdf_done'))
+    } catch {
+      toast.warning(str('reports.toast_pdf_failed'))
+    }
+  }
+
   if (!canAccessPage(PAGE_ID)) {
     return <p className="rh-plans__empty">{str('reports.no_access')}</p>
   }
 
   return (
     <div className="rh-plans rh-reports">
-      <div className="rh-print-only" aria-hidden="true">
-        <p className="rh-print-only__title">{str('reports.print_title')}</p>
-        <p className="rh-print-only__meta">
-          {str('reports.print_meta', {
-            type: REPORT_KIND_OPTIONS.find((k) => k.value === kind)?.label || '',
-            entity: selectedEntityName || '—',
-            from: fromDate || '—',
-            to: toDate || '—',
-            date: new Date().toLocaleString('ar-SA', { dateStyle: 'medium', timeStyle: 'short' }),
-            siteTitle: branding.siteTitle,
-          })}
-        </p>
-      </div>
-
       <header className="rh-plans__hero no-print">
         <div className="rh-plans__hero-head">
           <div>
@@ -628,6 +649,10 @@ export default function ReportsPage() {
             <Button type="button" variant="secondary" onClick={onCopyReportLink}>
               <RhIcon as={Link2} size={18} strokeWidth={RH_ICON_STROKE} />
               {str('reports.btn_copy_link')}
+            </Button>
+            <Button type="button" variant="secondary" onClick={onSharePdf} disabled={!canPrint || !reportData}>
+              <RhIcon as={Share2} size={18} strokeWidth={RH_ICON_STROKE} />
+              {str('reports.btn_share_pdf')}
             </Button>
             <Button type="button" variant="secondary" onClick={onPrint} disabled={!canPrint || !reportData}>
               <RhIcon as={Printer} size={18} strokeWidth={RH_ICON_STROKE} />
@@ -666,23 +691,23 @@ export default function ReportsPage() {
             searchPlaceholder={str('reports.search_placeholder')}
             emptyText={str('reports.search_empty')}
           />
-          <TextField
+          <RhDatePickerField
             label={str('reports.field_from')}
-            type="date"
             value={fromDate}
-            onChange={(e) => {
-              setFromDate(e.target.value)
+            onChange={(v) => {
+              setFromDate(v)
               setRangePreset('custom')
             }}
+            placeholderText={str('reports.hijri_placeholder')}
           />
-          <TextField
+          <RhDatePickerField
             label={str('reports.field_to')}
-            type="date"
             value={toDate}
-            onChange={(e) => {
-              setToDate(e.target.value)
+            onChange={(v) => {
+              setToDate(v)
               setRangePreset('custom')
             }}
+            placeholderText={str('reports.hijri_placeholder')}
           />
         </div>
         <div className="rh-reports__range-presets">
@@ -712,7 +737,28 @@ export default function ReportsPage() {
 
       {!reportData ? (
         <p className="rh-plans__empty">{str('reports.empty')}</p>
-      ) : reportData.kind === 'student' ? (
+      ) : (
+        <ReportPrintContext.Provider value={sectionPrintContext}>
+          <div ref={reportCaptureRef} className="rh-print-capture rh-reports__print-capture">
+            <PrintDocumentChrome
+              brandTitle={branding.siteTitle}
+              title={str('reports.print_title')}
+              meta={str('reports.print_meta', {
+                type: REPORT_KIND_OPTIONS.find((k) => k.value === kind)?.label || '',
+                entity: selectedEntityName || '—',
+                from: fromDate || '—',
+                to: toDate || '—',
+                date: new Date().toLocaleString('ar-SA', { dateStyle: 'medium', timeStyle: 'short' }),
+                siteTitle: branding.siteTitle,
+              })}
+              footer={str('reports.print_footer', {
+                siteTitle: branding.siteTitle,
+                date: new Date().toLocaleString('ar-SA', { dateStyle: 'medium', timeStyle: 'short' }),
+              })}
+              headerClassName="rh-reports__capture-doc-head"
+              footerClassName="rh-reports__capture-doc-foot"
+            >
+            {reportData.kind === 'student' ? (
         <section className="rh-reports__result">
           <div className="rh-reports__kpis">
             <div className="card rh-reports__kpi"><strong>{reportData.summary.plans}</strong><span>{str('layout.nav_plans')}</span></div>
@@ -848,14 +894,12 @@ export default function ReportsPage() {
           <SectionTable
             title="الأوراد"
             columns={[
-              { key: 'id', label: 'المعرّف' },
               { key: 'recordedAt', label: 'تاريخ الورد' },
               { key: 'pagesCount', label: 'عدد الصفحات' },
               { key: 'fromPage', label: 'من صفحة' },
               { key: 'toPage', label: 'إلى صفحة' },
             ]}
             rows={(reportData.awrad || []).map((r) => ({
-              id: r.id,
               recordedAt: formatArDateTime(r.recordedAt),
               pagesCount: r.pagesCount ?? 0,
               fromPage: r.fromPage ?? '—',
@@ -1095,6 +1139,10 @@ export default function ReportsPage() {
             </>
           )}
         </section>
+      )}
+            </PrintDocumentChrome>
+          </div>
+        </ReportPrintContext.Provider>
       )}
     </div>
   )

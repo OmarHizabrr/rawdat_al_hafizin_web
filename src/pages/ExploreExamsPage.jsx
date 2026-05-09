@@ -1,7 +1,8 @@
-import { Compass, UserPlus } from 'lucide-react'
+import { Compass, Printer, UserPlus } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import { CrossNav } from '../components/CrossNav.jsx'
+import { PrintDocumentChrome } from '../components/PrintDocumentChrome.jsx'
 import { PERMISSION_PAGE_IDS } from '../config/permissionRegistry.js'
 import { isAdmin } from '../config/roles.js'
 import { useAuth } from '../context/useAuth.js'
@@ -30,6 +31,9 @@ export default function ExploreExamsPage() {
   const { search } = useLocation()
   const { branding, str } = useSiteContent()
   const toast = useToast()
+  const onPrint = useCallback(() => {
+    if (typeof window !== 'undefined') window.print()
+  }, [])
   const impersonateUid = getImpersonateUid(user, search)
   const viewUserId = impersonateUid || user?.uid || ''
   const actingAsUser = Boolean(user?.uid && impersonateUid && impersonateUid !== user.uid)
@@ -130,14 +134,19 @@ export default function ExploreExamsPage() {
     return base
   }, [user, str, appLink, canAccessPage])
 
+  const printedAt = new Date().toLocaleString('ar-SA', { dateStyle: 'medium', timeStyle: 'short' })
+  const printStamp = str('layout.print_doc_stamp', { date: printedAt, siteTitle: branding.siteTitle })
+  const printFooter = str('layout.print_doc_footer', { siteTitle: branding.siteTitle, date: printedAt })
+  const explorePrintTitle = 'استكشاف مجموعات الاختبار العامة'
+
   return (
     <div className="rh-explore-plans">
-      <header className="rh-plans__hero">
+      <header className="rh-plans__hero no-print">
         <div className="rh-plans__hero-head">
           <div>
             <h1 className="rh-plans__title rh-explore-plans__title">
               <RhIcon as={Compass} size={28} strokeWidth={RH_ICON_STROKE} className="rh-explore-plans__title-icon" />
-              استكشاف مجموعات الاختبار العامة
+              {explorePrintTitle}
             </h1>
             <p className="rh-plans__desc">
               مجموعات معلنة كعامة. ابحث وانضمّ بزر أو بمعرّف المجموعة.
@@ -145,13 +154,19 @@ export default function ExploreExamsPage() {
             </p>
             <CrossNav items={crossItems} className="rh-plans__cross" />
           </div>
-          <Link className="ui-btn ui-btn--secondary rh-explore-plans__to-mine" to={appLink('/app/exams')}>
-            مجموعاتي
-          </Link>
+          <div className="rh-explore-plans__hero-aside no-print">
+            <Button type="button" variant="secondary" className="rh-explore-plans__print-btn" onClick={onPrint}>
+              <RhIcon as={Printer} size={18} strokeWidth={RH_ICON_STROKE} />
+              {str('layout.print_btn')}
+            </Button>
+            <Link className="ui-btn ui-btn--secondary rh-explore-plans__to-mine" to={appLink('/app/exams')}>
+              مجموعاتي
+            </Link>
+          </div>
         </div>
       </header>
 
-      <section className="rh-settings-card rh-explore-plans__toolbar">
+      <section className="rh-settings-card rh-explore-plans__toolbar no-print">
         <div className="rh-explore-plans__toolbar-grid">
           <TextField
             label="بحث"
@@ -200,13 +215,20 @@ export default function ExploreExamsPage() {
         )}
       </section>
 
-      <p className="rh-explore-plans__count">
+      <p className="rh-explore-plans__count no-print">
         {displayed.length === rawRows.length
           ? `${rawRows.length} مجموعة عامة`
           : `${displayed.length} من ${rawRows.length} مجموعة`}
       </p>
 
-      {displayed.length === 0 ? (
+      <div className="rh-print-capture">
+        <PrintDocumentChrome
+          brandTitle={branding.siteTitle}
+          title={explorePrintTitle}
+          meta={printStamp}
+          footer={printFooter}
+        >
+          {displayed.length === 0 ? (
         <section className="rh-settings-card rh-plans__empty">
           <h2 className="rh-settings-card__title">لا توجد نتائج</h2>
           <p className="rh-settings-card__subtitle">
@@ -231,20 +253,22 @@ export default function ExploreExamsPage() {
                         <span className="rh-plans__saved-badge">{p.memberCount ?? 0} عضواً</span>
                       </span>
                     </div>
-                    {can(PE, 'explore_join_card') ? (
-                      <Button
-                        type="button"
-                        variant={inItem ? 'secondary' : 'primary'}
-                        size="sm"
-                        loading={joiningCardId === p.id}
-                        disabled={inItem || joiningCardId !== null}
-                        onClick={() => !inItem && handleJoinCard(p.id)}
-                      >
-                        {inItem ? 'منضم' : 'انضمام'}
-                      </Button>
-                    ) : (
-                      <span className="rh-plans__saved-badge">{inItem ? 'منضم' : 'عرض فقط'}</span>
-                    )}
+                    <div className="no-print">
+                      {can(PE, 'explore_join_card') ? (
+                        <Button
+                          type="button"
+                          variant={inItem ? 'secondary' : 'primary'}
+                          size="sm"
+                          loading={joiningCardId === p.id}
+                          disabled={inItem || joiningCardId !== null}
+                          onClick={() => !inItem && handleJoinCard(p.id)}
+                        >
+                          {inItem ? 'منضم' : 'انضمام'}
+                        </Button>
+                      ) : (
+                        <span className="rh-plans__saved-badge">{inItem ? 'منضم' : 'عرض فقط'}</span>
+                      )}
+                    </div>
                   </div>
 
                   {p.description ? <p className="rh-plans__saved-desc">{p.description}</p> : null}
@@ -291,7 +315,9 @@ export default function ExploreExamsPage() {
             })}
           </ul>
         </ScrollArea>
-      )}
+          )}
+        </PrintDocumentChrome>
+      </div>
     </div>
   )
 }
