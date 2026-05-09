@@ -59,7 +59,7 @@ export default function AdminJoinGroupsPage() {
   const [joinUrl, setJoinUrl] = useState('')
   const [imageUrl, setImageUrl] = useState('')
   const [imageFile, setImageFile] = useState(null)
-  const [sortOrder, setSortOrder] = useState(0)
+  const [maxAppearances, setMaxAppearances] = useState(1)
   const [visibleOnHome, setVisibleOnHome] = useState(true)
 
   useEffect(() => {
@@ -117,7 +117,7 @@ export default function AdminJoinGroupsPage() {
     setJoinUrl('')
     setImageUrl('')
     setImageFile(null)
-    setSortOrder(0)
+    setMaxAppearances(1)
     setVisibleOnHome(true)
   }
 
@@ -130,7 +130,7 @@ export default function AdminJoinGroupsPage() {
     setJoinUrl(row.joinUrl || '')
     setImageUrl(row.imageUrl || '')
     setImageFile(null)
-    setSortOrder(Number(row.sortOrder || 0))
+    setMaxAppearances(Math.max(1, Number(row.maxAppearances || 1)))
     setVisibleOnHome(row.visibleOnHome !== false)
     setEditorOpen(true)
   }
@@ -164,7 +164,7 @@ export default function AdminJoinGroupsPage() {
         genderType,
         joinUrl: joinUrl.trim(),
         imageUrl: finalImageUrl,
-        sortOrder: Number(sortOrder || 0),
+        maxAppearances: Math.max(1, Number(maxAppearances || 1)),
         visibleOnHome,
       })
       toast.success(editingRow ? 'تم تحديث المجموعة.' : 'تم إنشاء المجموعة.', 'تم')
@@ -239,6 +239,7 @@ export default function AdminJoinGroupsPage() {
               <p className="rh-plans__saved-meta">
                 رابط: <a href={r.joinUrl} target="_blank" rel="noreferrer">{r.joinUrl}</a>
               </p>
+              <p className="rh-plans__saved-meta">عدد مرات الظهور لكل طالب: {Math.max(1, Number(r.maxAppearances || 1))}</p>
               <p className="rh-plans__saved-meta">عدد الأعضاء: {memberCounts[r.id] || 0}</p>
               <div className="rh-admin-users__row--actions">
                 <Button type="button" size="sm" variant="secondary" onClick={() => navigate(`/app/admin/groups/${encodeURIComponent(r.id)}`)}>
@@ -320,7 +321,12 @@ export default function AdminJoinGroupsPage() {
             <small className="ui-field__hint">إذا اخترت ملفاً سيتم رفعه واستخدامه في البطاقة.</small>
           </div>
           <div className="rh-plans__dates-grid">
-            <TextField label="ترتيب الظهور" type="number" value={String(sortOrder)} onChange={(e) => setSortOrder(Number(e.target.value || 0))} />
+            <TextField
+              label="عدد مرات الظهور/الانضمام"
+              type="number"
+              value={String(maxAppearances)}
+              onChange={(e) => setMaxAppearances(Math.max(1, Number(e.target.value || 1)))}
+            />
             <div className="ui-field">
               <label className="ui-field__label" htmlFor="join-group-visible">الظهور في الرئيسية</label>
               <select id="join-group-visible" className="ui-input" value={visibleOnHome ? 'yes' : 'no'} onChange={(e) => setVisibleOnHome(e.target.value === 'yes')}>

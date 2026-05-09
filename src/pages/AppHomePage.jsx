@@ -17,7 +17,7 @@ import { HomeWirdCheckInModal } from "../components/HomeWirdCheckInModal.jsx";
 import { HomeWirdModal } from "../components/HomeWirdModal.jsx";
 import { pickHomeMotivationQuote } from "../data/homeMotivationQuotes.js";
 import { PERMISSION_PAGE_IDS } from "../config/permissionRegistry.js";
-import { isAdmin } from "../config/roles.js";
+import { isAdmin, normalizeRole } from "../config/roles.js";
 import { useAuth } from "../context/useAuth.js";
 import { usePermissions } from "../context/usePermissions.js";
 import { firestoreApi } from "../services/firestoreApi.js";
@@ -45,10 +45,11 @@ import { computePlanProgress } from "../utils/planProgress.js";
 import {
   JOIN_GROUP_GENDER,
   JOIN_GROUP_PLATFORM,
-  hasUserJoinedGroup,
+  getUserJoinGroupState,
   joinGroup,
   subscribeJoinGroups,
 } from "../services/joinGroupsService.js";
+import { PROFILE_REQUEST_STATUS } from "../services/profileRequestService.js";
 import { hijriYmdToLocalNoonDate, prevHijriYmd } from "../utils/hijriDates.js";
 import {
   isoFromLocalYmd,
@@ -364,7 +365,7 @@ export default function AppHomePage() {
   const [dismissedBirdKeys, setDismissedBirdKeys] = useState(readDismissedBirdKeys);
   const prevShouldOfferCheckInRef = useRef(false);
   const [joinGroups, setJoinGroups] = useState([]);
-  const [joinedGroupIds, setJoinedGroupIds] = useState({});
+  const [groupStateById, setGroupStateById] = useState({});
   const [joiningGroupId, setJoiningGroupId] = useState("");
 
   useOnClickOutside(planMenuRef, () => setPlanMenuOpen(false), planMenuOpen);
@@ -418,12 +419,25 @@ export default function AppHomePage() {
   const effectiveUserGender = actingAsUser
     ? String(impersonatedSubject?.gender || "").trim()
     : String(user?.gender || "").trim();
+  const normalizedGender = useMemo(() => {
+    const g = effectiveUserGender.toLowerCase();
+    if (["male", "m", "man", "ذكر"].includes(g)) return "male";
+    if (["female", "f", "woman", "أنثى", "انثى", "انثي"].includes(g)) return "female";
+    return "";
+  }, [effectiveUserGender]);
   const effectiveProfileStatus = actingAsUser
-    ? String(impersonatedSubject?.profileRequestStatus || "").trim()
-    : String(user?.profileRequestStatus || "").trim();
+    ? String(
+        impersonatedSubject?.profileRequestStatus ||
+          impersonatedSubject?.status ||
+          impersonatedSubject?.profileStatus ||
+          "",
+      ).trim()
+    : String(
+        user?.profileRequestStatus || user?.status || user?.profileStatus || "",
+      ).trim();
   const shouldShowJoinGroups =
-    String(user?.role || "").trim() === "student" &&
-    effectiveProfileStatus === "approved";
+    normalizeRole(user?.role) === "student" &&
+    effectiveProfileStatus === PROFILE_REQUEST_STATUS.APPROVED;
 
   useEffect(() => {
     if (!contextUserId) return undefined;
@@ -438,24 +452,24 @@ export default function AppHomePage() {
 
   useEffect(() => {
     if (!contextUserId || joinGroups.length === 0) {
-      setJoinedGroupIds({});
+      setGroupStateById({});
       return undefined;
     }
     let cancelled = false;
     Promise.all(
       joinGroups.map(async (g) => ({
         id: g.id,
-        joined: await hasUserJoinedGroup(g.id, contextUserId),
+        state: await getUserJoinGroupState(g.id, contextUserId),
       })),
     )
       .then((rows) => {
         if (cancelled) return;
         const map = {};
-        for (const row of rows) map[row.id] = row.joined;
-        setJoinedGroupIds(map);
+        for (const row of rows) map[row.id] = row.state;
+        setGroupStateById(map);
       })
       .catch(() => {
-        if (!cancelled) setJoinedGroupIds({});
+        if (!cancelled) setGroupStateById({});
       });
     return () => {
       cancelled = true;
@@ -730,22 +744,25 @@ export default function AppHomePage() {
     const genderAllowed = (group) => {
       if (group.genderType === JOIN_GROUP_GENDER.ALL) return true;
       if (group.genderType === JOIN_GROUP_GENDER.MEN)
-        return effectiveUserGender === "male";
+        return normalizedGender === "male";
       if (group.genderType === JOIN_GROUP_GENDER.WOMEN)
-        return effectiveUserGender === "female";
+        return normalizedGender === "female";
       return true;
     };
     return joinGroups.filter(
-      (group) =>
-        group.visibleOnHome !== false &&
-        genderAllowed(group) &&
-        joinedGroupIds[group.id] !== true,
+      (group) => {
+        if (group.visibleOnHome === false) return false;
+        if (!genderAllowed(group)) return false;
+        const state = groupStateById[group.id] || { joinCount: 0 };
+        const maxAppearances = Math.max(1, Number(group.maxAppearances || 1));
+        return Number(state.joinCount || 0) < maxAppearances;
+      },
     );
   }, [
     shouldShowJoinGroups,
     joinGroups,
-    joinedGroupIds,
-    effectiveUserGender,
+    groupStateById,
+    normalizedGender,
   ]);
   const groupPlatformLabel = useCallback((platform) => {
     if (platform === JOIN_GROUP_PLATFORM.WHATSAPP) return "واتساب";
@@ -1339,13 +1356,20 @@ export default function AppHomePage() {
                         ? { ...user, uid: contextUserId }
                         : user;
                       const res = await joinGroup(actor, group.id);
-                      setJoinedGroupIds((prev) => ({
-                        ...prev,
-                        [group.id]: true,
-                      }));
+                      setGroupStateById((prev) => {
+                        const prevCount = Number(prev?.[group.id]?.joinCount || 0);
+                        const nextCount = Number(res?.joinCount || prevCount + 1);
+                        return {
+                          ...prev,
+                          [group.id]: {
+                            joinCount: nextCount,
+                            hasMembership: true,
+                          },
+                        };
+                      });
                       toast.success(
-                        res?.alreadyJoined
-                          ? "أنت منضم مسبقاً."
+                        res?.exhausted
+                          ? "تم الانضمام. لن تظهر هذه المجموعة مرة أخرى."
                           : "تم الانضمام بنجاح.",
                         "تم",
                       );

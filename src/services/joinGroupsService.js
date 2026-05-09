@@ -26,6 +26,7 @@ function normalizeGroupRow(id, raw = {}) {
     imageUrl: String(raw.imageUrl || '').trim(),
     visibleOnHome: raw.visibleOnHome !== false,
     sortOrder: Number(raw.sortOrder || 0),
+    maxAppearances: Math.max(1, Number(raw.maxAppearances || 1)),
     createdAt: raw.createdAt || null,
     updatedAt: raw.updatedAt || null,
     createdBy: raw.createdBy || '',
@@ -47,6 +48,10 @@ function memberDoc(groupId, userId) {
 
 function membersCollection(groupId) {
   return firestoreApi.getSubCollection('join_group_members', groupId, 'members')
+}
+
+function userStateDoc(groupId, userId) {
+  return firestoreApi.getSubDocument('join_group_user_state', groupId, 'users', userId)
 }
 
 function auditCollection(groupId) {
@@ -176,23 +181,65 @@ export async function hasUserJoinedGroup(groupId, userId) {
   return Boolean(row)
 }
 
+export async function getUserJoinGroupState(groupId, userId) {
+  if (!groupId || !userId) return { joinCount: 0, hasMembership: false }
+  const [stateRow, memberRow] = await Promise.all([
+    firestoreApi.getData(userStateDoc(groupId, userId)),
+    firestoreApi.getData(memberDoc(groupId, userId)),
+  ])
+  return {
+    joinCount: Math.max(0, Number(stateRow?.joinCount || 0)),
+    hasMembership: Boolean(memberRow),
+  }
+}
+
 export async function joinGroup(actorUser, groupId) {
   if (!actorUser?.uid || !groupId) throw new Error('FORBIDDEN')
   const group = await firestoreApi.getData(canonicalDoc(groupId))
   if (!group) throw new Error('GROUP_NOT_FOUND')
   if (group.visibleOnHome === false) throw new Error('GROUP_HIDDEN')
   const existing = await firestoreApi.getData(memberDoc(groupId, actorUser.uid))
-  if (existing) return { alreadyJoined: true, group: normalizeGroupRow(groupId, group) }
+  const state = await firestoreApi.getData(userStateDoc(groupId, actorUser.uid))
+  const currentJoinCount = Math.max(0, Number(state?.joinCount || 0))
+  const maxAppearances = Math.max(1, Number(group.maxAppearances || 1))
+  if (currentJoinCount >= maxAppearances) {
+    return {
+      alreadyJoined: Boolean(existing),
+      exhausted: true,
+      joinCount: currentJoinCount,
+      maxAppearances,
+      group: normalizeGroupRow(groupId, group),
+    }
+  }
   const now = new Date().toISOString()
-  await firestoreApi.setData({
-    docRef: memberDoc(groupId, actorUser.uid),
-    data: {
-      userId: actorUser.uid,
-      joinedAt: now,
-      source: 'home',
-    },
-    merge: true,
-    userData: actorUser,
-  })
-  return { alreadyJoined: false, group: normalizeGroupRow(groupId, group) }
+  const nextJoinCount = currentJoinCount + 1
+  await Promise.all([
+    firestoreApi.setData({
+      docRef: memberDoc(groupId, actorUser.uid),
+      data: {
+        userId: actorUser.uid,
+        joinedAt: now,
+        source: 'home',
+      },
+      merge: true,
+      userData: actorUser,
+    }),
+    firestoreApi.setData({
+      docRef: userStateDoc(groupId, actorUser.uid),
+      data: {
+        userId: actorUser.uid,
+        joinCount: nextJoinCount,
+        lastJoinedAt: now,
+      },
+      merge: true,
+      userData: actorUser,
+    }),
+  ])
+  return {
+    alreadyJoined: Boolean(existing),
+    exhausted: nextJoinCount >= maxAppearances,
+    joinCount: nextJoinCount,
+    maxAppearances,
+    group: normalizeGroupRow(groupId, group),
+  }
 }
