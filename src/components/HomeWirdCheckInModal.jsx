@@ -45,11 +45,11 @@ export function HomeWirdCheckInModal({
       }
       const nextAchieved = achievedPages + res.computedPages
       const nextPercent = clampProgressPercent(nextAchieved, targetPages)
+      onClose()
       toast.success(
         `تم تسجيل ${res.computedPages} صفحات تلقائياً. وصلت إلى ${nextAchieved}/${targetPages || '—'} (${nextPercent.toFixed(1)}%).`,
         'بارك الله فيك',
       )
-      onClose()
     } catch {
       toast.warning('تعذّر حفظ الورد. تحقق من الاتصال وحاول مرة أخرى.', 'تنبيه')
     } finally {

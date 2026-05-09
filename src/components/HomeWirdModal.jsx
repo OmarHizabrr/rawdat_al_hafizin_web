@@ -194,6 +194,7 @@ export function HomeWirdModal({ open, onClose, activePlan, awrad, contextUserId,
       }
       const recordOpts = { allowCustomRecordedAt: allowCust }
       await addWird(contextUserId, payload, user ?? {}, recordOpts)
+      onClose()
 
       const nextAchieved = achievedPages + computedPages
       const nextPercent = clampProgressPercent(nextAchieved, targetPages)
@@ -218,7 +219,6 @@ export function HomeWirdModal({ open, onClose, activePlan, awrad, contextUserId,
       const yNext = localYmd()
       setFormRecordingYmd(yNext)
       applyPlanDefaults(activePlan, optimisticAwrad, yNext)
-      onClose()
     } catch {
       toast.warning('تعذّر حفظ الورد. تحقق من الاتصال وحاول مرة أخرى.', 'تنبيه')
     } finally {

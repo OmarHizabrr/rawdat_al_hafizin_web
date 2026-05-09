@@ -9,6 +9,7 @@ import { usePermissions } from '../context/usePermissions.js'
 import { useSiteContent } from '../context/useSiteContent.js'
 import { firestoreApi } from '../services/firestoreApi.js'
 import { subscribeAllUsers } from '../services/adminUsersService.js'
+import { buildGroupReport } from '../services/reportsService.js'
 import {
   HALAKA_ATTENDANCE_STATUSES,
   HALAKA_MEMBER_ROLES,
@@ -201,6 +202,8 @@ export default function HalakatPage() {
   const [membersModal, setMembersModal] = useState(null)
   const [membersList, setMembersList] = useState([])
   const [membersLoading, setMembersLoading] = useState(false)
+  const [membersInsightsLoading, setMembersInsightsLoading] = useState(false)
+  const [membersInsightsByUid, setMembersInsightsByUid] = useState({})
   const [directoryUsers, setDirectoryUsers] = useState([])
   const [memberPickerQuery, setMemberPickerQuery] = useState('')
   const [addingMemberUid, setAddingMemberUid] = useState('')
@@ -255,6 +258,36 @@ export default function HalakatPage() {
       })
       .finally(() => {
         if (!cancelled) setMembersLoading(false)
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [membersModal?.id, user?.uid])
+
+  useEffect(() => {
+    if (!membersModal?.id || !user?.uid) {
+      setMembersInsightsByUid({})
+      setMembersInsightsLoading(false)
+      return undefined
+    }
+    let cancelled = false
+    setMembersInsightsLoading(true)
+    buildGroupReport('halaka', membersModal.id)
+      .then((report) => {
+        if (cancelled) return
+        const map = {}
+        for (const row of report?.memberDetails || []) {
+          const uid = String(row?.userId || '').trim()
+          if (!uid) continue
+          map[uid] = row
+        }
+        setMembersInsightsByUid(map)
+      })
+      .catch(() => {
+        if (!cancelled) setMembersInsightsByUid({})
+      })
+      .finally(() => {
+        if (!cancelled) setMembersInsightsLoading(false)
       })
     return () => {
       cancelled = true
@@ -564,6 +597,10 @@ export default function HalakatPage() {
   const canOpenSessions = (h) => Boolean(h?.id)
 
   const canWriteSessionRows = canManageRole(activeHalakaRole, HALAKA_MEMBER_ROLES.STUDENT)
+  const memberAppLink = useCallback(
+    (basePath, uid) => appLink(`${basePath}${basePath.includes('?') ? '&' : '?'}uid=${encodeURIComponent(uid)}`),
+    [appLink],
+  )
 
   const refreshSessions = useCallback(async () => {
     if (!sessionsModalHalaka?.id) return
@@ -1364,11 +1401,61 @@ export default function HalakatPage() {
                 {membersList.map((row) => {
                   const isOwner = row.role === HALAKA_MEMBER_ROLES.OWNER
                   const actorRole = normalizeRole(membersModal?.halakaRole)
+                  const insight = membersInsightsByUid[row.userId] || null
                   return (
                     <li key={row.userId} className="rh-members-chat__item">
                       <div className="rh-members-chat__main">
                         <strong>{row.displayName || row.userId}</strong>
                         <span className="rh-plans__saved-badge">{roleLabel(row.role)}</span>
+                        <span className="rh-members-chat__sub">{row.email || row.userId}</span>
+                        {insight && (
+                          <div className="rh-members-chat__sub">
+                            خطط: {insight.plansCount} · حلقات: {insight.halakatCount} · أنشطة: {insight.activitiesCount}
+                            {' · '}اختبارات: {insight.examsCount} · دورات: {insight.dawratCount} · أوراد: {insight.awradCount}
+                            {' · '}صفحات الأوراد: {insight.pagesInAwrad} · حضور الحلقة: {insight.attendanceRecordsInHalaka}
+                          </div>
+                        )}
+                        {insight?.latestAwradAt && (
+                          <div className="rh-members-chat__sub">
+                            آخر ورد: {new Date(insight.latestAwradAt).toLocaleString('ar-SA')}
+                          </div>
+                        )}
+                        {insight?.latestAttendanceAt && (
+                          <div className="rh-members-chat__sub">
+                            آخر حضور/تسميع: {new Date(insight.latestAttendanceAt).toLocaleString('ar-SA')}
+                          </div>
+                        )}
+                        <div className="rh-members-chat__actions">
+                          <Link to={memberAppLink('/app/reports', row.userId)} className="ui-btn ui-btn--ghost ui-btn--sm">
+                            تقارير
+                          </Link>
+                          <Link to={memberAppLink('/app/plans', row.userId)} className="ui-btn ui-btn--ghost ui-btn--sm">
+                            الخطط
+                          </Link>
+                          <Link to={memberAppLink('/app/awrad', row.userId)} className="ui-btn ui-btn--ghost ui-btn--sm">
+                            الأوراد
+                          </Link>
+                          {canAccessPage('exams') && (
+                            <Link to={memberAppLink('/app/exams', row.userId)} className="ui-btn ui-btn--ghost ui-btn--sm">
+                              الاختبارات
+                            </Link>
+                          )}
+                          {canAccessPage('activities') && (
+                            <Link to={memberAppLink('/app/activities', row.userId)} className="ui-btn ui-btn--ghost ui-btn--sm">
+                              الأنشطة
+                            </Link>
+                          )}
+                          {canAccessPage('dawrat') && (
+                            <Link to={memberAppLink('/app/dawrat', row.userId)} className="ui-btn ui-btn--ghost ui-btn--sm">
+                              الدورات
+                            </Link>
+                          )}
+                          {canAccessPage('remote_tasmee') && (
+                            <Link to={memberAppLink('/app/remote-tasmee', row.userId)} className="ui-btn ui-btn--ghost ui-btn--sm">
+                              التسميع عن بعد
+                            </Link>
+                          )}
+                        </div>
                       </div>
                       {!isOwner && (
                         <div className="rh-members-chat__actions">
@@ -1513,6 +1600,7 @@ export default function HalakatPage() {
                 })}
               </ul>
             )}
+            {membersInsightsLoading && <p className="rh-plans__saved-meta">جاري تحديث ملخصات المتابعة…</p>}
           </section>
         </div>
       </Modal>

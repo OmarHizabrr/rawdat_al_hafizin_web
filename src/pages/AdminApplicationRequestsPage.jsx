@@ -20,6 +20,7 @@ export default function AdminApplicationRequestsPage() {
   const toast = useToast()
   const [rows, setRows] = useState([])
   const [q, setQ] = useState('')
+  const [statusFilter, setStatusFilter] = useState(PROFILE_REQUEST_STATUS.PENDING)
   const [busyId, setBusyId] = useState('')
   const [rejectingRow, setRejectingRow] = useState(null)
   const [rejectReason, setRejectReason] = useState('')
@@ -37,15 +38,50 @@ export default function AdminApplicationRequestsPage() {
     return () => unsub()
   }, [])
 
+  const statusCounts = useMemo(() => {
+    const out = {
+      [PROFILE_REQUEST_STATUS.PENDING]: 0,
+      [PROFILE_REQUEST_STATUS.APPROVED]: 0,
+      [PROFILE_REQUEST_STATUS.REJECTED]: 0,
+      all: rows.length,
+    }
+    for (const row of rows) {
+      if (row?.status === PROFILE_REQUEST_STATUS.APPROVED) out[PROFILE_REQUEST_STATUS.APPROVED] += 1
+      else if (row?.status === PROFILE_REQUEST_STATUS.REJECTED) out[PROFILE_REQUEST_STATUS.REJECTED] += 1
+      else out[PROFILE_REQUEST_STATUS.PENDING] += 1
+    }
+    return out
+  }, [rows])
+
   const filtered = useMemo(() => {
     const s = q.trim().toLowerCase()
-    if (!s) return rows
-    return rows.filter((r) => {
+    const statusMatched = rows.filter((r) => (
+      statusFilter === 'all'
+        ? true
+        : (r?.status || PROFILE_REQUEST_STATUS.PENDING) === statusFilter
+    ))
+    const searchMatched = !s
+      ? statusMatched
+      : statusMatched.filter((r) => {
       const hay =
         `${r.fullName} ${r.email} ${r.phone} ${r.nationality} ${r.city} ${r.occupation} ${r.userId}`.toLowerCase()
       return hay.includes(s)
     })
-  }, [rows, q])
+    if (statusFilter !== 'all') return searchMatched
+    const weight = {
+      [PROFILE_REQUEST_STATUS.PENDING]: 0,
+      [PROFILE_REQUEST_STATUS.APPROVED]: 1,
+      [PROFILE_REQUEST_STATUS.REJECTED]: 2,
+    }
+    return [...searchMatched].sort((a, b) => {
+      const wa = weight[a?.status] ?? 99
+      const wb = weight[b?.status] ?? 99
+      if (wa !== wb) return wa - wb
+      const ta = Date.parse(String(a?.submittedAt || '')) || 0
+      const tb = Date.parse(String(b?.submittedAt || '')) || 0
+      return tb - ta
+    })
+  }, [rows, q, statusFilter])
 
   const onApprove = async (row) => {
     if (!user?.uid || !row?.userId) return
@@ -133,6 +169,60 @@ export default function AdminApplicationRequestsPage() {
             onChange={(e) => setQ(e.target.value)}
             className="rh-admin-applications__search"
           />
+          <div className="rh-admin-applications__filters" role="tablist" aria-label="فلترة حسب حالة الطلب">
+            <button
+              type="button"
+              role="tab"
+              aria-selected={statusFilter === PROFILE_REQUEST_STATUS.PENDING}
+              className={[
+                'rh-admin-applications__filter-btn',
+                statusFilter === PROFILE_REQUEST_STATUS.PENDING ? 'rh-admin-applications__filter-btn--active' : '',
+              ].filter(Boolean).join(' ')}
+              onClick={() => setStatusFilter(PROFILE_REQUEST_STATUS.PENDING)}
+            >
+              <span>قيد المراجعة</span>
+              <strong>{statusCounts[PROFILE_REQUEST_STATUS.PENDING]}</strong>
+            </button>
+            <button
+              type="button"
+              role="tab"
+              aria-selected={statusFilter === PROFILE_REQUEST_STATUS.APPROVED}
+              className={[
+                'rh-admin-applications__filter-btn',
+                statusFilter === PROFILE_REQUEST_STATUS.APPROVED ? 'rh-admin-applications__filter-btn--active' : '',
+              ].filter(Boolean).join(' ')}
+              onClick={() => setStatusFilter(PROFILE_REQUEST_STATUS.APPROVED)}
+            >
+              <span>المقبول</span>
+              <strong>{statusCounts[PROFILE_REQUEST_STATUS.APPROVED]}</strong>
+            </button>
+            <button
+              type="button"
+              role="tab"
+              aria-selected={statusFilter === PROFILE_REQUEST_STATUS.REJECTED}
+              className={[
+                'rh-admin-applications__filter-btn',
+                statusFilter === PROFILE_REQUEST_STATUS.REJECTED ? 'rh-admin-applications__filter-btn--active' : '',
+              ].filter(Boolean).join(' ')}
+              onClick={() => setStatusFilter(PROFILE_REQUEST_STATUS.REJECTED)}
+            >
+              <span>المرفوض</span>
+              <strong>{statusCounts[PROFILE_REQUEST_STATUS.REJECTED]}</strong>
+            </button>
+            <button
+              type="button"
+              role="tab"
+              aria-selected={statusFilter === 'all'}
+              className={[
+                'rh-admin-applications__filter-btn',
+                statusFilter === 'all' ? 'rh-admin-applications__filter-btn--active' : '',
+              ].filter(Boolean).join(' ')}
+              onClick={() => setStatusFilter('all')}
+            >
+              <span>الكل</span>
+              <strong>{statusCounts.all}</strong>
+            </button>
+          </div>
           <div className="rh-admin-applications__save">
             <Button
               type="button"
