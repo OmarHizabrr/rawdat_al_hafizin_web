@@ -45,6 +45,8 @@ const AdminPlanTypesPage = lazy(() => import('./pages/AdminPlanTypesPage.jsx'))
 const AdminSiteCopyPage = lazy(() => import('./pages/AdminSiteCopyPage.jsx'))
 const AdminBrandingPage = lazy(() => import('./pages/AdminBrandingPage.jsx'))
 const AdminUserTypesPage = lazy(() => import('./pages/AdminUserTypesPage.jsx'))
+const AdminJoinGroupsPage = lazy(() => import('./pages/AdminJoinGroupsPage.jsx'))
+const AdminJoinGroupDetailsPage = lazy(() => import('./pages/AdminJoinGroupDetailsPage.jsx'))
 
 function FullPageLazyFallback() {
   return (
@@ -178,6 +180,8 @@ export default function App() {
                       <Route path="admin/branding" element={<AdminBrandingPage />} />
                       <Route path="admin/user-types" element={<AdminUserTypesPage />} />
                       <Route path="admin/users" element={<AdminUsersPage />} />
+                      <Route path="admin/groups" element={<AdminJoinGroupsPage />} />
+                      <Route path="admin/groups/:groupId" element={<AdminJoinGroupDetailsPage />} />
                     </Route>
                   </Route>
                 </Route>

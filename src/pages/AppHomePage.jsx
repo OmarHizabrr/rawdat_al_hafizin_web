@@ -42,6 +42,13 @@ import {
 } from "../utils/homeWirdCheckinStorage.js";
 import { localYmd } from "../utils/planDailyQuota.js";
 import { computePlanProgress } from "../utils/planProgress.js";
+import {
+  JOIN_GROUP_GENDER,
+  JOIN_GROUP_PLATFORM,
+  hasUserJoinedGroup,
+  joinGroup,
+  subscribeJoinGroups,
+} from "../services/joinGroupsService.js";
 import { hijriYmdToLocalNoonDate, prevHijriYmd } from "../utils/hijriDates.js";
 import {
   isoFromLocalYmd,
@@ -356,6 +363,9 @@ export default function AppHomePage() {
   const [activeFeelingDetail, setActiveFeelingDetail] = useState(null);
   const [dismissedBirdKeys, setDismissedBirdKeys] = useState(readDismissedBirdKeys);
   const prevShouldOfferCheckInRef = useRef(false);
+  const [joinGroups, setJoinGroups] = useState([]);
+  const [joinedGroupIds, setJoinedGroupIds] = useState({});
+  const [joiningGroupId, setJoiningGroupId] = useState("");
 
   useOnClickOutside(planMenuRef, () => setPlanMenuOpen(false), planMenuOpen);
 
@@ -395,8 +405,25 @@ export default function AppHomePage() {
     };
   }, [awrad.length, plans.length]);
 
+  useEffect(() => {
+    const unsub = subscribeJoinGroups(
+      (rows) => setJoinGroups(Array.isArray(rows) ? rows : []),
+      () => setJoinGroups([]),
+    );
+    return () => unsub();
+  }, []);
+
   const impersonatedSubject =
     actingAsUser && contextUserId ? subjectProfile : null;
+  const effectiveUserGender = actingAsUser
+    ? String(impersonatedSubject?.gender || "").trim()
+    : String(user?.gender || "").trim();
+  const effectiveProfileStatus = actingAsUser
+    ? String(impersonatedSubject?.profileRequestStatus || "").trim()
+    : String(user?.profileRequestStatus || "").trim();
+  const shouldShowJoinGroups =
+    String(user?.role || "").trim() === "student" &&
+    effectiveProfileStatus === "approved";
 
   useEffect(() => {
     if (!contextUserId) return undefined;
@@ -408,6 +435,32 @@ export default function AppHomePage() {
       unsubA();
     };
   }, [contextUserId]);
+
+  useEffect(() => {
+    if (!contextUserId || joinGroups.length === 0) {
+      setJoinedGroupIds({});
+      return undefined;
+    }
+    let cancelled = false;
+    Promise.all(
+      joinGroups.map(async (g) => ({
+        id: g.id,
+        joined: await hasUserJoinedGroup(g.id, contextUserId),
+      })),
+    )
+      .then((rows) => {
+        if (cancelled) return;
+        const map = {};
+        for (const row of rows) map[row.id] = row.joined;
+        setJoinedGroupIds(map);
+      })
+      .catch(() => {
+        if (!cancelled) setJoinedGroupIds({});
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [joinGroups, contextUserId]);
 
   const activePlanId = useMemo(() => {
     const def = actingAsUser
@@ -672,6 +725,35 @@ export default function AppHomePage() {
     if (pastDelayed.length === 0) return null;
     return pastDelayed[pastDelayed.length - 1];
   }, [backlogDays]);
+  const homeJoinGroups = useMemo(() => {
+    if (!shouldShowJoinGroups) return [];
+    const genderAllowed = (group) => {
+      if (group.genderType === JOIN_GROUP_GENDER.ALL) return true;
+      if (group.genderType === JOIN_GROUP_GENDER.MEN)
+        return effectiveUserGender === "male";
+      if (group.genderType === JOIN_GROUP_GENDER.WOMEN)
+        return effectiveUserGender === "female";
+      return true;
+    };
+    return joinGroups.filter(
+      (group) =>
+        group.visibleOnHome !== false &&
+        genderAllowed(group) &&
+        joinedGroupIds[group.id] !== true,
+    );
+  }, [
+    shouldShowJoinGroups,
+    joinGroups,
+    joinedGroupIds,
+    effectiveUserGender,
+  ]);
+  const groupPlatformLabel = useCallback((platform) => {
+    if (platform === JOIN_GROUP_PLATFORM.WHATSAPP) return "واتساب";
+    if (platform === JOIN_GROUP_PLATFORM.TELEGRAM) return "تليجرام";
+    if (platform === JOIN_GROUP_PLATFORM.FACEBOOK) return "فيسبوك";
+    if (platform === JOIN_GROUP_PLATFORM.DISCORD) return "ديسكورد";
+    return "مجموعة";
+  }, []);
 
   return (
     <div className="rh-app-home rh-app-home--dash">
@@ -1211,6 +1293,83 @@ export default function AppHomePage() {
           </div>
         </section>
       )}
+      {homeJoinGroups.length > 0 ? (
+        <section className="card rh-home-join-groups">
+          <div className="rh-settings-card__head">
+            <h2 className="rh-settings-card__title">مجموعات الانضمام</h2>
+            <p className="rh-settings-card__subtitle">
+              اختر مجموعة مناسبة لك، وبعد الانضمام تختفي تلقائياً من الصفحة.
+            </p>
+          </div>
+          <ul className="rh-home-join-groups__list">
+            {homeJoinGroups.map((group) => (
+              <li key={group.id} className="rh-home-join-groups__item">
+                <div className="rh-home-join-groups__cover">
+                  {group.imageUrl ? (
+                    <img src={group.imageUrl} alt="" loading="lazy" />
+                  ) : (
+                    <span>{groupPlatformLabel(group.platform)}</span>
+                  )}
+                </div>
+                <div className="rh-home-join-groups__body">
+                  <strong>{group.name || "مجموعة"}</strong>
+                  <span className="rh-plans__saved-badge">
+                    {groupPlatformLabel(group.platform)} ·{" "}
+                    {group.genderType === "women"
+                      ? "إناث"
+                      : group.genderType === "men"
+                        ? "ذكور"
+                        : "الكل"}
+                  </span>
+                  {group.description ? (
+                    <p className="rh-plans__saved-meta">{group.description}</p>
+                  ) : null}
+                </div>
+                <Button
+                  type="button"
+                  loading={joiningGroupId === group.id}
+                  disabled={
+                    joiningGroupId !== "" && joiningGroupId !== group.id
+                  }
+                  onClick={async () => {
+                    if (!user?.uid || !contextUserId) return;
+                    setJoiningGroupId(group.id);
+                    try {
+                      const actor = actingAsUser
+                        ? { ...user, uid: contextUserId }
+                        : user;
+                      const res = await joinGroup(actor, group.id);
+                      setJoinedGroupIds((prev) => ({
+                        ...prev,
+                        [group.id]: true,
+                      }));
+                      toast.success(
+                        res?.alreadyJoined
+                          ? "أنت منضم مسبقاً."
+                          : "تم الانضمام بنجاح.",
+                        "تم",
+                      );
+                      if (group.joinUrl) {
+                        window.open(
+                          group.joinUrl,
+                          "_blank",
+                          "noopener,noreferrer",
+                        );
+                      }
+                    } catch {
+                      toast.warning("تعذّر الانضمام للمجموعة.", "تنبيه");
+                    } finally {
+                      setJoiningGroupId("");
+                    }
+                  }}
+                >
+                  انضمام
+                </Button>
+              </li>
+            ))}
+          </ul>
+        </section>
+      ) : null}
     </div>
   );
 }
