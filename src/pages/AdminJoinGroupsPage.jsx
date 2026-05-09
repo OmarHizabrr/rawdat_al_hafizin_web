@@ -178,7 +178,7 @@ export default function AdminJoinGroupsPage() {
   }
 
   return (
-    <div className="rh-admin-users">
+    <div className="rh-admin-users rh-admin-users--join-groups">
       <header className="rh-admin-users__hero card">
         <h1 className="rh-admin-users__title">إدارة المجموعات</h1>
         <p className="rh-admin-users__desc">

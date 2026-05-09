@@ -1,4 +1,4 @@
-import { Suspense, useCallback, useEffect, useMemo, useState } from 'react'
+import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   BookOpen,
   CalendarClock,
@@ -45,6 +45,7 @@ export function MainLayout() {
   const { str, branding } = useSiteContent()
   const { pathname, search } = useLocation()
   const impersonateUid = getImpersonateUid(user, search)
+  const navRef = useRef(null)
 
   const baseNav = useMemo(
     () => [
@@ -136,6 +137,26 @@ export function MainLayout() {
     }
     window.addEventListener('resize', onResize)
     return () => window.removeEventListener('resize', onResize)
+  }, [mobileOpen])
+
+  useEffect(() => {
+    const navEl = navRef.current
+    if (!navEl) return
+    const active = navEl.querySelector('.rh-nav-link--active')
+    if (!active) return
+    active.scrollIntoView({ block: 'nearest', inline: 'nearest' })
+  }, [pathname, mobileOpen, collapsed])
+
+  useEffect(() => {
+    if (typeof document === 'undefined') return undefined
+    if (!mobileOpen) {
+      document.body.style.removeProperty('overflow')
+      return undefined
+    }
+    document.body.style.overflow = 'hidden'
+    return () => {
+      document.body.style.removeProperty('overflow')
+    }
   }, [mobileOpen])
 
   useEffect(() => {
@@ -255,7 +276,7 @@ export function MainLayout() {
           {!collapsed && <span className="rh-sidebar__title">{str('layout.sidebar_title')}</span>}
         </NavLink>
 
-        <nav className="rh-sidebar__nav">
+        <nav ref={navRef} className="rh-sidebar__nav ui-scroll ui-scroll--padded">
           {nav.map((item) => (
             <NavLink
               key={item.to}

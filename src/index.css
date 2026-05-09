@@ -2,6 +2,7 @@
 @import './styles/tokens.css';
 @import './styles/ui-components.css';
 @import './styles/app-mobile.css';
+@import './styles/platform-polish.css';
 
 * {
   box-sizing: border-box;
@@ -482,6 +483,11 @@ body {
   border-inline-end: 1px solid var(--rh-border);
   display: flex;
   flex-direction: column;
+  position: sticky;
+  top: 0;
+  height: 100dvh;
+  max-height: 100dvh;
+  overflow: hidden;
   z-index: 45;
   box-shadow: var(--rh-shadow-sm);
   transition:
@@ -551,6 +557,31 @@ a.rh-sidebar__brand-link.rh-sidebar__brand-link--active {
   flex-direction: column;
   gap: var(--rh-space-2);
   overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  scrollbar-gutter: stable;
+  scrollbar-color: color-mix(in srgb, var(--rh-primary) 44%, var(--rh-border)) transparent;
+  scroll-behavior: smooth;
+}
+
+.rh-sidebar__nav::-webkit-scrollbar {
+  width: 0.52rem;
+}
+
+.rh-sidebar__nav::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.rh-sidebar__nav::-webkit-scrollbar-thumb {
+  background: color-mix(in srgb, var(--rh-primary) 40%, var(--rh-border));
+  border-radius: var(--rh-radius-pill);
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+
+.rh-sidebar__nav::-webkit-scrollbar-thumb:hover {
+  background: color-mix(in srgb, var(--rh-primary) 60%, var(--rh-border-strong));
+  background-clip: padding-box;
 }
 
 .rh-nav-link {
@@ -620,6 +651,7 @@ a.rh-sidebar__brand-link.rh-sidebar__brand-link--active {
 .rh-sidebar__footer {
   padding: var(--rh-space-3);
   border-top: 1px solid var(--rh-border);
+  background: var(--rh-surface);
 }
 
 .rh-sidebar__collapse {
@@ -656,6 +688,10 @@ a.rh-sidebar__brand-link.rh-sidebar__brand-link--active {
   min-width: 0;
   display: flex;
   flex-direction: column;
+  min-height: 100dvh;
+  background:
+    radial-gradient(140% 85% at 50% 0%, color-mix(in srgb, var(--rh-primary) 5%, transparent) 0%, transparent 55%),
+    var(--rh-bg);
 }
 
 .rh-topbar {
@@ -668,7 +704,7 @@ a.rh-sidebar__brand-link.rh-sidebar__brand-link--active {
   min-height: 3.75rem;
   padding: var(--rh-space-2) var(--rh-space-4);
   padding-top: max(var(--rh-space-2), env(safe-area-inset-top, 0));
-  background: color-mix(in srgb, var(--rh-surface) 95%, transparent);
+  background: color-mix(in srgb, var(--rh-surface) 93%, transparent);
   backdrop-filter: blur(12px);
   border-bottom: 1px solid var(--rh-border);
   box-shadow: 0 1px 0 rgba(0, 0, 0, 0.03);
@@ -928,6 +964,26 @@ a.rh-sidebar__brand-link.rh-sidebar__brand-link--active {
   padding: clamp(0.75rem, 1.8vw, 1.5rem) clamp(0.65rem, 1.5vw, 1.15rem);
   padding-bottom: max(clamp(0.75rem, 1.8vw, 1.5rem), env(safe-area-inset-bottom, 0));
   overflow-x: clip;
+}
+
+/* لمسة بصرية موحّدة بأسلوب لوحات حديثة (Vuexy-like) */
+.card,
+.ui-modal__content,
+.ui-select__panel,
+.ui-multi__panel,
+.rh-notify__panel,
+.rh-user-panel {
+  border-color: color-mix(in srgb, var(--rh-border) 84%, var(--rh-primary) 7%);
+  box-shadow:
+    0 1px 0 rgba(0, 0, 0, 0.03),
+    var(--rh-shadow-md);
+}
+
+.card:hover {
+  box-shadow:
+    0 1px 0 rgba(0, 0, 0, 0.04),
+    var(--rh-shadow-lg);
+  transform: translateY(-1px);
 }
 
 @media (min-width: 900px) {
@@ -5036,6 +5092,7 @@ button.rh-home-quick-icon {
   border-radius: var(--rh-radius-pill);
   background: var(--rh-primary-muted);
   color: var(--rh-primary);
+  border: 1px solid color-mix(in srgb, var(--rh-primary) 22%, transparent);
 }
 
 .rh-plans__saved-badge--home {
@@ -5070,6 +5127,7 @@ button.rh-home-quick-icon {
   margin-bottom: var(--rh-space-2);
 }
 
+
 .rh-plans__saved-vols {
   font-size: var(--rh-text-xs);
   color: var(--rh-text-muted);
@@ -5080,6 +5138,7 @@ button.rh-home-quick-icon {
 .rh-plans__saved-vols li {
   margin-bottom: var(--rh-space-1);
 }
+
 
 .rh-plans__saved-vols--activity-details {
   list-style: disc;
@@ -6215,6 +6274,8 @@ a.rh-peek-btn {
     width: min(280px, 88vw);
     transform: translateX(100%);
     box-shadow: var(--rh-shadow-lg);
+    height: 100dvh;
+    max-height: 100dvh;
   }
 
   .rh-app--mobile-nav .rh-sidebar {
@@ -6237,6 +6298,18 @@ a.rh-peek-btn {
 
   .rh-backdrop {
     display: none !important;
+  }
+}
+
+@media (max-width: 680px) {
+  .rh-content {
+    padding-inline-start: max(var(--rh-space-2), env(safe-area-inset-left, 0px));
+    padding-inline-end: max(var(--rh-space-2), env(safe-area-inset-right, 0px));
+  }
+
+  .card {
+    border-radius: var(--rh-radius-lg);
+    padding: var(--rh-space-3);
   }
 }
 

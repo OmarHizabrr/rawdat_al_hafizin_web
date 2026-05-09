@@ -693,7 +693,7 @@ export default function HalakatPage() {
   }, [str, exploreHref, appLink, canAccessPage])
 
   return (
-    <div className="rh-plans">
+    <div className="rh-plans rh-plans--halakat">
       <header className="rh-plans__hero">
         <div className="rh-plans__hero-head">
           <div>

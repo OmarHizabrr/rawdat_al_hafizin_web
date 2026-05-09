@@ -1,0 +1,401 @@
+/* ==========================================================================
+   Platform Polish
+   --------------------------------------------------------------------------
+   High-level visual overrides gathered from the redesign phase.
+   This file is intentionally organized by concern to keep future tweaks easy.
+
+   Sections
+   1) Layout shell
+   2) Explore pages
+   3) Halakat page extras
+   4) Admin pages
+   5) Join group details extras
+   6) Badge/readability
+   7) Dark contrast
+   8) Accessibility
+   9) Responsive rules
+   10) Reduced motion
+   ========================================================================== */
+
+/* ==========================================================================
+   1) Explore pages
+   ========================================================================== */
+.rh-explore-plans .rh-plans__hero {
+  border-color: color-mix(in srgb, var(--rh-border) 76%, var(--rh-primary) 12%);
+  box-shadow: var(--rh-shadow-md);
+}
+
+.rh-explore-plans .rh-explore-plans__toolbar {
+  border: 1px solid color-mix(in srgb, var(--rh-border) 82%, transparent);
+  box-shadow: var(--rh-shadow-sm);
+}
+
+.rh-explore-plans .rh-explore-plans__card {
+  border-color: color-mix(in srgb, var(--rh-border) 78%, var(--rh-primary) 10%);
+  box-shadow: var(--rh-shadow-sm);
+}
+
+.rh-explore-plans .rh-explore-plans__card:hover {
+  border-color: color-mix(in srgb, var(--rh-primary) 24%, var(--rh-border));
+  box-shadow: var(--rh-shadow-md);
+}
+
+.rh-explore-plans .rh-explore-plans__count {
+  font-weight: 600;
+  color: color-mix(in srgb, var(--rh-text-muted) 92%, var(--rh-primary) 8%);
+}
+
+.rh-explore-plans .rh-explore-plans__list {
+  gap: var(--rh-space-3);
+}
+
+.rh-explore-plans .rh-plans__saved-badges {
+  row-gap: var(--rh-space-1);
+}
+
+.rh-explore-plans .rh-plans__saved-meta,
+.rh-explore-plans .rh-explore-plans__meta-muted {
+  line-height: 1.55;
+}
+
+.rh-explore-plans .rh-plans__empty {
+  border: 1px dashed color-mix(in srgb, var(--rh-border) 75%, var(--rh-primary) 15%);
+  background: color-mix(in srgb, var(--rh-surface) 97%, var(--rh-primary-muted) 3%);
+}
+
+/* ==========================================================================
+   2) Halakat page extras
+   ========================================================================== */
+.rh-plans--halakat .rh-plans__hero {
+  position: relative;
+  overflow: hidden;
+  border-color: color-mix(in srgb, var(--rh-primary) 12%, var(--rh-border));
+  box-shadow:
+    0 1px 0 rgba(0, 0, 0, 0.03),
+    var(--rh-shadow-md);
+}
+
+.rh-plans--halakat .rh-plans__hero::after {
+  content: '';
+  position: absolute;
+  inset-inline-start: -10%;
+  inset-block-start: -50%;
+  width: 65%;
+  height: 180%;
+  background: radial-gradient(circle, color-mix(in srgb, var(--rh-primary) 10%, transparent) 0%, transparent 70%);
+  pointer-events: none;
+}
+
+.rh-plans--halakat .rh-plans__saved-card {
+  border-color: color-mix(in srgb, var(--rh-border) 78%, var(--rh-primary) 14%);
+  background: linear-gradient(
+    150deg,
+    color-mix(in srgb, var(--rh-surface) 96%, var(--rh-primary-muted) 4%),
+    var(--rh-surface)
+  );
+}
+
+.rh-plans--halakat .rh-plans__saved-head-main strong {
+  font-size: clamp(1rem, 1.9vw, 1.1rem);
+}
+
+.rh-plans--halakat .rh-plans__saved-actions {
+  padding-top: var(--rh-space-2);
+  border-top: 1px solid color-mix(in srgb, var(--rh-border) 80%, transparent);
+}
+
+.rh-plans--halakat .rh-plans__saved-actions .ui-btn,
+.rh-plans--halakat .rh-plans__saved-actions a.ui-btn {
+  min-height: 2.45rem;
+}
+
+.rh-plans--halakat .rh-members-chat__item {
+  align-items: flex-start;
+  border-color: color-mix(in srgb, var(--rh-border) 76%, var(--rh-primary) 10%);
+  box-shadow: var(--rh-shadow-sm);
+}
+
+.rh-plans--halakat .rh-plan-members-modal__section {
+  background: color-mix(in srgb, var(--rh-surface) 94%, var(--rh-bg));
+  border: 1px solid color-mix(in srgb, var(--rh-border) 86%, transparent);
+  border-radius: var(--rh-radius-lg);
+  padding: var(--rh-space-4);
+}
+
+/* ==========================================================================
+   3) Admin pages
+   ========================================================================== */
+.rh-admin-users--join-groups .rh-admin-users__hero,
+.rh-admin-users--application-requests .rh-admin-users__hero,
+.rh-admin-users--management .rh-admin-users__hero {
+  background: linear-gradient(
+    145deg,
+    color-mix(in srgb, var(--rh-primary-muted) 54%, var(--rh-surface)) 0%,
+    var(--rh-surface) 76%
+  );
+  border-color: color-mix(in srgb, var(--rh-border) 76%, var(--rh-primary) 14%);
+}
+
+.rh-admin-users--join-groups .rh-admin-users__grid .rh-admin-users__card,
+.rh-admin-users--application-requests .rh-admin-users__grid .rh-admin-users__card,
+.rh-admin-users--management .rh-admin-users__grid .rh-admin-users__card {
+  border-color: color-mix(in srgb, var(--rh-border) 78%, var(--rh-primary) 12%);
+}
+
+.rh-admin-users--join-groups .rh-admin-users__grid .rh-admin-users__card:hover,
+.rh-admin-users--application-requests .rh-admin-users__grid .rh-admin-users__card:hover,
+.rh-admin-users--management .rh-admin-users__grid .rh-admin-users__card:hover {
+  border-color: color-mix(in srgb, var(--rh-primary) 24%, var(--rh-border));
+  box-shadow: var(--rh-shadow-md);
+}
+
+.rh-admin-users--join-groups .rh-admin-users__toolbar,
+.rh-admin-users--application-requests .rh-admin-users__toolbar,
+.rh-admin-users--management .rh-admin-users__toolbar {
+  border-color: color-mix(in srgb, var(--rh-border) 80%, var(--rh-primary) 9%);
+  box-shadow: var(--rh-shadow-sm);
+}
+
+.rh-admin-users--join-groups .rh-admin-applications__toolbar,
+.rh-admin-users--application-requests .rh-admin-applications__toolbar {
+  padding: var(--rh-space-3);
+  border: 1px solid color-mix(in srgb, var(--rh-border) 84%, transparent);
+  border-radius: var(--rh-radius-lg);
+  background: color-mix(in srgb, var(--rh-surface) 95%, var(--rh-bg));
+}
+
+.rh-admin-users--management .rh-admin-users__bulk {
+  border-color: color-mix(in srgb, var(--rh-border) 80%, var(--rh-primary) 10%);
+  background: color-mix(in srgb, var(--rh-surface) 97%, var(--rh-bg));
+}
+
+.rh-admin-users--management .rh-admin-users__bulk-top {
+  padding-bottom: var(--rh-space-2);
+  border-bottom: 1px solid color-mix(in srgb, var(--rh-border) 74%, transparent);
+}
+
+.rh-admin-users--application-requests .rh-admin-users__row,
+.rh-admin-users--join-groups .rh-admin-users__row {
+  gap: 0.5rem;
+}
+
+.rh-admin-users--application-requests .rh-admin-users__row span {
+  line-height: 1.45;
+}
+
+/* ==========================================================================
+   4) Join group details extras
+   ========================================================================== */
+.rh-admin-users--join-group-details .rh-admin-users__hero {
+  background: linear-gradient(
+    145deg,
+    color-mix(in srgb, var(--rh-primary-muted) 58%, var(--rh-surface)) 0%,
+    var(--rh-surface) 74%
+  );
+}
+
+.rh-admin-users--join-group-details .rh-admin-users__row--actions {
+  flex-wrap: wrap;
+}
+
+.rh-admin-users--join-group-details .rh-members-chat__item {
+  align-items: flex-start;
+}
+
+.rh-admin-users--join-group-details .rh-members-chat__item .ui-btn--danger {
+  align-self: center;
+}
+
+.rh-admin-users--join-group-details .rh-admin-applications__toolbar {
+  margin-bottom: var(--rh-space-3);
+  padding: var(--rh-space-3);
+  border: 1px solid color-mix(in srgb, var(--rh-border) 82%, transparent);
+  border-radius: var(--rh-radius-lg);
+  background: color-mix(in srgb, var(--rh-surface) 95%, var(--rh-bg));
+}
+
+/* ==========================================================================
+   5) Badge/readability
+   ========================================================================== */
+.rh-plans__saved-badge {
+  border: 1px solid color-mix(in srgb, var(--rh-primary) 22%, transparent);
+}
+
+.rh-admin-users__empty,
+.rh-plans__empty .rh-settings-card__subtitle {
+  line-height: 1.65;
+}
+
+/* ==========================================================================
+   6) Dark contrast
+   ========================================================================== */
+html[data-theme='dark'] .rh-nav-link {
+  color: color-mix(in srgb, var(--rh-text-muted) 90%, var(--rh-text) 10%);
+}
+
+html[data-theme='dark'] .rh-nav-link:hover {
+  background: color-mix(in srgb, var(--rh-primary-muted) 52%, var(--rh-surface));
+  color: var(--rh-text);
+}
+
+html[data-theme='dark'] .rh-nav-link--active {
+  background: color-mix(in srgb, var(--rh-primary-muted) 68%, var(--rh-surface-elevated));
+  color: var(--rh-primary-hover);
+  border: 1px solid color-mix(in srgb, var(--rh-primary) 34%, transparent);
+}
+
+html[data-theme='dark'] .rh-topbar__home-link:hover {
+  background: color-mix(in srgb, var(--rh-primary) 20%, transparent);
+}
+
+html[data-theme='dark'] .rh-settings-card__subtitle,
+html[data-theme='dark'] .rh-plans__saved-meta,
+html[data-theme='dark'] .rh-explore-plans__meta-muted,
+html[data-theme='dark'] .rh-admin-users__email {
+  color: color-mix(in srgb, var(--rh-text-muted) 94%, #ffffff 6%);
+}
+
+html[data-theme='dark'] .rh-plans__saved-badge {
+  background: color-mix(in srgb, var(--rh-primary-muted) 56%, var(--rh-surface-elevated));
+  color: var(--rh-primary-hover);
+  border-color: color-mix(in srgb, var(--rh-primary) 36%, transparent);
+}
+
+/* ==========================================================================
+   7) Accessibility
+   ========================================================================== */
+.rh-explore-plans .rh-explore-plans__card:focus-within,
+.rh-plans--halakat .rh-plans__saved-card:focus-within,
+.rh-admin-users .rh-admin-users__card:focus-within {
+  outline: 2px solid color-mix(in srgb, var(--rh-primary) 55%, transparent);
+  outline-offset: 2px;
+}
+
+.rh-admin-applications__filter-btn:focus-visible,
+.rh-plans__saved-actions .ui-btn:focus-visible,
+.rh-admin-users__row--actions .ui-btn:focus-visible,
+.rh-explore-plans__hero-aside .ui-btn:focus-visible,
+.rh-explore-plans__hero-aside a.ui-btn:focus-visible {
+  box-shadow: var(--rh-focus-ring);
+}
+
+/* ==========================================================================
+   8) Responsive rules
+   ========================================================================== */
+@media (max-width: 560px) {
+  .rh-explore-plans .rh-explore-plans__hero-aside {
+    width: 100%;
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: var(--rh-space-2);
+  }
+
+  .rh-explore-plans .rh-explore-plans__hero-aside .ui-btn,
+  .rh-explore-plans .rh-explore-plans__hero-aside a.ui-btn,
+  .rh-admin-users--join-groups .rh-admin-users__row--actions .ui-btn,
+  .rh-admin-users--application-requests .rh-admin-users__row--actions .ui-btn,
+  .rh-admin-users--management .rh-admin-users__row--actions .ui-btn {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .rh-admin-users--join-groups .rh-admin-users__row--actions,
+  .rh-admin-users--application-requests .rh-admin-users__row--actions,
+  .rh-admin-users--management .rh-admin-users__row--actions {
+    display: grid;
+    grid-template-columns: 1fr;
+    align-items: stretch;
+  }
+}
+
+@media (max-width: 899px) {
+  .rh-explore-plans .rh-explore-plans__toolbar {
+    padding: var(--rh-space-3);
+  }
+
+  .rh-explore-plans .rh-explore-plans__card {
+    border-radius: var(--rh-radius-lg);
+  }
+
+  .rh-plans--halakat .rh-plans__hero {
+    padding: var(--rh-space-4) var(--rh-space-3);
+  }
+
+  .rh-plans--halakat .rh-plans__hero-head {
+    flex-direction: column;
+  }
+
+  .rh-plans--halakat .rh-plans__hero-actions,
+  .rh-plans--halakat .rh-plans__hero-actions .ui-btn {
+    width: 100%;
+    align-items: stretch;
+    justify-content: center;
+  }
+
+  .rh-plans--halakat .rh-plans__saved-actions {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+
+  .rh-plans--halakat .rh-plans__saved-actions .ui-btn,
+  .rh-plans--halakat .rh-plans__saved-actions a.ui-btn {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .rh-admin-users--join-groups .rh-admin-applications__toolbar,
+  .rh-admin-users--application-requests .rh-admin-applications__toolbar {
+    padding: var(--rh-space-2);
+  }
+
+  .rh-admin-users--join-groups .rh-admin-applications__filters,
+  .rh-admin-users--application-requests .rh-admin-applications__filters {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .rh-admin-users--join-groups .rh-admin-users__row--actions .ui-btn,
+  .rh-admin-users--join-groups .rh-admin-users__row--actions a.ui-btn,
+  .rh-admin-users--application-requests .rh-admin-users__row--actions .ui-btn,
+  .rh-admin-users--application-requests .rh-admin-users__row--actions a.ui-btn,
+  .rh-admin-users--management .rh-admin-users__row--actions .ui-btn {
+    min-height: 2.7rem;
+  }
+
+  .rh-admin-users--join-group-details .rh-admin-users__row--actions {
+    display: grid;
+    grid-template-columns: 1fr;
+    width: 100%;
+  }
+
+  .rh-admin-users--join-group-details .rh-admin-users__row--actions .ui-btn {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .rh-admin-users--application-requests .rh-admin-applications__save {
+    width: 100%;
+  }
+
+  .rh-admin-users--application-requests .rh-admin-applications__save .ui-btn {
+    width: 100%;
+  }
+}
+
+/* ==========================================================================
+   9) Reduced motion
+   ========================================================================== */
+@media (prefers-reduced-motion: reduce) {
+  .rh-sidebar__nav,
+  .rh-nav-link,
+  .rh-topbar__home-link,
+  .rh-plans__saved-card,
+  .rh-explore-plans__card,
+  .rh-admin-users__card,
+  .rh-icon-btn,
+  .ui-btn {
+    animation: none !important;
+    transition: none !important;
+    transform: none !important;
+    scroll-behavior: auto !important;
+  }
+}

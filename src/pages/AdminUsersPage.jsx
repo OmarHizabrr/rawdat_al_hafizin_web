@@ -342,7 +342,7 @@ export default function AdminUsersPage() {
   }
 
   return (
-    <div className="rh-admin-users">
+    <div className="rh-admin-users rh-admin-users--management">
       <header className="rh-admin-users__hero card">
         <h1 className="rh-admin-users__title">إدارة المستخدمين</h1>
         <p className="rh-admin-users__desc">
