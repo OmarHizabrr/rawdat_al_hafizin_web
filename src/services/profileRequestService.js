@@ -2,6 +2,7 @@ import { collectionGroup, getFirestore, onSnapshot, query } from 'firebase/fires
 import { app } from '../firebase.js'
 import { adminApplyRoleBasedPermissionProfile } from './adminUsersService.js'
 import { firestoreApi } from './firestoreApi.js'
+import { upsertUserNotification } from './userNotificationsService.js'
 
 export const PROFILE_REQUEST_STATUS = {
   PENDING: 'pending',
@@ -173,6 +174,33 @@ export function subscribeAllProfileRequests(onNext, onError) {
   )
 }
 
+async function notifyApplicantOfReview(actorUser, targetUserId, nextStatus, statusMessage = '') {
+  const notificationId = `application-review-${targetUserId}-${Date.now()}`
+  const reviewerLabel = String(actorUser?.displayName || actorUser?.email || 'المشرف').trim()
+  if (nextStatus === PROFILE_REQUEST_STATUS.APPROVED) {
+    await upsertUserNotification({
+      userId: targetUserId,
+      notificationId,
+      title: 'تم قبول طلب الالتحاق',
+      body: `تم قبول طلبك بنجاح. يمكنك الآن استخدام المنصة وفق صلاحيات حسابك.\n\nمراجعة: ${reviewerLabel}`,
+      notificationType: 'application_approved',
+      userData: actorUser || {},
+    })
+    return
+  }
+  const note = String(statusMessage || '').trim()
+  await upsertUserNotification({
+    userId: targetUserId,
+    notificationId,
+    title: 'تم رفض طلب الالتحاق — يمكنك التعديل وإعادة التقديم',
+    body: note
+      ? `لم يُعتمد طلبك في هذه المرحلة.\n\nملاحظة المشرف:\n${note}\n\nيرجى مراجعة البيانات وتعديل ما يلزم ثم إعادة إرسال طلب الالتحاق من صفحة الطلب عند الجاهزية.`
+      : 'لم يُعتمد طلبك في هذه المرحلة. راجع البيانات وأعد التقديم عند الجاهزية.',
+    notificationType: 'application_rejected',
+    userData: actorUser || {},
+  })
+}
+
 export async function reviewProfileRequest(actorUser, targetUserId, nextStatus, statusMessage = '') {
   if (!actorUser?.uid || !targetUserId) return
   if (nextStatus !== PROFILE_REQUEST_STATUS.APPROVED && nextStatus !== PROFILE_REQUEST_STATUS.REJECTED) return
@@ -198,6 +226,12 @@ export async function reviewProfileRequest(actorUser, targetUserId, nextStatus, 
         userData: actorUser,
       })
     }
+  }
+  try {
+    await notifyApplicantOfReview(actorUser, targetUserId, nextStatus, statusMessage)
+  } catch (e) {
+    /* لا نُبطل القرار إذا تعذّر إنشاء الإشعار (صلاحيات القواعد إلخ) */
+    console.warn('[profileRequest] notifyApplicantOfReview failed', e)
   }
 }
 

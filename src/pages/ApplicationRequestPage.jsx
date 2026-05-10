@@ -286,6 +286,34 @@ export default function ApplicationRequestPage() {
           <p className="rh-settings-footnote">حالة الطلب الحالية: <strong>{statusLabel}</strong></p>
         </header>
 
+        {row?.status === PROFILE_REQUEST_STATUS.APPROVED ? (
+          <section className="rh-settings-card rh-app-request-banner" role="status">
+            <p className="rh-settings-desc">
+              تم قبول طلبك. ستجد تأكيداً أيضاً في{' '}
+              <HapticLink to="/app/notifications">إشعاراتك</HapticLink> ثم يمكنك استخدام المنصة من القائمة حسب صلاحياتك.
+            </p>
+            <HapticLink to="/app" className="ui-btn ui-btn--primary">
+              الدخول إلى الرئيسية
+            </HapticLink>
+          </section>
+        ) : null}
+
+        {row?.status === PROFILE_REQUEST_STATUS.REJECTED ? (
+          <section className="rh-settings-card" role="region" aria-label="نتيجة المراجعة">
+            <p className="rh-settings-desc">
+              لم يُعتمد الطلب في آخر مراجعة.
+              {row?.statusMessage ? (
+                <>
+                  {' '}
+                  ملاحظة الإدارة: <strong>{row.statusMessage}</strong>
+                </>
+              ) : null}{' '}
+              يمكنك تعديل البيانات أدناه وإعادة الإرسال. قد يكون وصلك أيضاً{' '}
+              <HapticLink to="/app/notifications">إشعار</HapticLink> بنفس التفاصيل.
+            </p>
+          </section>
+        ) : null}
+
         <section className="rh-settings-card rh-app-request-form">
           <TextField label="الاسم الرباعي" value={form.fullName} onChange={(e) => onChange('fullName', e.target.value)} />
           <SearchableSelect
@@ -394,6 +422,10 @@ export default function ApplicationRequestPage() {
           المتطلبات أو تحديث البيانات.
         </p>
         {row?.statusMessage ? <p className="rh-settings-footnote">{row.statusMessage}</p> : null}
+        <p className="rh-settings-footnote" style={{ marginBottom: 0 }}>
+          يمكنك مراجعة الإشعارات في أي وقت من صفحة{' '}
+          <HapticLink to="/app/notifications">إشعارات المنصة</HapticLink>.
+        </p>
         <div className="rh-admin-users__modal-actions">
           <Button type="button" variant="primary" icon={Check} onClick={() => setShowRejectedModal(false)}>
             فهمت

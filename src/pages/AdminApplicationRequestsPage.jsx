@@ -15,7 +15,7 @@ import {
   subscribeAllProfileRequests,
 } from '../services/profileRequestService.js'
 import { downloadProfileRequestsCsv } from '../utils/downloadProfileRequestsCsv.js'
-import { Button, Modal, NumberStepField, SearchField, SearchableSelect, TextField, useToast } from '../ui/index.js'
+import { Button, Modal, NumberStepField, SearchField, SearchableSelect, TextAreaField, TextField, useToast } from '../ui/index.js'
 
 const GENDER_OPTIONS = [
   { value: 'male', label: 'ذكر' },
@@ -100,7 +100,7 @@ export default function AdminApplicationRequestsPage() {
     setBusyId(row.userId)
     try {
       await reviewProfileRequest(user, row.userId, PROFILE_REQUEST_STATUS.APPROVED, '')
-      toast.success('تم قبول الطلب.', 'تم')
+      toast.success('تم قبول الطلب وأُرسل إشعار إلى المتقدّم.', 'تم')
     } catch {
       toast.warning('تعذّر تحديث حالة الطلب.', 'تنبيه')
     } finally {
@@ -184,7 +184,7 @@ export default function AdminApplicationRequestsPage() {
         PROFILE_REQUEST_STATUS.REJECTED,
         rejectReason.trim(),
       )
-      toast.info('تم تحديث الطلب إلى مرفوض حالياً.', '')
+      toast.info('تم رفض الطلب وأُرسل إشعار إلى المتقدّم (مع الملاحظة إن وُجدت).', '')
       setRejectingRow(null)
       setRejectReason('')
     } catch {
@@ -544,17 +544,21 @@ export default function AdminApplicationRequestsPage() {
       <Modal
         open={Boolean(rejectingRow)}
         title="رفض الطلب حالياً"
-        onClose={() => setRejectingRow(null)}
+        onClose={() => {
+          setRejectingRow(null)
+          setRejectReason('')
+        }}
         size="sm"
       >
         <p className="rh-settings-footnote" style={{ marginTop: 0 }}>
-          سيتم عرض رسالة لطيفة للطالب. يمكنك كتابة ملاحظة مختصرة تساعده على التحسين.
+          يصل الطالب إشعاراً في المنصة يتضمن هذه الملاحظة إن كتبتها — مثلاً طلب تصحيح بيانات أو استيفاء شرط قبل إعادة التقديم.
         </p>
-        <TextField
-          label="سبب مختصر (اختياري)"
+        <TextAreaField
+          label="سبب أو ملاحظة للمتقدّم (اختياري)"
           value={rejectReason}
           onChange={(e) => setRejectReason(e.target.value)}
-          placeholder="مثال: يرجى استيفاء شرط الحفظ كاملاً ثم إعادة التقديم."
+          placeholder="مثال: يرجى تصحيح رقم الجوال ثم إعادة إرسال الطلب. أو: لا يستوفي شرط الحفظ المطلوب حالياً."
+          rows={4}
         />
         <div className="rh-admin-users__modal-actions">
           <Button type="button" variant="danger" icon={XCircle} onClick={onReject} loading={busyId === rejectingRow?.userId}>
