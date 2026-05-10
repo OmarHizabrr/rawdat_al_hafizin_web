@@ -224,6 +224,29 @@ export async function loadTeachersDirectory(currentUser = null) {
   return mergeUniquePeople(fromUsers, fromMembers, selfTeacher ? [selfTeacher] : [])
 }
 
+/** حقول مستند العضو في مجموعات النشاط / الاختبار / الدورة */
+async function mergeMemberDocExtras(kind, groupId, memberUid) {
+  if (!groupId || !memberUid) return {}
+  if (kind !== 'activity' && kind !== 'exam' && kind !== 'dawra') return {}
+  try {
+    const mem = await firestoreApi.getData(firestoreApi.getPlanMemberDoc(groupId, memberUid))
+    if (!mem || typeof mem !== 'object') return {}
+    if (kind === 'activity' || kind === 'dawra') {
+      return {
+        memberContributionText: String(mem.memberContributionText || '').trim(),
+        memberContributionUpdatedAt: mem.memberContributionUpdatedAt || '',
+      }
+    }
+    return {
+      examSelfReportStatus: String(mem.examSelfReportStatus || '').trim(),
+      examSelfReportNotes: String(mem.examSelfReportNotes || '').trim(),
+      examSelfReportUpdatedAt: mem.examSelfReportUpdatedAt || '',
+    }
+  } catch {
+    return {}
+  }
+}
+
 async function loadUserMembershipRows(userId, kind) {
   const mirrorCollection =
     kind === 'halaka'
@@ -257,11 +280,13 @@ async function loadUserMembershipRows(userId, kind) {
       const mirror = docSnap.data() || {}
       const canonical = await firestoreApi.getData(canonicalRefByKind(kind, docSnap.id))
       if (!canonical) return null
+      const extras = await mergeMemberDocExtras(kind, docSnap.id, userId)
       return {
         id: docSnap.id,
         ...canonical,
         [roleField]: mirror.role || '',
         joinedAt: mirror.joinedAt || '',
+        ...extras,
       }
     }),
   )
@@ -336,6 +361,9 @@ export async function buildStudentReport(user, range = {}) {
       createdAt: pickFirstDate(r.createdAt, r.createTimes),
       updatedAt: pickFirstDate(r.updatedAt, r.updatedTimes),
       joinedAt: r.joinedAt || '',
+      examSelfReportStatus: r.examSelfReportStatus || '',
+      examSelfReportNotes: r.examSelfReportNotes || '',
+      examSelfReportUpdatedAt: r.examSelfReportUpdatedAt || '',
     })),
     activities: sortByRecent(activities, (r) => pickFirstDate(r.updatedAt, r.startAt, r.createdAt, r.joinedAt)).map((r) => ({
       id: r.id,
@@ -347,6 +375,8 @@ export async function buildStudentReport(user, range = {}) {
       createdAt: pickFirstDate(r.createdAt, r.createTimes),
       updatedAt: pickFirstDate(r.updatedAt, r.updatedTimes),
       joinedAt: r.joinedAt || '',
+      memberContributionText: r.memberContributionText || '',
+      memberContributionUpdatedAt: r.memberContributionUpdatedAt || '',
     })),
     dawrat: sortByRecent(dawrat, (r) => pickFirstDate(r.updatedAt, r.courseStart, r.createdAt, r.joinedAt)).map((r) => ({
       id: r.id,
@@ -360,6 +390,8 @@ export async function buildStudentReport(user, range = {}) {
       createdAt: pickFirstDate(r.createdAt, r.createTimes),
       updatedAt: pickFirstDate(r.updatedAt, r.updatedTimes),
       joinedAt: r.joinedAt || '',
+      memberContributionText: r.memberContributionText || '',
+      memberContributionUpdatedAt: r.memberContributionUpdatedAt || '',
     })),
     remoteTasmee: sortByRecent(remoteTasmee, (r) => pickFirstDate(r.updatedAt, r.createdAt, r.joinedAt)).map((r) => ({
       id: r.id,
@@ -462,9 +494,31 @@ export async function buildTeacherReport(user, range = {}) {
   const teacherRows = {
     plans: sortByRecent(plans, (r) => pickFirstDate(r.updatedAt, r.createdAt, r.joinedAt)).map((r) => ({ id: r.id, name: r.name || '', role: r.planRole || '', visibility: r.planVisibility || '' })),
     halakat: sortByRecent(halakat, (r) => pickFirstDate(r.updatedAt, r.createdAt, r.joinedAt)).map((r) => ({ id: r.id, name: r.name || '', role: r.halakaRole || '', visibility: r.halakaVisibility || '' })),
-    exams: sortByRecent(exams, (r) => pickFirstDate(r.updatedAt, r.createdAt, r.joinedAt)).map((r) => ({ id: r.id, name: r.name || '', role: r.examRole || '', visibility: r.examVisibility || '' })),
-    activities: sortByRecent(activities, (r) => pickFirstDate(r.updatedAt, r.startAt, r.createdAt, r.joinedAt)).map((r) => ({ id: r.id, name: r.name || '', role: r.activityRole || '', visibility: r.activityVisibility || '' })),
-    dawrat: sortByRecent(dawrat, (r) => pickFirstDate(r.updatedAt, r.courseStart, r.createdAt, r.joinedAt)).map((r) => ({ id: r.id, name: r.name || '', role: r.dawraRole || '', visibility: r.dawraVisibility || '' })),
+    exams: sortByRecent(exams, (r) => pickFirstDate(r.updatedAt, r.createdAt, r.joinedAt)).map((r) => ({
+      id: r.id,
+      name: r.name || '',
+      role: r.examRole || '',
+      visibility: r.examVisibility || '',
+      examSelfReportStatus: r.examSelfReportStatus || '',
+      examSelfReportNotes: r.examSelfReportNotes || '',
+      examSelfReportUpdatedAt: r.examSelfReportUpdatedAt || '',
+    })),
+    activities: sortByRecent(activities, (r) => pickFirstDate(r.updatedAt, r.startAt, r.createdAt, r.joinedAt)).map((r) => ({
+      id: r.id,
+      name: r.name || '',
+      role: r.activityRole || '',
+      visibility: r.activityVisibility || '',
+      memberContributionText: r.memberContributionText || '',
+      memberContributionUpdatedAt: r.memberContributionUpdatedAt || '',
+    })),
+    dawrat: sortByRecent(dawrat, (r) => pickFirstDate(r.updatedAt, r.courseStart, r.createdAt, r.joinedAt)).map((r) => ({
+      id: r.id,
+      name: r.name || '',
+      role: r.dawraRole || '',
+      visibility: r.dawraVisibility || '',
+      memberContributionText: r.memberContributionText || '',
+      memberContributionUpdatedAt: r.memberContributionUpdatedAt || '',
+    })),
     remoteTasmee: sortByRecent(remoteTasmee, (r) => pickFirstDate(r.updatedAt, r.createdAt, r.joinedAt)).map((r) => ({ id: r.id, name: r.name || r.meetingCode || '', role: r.broadcastRole || '' })),
   }
 

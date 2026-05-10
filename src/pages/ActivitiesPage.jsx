@@ -36,6 +36,7 @@ import {
   saveActivities,
   setActivityMemberRole,
   subscribeActivities,
+  upsertActivityMemberContribution,
 } from '../utils/activitiesStorage.js'
 import { leavingUserDeletesWholeGroup } from '../utils/groupMembership.js'
 import { mergeUserDirectoryRows } from '../utils/userDirectoryMerge.js'
@@ -191,6 +192,18 @@ export default function ActivitiesPage() {
   const [memberPickerQuery, setMemberPickerQuery] = useState('')
   const [addingMemberUid, setAddingMemberUid] = useState('')
   const [memberRowBusy, setMemberRowBusy] = useState(null)
+  const [contributionDrafts, setContributionDrafts] = useState({})
+  const [contributionBusyId, setContributionBusyId] = useState(null)
+
+  useEffect(() => {
+    setContributionDrafts((prev) => {
+      const next = { ...prev }
+      for (const row of saved) {
+        if (next[row.id] === undefined) next[row.id] = row.memberContributionText || ''
+      }
+      return next
+    })
+  }, [saved])
 
   useEffect(() => {
     document.title = readOnly
@@ -597,6 +610,60 @@ export default function ActivitiesPage() {
                     </li>
                   )}
                 </ul>
+                {!readOnly &&
+                  row.activityRole === HALAKA_MEMBER_ROLES.STUDENT &&
+                  can(PA, 'activity_student_contribute') && (
+                    <div className="rh-plans__student-contribution no-print">
+                      <TextAreaField
+                        label="مساهمتك على النشاط (تكليف، فائدة، تعليق)"
+                        value={
+                          contributionDrafts[row.id] !== undefined
+                            ? contributionDrafts[row.id]
+                            : row.memberContributionText || ''
+                        }
+                        onChange={(e) =>
+                          setContributionDrafts((prev) => ({ ...prev, [row.id]: e.target.value }))
+                        }
+                        rows={3}
+                      />
+                      {row.memberContributionUpdatedAt && (
+                        <p className="ui-field__hint">
+                          آخر تحديث للمساهمة:{' '}
+                          {new Date(row.memberContributionUpdatedAt).toLocaleString('ar-SA')}
+                        </p>
+                      )}
+                      <Button
+                        type="button"
+                        variant="secondary"
+                        size="sm"
+                        loading={contributionBusyId === row.id}
+                        disabled={!user?.uid || contributionBusyId === row.id}
+                        onClick={async () => {
+                          if (!user) return
+                          setContributionBusyId(row.id)
+                          try {
+                            await upsertActivityMemberContribution(
+                              user,
+                              row.id,
+                              contributionDrafts[row.id] ?? row.memberContributionText ?? '',
+                              user ?? {},
+                            )
+                            toast.success('تم حفظ مساهمتك.', str('activities.toast_ok_title'))
+                          } catch (e) {
+                            const msg =
+                              e?.message === 'ACTIVITY_CONTRIBUTION_STUDENT_ONLY'
+                                ? 'هذا الحقل مخصص لعضو بدور طالب.'
+                                : 'تعذّر حفظ المساهمة.'
+                            toast.warning(msg, str('activities.toast_alert_title'))
+                          } finally {
+                            setContributionBusyId(null)
+                          }
+                        }}
+                      >
+                        حفظ المساهمة
+                      </Button>
+                    </div>
+                  )}
                 <p className="rh-plans__saved-meta">
                   {str('activities.card_meta_id')} <code className="rh-plans__plan-id">{row.id}</code>
                 </p>
@@ -924,6 +991,11 @@ export default function ActivitiesPage() {
                       <div className="rh-members-chat__main">
                         <strong>{row.displayName || row.userId}</strong>
                         <span className="rh-plans__saved-badge">{roleLabel(row.role)}</span>
+                        {String(row.memberContributionText || '').trim() !== '' && (
+                          <p className="rh-members-chat__contribution">
+                            مساهمة الطالب: {row.memberContributionText}
+                          </p>
+                        )}
                       </div>
                       {!isOwner && (
                         <div className="rh-members-chat__actions">

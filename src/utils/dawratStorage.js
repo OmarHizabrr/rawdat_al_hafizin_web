@@ -52,7 +52,7 @@ async function syncDawraMemberCount(dawraId) {
   })
 }
 
-async function mergeMirrorDocs(mirrorDocs) {
+async function mergeMirrorDocs(mirrorDocs, mirrorOwnerUid) {
   const out = []
   for (const d of mirrorDocs) {
     const dawraId = d.id
@@ -60,11 +60,22 @@ async function mergeMirrorDocs(mirrorDocs) {
     const role = mirrorData.role || DAWRA_MEMBER_ROLES.MEMBER
     const canonical = await firestoreApi.getData(canonicalRef(dawraId))
     if (!canonical) continue
+    let memberExtra = {}
+    if (mirrorOwnerUid) {
+      const memDoc = await firestoreApi.getData(memberRef(dawraId, mirrorOwnerUid))
+      if (memDoc && typeof memDoc === 'object') {
+        memberExtra = {
+          memberContributionText: String(memDoc.memberContributionText || '').trim(),
+          memberContributionUpdatedAt: memDoc.memberContributionUpdatedAt || '',
+        }
+      }
+    }
     out.push(
       normalizeDawraCalendarDays({
         id: dawraId,
         ...canonical,
         dawraRole: role,
+        ...memberExtra,
       }),
     )
   }
@@ -78,7 +89,7 @@ async function mergeMirrorDocs(mirrorDocs) {
 export async function loadDawrat(userId) {
   if (!userId) return []
   const mirrorDocs = await firestoreApi.getDocuments(userMirrorsCol(userId))
-  return mergeMirrorDocs(mirrorDocs)
+  return mergeMirrorDocs(mirrorDocs, userId)
 }
 
 export function subscribeDawrat(userId, onNext, onError) {
@@ -88,7 +99,7 @@ export function subscribeDawrat(userId, onNext, onError) {
     (snapshot) => {
       ;(async () => {
         try {
-          const merged = await mergeMirrorDocs(snapshot.docs)
+          const merged = await mergeMirrorDocs(snapshot.docs, userId)
           onNext(merged)
         } catch (e) {
           onError?.(e)
@@ -267,6 +278,25 @@ export async function removeDawraMember(actorUser, dawraId, targetUid) {
   await firestoreApi.deleteData(memberRef(dawraId, targetUid))
   await firestoreApi.deleteData(mirrorDoc(targetUid, dawraId))
   await syncDawraMemberCount(dawraId)
+}
+
+/** مساهمة عضو الدورة (دور عضو فقط) — نفس حقول مساهمة الطالب في الأنشطة */
+export async function upsertDawraMemberContribution(actorUser, dawraId, text, userData = {}) {
+  if (!actorUser?.uid || !dawraId) return
+  const uid = actorUser.uid
+  const mem = await firestoreApi.getData(memberRef(dawraId, uid))
+  if (!mem) throw new Error('NOT_MEMBER')
+  const role = mem.role || DAWRA_MEMBER_ROLES.MEMBER
+  if (role !== DAWRA_MEMBER_ROLES.MEMBER) throw new Error('DAWRA_CONTRIBUTION_MEMBER_ONLY')
+  const trimmed = String(text ?? '').trim()
+  await firestoreApi.updateData({
+    docRef: memberRef(dawraId, uid),
+    data: {
+      memberContributionText: trimmed,
+      memberContributionUpdatedAt: new Date().toISOString(),
+    },
+    userData,
+  })
 }
 
 export async function setDawraMemberRole(actorUser, dawraId, targetUid, nextRole, userData = {}) {

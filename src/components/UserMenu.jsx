@@ -14,6 +14,8 @@ import { Link, useNavigate } from 'react-router-dom'
 import { isAdmin, normalizeRole } from '../config/roles.js'
 import { PROFILE_REQUEST_STATUS } from '../services/profileRequestService.js'
 import { signOut } from '../services/authService.js'
+import { firestoreApi } from '../services/firestoreApi.js'
+import { setApplicationReviewSessionFlag } from '../utils/applicationReviewSession.js'
 import { useOnClickOutside } from '../ui/hooks/useOnClickOutside.js'
 import { RhIcon, RH_ICON_STROKE } from '../ui/RhIcon.jsx'
 
@@ -36,9 +38,20 @@ export function UserMenu({ user }) {
 
   const handleLogout = useCallback(async () => {
     setOpen(false)
+    try {
+      const pid = typeof user?.permissionProfileId === 'string' ? user.permissionProfileId.trim() : ''
+      if (pid && normalizeRole(user?.role) === 'student') {
+        const doc = await firestoreApi.getData(firestoreApi.getPermissionProfileDoc(pid))
+        if (doc?.applicationFormAfterLogout === true) {
+          setApplicationReviewSessionFlag()
+        }
+      }
+    } catch {
+      /* تجاهل فشل القراءة قبل الخروج */
+    }
     await signOut()
     navigate('/', { replace: true })
-  }, [navigate])
+  }, [navigate, user])
 
   const name = user?.displayName?.trim() || 'مستخدم'
   const email = user?.email || ''

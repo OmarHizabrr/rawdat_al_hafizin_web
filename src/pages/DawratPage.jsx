@@ -20,6 +20,7 @@ import {
   saveDawrat,
   setDawraMemberRole,
   subscribeDawrat,
+  upsertDawraMemberContribution,
 } from '../utils/dawratStorage.js'
 import { daysInclusiveYmd } from '../utils/datePeriodAr.js'
 import { leavingUserDeletesWholeGroup } from '../utils/groupMembership.js'
@@ -151,6 +152,18 @@ export default function DawratPage() {
   const [memberPickerQuery, setMemberPickerQuery] = useState('')
   const [addingMemberUid, setAddingMemberUid] = useState('')
   const [memberRowBusy, setMemberRowBusy] = useState(null)
+  const [contributionDrafts, setContributionDrafts] = useState({})
+  const [contributionBusyId, setContributionBusyId] = useState(null)
+
+  useEffect(() => {
+    setContributionDrafts((prev) => {
+      const next = { ...prev }
+      for (const row of saved) {
+        if (next[row.id] === undefined) next[row.id] = row.memberContributionText || ''
+      }
+      return next
+    })
+  }, [saved])
 
   useEffect(() => {
     document.title = readOnly
@@ -513,6 +526,60 @@ export default function DawratPage() {
                     </ul>
                   </div>
                 )}
+                {!readOnly &&
+                  d.dawraRole === DAWRA_MEMBER_ROLES.MEMBER &&
+                  can(PH, 'dawra_student_contribute') && (
+                    <div className="rh-plans__student-contribution no-print">
+                      <TextAreaField
+                        label="مساهمتك على الدورة (تكليف، ملاحظة، تعليق)"
+                        value={
+                          contributionDrafts[d.id] !== undefined
+                            ? contributionDrafts[d.id]
+                            : d.memberContributionText || ''
+                        }
+                        onChange={(e) =>
+                          setContributionDrafts((prev) => ({ ...prev, [d.id]: e.target.value }))
+                        }
+                        rows={3}
+                      />
+                      {d.memberContributionUpdatedAt && (
+                        <p className="ui-field__hint">
+                          آخر تحديث للمساهمة:{' '}
+                          {new Date(d.memberContributionUpdatedAt).toLocaleString('ar-SA')}
+                        </p>
+                      )}
+                      <Button
+                        type="button"
+                        variant="secondary"
+                        size="sm"
+                        loading={contributionBusyId === d.id}
+                        disabled={!user?.uid || contributionBusyId === d.id}
+                        onClick={async () => {
+                          if (!user) return
+                          setContributionBusyId(d.id)
+                          try {
+                            await upsertDawraMemberContribution(
+                              user,
+                              d.id,
+                              contributionDrafts[d.id] ?? d.memberContributionText ?? '',
+                              user ?? {},
+                            )
+                            toast.success('تم حفظ مساهمتك.', 'تم')
+                          } catch (e) {
+                            const msg =
+                              e?.message === 'DAWRA_CONTRIBUTION_MEMBER_ONLY'
+                                ? 'هذا الحقل مخصص لعضو الدورة (ليس مالكاً أو مشرفاً).'
+                                : 'تعذّر حفظ المساهمة.'
+                            toast.warning(msg, 'تنبيه')
+                          } finally {
+                            setContributionBusyId(null)
+                          }
+                        }}
+                      >
+                        حفظ المساهمة
+                      </Button>
+                    </div>
+                  )}
                 <p className="rh-plans__saved-meta">
                   المعرف: <code className="rh-plans__plan-id">{d.id}</code>
                 </p>
@@ -817,6 +884,11 @@ export default function DawratPage() {
                       <div className="rh-members-chat__main">
                         <strong>{row.displayName || row.userId}</strong>
                         <span className="rh-plans__saved-badge">{roleLabel(row.role)}</span>
+                        {String(row.memberContributionText || '').trim() !== '' && (
+                          <p className="rh-members-chat__contribution">
+                            مساهمة العضو: {row.memberContributionText}
+                          </p>
+                        )}
                       </div>
                       {!isOwner && (
                         <div className="rh-members-chat__actions">

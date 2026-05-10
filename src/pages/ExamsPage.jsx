@@ -35,6 +35,7 @@ import {
   saveExams,
   setExamMemberRole,
   subscribeExams,
+  upsertExamMemberSelfReport,
 } from '../utils/examsStorage.js'
 import { VOLUME_BY_ID } from '../data/volumes.js'
 import {
@@ -63,6 +64,18 @@ function newId() {
 }
 
 const PH = PERMISSION_PAGE_IDS.exams
+
+const EXAM_SELF_REPORT_OPTIONS = [
+  { value: '', label: '— حالة الإنجاز —' },
+  { value: 'registered', label: 'سجّلت في المجموعة' },
+  { value: 'preparing', label: 'أجهّز للاختبار' },
+  { value: 'completed', label: 'أتممت الاختبار' },
+]
+
+function examSelfReportStatusLabel(v) {
+  const hit = EXAM_SELF_REPORT_OPTIONS.find((o) => o.value === v)
+  return hit?.label || 'غير محدد'
+}
 
 function examCanEdit(ex) {
   return ex?.examRole !== HALAKA_MEMBER_ROLES.STUDENT
@@ -187,6 +200,23 @@ export default function ExamsPage() {
   const [memberPickerQuery, setMemberPickerQuery] = useState('')
   const [addingMemberUid, setAddingMemberUid] = useState('')
   const [memberRowBusy, setMemberRowBusy] = useState(null)
+  const [examReportDrafts, setExamReportDrafts] = useState({})
+  const [examSelfBusyId, setExamSelfBusyId] = useState(null)
+
+  useEffect(() => {
+    setExamReportDrafts((prev) => {
+      const next = { ...prev }
+      for (const ex of saved) {
+        if (!next[ex.id]) {
+          next[ex.id] = {
+            status: ex.examSelfReportStatus || '',
+            notes: ex.examSelfReportNotes || '',
+          }
+        }
+      }
+      return next
+    })
+  }, [saved])
 
   useEffect(() => {
     document.title = readOnly
@@ -508,6 +538,85 @@ export default function ExamsPage() {
                     ) : null}
                   </>
                 )}
+                {!readOnly &&
+                  ex.examRole === HALAKA_MEMBER_ROLES.STUDENT &&
+                  can(PH, 'exam_student_self_report') && (
+                    <div className="rh-plans__student-contribution no-print">
+                      <div className="ui-field">
+                        <label className="ui-field__label" htmlFor={`exam-self-${ex.id}`}>
+                          تسجيل إنجازك في الاختبار
+                        </label>
+                        <select
+                          id={`exam-self-${ex.id}`}
+                          className="ui-input"
+                          value={examReportDrafts[ex.id]?.status ?? ex.examSelfReportStatus ?? ''}
+                          onChange={(e) =>
+                            setExamReportDrafts((prev) => ({
+                              ...prev,
+                              [ex.id]: {
+                                status: e.target.value,
+                                notes: prev[ex.id]?.notes ?? ex.examSelfReportNotes ?? '',
+                              },
+                            }))
+                          }
+                        >
+                          {EXAM_SELF_REPORT_OPTIONS.map((o) => (
+                            <option key={o.value || 'empty'} value={o.value}>
+                              {o.label}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                      <TextAreaField
+                        label="ملاحظات (اختياري)"
+                        value={examReportDrafts[ex.id]?.notes ?? ex.examSelfReportNotes ?? ''}
+                        onChange={(e) =>
+                          setExamReportDrafts((prev) => ({
+                            ...prev,
+                            [ex.id]: {
+                              status: prev[ex.id]?.status ?? ex.examSelfReportStatus ?? '',
+                              notes: e.target.value,
+                            },
+                          }))
+                        }
+                        rows={2}
+                      />
+                      {ex.examSelfReportUpdatedAt && (
+                        <p className="ui-field__hint">
+                          آخر تحديث: {new Date(ex.examSelfReportUpdatedAt).toLocaleString('ar-SA')}
+                        </p>
+                      )}
+                      <Button
+                        type="button"
+                        variant="secondary"
+                        size="sm"
+                        loading={examSelfBusyId === ex.id}
+                        disabled={!user?.uid || examSelfBusyId === ex.id}
+                        onClick={async () => {
+                          if (!user) return
+                          setExamSelfBusyId(ex.id)
+                          const d = examReportDrafts[ex.id] ?? {
+                            status: ex.examSelfReportStatus || '',
+                            notes: ex.examSelfReportNotes || '',
+                          }
+                          try {
+                            await upsertExamMemberSelfReport(user, ex.id, d, user ?? {})
+                            toast.success('تم حفظ حالة الإنجاز.', 'تم')
+                          } catch (e) {
+                            const msg =
+                              e?.message === 'EXAM_SELF_REPORT_STUDENT_ONLY'
+                                ? 'التسجيل متاح لعضو بدور طالب فقط.'
+                                : 'تعذّر الحفظ.'
+                            toast.warning(msg, 'تنبيه')
+                          } finally {
+                            setExamSelfBusyId(null)
+                          }
+                        }}
+                      >
+                        حفظ الإنجاز
+                      </Button>
+                    </div>
+                  )}
                 <p className="rh-plans__saved-meta">
                   المعرف: <code className="rh-plans__plan-id">{ex.id}</code>
                 </p>
@@ -830,6 +939,14 @@ export default function ExamsPage() {
                       <div className="rh-members-chat__main">
                         <strong>{row.displayName || row.userId}</strong>
                         <span className="rh-plans__saved-badge">{roleLabel(row.role)}</span>
+                        {(row.examSelfReportStatus || row.examSelfReportNotes) && (
+                          <p className="rh-members-chat__contribution">
+                            إنجاز الطالب المُبلَّغ: {examSelfReportStatusLabel(row.examSelfReportStatus)}
+                            {String(row.examSelfReportNotes || '').trim()
+                              ? ` — ${row.examSelfReportNotes}`
+                              : ''}
+                          </p>
+                        )}
                       </div>
                       {!isOwner && (
                         <div className="rh-members-chat__actions">

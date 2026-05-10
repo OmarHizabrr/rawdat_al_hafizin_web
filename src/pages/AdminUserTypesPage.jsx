@@ -28,6 +28,7 @@ export default function AdminUserTypesPage() {
   const [pagesDraft, setPagesDraft] = useState(emptyPagesMap)
   /** ربط تلقائي مع حقل users.role (طالب/معلم فقط) */
   const [roleBindingDraft, setRoleBindingDraft] = useState('')
+  const [applicationFormAfterLogoutDraft, setApplicationFormAfterLogoutDraft] = useState(false)
   const [saving, setSaving] = useState(false)
   const [deleteTarget, setDeleteTarget] = useState(null)
   const [busyDelete, setBusyDelete] = useState(false)
@@ -52,6 +53,7 @@ export default function AdminUserTypesPage() {
       setNameDraft('')
       setPagesDraft(emptyPagesMap())
       setRoleBindingDraft('')
+      setApplicationFormAfterLogoutDraft(false)
       return
     }
     setNameDraft(selected.name || '')
@@ -62,6 +64,7 @@ export default function AdminUserTypesPage() {
     )
     const rb = selected.roleBinding
     setRoleBindingDraft(rb === 'student' || rb === 'teacher' ? rb : '')
+    setApplicationFormAfterLogoutDraft(selected.applicationFormAfterLogout === true)
   }, [selected])
 
   const adminCrossItems = useMemo(
@@ -116,6 +119,7 @@ export default function AdminUserTypesPage() {
     setNameDraft('نوع جديد')
     setPagesDraft(emptyPagesMap())
     setRoleBindingDraft('')
+    setApplicationFormAfterLogoutDraft(false)
   }
 
   const onSave = async () => {
@@ -131,6 +135,7 @@ export default function AdminUserTypesPage() {
         name: n,
         pages: pagesDraft,
         roleBinding: roleBindingDraft,
+        applicationFormAfterLogout: applicationFormAfterLogoutDraft,
       })
       toast.success('تم حفظ نوع المستخدم.', 'تم')
     } catch {
@@ -238,6 +243,20 @@ export default function AdminUserTypesPage() {
                     عند تغيير الدور من صفحة المستخدمين يُحدَّث نوع الصلاحيات وفق هذا الربط. دور الأدمن يزيل الإسناد
                     تلقائياً.
                   </p>
+                </div>
+                <div className="ui-field rh-admin-user-types__role-bind">
+                  <label className="rh-admin-user-types__check">
+                    <input
+                      type="checkbox"
+                      checked={applicationFormAfterLogoutDraft}
+                      onChange={(e) => setApplicationFormAfterLogoutDraft(e.target.checked)}
+                    />
+                    <span>
+                      طلب الالتحاق بعد تسجيل الخروج: عند تفعيله، إذا كان المستخدم طالباً يستخدم هذا النوع فعند تسجيل
+                      الخروج ثم الدخول مرة أخرى تُعرض له استمارة طلب الالتحاق معبأة بالبيانات المحفوظة سابقاً (للمراجعة
+                      أو التحديث).
+                    </span>
+                  </label>
                 </div>
                 <span className="rh-admin-user-types__id">
                   المعرّف: <code className="rh-admin-users__code">{selectedId}</code>

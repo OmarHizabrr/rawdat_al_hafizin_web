@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/useAuth.js'
 import { useSiteContent } from '../context/useSiteContent.js'
 import { isValidPhoneNumber, parsePhoneNumberFromString } from 'libphonenumber-js/min'
@@ -12,6 +12,10 @@ import {
 } from '../services/profileRequestService.js'
 import { Check, Send } from 'lucide-react'
 import { Button, Modal, NumberStepField, SearchableSelect, TextField, useToast } from '../ui/index.js'
+import {
+  clearApplicationReviewSessionFlag,
+  hasApplicationReviewSessionFlag,
+} from '../utils/applicationReviewSession.js'
 
 const GENDER_OPTIONS = [
   { value: 'male', label: 'ذكر' },
@@ -108,6 +112,7 @@ export default function ApplicationRequestPage() {
   const { user } = useAuth()
   const { branding } = useSiteContent()
   const toast = useToast()
+  const navigate = useNavigate()
   const [form, setForm] = useState(() => defaultForm(user))
   const [row, setRow] = useState(null)
   const [submitting, setSubmitting] = useState(false)
@@ -162,6 +167,13 @@ export default function ApplicationRequestPage() {
     if (row?.status === PROFILE_REQUEST_STATUS.APPROVED) return 'مقبول'
     return 'لم يُرسل بعد'
   }, [row?.status])
+
+  const showPostLogoutApplicationBanner = useMemo(
+    () =>
+      hasApplicationReviewSessionFlag() &&
+      String(user?.profileRequestStatus || '').trim() === PROFILE_REQUEST_STATUS.APPROVED,
+    [user?.profileRequestStatus],
+  )
 
   const onChange = (key, value) => setForm((prev) => ({ ...prev, [key]: value }))
 
@@ -238,6 +250,24 @@ export default function ApplicationRequestPage() {
   return (
     <div className="rh-login-page rh-app-request-page">
       <div className="rh-app-request-card">
+        {showPostLogoutApplicationBanner && (
+          <section className="rh-settings-card rh-app-request-banner">
+            <p className="rh-settings-desc">
+              طُلب منك استعراض استمارة طلب الالتحاق بعد تسجيل الخروج (حسب إعداد نوع المستخدم). يمكنك مراجعة البيانات
+              المحفوظة أو تحديثها ثم المتابعة إلى المنصة.
+            </p>
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={() => {
+                clearApplicationReviewSessionFlag()
+                navigate('/app', { replace: true })
+              }}
+            >
+              المتابعة إلى المنصة
+            </Button>
+          </section>
+        )}
         <header className="rh-settings-header rh-app-request-header">
           <h1 className="rh-settings-title">طلب الالتحاق</h1>
           <p className="rh-settings-desc">

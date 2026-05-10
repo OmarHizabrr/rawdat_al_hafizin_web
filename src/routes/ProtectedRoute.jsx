@@ -2,6 +2,7 @@ import { Navigate, Outlet, useLocation } from 'react-router-dom'
 import { useAuth } from '../context/useAuth.js'
 import { normalizeRole } from '../config/roles.js'
 import { PROFILE_REQUEST_STATUS } from '../services/profileRequestService.js'
+import { hasApplicationReviewSessionFlag } from '../utils/applicationReviewSession.js'
 
 export function ProtectedRoute() {
   const { user, loading } = useAuth()
@@ -30,12 +31,13 @@ export function ProtectedRoute() {
   const onApplicationPage = location.pathname === '/app/application'
   const onWelcomePage = location.pathname === '/app/welcome'
   const approved = status === PROFILE_REQUEST_STATUS.APPROVED
+  const applicationReviewAfterLogout = hasApplicationReviewSessionFlag()
 
   if (isStudent && !approved && !onApplicationPage && !onWelcomePage) {
     return <Navigate to="/app/application" replace state={{ from: location }} />
   }
 
-  if (isStudent && approved && onApplicationPage) {
+  if (isStudent && approved && onApplicationPage && !applicationReviewAfterLogout) {
     return <Navigate to="/app" replace />
   }
 

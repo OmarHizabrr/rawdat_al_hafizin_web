@@ -1,6 +1,6 @@
 import { Navigate, Outlet } from 'react-router-dom'
 import { useAuth } from '../context/useAuth.js'
-import { getPostLoginLandingPath } from '../utils/permissionsResolve.js'
+import { resolvePostLoginPath } from '../utils/postLoginPath.js'
 
 export function GuestOnly() {
   const { user, loading } = useAuth()
@@ -15,7 +15,7 @@ export function GuestOnly() {
   }
 
   if (user) {
-    return <Navigate to={getPostLoginLandingPath(user)} replace />
+    return <Navigate to={resolvePostLoginPath(user)} replace />
   }
 
   return <Outlet />

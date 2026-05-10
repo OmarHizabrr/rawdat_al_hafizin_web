@@ -52,7 +52,7 @@ async function syncExamMemberCount(examId) {
   })
 }
 
-async function mergeMirrorDocs(mirrorDocs) {
+async function mergeMirrorDocs(mirrorDocs, mirrorOwnerUid) {
   const out = []
   for (const d of mirrorDocs) {
     const examId = d.id
@@ -60,10 +60,22 @@ async function mergeMirrorDocs(mirrorDocs) {
     const role = normalizeHalakaRole(mirrorData.role)
     const canonical = await firestoreApi.getData(canonicalRef(examId))
     if (!canonical) continue
+    let memberExtra = {}
+    if (mirrorOwnerUid) {
+      const memDoc = await firestoreApi.getData(memberRef(examId, mirrorOwnerUid))
+      if (memDoc && typeof memDoc === 'object') {
+        memberExtra = {
+          examSelfReportStatus: String(memDoc.examSelfReportStatus || '').trim(),
+          examSelfReportNotes: String(memDoc.examSelfReportNotes || '').trim(),
+          examSelfReportUpdatedAt: memDoc.examSelfReportUpdatedAt || '',
+        }
+      }
+    }
     out.push({
       id: examId,
       ...canonical,
       examRole: role,
+      ...memberExtra,
     })
   }
   return out.sort(
@@ -76,7 +88,7 @@ async function mergeMirrorDocs(mirrorDocs) {
 export async function loadExams(userId) {
   if (!userId) return []
   const mirrorDocs = await firestoreApi.getDocuments(userMirrorsCol(userId))
-  return mergeMirrorDocs(mirrorDocs)
+  return mergeMirrorDocs(mirrorDocs, userId)
 }
 
 export function subscribeExams(userId, onNext, onError) {
@@ -86,7 +98,7 @@ export function subscribeExams(userId, onNext, onError) {
     (snapshot) => {
       ;(async () => {
         try {
-          const merged = await mergeMirrorDocs(snapshot.docs)
+          const merged = await mergeMirrorDocs(snapshot.docs, userId)
           onNext(merged)
         } catch (e) {
           onError?.(e)
@@ -296,6 +308,28 @@ export async function removeExamMember(actorUser, examId, targetUid) {
   await firestoreApi.deleteData(memberRef(examId, targetUid))
   await firestoreApi.deleteData(mirrorDoc(targetUid, examId))
   await syncExamMemberCount(examId)
+}
+
+/** تسجيل الطالب لحالة الإعداد / الإتمام والملاحظات ضمن مستند العضو */
+export async function upsertExamMemberSelfReport(actorUser, examId, { status, notes }, userData = {}) {
+  if (!actorUser?.uid || !examId) return
+  const uid = actorUser.uid
+  const mem = await firestoreApi.getData(memberRef(examId, uid))
+  if (!mem) throw new Error('NOT_MEMBER')
+  const role = normalizeHalakaRole(mem.role)
+  if (role !== HALAKA_MEMBER_ROLES.STUDENT) throw new Error('EXAM_SELF_REPORT_STUDENT_ONLY')
+  const allowed = new Set(['', 'registered', 'preparing', 'completed'])
+  const st = allowed.has(String(status ?? '')) ? String(status ?? '').trim() : ''
+  const trimmedNotes = String(notes ?? '').trim()
+  await firestoreApi.updateData({
+    docRef: memberRef(examId, uid),
+    data: {
+      examSelfReportStatus: st,
+      examSelfReportNotes: trimmedNotes,
+      examSelfReportUpdatedAt: new Date().toISOString(),
+    },
+    userData,
+  })
 }
 
 export async function setExamMemberRole(actorUser, examId, targetUid, nextRole, userData = {}) {

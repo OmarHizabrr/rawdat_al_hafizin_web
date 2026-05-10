@@ -139,6 +139,7 @@ export const PERMISSION_PAGES = [
       { id: 'exam_member_add', label: 'نافذة الأعضاء: إضافة عضو' },
       { id: 'exam_member_promote', label: 'نافذة الأعضاء: تغيير الدور' },
       { id: 'exam_member_remove', label: 'نافذة الأعضاء: إزالة عضو' },
+      { id: 'exam_student_self_report', label: 'الطالب: تسجيل حالة الإنجاز (تجهيز، إتمام، ملاحظات)' },
     ],
   },
   {
@@ -163,6 +164,7 @@ export const PERMISSION_PAGES = [
       { id: 'dawra_member_add', label: 'نافذة الأعضاء: إضافة عضو' },
       { id: 'dawra_member_promote', label: 'نافذة الأعضاء: ترقية/إلغاء مشرف' },
       { id: 'dawra_member_remove', label: 'نافذة الأعضاء: إزالة عضو' },
+      { id: 'dawra_student_contribute', label: 'عضو الدورة: كتابة مساهمة أو تعليق (تكليف، ملاحظة، …)' },
     ],
   },
   {
@@ -197,6 +199,7 @@ export const PERMISSION_PAGES = [
       { id: 'activity_member_add', label: 'نافذة الأعضاء: إضافة عضو' },
       { id: 'activity_member_promote', label: 'نافذة الأعضاء: تغيير الدور' },
       { id: 'activity_member_remove', label: 'نافذة الأعضاء: إزالة عضو' },
+      { id: 'activity_student_contribute', label: 'الطالب: كتابة مساهمة أو تعليق على النشاط (تكليف، فائدة، …)' },
     ],
   },
   {

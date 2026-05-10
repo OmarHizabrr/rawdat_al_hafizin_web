@@ -64,6 +64,21 @@ const RANGE_PRESETS = [
 /** سياق للطباعة الموحّدة داخل أقسام التقرير */
 const ReportPrintContext = createContext(null)
 
+/** يتوافق مع حالات تسجيل الإنجاز في صفحة الاختبارات */
+const EXAM_SELF_REPORT_LABELS_AR = {
+  registered: 'سجّل في المجموعة',
+  preparing: 'أجهّز للاختبار',
+  completed: 'أتمّ الاختبار',
+}
+
+function formatExamSelfReportSummary(r) {
+  const st = String(r.examSelfReportStatus || '').trim()
+  const line = EXAM_SELF_REPORT_LABELS_AR[st] || (st || '')
+  const notes = String(r.examSelfReportNotes || '').trim()
+  if (!line && !notes) return '—'
+  return [line, notes].filter(Boolean).join(' — ')
+}
+
 function csvEscape(value) {
   const s = String(value ?? '')
   if (s.includes(';') || s.includes('"') || s.includes('\n') || s.includes('\r')) {
@@ -482,13 +497,26 @@ export default function ReportsPage() {
         rows.push({ القسم: 'تفاصيل الكيان', ...reportData.entityDetails })
       }
       for (const m of reportData.members || []) {
-        rows.push({
+        const baseMemberRow = {
           القسم: 'الأعضاء',
           المعرّف: m.userId,
           الاسم: m.displayName || '',
           البريد: m.email || '',
           الدور: roleLabelAr(m.role),
-        })
+        }
+        if (kind === 'exam') {
+          rows.push({
+            ...baseMemberRow,
+            الإنجاز_المُبلَغ: formatExamSelfReportSummary(m),
+          })
+        } else if (kind === 'activity' || kind === 'dawra') {
+          rows.push({
+            ...baseMemberRow,
+            المساهمة: (m.memberContributionText || '').trim(),
+          })
+        } else {
+          rows.push(baseMemberRow)
+        }
       }
       if (reportData.kind === 'halaka') {
         for (const s of reportData.sessions || []) {
@@ -831,12 +859,14 @@ export default function ReportsPage() {
               { key: 'role', label: 'الدور' },
               { key: 'startAt', label: 'البداية' },
               { key: 'endAt', label: 'النهاية' },
+              { key: 'memberContributionText', label: 'مساهمة الطالب' },
             ]}
             rows={(reportData.studentRows?.activities || []).map((r) => ({
               ...r,
               role: roleLabelAr(r.role),
               startAt: formatArDateTime(r.startAt),
               endAt: formatArDateTime(r.endAt),
+              memberContributionText: (r.memberContributionText || '').trim() || '—',
             }))}
             actions={(row) => {
               const to = viewLinkByKind('activity', row.id)
@@ -854,8 +884,13 @@ export default function ReportsPage() {
               { key: 'name', label: 'الاسم' },
               { key: 'role', label: 'الدور' },
               { key: 'visibility', label: 'الظهور' },
+              { key: 'examSelfReportSummary', label: 'الإنجاز المُبلَغ' },
             ]}
-            rows={(reportData.studentRows?.exams || []).map((r) => ({ ...r, role: roleLabelAr(r.role) }))}
+            rows={(reportData.studentRows?.exams || []).map((r) => ({
+              ...r,
+              role: roleLabelAr(r.role),
+              examSelfReportSummary: formatExamSelfReportSummary(r),
+            }))}
             actions={(row) => {
               const to = viewLinkByKind('exam', row.id)
               if (!to) return null
@@ -873,12 +908,14 @@ export default function ReportsPage() {
               { key: 'role', label: 'الدور' },
               { key: 'courseStart', label: 'بداية الدورة' },
               { key: 'courseEnd', label: 'نهاية الدورة' },
+              { key: 'memberContributionText', label: 'مساهمة العضو' },
             ]}
             rows={(reportData.studentRows?.dawrat || []).map((r) => ({
               ...r,
               role: roleLabelAr(r.role),
               courseStart: formatArDateTime(r.courseStart),
               courseEnd: formatArDateTime(r.courseEnd),
+              memberContributionText: (r.memberContributionText || '').trim() || '—',
             }))}
             actions={(row) => {
               const to = viewLinkByKind('dawra', row.id)
@@ -974,13 +1011,39 @@ export default function ReportsPage() {
               { key: 'name', label: 'الاسم' },
               { key: 'role', label: 'الدور' },
               { key: 'visibility', label: 'الظهور' },
+              { key: 'learnerContribution', label: 'مساهمة / إنجاز مُبلَغ' },
             ]}
             rows={[
-              ...(reportData.teacherRows?.plans || []).map((r) => ({ section: 'الخطط', ...r, role: roleLabelAr(r.role) })),
-              ...(reportData.teacherRows?.activities || []).map((r) => ({ section: 'الأنشطة', ...r, role: roleLabelAr(r.role) })),
-              ...(reportData.teacherRows?.exams || []).map((r) => ({ section: 'الاختبارات', ...r, role: roleLabelAr(r.role) })),
-              ...(reportData.teacherRows?.dawrat || []).map((r) => ({ section: 'الدورات', ...r, role: roleLabelAr(r.role) })),
-              ...(reportData.teacherRows?.remoteTasmee || []).map((r) => ({ section: 'التسميع عن بعد', ...r, role: roleLabelAr(r.role) })),
+              ...(reportData.teacherRows?.plans || []).map((r) => ({
+                section: 'الخطط',
+                ...r,
+                role: roleLabelAr(r.role),
+                learnerContribution: '—',
+              })),
+              ...(reportData.teacherRows?.activities || []).map((r) => ({
+                section: 'الأنشطة',
+                ...r,
+                role: roleLabelAr(r.role),
+                learnerContribution: (r.memberContributionText || '').trim() || '—',
+              })),
+              ...(reportData.teacherRows?.exams || []).map((r) => ({
+                section: 'الاختبارات',
+                ...r,
+                role: roleLabelAr(r.role),
+                learnerContribution: formatExamSelfReportSummary(r),
+              })),
+              ...(reportData.teacherRows?.dawrat || []).map((r) => ({
+                section: 'الدورات',
+                ...r,
+                role: roleLabelAr(r.role),
+                learnerContribution: (r.memberContributionText || '').trim() || '—',
+              })),
+              ...(reportData.teacherRows?.remoteTasmee || []).map((r) => ({
+                section: 'التسميع عن بعد',
+                ...r,
+                role: roleLabelAr(r.role),
+                learnerContribution: '—',
+              })),
             ]}
           />
           <SectionTable
@@ -1073,22 +1136,51 @@ export default function ReportsPage() {
               )
             }}
           />
-          <div className="rh-settings-card">
-            <div className="rh-settings-card__head">
-              <h3 className="rh-settings-card__title">{str('reports.members_title')}</h3>
+          {reportData.kind === 'activity' || reportData.kind === 'exam' || reportData.kind === 'dawra' ? (
+            <SectionTable
+              title={str('reports.members_title')}
+              columns={[
+                { key: 'displayName', label: 'الاسم' },
+                { key: 'role', label: 'الدور' },
+                { key: 'email', label: 'البريد' },
+                {
+                  key: 'learnerNote',
+                  label:
+                    reportData.kind === 'exam'
+                      ? 'الإنجاز المُبلَغ'
+                      : reportData.kind === 'activity'
+                        ? 'مساهمة الطالب'
+                        : 'مساهمة العضو',
+                },
+              ]}
+              rows={(reportData.members || []).map((m) => ({
+                displayName: m.displayName || m.userId,
+                role: roleLabelAr(m.role),
+                email: m.email || '',
+                learnerNote:
+                  reportData.kind === 'exam'
+                    ? formatExamSelfReportSummary(m)
+                    : (m.memberContributionText || '').trim() || '—',
+              }))}
+            />
+          ) : (
+            <div className="rh-settings-card">
+              <div className="rh-settings-card__head">
+                <h3 className="rh-settings-card__title">{str('reports.members_title')}</h3>
+              </div>
+              <ul className="rh-members-chat-list">
+                {(reportData.members || []).map((m) => (
+                  <li key={m.userId} className="rh-members-chat__item">
+                    <div className="rh-members-chat__main">
+                      <strong>{m.displayName || m.userId}</strong>
+                      <span className="rh-plans__saved-badge">{roleLabelAr(m.role)}</span>
+                    </div>
+                    <span>{m.email || ''}</span>
+                  </li>
+                ))}
+              </ul>
             </div>
-            <ul className="rh-members-chat-list">
-              {(reportData.members || []).map((m) => (
-                <li key={m.userId} className="rh-members-chat__item">
-                  <div className="rh-members-chat__main">
-                    <strong>{m.displayName || m.userId}</strong>
-                    <span className="rh-plans__saved-badge">{roleLabelAr(m.role)}</span>
-                  </div>
-                  <span>{m.email || ''}</span>
-                </li>
-              ))}
-            </ul>
-          </div>
+          )}
           {reportData.kind === 'halaka' && (
             <SectionTable
               title="تفاصيل أعضاء الحلقة (شامل)"

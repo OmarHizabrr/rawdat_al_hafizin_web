@@ -2,7 +2,7 @@ import { Chrome, LogOut } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { Link, Navigate, useNavigate, useSearchParams } from 'react-router-dom'
 import { useAuth } from '../context/useAuth.js'
-import { getPostLoginLandingPath } from '../utils/permissionsResolve.js'
+import { resolvePostLoginPath } from '../utils/postLoginPath.js'
 import { signInWithGoogle, signOut } from '../services/authService.js'
 import { ensureUserProfile } from '../services/userService.js'
 import { useSiteContent } from '../context/useSiteContent.js'
@@ -62,7 +62,7 @@ export default function LoginPage() {
   }
 
   if (user) {
-    return <Navigate to={getPostLoginLandingPath(user)} replace />
+    return <Navigate to={resolvePostLoginPath(user)} replace />
   }
 
   const onGoogle = async () => {
@@ -72,7 +72,7 @@ export default function LoginPage() {
       const firebaseUser = await signInWithGoogle()
       const profile = await ensureUserProfile(firebaseUser)
       const forLanding = profile ? { ...firebaseUser, ...profile } : firebaseUser
-      navigate(getPostLoginLandingPath(forLanding), { replace: true })
+      navigate(resolvePostLoginPath(forLanding), { replace: true })
     } catch (e) {
       const code = e?.code
       if (code === 'auth/popup-closed-by-user' || code === 'auth/cancelled-popup-request') {

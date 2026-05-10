@@ -51,7 +51,7 @@ async function syncActivityMemberCount(activityId) {
   })
 }
 
-async function mergeMirrorDocs(mirrorDocs) {
+async function mergeMirrorDocs(mirrorDocs, mirrorOwnerUid) {
   const out = []
   for (const d of mirrorDocs) {
     const activityId = d.id
@@ -59,10 +59,21 @@ async function mergeMirrorDocs(mirrorDocs) {
     const role = normalizeHalakaRole(mirrorData.role)
     const canonical = await firestoreApi.getData(canonicalRef(activityId))
     if (!canonical) continue
+    let memberExtra = {}
+    if (mirrorOwnerUid) {
+      const memDoc = await firestoreApi.getData(memberRef(activityId, mirrorOwnerUid))
+      if (memDoc && typeof memDoc === 'object') {
+        memberExtra = {
+          memberContributionText: String(memDoc.memberContributionText || '').trim(),
+          memberContributionUpdatedAt: memDoc.memberContributionUpdatedAt || '',
+        }
+      }
+    }
     out.push({
       id: activityId,
       ...canonical,
       activityRole: role,
+      ...memberExtra,
     })
   }
   return out.sort(
@@ -75,7 +86,7 @@ async function mergeMirrorDocs(mirrorDocs) {
 export async function loadActivities(userId) {
   if (!userId) return []
   const mirrorDocs = await firestoreApi.getDocuments(userMirrorsCol(userId))
-  return mergeMirrorDocs(mirrorDocs)
+  return mergeMirrorDocs(mirrorDocs, userId)
 }
 
 export function subscribeActivities(userId, onNext, onError) {
@@ -85,7 +96,7 @@ export function subscribeActivities(userId, onNext, onError) {
     (snapshot) => {
       ;(async () => {
         try {
-          const merged = await mergeMirrorDocs(snapshot.docs)
+          const merged = await mergeMirrorDocs(snapshot.docs, userId)
           onNext(merged)
         } catch (e) {
           onError?.(e)
@@ -331,6 +342,25 @@ export async function removeActivityMember(actorUser, activityId, targetUid) {
   await firestoreApi.deleteData(memberRef(activityId, targetUid))
   await firestoreApi.deleteData(mirrorDoc(targetUid, activityId))
   await syncActivityMemberCount(activityId)
+}
+
+/** مساهمة الطالب على مستند العضو (تكليف، فائدة، تعليق) */
+export async function upsertActivityMemberContribution(actorUser, activityId, text, userData = {}) {
+  if (!actorUser?.uid || !activityId) return
+  const uid = actorUser.uid
+  const mem = await firestoreApi.getData(memberRef(activityId, uid))
+  if (!mem) throw new Error('NOT_MEMBER')
+  const role = normalizeHalakaRole(mem.role)
+  if (role !== HALAKA_MEMBER_ROLES.STUDENT) throw new Error('ACTIVITY_CONTRIBUTION_STUDENT_ONLY')
+  const trimmed = String(text ?? '').trim()
+  await firestoreApi.updateData({
+    docRef: memberRef(activityId, uid),
+    data: {
+      memberContributionText: trimmed,
+      memberContributionUpdatedAt: new Date().toISOString(),
+    },
+    userData,
+  })
 }
 
 export async function setActivityMemberRole(actorUser, activityId, targetUid, nextRole, userData = {}) {
