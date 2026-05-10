@@ -429,6 +429,9 @@ export default function AppHomePage() {
 
   const impersonatedSubject =
     actingAsUser && contextUserId ? subjectProfile : null;
+  const hideHomePlanUi = Boolean(
+    actingAsUser ? impersonatedSubject?.hideHomePlanUi : user?.hideHomePlanUi,
+  );
   const effectiveUserGender = actingAsUser
     ? String(impersonatedSubject?.gender || "").trim()
     : String(user?.gender || "").trim();
@@ -808,10 +811,14 @@ export default function AppHomePage() {
             <Link to="/app/admin/users">
               {str("app.home_impersonation_users")}
             </Link>
-            {" · "}
-            <Link to={`/app/plans?uid=${encodeURIComponent(contextUserId)}`}>
-              {str("app.home_impersonation_plans")}
-            </Link>
+            {!hideHomePlanUi ? (
+              <>
+                {" · "}
+                <Link to={`/app/plans?uid=${encodeURIComponent(contextUserId)}`}>
+                  {str("app.home_impersonation_plans")}
+                </Link>
+              </>
+            ) : null}
             {" · "}
             <Link to={`/app/halakat?uid=${encodeURIComponent(contextUserId)}`}>
               {str("app.home_impersonation_halakat")}
@@ -907,7 +914,17 @@ export default function AppHomePage() {
         </div>
       ) : null}
 
-      {activePlan && progress ? (
+      {hideHomePlanUi ? (
+        <section className="card rh-home-dash-empty rh-home-dash-empty--app">
+          <div className="rh-home-dash-empty__inner">
+            <h2 className="rh-home-dash-empty__title">عرض الخطة متوقف</h2>
+            <p className="rh-home-dash-empty__text">
+              أوقفت عرض لوحة الخطة الرئيسية من الإعدادات. لا تظهر هنا لوحة التقدم ولا اختصارات الانتقال إلى الخطط. إذا
+              سمح نوع صلاحياتك، يمكنك إعادة الإظهار من صفحة الإعدادات.
+            </p>
+          </div>
+        </section>
+      ) : activePlan && progress ? (
         <section
           className={`rh-home-dash rh-home-dash--app card rh-home-dash--mood-${dashInsight.mood}`}
         >

@@ -23,10 +23,10 @@ export default function WelcomePage() {
     if (isPendingPreApproval) {
       return [{ to: '/app/application', label: 'طلب الالتحاق' }]
     }
-    const base = [
-      { to: '/app', label: str('layout.nav_home') },
-      { to: '/app/plans', label: str('layout.nav_plans') },
-    ]
+    const base = [{ to: '/app', label: str('layout.nav_home') }]
+    if (!user?.hideHomePlanUi) {
+      base.push({ to: '/app/plans', label: str('layout.nav_plans') })
+    }
     if (canAccessPage('halakat')) {
       base.push({ to: '/app/halakat', label: str('layout.nav_halakat') })
     }

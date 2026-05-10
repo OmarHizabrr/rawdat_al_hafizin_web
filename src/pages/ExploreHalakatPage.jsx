@@ -8,6 +8,7 @@ import { isAdmin } from '../config/roles.js'
 import { useAuth } from '../context/useAuth.js'
 import { usePermissions } from '../context/usePermissions.js'
 import { useSiteContent } from '../context/useSiteContent.js'
+import { useHidePlanNavigation } from '../hooks/useHidePlanNavigation.js'
 import {
   EXPLORE_SORT_OPTIONS,
   filterPublicHalakatBySearch,
@@ -65,6 +66,7 @@ export default function ExploreHalakatPage() {
     (path) => withImpersonationQuery(path, impersonateUid),
     [impersonateUid],
   )
+  const hidePlanNavigation = useHidePlanNavigation()
 
   useEffect(() => {
     document.title = `استكشاف الحلقات العامة — ${branding.siteTitle}`
@@ -152,10 +154,10 @@ export default function ExploreHalakatPage() {
     if (canAccessPage('activities_explore')) {
       base.push({ to: appLink('/app/activities/explore'), label: str('layout.nav_activities_explore') })
     }
-    base.push(
-      { to: appLink('/app/plans'), label: str('layout.nav_plans') },
-      { to: appLink('/app/dawrat'), label: str('layout.nav_dawrat') },
-    )
+    if (!hidePlanNavigation) {
+      base.push({ to: appLink('/app/plans'), label: str('layout.nav_plans') })
+    }
+    base.push({ to: appLink('/app/dawrat'), label: str('layout.nav_dawrat') })
     if (canAccessPage('leave_request')) {
       base.push({ to: appLink('/app/leave-request'), label: str('layout.nav_leave_request') })
     }
@@ -168,7 +170,7 @@ export default function ExploreHalakatPage() {
       base.push({ to: '/app/admin/users', label: str('layout.nav_users') })
     }
     return base
-  }, [user, str, appLink, canAccessPage])
+  }, [user, str, appLink, canAccessPage, hidePlanNavigation])
 
   const printedAt = new Date().toLocaleString('ar-SA', { dateStyle: 'medium', timeStyle: 'short' })
   const printStamp = str('layout.print_doc_stamp', { date: printedAt, siteTitle: branding.siteTitle })

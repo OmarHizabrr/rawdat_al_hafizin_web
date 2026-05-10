@@ -245,6 +245,10 @@ export const PERMISSION_PAGES = [
     actions: [
       { id: 'settings_theme', label: 'تغيير وضع المظهر (فاتح/داكن)' },
       { id: 'settings_edit_profile', label: 'تعديل الاسم ورفع صورة الملف الشخصي (تخزين)' },
+      {
+        id: 'settings_toggle_hide_home_plan',
+        label: 'إظهار خيار إيقاف عرض لوحة الخطة على الرئيسية في الإعدادات',
+      },
     ],
   },
   {

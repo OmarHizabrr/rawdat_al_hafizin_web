@@ -9,6 +9,7 @@ import { isAdmin } from '../config/roles.js'
 import { useAuth } from '../context/useAuth.js'
 import { usePermissions } from '../context/usePermissions.js'
 import { useSiteContent } from '../context/useSiteContent.js'
+import { useHidePlanNavigation } from '../hooks/useHidePlanNavigation.js'
 import {
   EXPLORE_SORT_OPTIONS,
   filterPublicRemoteTasmeeBySearch,
@@ -53,6 +54,7 @@ export default function ExploreRemoteTasmeePage() {
     (path) => withImpersonationQuery(path, impersonateUid),
     [impersonateUid],
   )
+  const hidePlanNavigation = useHidePlanNavigation()
 
   useEffect(() => {
     document.title = `استكشاف التسميع عن بعد — ${branding.siteTitle}`
@@ -132,7 +134,9 @@ export default function ExploreRemoteTasmeePage() {
     if (canAccessPage('activities_explore')) {
       base.push({ to: appLink('/app/activities/explore'), label: str('layout.nav_activities_explore') })
     }
-    base.push({ to: appLink('/app/plans'), label: str('layout.nav_plans') })
+    if (!hidePlanNavigation) {
+      base.push({ to: appLink('/app/plans'), label: str('layout.nav_plans') })
+    }
     if (canAccessPage('leave_request')) {
       base.push({ to: appLink('/app/leave-request'), label: str('layout.nav_leave_request') })
     }
@@ -141,7 +145,7 @@ export default function ExploreRemoteTasmeePage() {
       base.push({ to: '/app/admin', label: str('layout.nav_dashboard') })
     }
     return base
-  }, [user, str, appLink, canAccessPage])
+  }, [user, str, appLink, canAccessPage, hidePlanNavigation])
 
   const printedAt = new Date().toLocaleString('ar-SA', { dateStyle: 'medium', timeStyle: 'short' })
   const printStamp = str('layout.print_doc_stamp', { date: printedAt, siteTitle: branding.siteTitle })

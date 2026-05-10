@@ -7,6 +7,7 @@ import { isAdmin } from '../config/roles.js'
 import { useAuth } from '../context/useAuth.js'
 import { usePermissions } from '../context/usePermissions.js'
 import { useSiteContent } from '../context/useSiteContent.js'
+import { useHidePlanNavigation } from '../hooks/useHidePlanNavigation.js'
 import {
   createStudentFeeling,
   deleteStudentFeeling,
@@ -60,6 +61,7 @@ export default function StudentFeelingsPage() {
   const actingAsUser = Boolean(user?.uid && contextUserId && contextUserId !== user.uid)
   const impersonateUid = getImpersonateUid(user, search)
   const appLink = useCallback((path) => withImpersonationQuery(path, impersonateUid), [impersonateUid])
+  const hidePlanNavigation = useHidePlanNavigation()
 
   const [text, setText] = useState('')
   const [rating, setRating] = useState(5)
@@ -102,14 +104,14 @@ export default function StudentFeelingsPage() {
   const crossItems = useMemo(() => {
     const base = [
       { to: appLink('/app'), label: str('layout.nav_home') },
-      { to: appLink('/app/plans'), label: str('layout.nav_plans') },
+      ...(hidePlanNavigation ? [] : [{ to: appLink('/app/plans'), label: str('layout.nav_plans') }]),
       { to: appLink('/app/awrad'), label: str('layout.nav_awrad') },
       { to: appLink('/app/settings'), label: str('layout.nav_settings') },
     ]
     if (canAccessPage('halakat')) base.push({ to: appLink('/app/halakat'), label: str('layout.nav_halakat') })
     if (canAccessPage('dawrat')) base.push({ to: appLink('/app/dawrat'), label: str('layout.nav_dawrat') })
     return base
-  }, [appLink, canAccessPage, str])
+  }, [appLink, canAccessPage, str, hidePlanNavigation])
 
   const resetDraft = () => {
     setText('')

@@ -3,9 +3,9 @@ import { isAdmin } from '../config/roles.js'
 
 /**
  * يظهر للمشرف عند فتح الصفحة مع ?uid= لتوضيح أن النموذج يُعدّ نيابةً عن مستخدم آخر.
- * @param {{ actor: { uid?: string } | null | undefined, impersonateUid: string }} props
+ * @param {{ actor: { uid?: string } | null | undefined, impersonateUid: string, hidePlansLink?: boolean }} props
  */
-export function ServicePageImpersonationBanner({ actor, impersonateUid }) {
+export function ServicePageImpersonationBanner({ actor, impersonateUid, hidePlansLink = false }) {
   const uid = (impersonateUid || '').trim()
   if (!actor?.uid || !uid || !isAdmin(actor) || uid === actor.uid) return null
 
@@ -22,8 +22,12 @@ export function ServicePageImpersonationBanner({ actor, impersonateUid }) {
         <Link to="/app/admin/users">المستخدمون</Link>
         {' · '}
         <Link to={`/app?uid=${encodeURIComponent(uid)}`}>رئيسيته</Link>
-        {' · '}
-        <Link to={`/app/plans?uid=${encodeURIComponent(uid)}`}>خططه</Link>
+        {!hidePlansLink ? (
+          <>
+            {' · '}
+            <Link to={`/app/plans?uid=${encodeURIComponent(uid)}`}>خططه</Link>
+          </>
+        ) : null}
       </p>
     </div>
   )

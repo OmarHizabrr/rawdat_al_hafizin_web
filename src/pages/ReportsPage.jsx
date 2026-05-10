@@ -18,6 +18,7 @@ import { PERMISSION_PAGE_IDS } from '../config/permissionRegistry.js'
 import { useAuth } from '../context/useAuth.js'
 import { usePermissions } from '../context/usePermissions.js'
 import { useSiteContent } from '../context/useSiteContent.js'
+import { useHidePlanNavigation } from '../hooks/useHidePlanNavigation.js'
 import {
   buildGroupReport,
   buildStudentReport,
@@ -235,6 +236,7 @@ export default function ReportsPage() {
   const toast = useToast()
   const navigate = useNavigate()
   const { search } = useLocation()
+  const hidePlanNavigation = useHidePlanNavigation()
   const didHydrateFromQueryRef = useRef(false)
 
   const [kind, setKind] = useState('student')
@@ -384,12 +386,12 @@ export default function ReportsPage() {
     () => [
       { to: appLink('/app'), label: str('layout.nav_home') },
       { to: appLink('/app/halakat'), label: str('layout.nav_halakat') },
-      { to: appLink('/app/plans'), label: str('layout.nav_plans') },
+      ...(hidePlanNavigation ? [] : [{ to: appLink('/app/plans'), label: str('layout.nav_plans') }]),
       { to: appLink('/app/activities'), label: str('layout.nav_activities') },
       { to: appLink('/app/exams'), label: str('layout.nav_exams') },
       { to: appLink('/app/reports'), label: str('layout.nav_reports') },
     ],
-    [appLink, str],
+    [appLink, str, hidePlanNavigation],
   )
 
   const build = async () => {
@@ -647,7 +649,10 @@ export default function ReportsPage() {
   const viewLinkByKind = useCallback(
     (k, id) => {
       if (!id) return ''
-      if (k === 'plan') return appLink(`/app/plans?focus=${id}`)
+      if (k === 'plan') {
+        if (hidePlanNavigation) return ''
+        return appLink(`/app/plans?focus=${id}`)
+      }
       if (k === 'halaka') return appLink(`/app/halakat?focus=${id}`)
       if (k === 'activity') return appLink(`/app/activities?focus=${id}`)
       if (k === 'exam') return appLink(`/app/exams?focus=${id}`)
@@ -655,7 +660,7 @@ export default function ReportsPage() {
       if (k === 'remote_tasmee') return appLink(`/app/remote-tasmee?focus=${id}`)
       return ''
     },
-    [appLink],
+    [appLink, hidePlanNavigation],
   )
 
   const onSharePdf = async () => {

@@ -107,12 +107,21 @@ export function MainLayout() {
   )
 
   const nav = useMemo(() => {
+    const hidePlanUi = Boolean(user?.hideHomePlanUi)
     const visible = (item) =>
       !item.pageId || !permReady || isAdmin(user) || canAccessPage(item.pageId)
-    const filtered = baseNav.filter(visible)
+    const filtered = baseNav.filter((item) => {
+      if (
+        hidePlanUi &&
+        (item.to === '/app/plans' || item.to === '/app/plans/explore')
+      ) {
+        return false
+      }
+      return visible(item)
+    })
     return isAdmin(user) ? [...filtered.slice(0, 9), ...adminNavItems, ...filtered.slice(9)] : filtered
   }, [baseNav, adminNavItems, user, permReady, canAccessPage])
-  usePlanReminders(impersonateUid ? null : user, { iconSrc: branding.logoSrc })
+  usePlanReminders(impersonateUid || user?.hideHomePlanUi ? null : user, { iconSrc: branding.logoSrc })
   const [collapsed, setCollapsed] = useState(() => {
     try {
       return localStorage.getItem(STORAGE_KEY) === '1'
@@ -184,7 +193,7 @@ export function MainLayout() {
   }, [impersonateUid])
 
   useEffect(() => {
-    if (!user?.uid || impersonateUid) return undefined
+    if (!user?.uid || impersonateUid || user?.hideHomePlanUi) return undefined
     const onOverdue = (e) => {
       if (!notificationsEnabled()) return
       const detail = e?.detail || {}

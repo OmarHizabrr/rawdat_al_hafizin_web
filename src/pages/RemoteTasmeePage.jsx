@@ -26,6 +26,7 @@ import { isAdmin } from '../config/roles.js'
 import { useAuth } from '../context/useAuth.js'
 import { usePermissions } from '../context/usePermissions.js'
 import { useSiteContent } from '../context/useSiteContent.js'
+import { useHidePlanNavigation } from '../hooks/useHidePlanNavigation.js'
 import { firestoreApi } from '../services/firestoreApi.js'
 import { subscribeAllUsers } from '../services/adminUsersService.js'
 import { HALAKA_MEMBER_ROLES } from '../utils/halakatStorage.js'
@@ -145,6 +146,7 @@ export default function RemoteTasmeePage() {
   const uidParam = searchParams.get('uid')?.trim() || ''
   const impersonateUid = getImpersonateUid(user, search)
   const appLink = useCallback((path) => withImpersonationQuery(path, impersonateUid), [impersonateUid])
+  const hidePlanNavigation = useHidePlanNavigation()
 
   const viewUserId = useMemo(() => {
     if (!user?.uid) return ''
@@ -488,7 +490,7 @@ export default function RemoteTasmeePage() {
   const crossItems = useMemo(() => {
     const items = [
       { to: appLink('/app'), label: str('layout.nav_home') },
-      { to: appLink('/app/plans'), label: str('layout.nav_plans') },
+      ...(hidePlanNavigation ? [] : [{ to: appLink('/app/plans'), label: str('layout.nav_plans') }]),
       { to: appLink('/app/halakat'), label: str('layout.nav_halakat') },
       { to: exploreHref, label: str('layout.nav_remote_tasmee_explore') },
       ...(canAccessPage('exams') ? [{ to: appLink('/app/exams'), label: str('layout.nav_exams') }] : []),
@@ -506,7 +508,7 @@ export default function RemoteTasmeePage() {
     }
     items.push({ to: appLink('/app/settings'), label: str('layout.nav_settings') })
     return items
-  }, [str, exploreHref, appLink, canAccessPage])
+  }, [str, exploreHref, appLink, canAccessPage, hidePlanNavigation])
 
   return (
     <div className="rh-plans">

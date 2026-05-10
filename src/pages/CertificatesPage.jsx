@@ -9,6 +9,7 @@ import { isAdmin } from '../config/roles.js'
 import { useAuth } from '../context/useAuth.js'
 import { usePermissions } from '../context/usePermissions.js'
 import { useSiteContent } from '../context/useSiteContent.js'
+import { useHidePlanNavigation } from '../hooks/useHidePlanNavigation.js'
 import { getImpersonateUid, withImpersonationQuery } from '../utils/impersonation.js'
 import { TextAreaField, TextField } from '../ui/index.js'
 import { RhIcon, RH_ICON_STROKE } from '../ui/RhIcon.jsx'
@@ -23,6 +24,7 @@ export default function CertificatesPage() {
     (path) => withImpersonationQuery(path, impersonateUid),
     [impersonateUid],
   )
+  const hidePlanNavigation = useHidePlanNavigation()
   const [fullName, setFullName] = useState('')
   const [purpose, setPurpose] = useState('')
   const [notes, setNotes] = useState('')
@@ -56,10 +58,10 @@ export default function CertificatesPage() {
   }, [fullName, purpose, notes, branding.siteName, impersonateUid, user])
 
   const crossItems = useMemo(() => {
-    const base = [
-      { to: appLink('/app'), label: str('layout.nav_home') },
-      { to: appLink('/app/plans'), label: str('layout.nav_plans') },
-    ]
+    const base = [{ to: appLink('/app'), label: str('layout.nav_home') }]
+    if (!hidePlanNavigation) {
+      base.push({ to: appLink('/app/plans'), label: str('layout.nav_plans') })
+    }
     if (canAccessPage('halakat')) {
       base.push({ to: appLink('/app/halakat'), label: str('layout.nav_halakat') })
     }
@@ -78,11 +80,11 @@ export default function CertificatesPage() {
       base.push({ to: '/app/admin/users', label: str('layout.nav_users') })
     }
     return base
-  }, [user, str, canAccessPage, appLink])
+  }, [user, str, canAccessPage, appLink, hidePlanNavigation])
 
   return (
     <div className="rh-service-page rh-service-page--cert">
-      <ServicePageImpersonationBanner actor={user} impersonateUid={impersonateUid} />
+      <ServicePageImpersonationBanner actor={user} impersonateUid={impersonateUid} hidePlansLink={hidePlanNavigation} />
       <header className="rh-service-page__hero card">
         <div className="rh-service-page__hero-icon" aria-hidden>
           <RhIcon as={ScrollText} size={32} strokeWidth={RH_ICON_STROKE} />

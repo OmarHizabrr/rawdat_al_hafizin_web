@@ -23,10 +23,10 @@ export default function ProfilePage() {
   const role = roleLabel(user?.role)
 
   const crossItems = useMemo(() => {
-    const base = [
-      { to: '/app', label: str('layout.nav_home') },
-      { to: '/app/plans', label: str('layout.nav_plans') },
-    ]
+    const base = [{ to: '/app', label: str('layout.nav_home') }]
+    if (!user?.hideHomePlanUi) {
+      base.push({ to: '/app/plans', label: str('layout.nav_plans') })
+    }
     if (canAccessPage('halakat')) base.push({ to: '/app/halakat', label: str('layout.nav_halakat') })
     if (canAccessPage('dawrat')) base.push({ to: '/app/dawrat', label: str('layout.nav_dawrat') })
     base.push(
@@ -34,7 +34,7 @@ export default function ProfilePage() {
       { to: '/app/settings', label: str('layout.nav_settings') },
     )
     return base
-  }, [str, canAccessPage])
+  }, [user?.hideHomePlanUi, str, canAccessPage])
 
   return (
     <div className="rh-profile-page">
@@ -85,10 +85,12 @@ export default function ProfilePage() {
             <RhIcon as={Settings} size={18} strokeWidth={RH_ICON_STROKE} className="ui-btn__icon" aria-hidden />
             الإعدادات والتعديل
           </Link>
-          <Link to="/app/plans" className="ui-btn ui-btn--secondary">
-            <RhIcon as={ClipboardList} size={18} strokeWidth={RH_ICON_STROKE} className="ui-btn__icon" aria-hidden />
-            خططي
-          </Link>
+          {!user?.hideHomePlanUi ? (
+            <Link to="/app/plans" className="ui-btn ui-btn--secondary">
+              <RhIcon as={ClipboardList} size={18} strokeWidth={RH_ICON_STROKE} className="ui-btn__icon" aria-hidden />
+              خططي
+            </Link>
+          ) : null}
           <Link to="/app/awrad" className="ui-btn ui-btn--secondary">
             <RhIcon as={NotebookPen} size={18} strokeWidth={RH_ICON_STROKE} className="ui-btn__icon" aria-hidden />
             الأوراد

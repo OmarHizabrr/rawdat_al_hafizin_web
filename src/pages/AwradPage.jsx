@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Pencil, Plus, Save, Trash2, X } from 'lucide-react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { useSiteContent } from '../context/useSiteContent.js'
+import { useHidePlanNavigation } from '../hooks/useHidePlanNavigation.js'
 import { PERMISSION_PAGE_IDS } from '../config/permissionRegistry.js'
 import { isAdmin } from '../config/roles.js'
 import { useAuth } from '../context/useAuth.js'
@@ -74,11 +75,13 @@ export default function AwradPage() {
     [uidFromUrl, user],
   )
 
+  const hidePlanNavigation = useHidePlanNavigation()
+
   const awradCrossItems = useMemo(() => {
-    const base = [
-      { to: appPathWithImpersonation('/app'), label: str('layout.nav_home') },
-      { to: appPathWithImpersonation('/app/plans'), label: str('layout.nav_plans') },
-    ]
+    const base = [{ to: appPathWithImpersonation('/app'), label: str('layout.nav_home') }]
+    if (!hidePlanNavigation) {
+      base.push({ to: appPathWithImpersonation('/app/plans'), label: str('layout.nav_plans') })
+    }
     if (canAccessPage('halakat')) {
       base.push({ to: appPathWithImpersonation('/app/halakat'), label: str('layout.nav_halakat') })
     }
@@ -104,7 +107,7 @@ export default function AwradPage() {
       base.push({ to: '/app/admin/users', label: str('layout.nav_users') })
     }
     return base
-  }, [user, str, appPathWithImpersonation, canAccessPage])
+  }, [user, str, appPathWithImpersonation, canAccessPage, hidePlanNavigation])
 
   const [plans, setPlans] = useState([])
   const [awrad, setAwrad] = useState([])
@@ -460,8 +463,12 @@ export default function AwradPage() {
             <Link to="/app/admin/users">← المستخدمون</Link>
             {' · '}
             <Link to={`/app?uid=${encodeURIComponent(contextUserId)}`}>رئيسيته</Link>
-            {' · '}
-            <Link to={`/app/plans?uid=${encodeURIComponent(contextUserId)}`}>خططه</Link>
+            {!hidePlanNavigation ? (
+              <>
+                {' · '}
+                <Link to={`/app/plans?uid=${encodeURIComponent(contextUserId)}`}>خططه</Link>
+              </>
+            ) : null}
             {' · '}
             <Link to="/app/awrad">أورادي</Link>
           </p>
@@ -469,8 +476,12 @@ export default function AwradPage() {
         {viewOnly ? (
           <p className="rh-awrad__view-links">
             <Link to="/app/admin/users">← المستخدمون</Link>
-            {' · '}
-            <Link to={`/app/plans?uid=${encodeURIComponent(contextUserId)}`}>خطط هذا المستخدم</Link>
+            {!hidePlanNavigation ? (
+              <>
+                {' · '}
+                <Link to={`/app/plans?uid=${encodeURIComponent(contextUserId)}`}>خطط هذا المستخدم</Link>
+              </>
+            ) : null}
             {' · '}
             <Link to="/app/awrad">وردي (حسابي)</Link>
           </p>

@@ -7,6 +7,7 @@ import { isAdmin } from '../config/roles.js'
 import { useAuth } from '../context/useAuth.js'
 import { usePermissions } from '../context/usePermissions.js'
 import { useSiteContent } from '../context/useSiteContent.js'
+import { useHidePlanNavigation } from '../hooks/useHidePlanNavigation.js'
 import { firestoreApi } from '../services/firestoreApi.js'
 import { subscribeAllUsers } from '../services/adminUsersService.js'
 import {
@@ -113,6 +114,7 @@ export default function DawratPage() {
   const uidParam = searchParams.get('uid')?.trim() || ''
   const impersonateUid = getImpersonateUid(user, search)
   const appLink = useCallback((path) => withImpersonationQuery(path, impersonateUid), [impersonateUid])
+  const hidePlanNavigation = useHidePlanNavigation()
 
   const viewUserId = useMemo(() => {
     if (!user?.uid) return ''
@@ -401,8 +403,10 @@ export default function DawratPage() {
       { to: appLink('/app'), label: str('layout.nav_home') },
       { to: appLink('/app/halakat'), label: str('layout.nav_halakat') },
       { to: exploreHref, label: str('layout.nav_dawrat_explore') },
-      { to: appLink('/app/plans'), label: str('layout.nav_plans') },
     ]
+    if (!hidePlanNavigation) {
+      items.push({ to: appLink('/app/plans'), label: str('layout.nav_plans') })
+    }
     if (canAccessPage('exams')) {
       items.push({ to: appLink('/app/exams'), label: str('layout.nav_exams') })
     }
@@ -423,7 +427,7 @@ export default function DawratPage() {
     }
     items.push({ to: appLink('/app/settings'), label: str('layout.nav_settings') })
     return items
-  }, [str, exploreHref, appLink, canAccessPage])
+  }, [str, exploreHref, appLink, canAccessPage, hidePlanNavigation])
 
   return (
     <div className="rh-plans">

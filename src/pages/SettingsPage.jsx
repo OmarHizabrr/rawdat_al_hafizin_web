@@ -1,4 +1,4 @@
-import { Ban, Bell, BellOff, Save, Upload, UserRound, Wind, Zap } from 'lucide-react'
+import { Ban, Bell, BellOff, Eye, EyeOff, Save, Upload, UserRound, Wind, Zap } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { ContactPhonesSection } from '../components/ContactPhonesSection.jsx'
@@ -25,6 +25,7 @@ import { messageForProfilePhotoError } from '../services/profilePhotoStorage.js'
 import {
   clearMyProfilePhoto,
   updateMyDisplayName,
+  updateMyHideHomePlanUi,
   updateMyProfilePhotoFromFile,
 } from '../services/userService.js'
 import { rhHapticLight } from '../utils/haptics.js'
@@ -45,11 +46,12 @@ export default function SettingsPage() {
   const [photoDraftFile, setPhotoDraftFile] = useState(null)
   const [feelingsFlightMode, setFeelingsFlightMode] = useState(() => readFeelingsFlightMode())
   const [notificationsMode, setNotificationsMode] = useState(() => readNotificationsMode())
+  const [hideHomePlanSaving, setHideHomePlanSaving] = useState(false)
   const settingsCrossItems = useMemo(() => {
-    const base = [
-      { to: '/app', label: str('layout.nav_home') },
-      { to: '/app/plans', label: str('layout.nav_plans') },
-    ]
+    const base = [{ to: '/app', label: str('layout.nav_home') }]
+    if (!user?.hideHomePlanUi) {
+      base.push({ to: '/app/plans', label: str('layout.nav_plans') })
+    }
     if (canAccessPage('halakat')) {
       base.push({ to: '/app/halakat', label: str('layout.nav_halakat') })
     }
@@ -87,6 +89,27 @@ export default function SettingsPage() {
   const email = user?.email || '—'
   const photo = user?.photoURL
   const canEditProfile = can(PS, 'settings_edit_profile')
+  const canToggleHideHomePlan = can(PS, 'settings_toggle_hide_home_plan')
+
+  const onToggleHideHomePlanUi = async (hide) => {
+    const fu = auth.currentUser
+    if (!fu || fu.uid !== user?.uid || hideHomePlanSaving) return
+    if (Boolean(user?.hideHomePlanUi) === hide) return
+    setHideHomePlanSaving(true)
+    try {
+      await updateMyHideHomePlanUi(fu, hide)
+      toast.success(
+        hide
+          ? 'تم إيقاف عرض لوحة الخطة على الرئيسية وإخفاء اختصارات الخطط من القائمة.'
+          : 'تم إظهار لوحة الخطة على الرئيسية واختصارات الخطط في القائمة.',
+        'تم',
+      )
+    } catch {
+      toast.warning('تعذّر حفظ الإعداد. حاول مرة أخرى.', 'تنبيه')
+    } finally {
+      setHideHomePlanSaving(false)
+    }
+  }
 
   const onSaveName = async () => {
     const fu = auth.currentUser
@@ -302,6 +325,66 @@ export default function SettingsPage() {
           <p className="rh-settings-footnote">تغيير المظهر غير مفعّل لصلاحيات حسابك.</p>
         )}
       </section>
+
+      {canToggleHideHomePlan ? (
+        <section className="rh-settings-card">
+          <div className="rh-settings-card__head">
+            <h2 className="rh-settings-card__title">لوحة الخطة على الرئيسية</h2>
+            <p className="rh-settings-card__subtitle">
+              عند الإيقاف تُخفى لوحة الخطة التفاعلية من الصفحة الرئيسية، ويُزال رابط «الخطط» و«استكشاف الخطط» من القائمة
+              الجانبية، ولا يظهر زر الانتقال إلى الخطط في حالة عدم وجود خطة نشطة. يتحكم المشرف في إظهار هذا القسم لنوع
+              صلاحياتك من لوحة أنواع المستخدمين.
+            </p>
+          </div>
+          <div className="rh-segment" role="radiogroup" aria-label="عرض لوحة الخطة على الرئيسية">
+            <button
+              type="button"
+              className={[
+                'rh-segment__btn',
+                !user?.hideHomePlanUi ? 'rh-segment__btn--active' : '',
+              ]
+                .filter(Boolean)
+                .join(' ')}
+              onClick={() => {
+                rhHapticLight()
+                void onToggleHideHomePlanUi(false)
+              }}
+              aria-pressed={!user?.hideHomePlanUi}
+              disabled={hideHomePlanSaving}
+            >
+              <span className="rh-segment__lead">
+                <RhIcon as={Eye} size={20} strokeWidth={RH_ICON_STROKE} aria-hidden />
+                <span className="rh-segment__label">عرض لوحة الخطة</span>
+              </span>
+              <span className="rh-segment__hint">الوضع الاعتيادي على الرئيسية والقائمة</span>
+            </button>
+            <button
+              type="button"
+              className={[
+                'rh-segment__btn',
+                user?.hideHomePlanUi ? 'rh-segment__btn--active' : '',
+              ]
+                .filter(Boolean)
+                .join(' ')}
+              onClick={() => {
+                rhHapticLight()
+                void onToggleHideHomePlanUi(true)
+              }}
+              aria-pressed={Boolean(user?.hideHomePlanUi)}
+              disabled={hideHomePlanSaving}
+            >
+              <span className="rh-segment__lead">
+                <RhIcon as={EyeOff} size={20} strokeWidth={RH_ICON_STROKE} aria-hidden />
+                <span className="rh-segment__label">إيقاف العرض</span>
+              </span>
+              <span className="rh-segment__hint">إخفاء اللوحة واختصارات الخطط من الواجهة</span>
+            </button>
+          </div>
+          <p className="rh-settings-footnote rh-settings-footnote--tight" style={{ marginTop: 'var(--rh-space-3)' }}>
+            ما زال بإمكانك فتح صفحة الخطط مباشرة إذا عرفت الرابط، أو يمكن للمشرف تعديل خططك من لوحة المستخدمين.
+          </p>
+        </section>
+      ) : null}
 
       <section className="rh-settings-card">
         <div className="rh-settings-card__head">

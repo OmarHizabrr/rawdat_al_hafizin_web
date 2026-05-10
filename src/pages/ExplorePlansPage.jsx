@@ -13,11 +13,13 @@ import {
   subscribePublicPlansForExplore,
 } from '../services/explorePlansService.js'
 import { DAILY_LOGGING_STRICT_CARRYOVER } from '../utils/planDailyQuota.js'
+import { useHidePlanNavigation } from '../hooks/useHidePlanNavigation.js'
 import { joinPublicPlan, loadPlans } from '../utils/plansStorage.js'
 import { getImpersonateUid, withImpersonationQuery } from '../utils/impersonation.js'
 import { Button, ScrollArea, TextField, useToast } from '../ui/index.js'
 import { RhIcon, RH_ICON_STROKE } from '../ui/RhIcon.jsx'
 import { CrossNav } from '../components/CrossNav.jsx'
+import { HiddenPlanUiNotice } from '../components/HiddenPlanUiNotice.jsx'
 import { PrintDocumentChrome } from '../components/PrintDocumentChrome.jsx'
 import { PlanResourceLinksBlock } from '../components/PlanResourceLinksBlock.jsx'
 
@@ -52,7 +54,6 @@ export default function ExplorePlansPage() {
   const [myPlanIds, setMyPlanIds] = useState(() => new Set())
   const [joinByIdLoading, setJoinByIdLoading] = useState(false)
   const [joiningCardId, setJoiningCardId] = useState(null)
-
   const appLink = useCallback(
     (path) => withImpersonationQuery(path, impersonateUid),
     [impersonateUid],
@@ -68,6 +69,8 @@ export default function ExplorePlansPage() {
       setMyPlanIds(new Set((plans || []).map((p) => p.id).filter(Boolean)))
     })
   }, [viewUserId])
+
+  const hidePlanNavigation = useHidePlanNavigation()
 
   useEffect(() => {
     const unsub = subscribePublicPlansForExplore(
@@ -119,10 +122,10 @@ export default function ExplorePlansPage() {
   }
 
   const crossItems = useMemo(() => {
-    const base = [
-      { to: appLink('/app'), label: str('layout.nav_home') },
-      { to: appLink('/app/plans'), label: str('layout.nav_plans') },
-    ]
+    const base = [{ to: appLink('/app'), label: str('layout.nav_home') }]
+    if (!hidePlanNavigation) {
+      base.push({ to: appLink('/app/plans'), label: str('layout.nav_plans') })
+    }
     if (canAccessPage('halakat')) {
       base.push({ to: appLink('/app/halakat'), label: str('layout.nav_halakat') })
     }
@@ -157,7 +160,7 @@ export default function ExplorePlansPage() {
       base.push({ to: '/app/admin/users', label: str('layout.nav_users') })
     }
     return base
-  }, [user, str, appLink, canAccessPage])
+  }, [user, str, appLink, canAccessPage, hidePlanNavigation])
 
   const printedAt = new Date().toLocaleString('ar-SA', { dateStyle: 'medium', timeStyle: 'short' })
   const printStamp = str('layout.print_doc_stamp', { date: printedAt, siteTitle: branding.siteTitle })
@@ -177,15 +180,20 @@ export default function ExplorePlansPage() {
               خطط معلنة كعامة من قبل المستخدمين. يمكنك البحث والفرز، ثم الانضمام بزر واحد أو بمعرف الخطة.
               {actingAsUser && ' أنت تعمل نيابة عن مستخدم: الانضمام يُسجَّل لحسابه.'}
             </p>
+            {hidePlanNavigation ? (
+              <HiddenPlanUiNotice variant={actingAsUser ? 'adminViewing' : 'self'} />
+            ) : null}
             <CrossNav items={crossItems} className="rh-plans__cross" />
           </div>
           <div className="rh-explore-plans__hero-aside no-print">
             <Button type="button" variant="secondary" className="rh-explore-plans__print-btn" icon={Printer} onClick={onPrint}>
               {str('layout.print_btn')}
             </Button>
-            <Link className="ui-btn ui-btn--secondary rh-explore-plans__to-mine" to={appLink('/app/plans')}>
-              خططي
-            </Link>
+            {!hidePlanNavigation ? (
+              <Link className="ui-btn ui-btn--secondary rh-explore-plans__to-mine" to={appLink('/app/plans')}>
+                خططي
+              </Link>
+            ) : null}
           </div>
         </div>
       </header>

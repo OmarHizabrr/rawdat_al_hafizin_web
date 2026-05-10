@@ -133,12 +133,14 @@ export function UserMenu({ user }) {
                   إدارة المستخدمين
                 </Link>
               )}
-              <Link to="/app/plans" className="rh-user-dropdown__item" role="menuitem" onClick={() => setOpen(false)}>
-                <span className="rh-user-dropdown__item-icon" aria-hidden>
-                  <RhIcon as={ClipboardList} size={18} strokeWidth={RH_ICON_STROKE} />
-                </span>
-                الخطط
-              </Link>
+              {!user?.hideHomePlanUi ? (
+                <Link to="/app/plans" className="rh-user-dropdown__item" role="menuitem" onClick={() => setOpen(false)}>
+                  <span className="rh-user-dropdown__item-icon" aria-hidden>
+                    <RhIcon as={ClipboardList} size={18} strokeWidth={RH_ICON_STROKE} />
+                  </span>
+                  الخطط
+                </Link>
+              ) : null}
               <Link to="/app/awrad" className="rh-user-dropdown__item" role="menuitem" onClick={() => setOpen(false)}>
                 <span className="rh-user-dropdown__item-icon" aria-hidden>
                   <RhIcon as={NotebookPen} size={18} strokeWidth={RH_ICON_STROKE} />

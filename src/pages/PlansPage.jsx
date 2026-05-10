@@ -17,6 +17,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { VOLUMES, VOLUME_BY_ID } from '../data/volumes.js'
 import { useSiteContent } from '../context/useSiteContent.js'
+import { useHidePlanNavigation } from '../hooks/useHidePlanNavigation.js'
 import { PERMISSION_PAGE_IDS } from '../config/permissionRegistry.js'
 import { isAdmin } from '../config/roles.js'
 import { useAuth } from '../context/useAuth.js'
@@ -68,6 +69,7 @@ import {
 } from '../ui/index.js'
 import { RhIcon, RH_ICON_STROKE } from '../ui/RhIcon.jsx'
 import { CrossNav } from '../components/CrossNav.jsx'
+import { HiddenPlanUiNotice } from '../components/HiddenPlanUiNotice.jsx'
 import { PeekButton } from '../components/PeekButton.jsx'
 import { PlanResourceLinksBlock } from '../components/PlanResourceLinksBlock.jsx'
 
@@ -169,6 +171,7 @@ export default function PlansPage() {
     },
     [uidParam, user],
   )
+  const hidePlanNavigation = useHidePlanNavigation()
   const [viewedDefaultPlanId, setViewedDefaultPlanId] = useState(null)
 
   const [savedPlans, setSavedPlans] = useState([])
@@ -784,10 +787,10 @@ export default function PlansPage() {
   }
 
   const plansCrossItems = useMemo(() => {
-    const base = [
-      { to: withUserCtx('/app'), label: str('layout.nav_home') },
-      { to: explorePlansHref, label: str('layout.nav_plans_explore') },
-    ]
+    const base = [{ to: withUserCtx('/app'), label: str('layout.nav_home') }]
+    if (!hidePlanNavigation) {
+      base.push({ to: explorePlansHref, label: str('layout.nav_plans_explore') })
+    }
     if (canAccessPage('halakat')) {
       base.push({ to: halakatListHref, label: str('layout.nav_halakat') })
     }
@@ -822,7 +825,7 @@ export default function PlansPage() {
       base.push({ to: '/app/admin/users', label: str('layout.nav_users') })
     }
     return base
-  }, [user, str, explorePlansHref, halakatListHref, dawratListHref, canAccessPage, withUserCtx])
+  }, [user, str, explorePlansHref, halakatListHref, dawratListHref, canAccessPage, withUserCtx, hidePlanNavigation])
 
   return (
     <div className="rh-plans">
@@ -837,6 +840,11 @@ export default function PlansPage() {
                   ? 'أنت تعمل نيابة عن هذا المستخدم: الإضافة والتعديل والحذف تُحفظ على حسابه (تسجيل الدخول ما زال بحساب المشرف).'
                   : 'أنشئ خطة حفظ أو مراجعة أو قراءة، وحدد المجلدات والورد اليومي والجدولة، ثم أدر خططك بالتعديل والحذف بسهولة.'}
             </p>
+            {hidePlanNavigation && actingAsUser && isAdmin(user) ? (
+              <HiddenPlanUiNotice variant="adminViewing" />
+            ) : hidePlanNavigation && viewUserId === user?.uid ? (
+              <HiddenPlanUiNotice />
+            ) : null}
             {actingAsUser && isAdmin(user) && (
               <p className="rh-plans__admin-banner">
                 <Link to="/app/admin/users">← المستخدمون</Link>

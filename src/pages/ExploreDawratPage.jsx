@@ -8,6 +8,7 @@ import { isAdmin } from '../config/roles.js'
 import { useAuth } from '../context/useAuth.js'
 import { usePermissions } from '../context/usePermissions.js'
 import { useSiteContent } from '../context/useSiteContent.js'
+import { useHidePlanNavigation } from '../hooks/useHidePlanNavigation.js'
 import {
   EXPLORE_SORT_OPTIONS,
   filterPublicDawratBySearch,
@@ -65,6 +66,7 @@ export default function ExploreDawratPage() {
     (path) => withImpersonationQuery(path, impersonateUid),
     [impersonateUid],
   )
+  const hidePlanNavigation = useHidePlanNavigation()
 
   useEffect(() => {
     document.title = `استكشاف الدورات العامة — ${branding.siteTitle}`
@@ -131,8 +133,10 @@ export default function ExploreDawratPage() {
       { to: appLink('/app'), label: str('layout.nav_home') },
       { to: appLink('/app/dawrat'), label: str('layout.nav_dawrat') },
       { to: appLink('/app/halakat'), label: str('layout.nav_halakat') },
-      { to: appLink('/app/plans'), label: str('layout.nav_plans') },
     ]
+    if (!hidePlanNavigation) {
+      base.push({ to: appLink('/app/plans'), label: str('layout.nav_plans') })
+    }
     if (canAccessPage('exams')) {
       base.push({ to: appLink('/app/exams'), label: str('layout.nav_exams') })
     }
@@ -157,7 +161,7 @@ export default function ExploreDawratPage() {
       base.push({ to: '/app/admin/users', label: str('layout.nav_users') })
     }
     return base
-  }, [user, str, appLink, canAccessPage])
+  }, [user, str, appLink, canAccessPage, hidePlanNavigation])
 
   const printedAt = new Date().toLocaleString('ar-SA', { dateStyle: 'medium', timeStyle: 'short' })
   const printStamp = str('layout.print_doc_stamp', { date: printedAt, siteTitle: branding.siteTitle })
