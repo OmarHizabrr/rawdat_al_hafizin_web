@@ -1,7 +1,61 @@
 import { ChevronDown } from 'lucide-react'
-import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
+import { useCallback, useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { useOnClickOutside } from './hooks/useOnClickOutside.js'
 import { RhIcon, RH_ICON_STROKE } from './RhIcon.jsx'
+
+const SELECT_PANEL_Z = 14050
+
+function computePanelPosition(triggerEl) {
+  if (!triggerEl || typeof window === 'undefined') return null
+  const rect = triggerEl.getBoundingClientRect()
+  const gap = 8
+  const edge = 10
+  const innerH = window.innerHeight
+  const innerW = window.innerWidth
+  const maxPreferred = Math.min(22 * 16, innerH * 0.85)
+  const spaceBelow = innerH - rect.bottom - gap
+  const spaceAbove = rect.top - gap
+  const openUp = spaceBelow < 140 && spaceAbove > spaceBelow
+
+  let left = rect.left
+  let width = rect.width
+  if (left + width > innerW - edge) {
+    width = Math.max(200, innerW - edge - Math.max(edge, left))
+  }
+  if (left < edge) {
+    left = edge
+    width = Math.min(width, innerW - edge * 2)
+  }
+
+  if (openUp) {
+    const maxH = Math.min(maxPreferred, Math.max(120, spaceAbove - edge))
+    return {
+      placement: 'above',
+      style: {
+        position: 'fixed',
+        left,
+        width,
+        bottom: innerH - rect.top + gap,
+        maxHeight: maxH,
+        zIndex: SELECT_PANEL_Z,
+      },
+    }
+  }
+
+  const maxH = Math.min(maxPreferred, Math.max(120, spaceBelow - edge))
+  return {
+    placement: 'below',
+    style: {
+      position: 'fixed',
+      left,
+      width,
+      top: rect.bottom + gap,
+      maxHeight: maxH,
+      zIndex: SELECT_PANEL_Z,
+    },
+  }
+}
 
 export function SearchableSelect({
   label,
@@ -25,10 +79,14 @@ export function SearchableSelect({
   const hintId = `${id}-hint`
 
   const rootRef = useRef(null)
+  const triggerRef = useRef(null)
+  const panelRef = useRef(null)
   const searchInputRef = useRef(null)
   const [open, setOpen] = useState(false)
   const [query, setQuery] = useState('')
   const [highlight, setHighlight] = useState(0)
+  const [panelPlacement, setPanelPlacement] = useState('below')
+  const [panelStyle, setPanelStyle] = useState(null)
 
   const selected = useMemo(() => options.find((o) => o.value === value) ?? null, [options, value])
 
@@ -56,7 +114,27 @@ export function SearchableSelect({
       setQuery('')
     },
     open,
+    panelRef,
   )
+
+  const refreshPanelPosition = useCallback(() => {
+    const pos = computePanelPosition(triggerRef.current)
+    if (!pos) return
+    setPanelPlacement(pos.placement)
+    setPanelStyle(pos.style)
+  }, [])
+
+  useLayoutEffect(() => {
+    if (!open) return undefined
+    refreshPanelPosition()
+    const onWin = () => refreshPanelPosition()
+    window.addEventListener('resize', onWin)
+    window.addEventListener('scroll', onWin, true)
+    return () => {
+      window.removeEventListener('resize', onWin)
+      window.removeEventListener('scroll', onWin, true)
+    }
+  }, [open, refreshPanelPosition, filtered.length])
 
   useEffect(() => {
     if (!open) return
@@ -121,6 +199,7 @@ export function SearchableSelect({
         'ui-field',
         'ui-select',
         open ? 'ui-select--open' : '',
+        open && panelPlacement === 'above' ? 'ui-select--panel-above' : '',
         error ? 'ui-field--error' : '',
         className,
       ]
@@ -135,6 +214,7 @@ export function SearchableSelect({
         </label>
       )}
       <button
+        ref={triggerRef}
         type="button"
         id={id}
         className="ui-select__trigger"
@@ -162,58 +242,73 @@ export function SearchableSelect({
         </span>
       </button>
 
-      {open && (
-        <div className="ui-select__panel" role="presentation">
-          <div className="ui-select__search">
-            <input
-              ref={searchInputRef}
-              type="search"
-              autoComplete="off"
-              placeholder={searchPlaceholder}
-              value={query}
-              onChange={(e) => {
-                setQuery(e.target.value)
-                setHighlight(0)
-              }}
-              aria-label={searchPlaceholder}
-            />
-          </div>
-          <ul id={listId} className="ui-select__list" role="listbox" aria-label={label ?? placeholder}>
-            {filtered.length === 0 ? (
-              <li className="ui-select__empty" role="presentation">
-                {emptyText}
-              </li>
-            ) : (
-              filtered.map((opt, i) => (
-                <li key={String(opt.value)} role="presentation">
-                  <button
-                    type="button"
-                    role="option"
-                    aria-selected={opt.value === value}
-                    className={[
-                      'ui-select__option',
-                      opt.detail ? 'ui-select__option--stacked' : '',
-                      i === effectiveHighlight ? 'ui-select__option--highlight' : '',
-                      opt.value === value ? 'ui-select__option--selected' : '',
-                    ]
-                      .filter(Boolean)
-                      .join(' ')}
-                    onMouseEnter={() => setHighlight(i)}
-                    onClick={() => commit(opt)}
-                  >
-                    <span className="ui-select__option-label">{opt.label}</span>
-                    {opt.detail ? (
-                      <span className="ui-select__option-detail" dir="rtl">
-                        {opt.detail}
-                      </span>
-                    ) : null}
-                  </button>
+      {open &&
+        panelStyle &&
+        typeof document !== 'undefined' &&
+        createPortal(
+          <div
+            ref={panelRef}
+            className={[
+              'ui-select__panel',
+              'ui-select__panel--portal',
+              panelPlacement === 'above' ? 'ui-select__panel--above' : '',
+            ]
+              .filter(Boolean)
+              .join(' ')}
+            style={panelStyle}
+            role="presentation"
+          >
+            <div className="ui-select__search">
+              <input
+                ref={searchInputRef}
+                type="search"
+                autoComplete="off"
+                placeholder={searchPlaceholder}
+                value={query}
+                onChange={(e) => {
+                  setQuery(e.target.value)
+                  setHighlight(0)
+                }}
+                aria-label={searchPlaceholder}
+              />
+            </div>
+            <ul id={listId} className="ui-select__list" role="listbox" aria-label={label ?? placeholder}>
+              {filtered.length === 0 ? (
+                <li className="ui-select__empty" role="presentation">
+                  {emptyText}
                 </li>
-              ))
-            )}
-          </ul>
-        </div>
-      )}
+              ) : (
+                filtered.map((opt, i) => (
+                  <li key={String(opt.value)} role="presentation">
+                    <button
+                      type="button"
+                      role="option"
+                      aria-selected={opt.value === value}
+                      className={[
+                        'ui-select__option',
+                        opt.detail ? 'ui-select__option--stacked' : '',
+                        i === effectiveHighlight ? 'ui-select__option--highlight' : '',
+                        opt.value === value ? 'ui-select__option--selected' : '',
+                      ]
+                        .filter(Boolean)
+                        .join(' ')}
+                      onMouseEnter={() => setHighlight(i)}
+                      onClick={() => commit(opt)}
+                    >
+                      <span className="ui-select__option-label">{opt.label}</span>
+                      {opt.detail ? (
+                        <span className="ui-select__option-detail" dir="rtl">
+                          {opt.detail}
+                        </span>
+                      ) : null}
+                    </button>
+                  </li>
+                ))
+              )}
+            </ul>
+          </div>,
+          document.body,
+        )}
 
       {hint && !error && (
         <p className="ui-field__hint" id={hintId}>

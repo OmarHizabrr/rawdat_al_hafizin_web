@@ -2169,7 +2169,7 @@ a.rh-sidebar__brand-link.rh-sidebar__brand-link--active {
 }
 
 .rh-home-backlog-confirm.ui-modal {
-  z-index: 1300;
+  z-index: 14200;
 }
 
 .rh-home-backlog-confirm .ui-modal__backdrop {
@@ -2217,6 +2217,30 @@ a.rh-sidebar__brand-link.rh-sidebar__brand-link--active {
 
   .rh-home-backlog-confirm__actions .ui-btn {
     flex: 1 1 100%;
+  }
+}
+
+/* تأكيد إنجاز الورد — وسط الشاشة على الموبايل ووضوح فوق الطبقات */
+@media (max-width: 899px) {
+  .rh-home-backlog-confirm.ui-modal {
+    justify-content: center !important;
+    align-items: center !important;
+    padding-inline: max(var(--rh-space-3), env(safe-area-inset-left, 0px)) !important;
+    padding-block: max(var(--rh-space-4), env(safe-area-inset-top, 0px))
+      max(var(--rh-space-4), env(safe-area-inset-bottom, 0px)) !important;
+    min-height: 100dvh;
+    min-height: 100svh;
+  }
+
+  .rh-home-backlog-confirm .ui-modal__content.rh-home-backlog-confirm__sheet {
+    margin-block: auto !important;
+    width: min(30rem, calc(100vw - 1.5rem)) !important;
+    max-width: min(30rem, calc(100vw - 1.5rem)) !important;
+    max-height: min(72dvh, calc(100svh - 2.5rem)) !important;
+    border-radius: var(--rh-radius-xl);
+    box-shadow:
+      0 28px 72px rgba(8, 12, 22, 0.28),
+      var(--rh-shadow-lg);
   }
 }
 

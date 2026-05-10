@@ -1,5 +1,6 @@
 import { X } from 'lucide-react'
 import { useEffect } from 'react'
+import { createPortal } from 'react-dom'
 import { RH_ICON_STROKE, RhIcon } from './RhIcon.jsx'
 
 export function Modal({
@@ -35,7 +36,7 @@ export function Modal({
 
   if (!open) return null
 
-  return (
+  const tree = (
     <div
       className={['ui-modal', className].filter(Boolean).join(' ')}
       role="dialog"
@@ -67,4 +68,8 @@ export function Modal({
       </section>
     </div>
   )
+
+  if (typeof document === 'undefined') return tree
+
+  return createPortal(tree, document.body)
 }

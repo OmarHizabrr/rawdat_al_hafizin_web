@@ -314,6 +314,23 @@
   flex-direction: column;
 }
 
+/** لوحة مُرفَعة إلى body — موضعها وأقصى ارتفاع يُحدَّدان بـ JS ضمن نافذة العرض */
+.ui-select__panel.ui-select__panel--portal {
+  position: fixed;
+  z-index: 14050;
+  inset-inline: unset;
+  inset: unset;
+  top: unset;
+  bottom: unset;
+  left: unset;
+  right: unset;
+  max-height: min(22rem, 85vh);
+}
+
+.ui-select__panel--portal .ui-select__list {
+  min-height: 0;
+}
+
 .ui-select__search {
   padding: var(--rh-space-2);
   border-bottom: 1px solid var(--rh-border);
@@ -403,8 +420,8 @@
   color: var(--rh-text-muted);
 }
 
-/** قائمة أجزاء القرآن — عرض أوضح للسطر الثاني */
-.rh-quran-juz-select .ui-select__panel {
+/** قائمة أجزاء القرآن — يُضبط أقصى الارتفاع أيضاً من JS للوحة البورتال */
+.rh-quran-juz-select .ui-select__panel:not(.ui-select__panel--portal) {
   max-height: min(22rem, 72vh);
 }
 
