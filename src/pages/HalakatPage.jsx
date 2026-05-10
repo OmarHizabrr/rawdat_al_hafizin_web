@@ -15,8 +15,9 @@ import {
   Users,
   X,
 } from 'lucide-react'
+import { HapticLink } from '../ui/HapticLink.jsx'
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { Link, useLocation, useSearchParams } from 'react-router-dom'
+import { useLocation, useSearchParams } from 'react-router-dom'
 import { CrossNav } from '../components/CrossNav.jsx'
 import { PERMISSION_PAGE_IDS } from '../config/permissionRegistry.js'
 import { isAdmin } from '../config/roles.js'
@@ -754,10 +755,10 @@ export default function HalakatPage() {
             </Button>
           </div>
           <div className="rh-plans__join-explore">
-            <Link className="ui-btn ui-btn--secondary rh-plans__explore-link" to={exploreHref}>
+            <HapticLink className="ui-btn ui-btn--secondary rh-plans__explore-link" to={exploreHref}>
               <RhIcon as={Compass} size={18} strokeWidth={RH_ICON_STROKE} />
               استكشاف الحلقات العامة
-            </Link>
+            </HapticLink>
           </div>
         </section>
       )}
@@ -810,13 +811,13 @@ export default function HalakatPage() {
                 </p>
                 <div className="rh-plans__saved-actions">
                   {canOpenSessions(h) && (
-                    <Link
+                    <HapticLink
                       to={appLink(`/app/halakat/${encodeURIComponent(h.id)}/sessions`)}
                       className="ui-btn ui-btn--secondary ui-btn--sm"
                     >
                       <RhIcon as={Users} size={16} strokeWidth={RH_ICON_STROKE} />
                       الجلسات
-                    </Link>
+                    </HapticLink>
                   )}
                   {halakaCanManageMembers(h) && can(PH, 'halaka_card_members') && (
                     <Button type="button" variant="secondary" size="sm" icon={Users} onClick={() => setMembersModal(h)}>
@@ -1443,34 +1444,34 @@ export default function HalakatPage() {
                           </div>
                         )}
                         <div className="rh-members-chat__actions">
-                          <Link to={memberAppLink('/app/reports', row.userId)} className="ui-btn ui-btn--ghost ui-btn--sm">
+                          <HapticLink to={memberAppLink('/app/reports', row.userId)} className="ui-btn ui-btn--ghost ui-btn--sm">
                             تقارير
-                          </Link>
-                          <Link to={memberAppLink('/app/plans', row.userId)} className="ui-btn ui-btn--ghost ui-btn--sm">
+                          </HapticLink>
+                          <HapticLink to={memberAppLink('/app/plans', row.userId)} className="ui-btn ui-btn--ghost ui-btn--sm">
                             الخطط
-                          </Link>
-                          <Link to={memberAppLink('/app/awrad', row.userId)} className="ui-btn ui-btn--ghost ui-btn--sm">
+                          </HapticLink>
+                          <HapticLink to={memberAppLink('/app/awrad', row.userId)} className="ui-btn ui-btn--ghost ui-btn--sm">
                             الأوراد
-                          </Link>
+                          </HapticLink>
                           {canAccessPage('exams') && (
-                            <Link to={memberAppLink('/app/exams', row.userId)} className="ui-btn ui-btn--ghost ui-btn--sm">
+                            <HapticLink to={memberAppLink('/app/exams', row.userId)} className="ui-btn ui-btn--ghost ui-btn--sm">
                               الاختبارات
-                            </Link>
+                            </HapticLink>
                           )}
                           {canAccessPage('activities') && (
-                            <Link to={memberAppLink('/app/activities', row.userId)} className="ui-btn ui-btn--ghost ui-btn--sm">
+                            <HapticLink to={memberAppLink('/app/activities', row.userId)} className="ui-btn ui-btn--ghost ui-btn--sm">
                               الأنشطة
-                            </Link>
+                            </HapticLink>
                           )}
                           {canAccessPage('dawrat') && (
-                            <Link to={memberAppLink('/app/dawrat', row.userId)} className="ui-btn ui-btn--ghost ui-btn--sm">
+                            <HapticLink to={memberAppLink('/app/dawrat', row.userId)} className="ui-btn ui-btn--ghost ui-btn--sm">
                               الدورات
-                            </Link>
+                            </HapticLink>
                           )}
                           {canAccessPage('remote_tasmee') && (
-                            <Link to={memberAppLink('/app/remote-tasmee', row.userId)} className="ui-btn ui-btn--ghost ui-btn--sm">
+                            <HapticLink to={memberAppLink('/app/remote-tasmee', row.userId)} className="ui-btn ui-btn--ghost ui-btn--sm">
                               التسميع عن بعد
-                            </Link>
+                            </HapticLink>
                           )}
                         </div>
                       </div>

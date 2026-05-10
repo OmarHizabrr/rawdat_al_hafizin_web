@@ -31,3 +31,34 @@ export function rhHapticMedium() {
     /* ignore */
   }
 }
+
+function pointerAllowsHaptic(e) {
+  if (!e || typeof window === 'undefined') return true
+  if (e.pointerType === 'touch' || e.pointerType === 'pen') return true
+  return window.matchMedia('(pointer: coarse)').matches
+}
+
+/**
+ * اهتزاز عند اختيار رابط تنقّل (قائمة، شريط، CrossNav).
+ * يُستدعى من onPointerDown مع تمرير الحدث — نفس منطق الأزرار: لمس ولوحات لمس فقط.
+ */
+export function rhHapticNavigate(e) {
+  if (reducedMotion() || !canVibrate()) return
+  if (!pointerAllowsHaptic(e)) return
+  try {
+    navigator.vibrate(18)
+  } catch {
+    /* ignore */
+  }
+}
+
+/** نقر أيقونة القائمة الجانبية / لوحة — نبضة أوضح قليلاً */
+export function rhHapticChromeTap(e) {
+  if (reducedMotion() || !canVibrate()) return
+  if (!pointerAllowsHaptic(e)) return
+  try {
+    navigator.vibrate([12, 14, 16])
+  } catch {
+    /* ignore */
+  }
+}

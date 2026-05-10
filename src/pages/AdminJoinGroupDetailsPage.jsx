@@ -12,8 +12,9 @@ import {
   Users,
   X,
 } from 'lucide-react'
+import { HapticLink } from '../ui/HapticLink.jsx'
 import { useEffect, useMemo, useState } from 'react'
-import { Link, useNavigate, useParams } from 'react-router-dom'
+import { useNavigate, useParams } from 'react-router-dom'
 import { CrossNav } from '../components/CrossNav.jsx'
 import { useAuth } from '../context/useAuth.js'
 import {
@@ -344,7 +345,7 @@ export default function AdminJoinGroupDetailsPage() {
           </ul>
         )}
         <div className="rh-plans__actions">
-          <Link to="/app/admin/groups">عودة إلى القائمة</Link>
+          <HapticLink to="/app/admin/groups">عودة إلى القائمة</HapticLink>
           <Button type="button" variant="ghost" icon={RefreshCw} onClick={() => toast.success('تم تحديث البيانات.', 'تم')}>
             تحديث يدوي
           </Button>

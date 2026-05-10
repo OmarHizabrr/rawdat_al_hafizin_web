@@ -1,6 +1,8 @@
 import { useEffect } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { useNavigate } from 'react-router-dom'
 import { ProgramSections } from '../components/ProgramSections.jsx'
+import { HapticLink } from '../ui/HapticLink.jsx'
+import { rhHapticNavigate } from '../utils/haptics.js'
 import { useSiteContent } from '../context/useSiteContent.js'
 
 export default function LandingPage() {
@@ -12,14 +14,19 @@ export default function LandingPage() {
   }, [branding.siteTitle])
 
   return (
-    <div className="page">
+    <div className="page rh-page-surface">
       <header className="hero">
         <div className="hero-inner">
           <img className="logo" src={branding.logoSrc} alt={str('landing.logo_alt')} width={120} height={120} />
           <p className="eyebrow">{str('landing.eyebrow')}</p>
           <h1>{str('landing.hero_title')}</h1>
           <p className="subtitle">{str('landing.subtitle')}</p>
-          <button type="button" className="cta" onClick={() => navigate('/login')}>
+          <button
+            type="button"
+            className="cta"
+            onPointerDown={(e) => rhHapticNavigate(e)}
+            onClick={() => navigate('/login')}
+          >
             {str('landing.cta')}
           </button>
         </div>
@@ -32,11 +39,16 @@ export default function LandingPage() {
           <h2>{str('landing.section_start_title')}</h2>
           <p>{str('landing.section_start_p')}</p>
           <p className="landing-kit-link">
-            <button type="button" className="rh-link-btn" onClick={() => navigate('/login')}>
+            <button
+              type="button"
+              className="rh-link-btn"
+              onPointerDown={(e) => rhHapticNavigate(e)}
+              onClick={() => navigate('/login')}
+            >
               {str('landing.section_start_login_btn')}
             </button>
             {' · '}
-            <Link to="/foundation">{str('landing.section_start_foundation_link')}</Link>
+            <HapticLink to="/foundation">{str('landing.section_start_foundation_link')}</HapticLink>
           </p>
         </section>
       </main>
@@ -44,7 +56,7 @@ export default function LandingPage() {
       <footer className="footer">
         <p>{str('landing.footer_line')}</p>
         <p className="footer-links">
-          <Link to="/foundation">{str('landing.footer_kit_link')}</Link>
+          <HapticLink to="/foundation">{str('landing.footer_kit_link')}</HapticLink>
         </p>
       </footer>
     </div>

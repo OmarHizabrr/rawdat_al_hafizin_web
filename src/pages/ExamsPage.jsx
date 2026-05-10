@@ -14,8 +14,9 @@ import {
   Video,
   X,
 } from 'lucide-react'
+import { HapticLink } from '../ui/HapticLink.jsx'
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { Link, useLocation, useSearchParams } from 'react-router-dom'
+import { useLocation, useSearchParams } from 'react-router-dom'
 import { CrossNav } from '../components/CrossNav.jsx'
 import { PERMISSION_PAGE_IDS } from '../config/permissionRegistry.js'
 import { isAdmin } from '../config/roles.js'
@@ -497,10 +498,10 @@ export default function ExamsPage() {
             </Button>
           </div>
           <div className="rh-plans__join-explore">
-            <Link className="ui-btn ui-btn--secondary rh-plans__explore-link" to={exploreHref}>
+            <HapticLink className="ui-btn ui-btn--secondary rh-plans__explore-link" to={exploreHref}>
               <RhIcon as={Compass} size={18} strokeWidth={RH_ICON_STROKE} />
               استكشاف الاختبارات العامة
-            </Link>
+            </HapticLink>
           </div>
         </section>
       )}
@@ -624,13 +625,13 @@ export default function ExamsPage() {
                 </p>
                 <div className="rh-plans__saved-actions">
                   {examCanEdit(ex) && !readOnly && canAccessPage('remote_tasmee') && (
-                    <Link
+                    <HapticLink
                       className="ui-btn ui-btn--secondary ui-btn--sm"
                       to={appLink(`/app/remote-tasmee?fromExam=${encodeURIComponent(ex.id)}`)}
                     >
                       <RhIcon as={Video} size={16} strokeWidth={RH_ICON_STROKE} />
                       بث تسميع
-                    </Link>
+                    </HapticLink>
                   )}
                   {examCanManageMembers(ex) && can(PH, 'exam_card_members') && (
                     <Button type="button" variant="secondary" size="sm" icon={Users} onClick={() => setMembersModal(ex)}>

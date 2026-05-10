@@ -1,3 +1,4 @@
+export { HapticLink, HapticNavLink } from './HapticLink.jsx'
 export { Button } from './Button.jsx'
 export { TextField } from './TextField.jsx'
 export { TextAreaField } from './TextAreaField.jsx'

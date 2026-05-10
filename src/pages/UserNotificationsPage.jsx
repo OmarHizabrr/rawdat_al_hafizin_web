@@ -1,6 +1,7 @@
 import { Bell, CheckCheck, Trash2 } from 'lucide-react'
+import { HapticLink } from '../ui/HapticLink.jsx'
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { Link, useLocation } from 'react-router-dom'
+import { useLocation } from 'react-router-dom'
 import { CrossNav } from '../components/CrossNav.jsx'
 import { PERMISSION_PAGE_IDS } from '../config/permissionRegistry.js'
 import { useAuth } from '../context/useAuth.js'
@@ -183,13 +184,13 @@ export default function UserNotificationsPage() {
         </section>
 
         <p className="rh-settings-footnote" style={{ marginTop: 16 }}>
-          <Link
+          <HapticLink
             to={withImpersonationQuery('/app', impersonateUid)}
             className="ui-btn ui-btn--ghost"
             style={{ display: 'inline-flex' }}
           >
             {str('layout.nav_home')}
-          </Link>
+          </HapticLink>
         </p>
     </div>
   )

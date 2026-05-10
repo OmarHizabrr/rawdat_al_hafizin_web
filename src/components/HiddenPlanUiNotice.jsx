@@ -1,4 +1,4 @@
-import { Link } from 'react-router-dom'
+import { HapticLink } from '../ui/HapticLink.jsx'
 
 /**
  * تنبيه يُعرض عند فتح مسارات الخطط رغم تفعيل إخفاء اختصارات الخطة من الرئيسية والقائمة.
@@ -19,7 +19,7 @@ export function HiddenPlanUiNotice({ variant = 'self', className = '' }) {
     <p className={['rh-plans__admin-banner', className].filter(Boolean).join(' ')} role="status">
       أوقفت عرض الخطط من القائمة الجانبية والرئيسية. ما زال بإمكانك إدارة خططك من هذه الصفحة أو من الأوراد.
       لإعادة إظهار الاختصارات في الواجهة، انتقل إلى{' '}
-      <Link to="/app/settings">الإعدادات</Link>
+      <HapticLink to="/app/settings">الإعدادات</HapticLink>
       إن سمح نوع صلاحياتك.
     </p>
   )

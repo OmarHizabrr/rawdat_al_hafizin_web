@@ -9,7 +9,8 @@ import {
   X,
   Save,
 } from 'lucide-react'
-import { Link } from 'react-router-dom'
+
+import { HapticLink } from '../ui/HapticLink.jsx'
 import { useEffect, useMemo, useState } from 'react'
 import { useSiteContent } from '../context/useSiteContent.js'
 import { USER_ROLES, isAdmin, normalizeRole } from '../config/roles.js'
@@ -524,14 +525,14 @@ export default function AdminUsersPage() {
                   <span className="rh-admin-users__email">{u.email || u.uid}</span>
                 </div>
                 <div className="rh-admin-users__peek-row">
-                  <Link
+                  <HapticLink
                     className="rh-peek-btn"
                     title="الصفحة الرئيسية كهذا المستخدم (تعديل نيابة)"
                     aria-label="الصفحة الرئيسية كهذا المستخدم"
                     to={`/app?uid=${encodeURIComponent(u.uid)}`}
                   >
                     <RhIcon as={Home} size={18} strokeWidth={RH_ICON_STROKE} />
-                  </Link>
+                  </HapticLink>
                   <PeekButton
                     className="rh-admin-users__peek-user"
                     title="فتح صفحة خطط المستخدم"

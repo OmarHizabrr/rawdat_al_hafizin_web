@@ -1,6 +1,7 @@
 import { Bird, Heart, Pencil, Save, Star, Trash2, X } from 'lucide-react'
+import { HapticLink } from '../ui/HapticLink.jsx'
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { Link, useLocation, useSearchParams } from 'react-router-dom'
+import { useLocation, useSearchParams } from 'react-router-dom'
 import { CrossNav } from '../components/CrossNav.jsx'
 import { PERMISSION_PAGE_IDS } from '../config/permissionRegistry.js'
 import { isAdmin } from '../config/roles.js'
@@ -312,7 +313,7 @@ export default function StudentFeelingsPage() {
         <p className="rh-feelings-feed__hint">
           يمكن لصاحب المشاركة تعديلها أو حذفها، ويمكن للمشرف إدارة المشاركات مباشرة أو عند العمل نيابة عن المستخدم.
           {' '}
-          <Link to={appLink('/app')}>العودة للرئيسية</Link>
+          <HapticLink to={appLink('/app')}>العودة للرئيسية</HapticLink>
         </p>
       </section>
     </div>

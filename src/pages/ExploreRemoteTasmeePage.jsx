@@ -1,7 +1,8 @@
 import { Check, Compass, Printer, UserPlus } from 'lucide-react'
+import { HapticLink } from '../ui/HapticLink.jsx'
 import { RemoteTasmeeProviderIcon } from '../components/RemoteTasmeeProviderIcon.jsx'
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { Link, useLocation } from 'react-router-dom'
+import { useLocation } from 'react-router-dom'
 import { CrossNav } from '../components/CrossNav.jsx'
 import { PrintDocumentChrome } from '../components/PrintDocumentChrome.jsx'
 import { PERMISSION_PAGE_IDS } from '../config/permissionRegistry.js'
@@ -171,9 +172,9 @@ export default function ExploreRemoteTasmeePage() {
             <Button type="button" variant="secondary" className="rh-explore-plans__print-btn" icon={Printer} onClick={onPrint}>
               {str('layout.print_btn')}
             </Button>
-            <Link className="ui-btn ui-btn--secondary rh-explore-plans__to-mine" to={appLink('/app/remote-tasmee')}>
+            <HapticLink className="ui-btn ui-btn--secondary rh-explore-plans__to-mine" to={appLink('/app/remote-tasmee')}>
               بثوثي
-            </Link>
+            </HapticLink>
           </div>
         </div>
       </header>
@@ -327,9 +328,9 @@ export default function ExploreRemoteTasmeePage() {
 
                   {inItem && (
                     <p className="no-print" style={{ marginTop: '0.75rem' }}>
-                      <Link className="ui-btn ui-btn--secondary ui-btn--sm" to={appLink(`/app/remote-tasmee/${encodeURIComponent(p.id)}`)}>
+                      <HapticLink className="ui-btn ui-btn--secondary ui-btn--sm" to={appLink(`/app/remote-tasmee/${encodeURIComponent(p.id)}`)}>
                         فتح صفحة البث والرابط
-                      </Link>
+                      </HapticLink>
                     </p>
                   )}
 

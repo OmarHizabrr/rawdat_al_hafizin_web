@@ -1,6 +1,7 @@
 import { ArrowLeft, Pencil, Plus, RefreshCw, Save, Trash2, X } from 'lucide-react'
+import { HapticLink } from '../ui/HapticLink.jsx'
 import { useEffect, useMemo, useState } from 'react'
-import { Link } from 'react-router-dom'
+
 import { useAuth } from '../context/useAuth.js'
 import { useSiteContent } from '../context/useSiteContent.js'
 import { deletePlanType, savePlanType, seedDefaultPlanTypes, subscribePlanTypes } from '../services/siteConfigService.js'
@@ -116,9 +117,9 @@ export default function AdminPlanTypesPage() {
     <div className="rh-admin-plan-types">
       <header className="rh-admin-plan-types__hero card">
         <div className="rh-admin-plan-types__head-row">
-          <Link to="/app/admin" className="rh-admin-plan-types__back">
+          <HapticLink to="/app/admin" className="rh-admin-plan-types__back">
             <RhIcon as={ArrowLeft} size={18} strokeWidth={RH_ICON_STROKE} /> لوحة التحكم
-          </Link>
+          </HapticLink>
         </div>
         <h1 className="rh-admin-plan-types__title">أنواع الخطط</h1>
         <p className="rh-admin-plan-types__desc">

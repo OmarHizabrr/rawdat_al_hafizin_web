@@ -598,7 +598,8 @@ a.rh-sidebar__brand-link.rh-sidebar__brand-link--active {
   transition:
     background 0.18s cubic-bezier(0.4, 0, 0.2, 1),
     color 0.18s ease,
-    box-shadow 0.18s ease;
+    box-shadow 0.18s ease,
+    transform 0.14s ease;
 }
 
 .rh-nav-link:hover {
@@ -612,6 +613,18 @@ a.rh-sidebar__brand-link.rh-sidebar__brand-link--active {
   box-shadow:
     0 1px 0 rgba(0, 0, 0, 0.03),
     var(--rh-shadow-sm);
+}
+
+@media (max-width: 899px) {
+  .rh-nav-link {
+    min-height: 2.85rem;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: color-mix(in srgb, var(--rh-primary) 14%, transparent);
+  }
+
+  .rh-nav-link:active {
+    transform: scale(0.985);
+  }
 }
 
 .rh-app--collapsed .rh-nav-link {
@@ -999,6 +1012,31 @@ a.rh-sidebar__brand-link.rh-sidebar__brand-link--active {
     padding-bottom: max(var(--rh-space-5), env(safe-area-inset-bottom, 0));
     padding-inline-start: max(var(--rh-space-3), env(safe-area-inset-left, 0px));
     padding-inline-end: max(var(--rh-space-3), env(safe-area-inset-right, 0px));
+  }
+}
+
+/* انتقال بصري خفيف عند تغيير الصفحة داخل التطبيق */
+@media (prefers-reduced-motion: no-preference) {
+  .rh-page-surface {
+    animation: rh-page-surface-enter 0.3s cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+}
+
+@keyframes rh-page-surface-enter {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rh-page-surface {
+    animation: none;
   }
 }
 
@@ -2991,11 +3029,17 @@ a.rh-sidebar__brand-link.rh-sidebar__brand-link--active {
   border-radius: 999px;
   border: 1px solid color-mix(in srgb, var(--rh-border) 88%, var(--rh-primary) 6%);
   background: color-mix(in srgb, var(--rh-surface) 90%, var(--rh-bg));
+  cursor: pointer;
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: color-mix(in srgb, var(--rh-primary) 12%, transparent);
   transition:
     color 0.15s ease,
     border-color 0.15s ease,
     background 0.15s ease,
-    box-shadow 0.15s ease;
+    box-shadow 0.15s ease,
+    transform 0.12s ease;
 }
 
 .rh-cross-nav__link:hover {
@@ -3009,6 +3053,17 @@ a.rh-sidebar__brand-link.rh-sidebar__brand-link--active {
   color: var(--rh-primary);
   border-color: color-mix(in srgb, var(--rh-primary) 52%, var(--rh-border));
   background: color-mix(in srgb, var(--rh-primary-muted) 78%, var(--rh-surface));
+}
+
+@media (max-width: 899px) {
+  .rh-cross-nav__link {
+    min-height: 2.65rem;
+    padding-block: 0.42rem;
+  }
+
+  .rh-cross-nav__link:active {
+    transform: scale(0.97);
+  }
 }
 
 .rh-cross-nav__icon {

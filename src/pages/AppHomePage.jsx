@@ -12,8 +12,9 @@ import {
   UserPlus,
   X,
 } from "lucide-react";
+import { HapticLink } from '../ui/HapticLink.jsx'
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Link, useLocation, useSearchParams } from "react-router-dom";
+import { useLocation, useSearchParams } from 'react-router-dom';
 import { useSiteContent } from "../context/useSiteContent.js";
 import { HomeWirdCheckInModal } from "../components/HomeWirdCheckInModal.jsx";
 import { HomeWirdModal } from "../components/HomeWirdModal.jsx";
@@ -808,39 +809,39 @@ export default function AppHomePage() {
         </div>
         {actingAsUser && (
           <p className="rh-plans__admin-banner rh-app-home__impersonation">
-            <Link to="/app/admin/users">
+            <HapticLink to="/app/admin/users">
               {str("app.home_impersonation_users")}
-            </Link>
+            </HapticLink>
             {!hideHomePlanUi ? (
               <>
                 {" · "}
-                <Link to={`/app/plans?uid=${encodeURIComponent(contextUserId)}`}>
+                <HapticLink to={`/app/plans?uid=${encodeURIComponent(contextUserId)}`}>
                   {str("app.home_impersonation_plans")}
-                </Link>
+                </HapticLink>
               </>
             ) : null}
             {" · "}
-            <Link to={`/app/halakat?uid=${encodeURIComponent(contextUserId)}`}>
+            <HapticLink to={`/app/halakat?uid=${encodeURIComponent(contextUserId)}`}>
               {str("app.home_impersonation_halakat")}
-            </Link>
+            </HapticLink>
             {" · "}
-            <Link to={`/app/dawrat?uid=${encodeURIComponent(contextUserId)}`}>
+            <HapticLink to={`/app/dawrat?uid=${encodeURIComponent(contextUserId)}`}>
               {str("app.home_impersonation_dawrat")}
-            </Link>
+            </HapticLink>
             {" · "}
-            <Link to={`/app/exams?uid=${encodeURIComponent(contextUserId)}`}>
+            <HapticLink to={`/app/exams?uid=${encodeURIComponent(contextUserId)}`}>
               {str("app.home_impersonation_exams")}
-            </Link>
+            </HapticLink>
             {" · "}
-            <Link to={`/app/activities?uid=${encodeURIComponent(contextUserId)}`}>
+            <HapticLink to={`/app/activities?uid=${encodeURIComponent(contextUserId)}`}>
               {str("app.home_impersonation_activities")}
-            </Link>
+            </HapticLink>
             {" · "}
-            <Link to={`/app/awrad?uid=${encodeURIComponent(contextUserId)}`}>
+            <HapticLink to={`/app/awrad?uid=${encodeURIComponent(contextUserId)}`}>
               {str("app.home_impersonation_awrad")}
-            </Link>
+            </HapticLink>
             {" · "}
-            <Link to="/app">{str("app.home_impersonation_my_account")}</Link>
+            <HapticLink to="/app">{str("app.home_impersonation_my_account")}</HapticLink>
           </p>
         )}
       </header>
@@ -905,12 +906,12 @@ export default function AppHomePage() {
           <span className="rh-home-feelings-birds__meta">
             {"★".repeat(Math.max(1, activeFeelingDetail.rating || 1))}
           </span>
-          <Link
+          <HapticLink
             className="rh-home-feelings-birds__detail-link"
             to={appPath("/app/feelings")}
           >
             فتح صفحة المشاعر
-          </Link>
+          </HapticLink>
         </div>
       ) : null}
 
@@ -1214,28 +1215,28 @@ export default function AppHomePage() {
               تسجيل الورد السريع
             </button>
             */}
-            <Link
+            <HapticLink
               className="rh-home-dash__btn rh-home-dash__btn--secondary"
               to={awradHref}
             >
               صفحة الأوراد — تفاصيل كاملة
-            </Link>
+            </HapticLink>
             {canVisitFeelings ? (
-              <Link
+              <HapticLink
                 className="rh-home-dash__btn rh-home-dash__btn--secondary"
                 to={appPath("/app/feelings")}
               >
                 <Bird size={20} strokeWidth={1.75} />
                 مشاعر الطلاب
-              </Link>
+              </HapticLink>
             ) : null}
             {can(PH, "home_footer_plans_link") ? (
-              <Link
+              <HapticLink
                 className="rh-home-dash__link-quiet"
                 to={appPath("/app/plans")}
               >
                 إدارة الخطط والافتراضية
-              </Link>
+              </HapticLink>
             ) : null}
           </div>
 
@@ -1333,12 +1334,12 @@ export default function AppHomePage() {
               عند إنشاء خطة حفظ أو مراجعة تظهر هنا لوحة تفاعلية: التأخر
               التراكمي، أمس واليوم، ونسبة الإنجاز.
             </p>
-            <Link
+            <HapticLink
               className="rh-home-dash__btn rh-home-dash__btn--primary"
               to={appPath("/app/plans")}
             >
               الانتقال إلى الخطط
-            </Link>
+            </HapticLink>
           </div>
         </section>
       )}

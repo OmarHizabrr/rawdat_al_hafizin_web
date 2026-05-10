@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { HapticLink } from '../ui/HapticLink.jsx'
 import { Pencil, Plus, Save, Trash2, X } from 'lucide-react'
-import { Link, useNavigate, useSearchParams } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useSiteContent } from '../context/useSiteContent.js'
 import { useHidePlanNavigation } from '../hooks/useHidePlanNavigation.js'
 import { PERMISSION_PAGE_IDS } from '../config/permissionRegistry.js'
@@ -460,30 +461,30 @@ export default function AwradPage() {
         </p>
         {actingAsUser && isAdmin(user) && (
           <p className="rh-plans__admin-banner">
-            <Link to="/app/admin/users">← المستخدمون</Link>
+            <HapticLink to="/app/admin/users">← المستخدمون</HapticLink>
             {' · '}
-            <Link to={`/app?uid=${encodeURIComponent(contextUserId)}`}>رئيسيته</Link>
+            <HapticLink to={`/app?uid=${encodeURIComponent(contextUserId)}`}>رئيسيته</HapticLink>
             {!hidePlanNavigation ? (
               <>
                 {' · '}
-                <Link to={`/app/plans?uid=${encodeURIComponent(contextUserId)}`}>خططه</Link>
+                <HapticLink to={`/app/plans?uid=${encodeURIComponent(contextUserId)}`}>خططه</HapticLink>
               </>
             ) : null}
             {' · '}
-            <Link to="/app/awrad">أورادي</Link>
+            <HapticLink to="/app/awrad">أورادي</HapticLink>
           </p>
         )}
         {viewOnly ? (
           <p className="rh-awrad__view-links">
-            <Link to="/app/admin/users">← المستخدمون</Link>
+            <HapticLink to="/app/admin/users">← المستخدمون</HapticLink>
             {!hidePlanNavigation ? (
               <>
                 {' · '}
-                <Link to={`/app/plans?uid=${encodeURIComponent(contextUserId)}`}>خطط هذا المستخدم</Link>
+                <HapticLink to={`/app/plans?uid=${encodeURIComponent(contextUserId)}`}>خطط هذا المستخدم</HapticLink>
               </>
             ) : null}
             {' · '}
-            <Link to="/app/awrad">وردي (حسابي)</Link>
+            <HapticLink to="/app/awrad">وردي (حسابي)</HapticLink>
           </p>
         ) : (
           <CrossNav items={awradCrossItems} className="rh-awrad__cross" />

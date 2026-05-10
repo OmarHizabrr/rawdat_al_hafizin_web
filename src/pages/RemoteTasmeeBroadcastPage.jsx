@@ -1,7 +1,8 @@
 import { ArrowRight, Copy, Link2, UserPlus, Users, Video } from 'lucide-react'
+import { HapticLink } from '../ui/HapticLink.jsx'
 import { RemoteTasmeeProviderIcon } from '../components/RemoteTasmeeProviderIcon.jsx'
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { Link, Navigate, useLocation, useParams } from 'react-router-dom'
+import { Navigate, useLocation, useParams } from 'react-router-dom'
 import { CrossNav } from '../components/CrossNav.jsx'
 import { useAuth } from '../context/useAuth.js'
 import { usePermissions } from '../context/usePermissions.js'
@@ -154,7 +155,7 @@ export default function RemoteTasmeeBroadcastPage() {
     return (
       <div className="rh-plans">
         <p className="rh-plans__empty">لم يُعثر على هذا البث.</p>
-        <Link to={appLink('/app/remote-tasmee')}>العودة للقائمة</Link>
+        <HapticLink to={appLink('/app/remote-tasmee')}>العودة للقائمة</HapticLink>
       </div>
     )
   }
@@ -198,10 +199,10 @@ export default function RemoteTasmeeBroadcastPage() {
             </p>
             <CrossNav items={crossItems} className="rh-plans__cross" />
           </div>
-          <Link className="ui-btn ui-btn--secondary" to={appLink('/app/remote-tasmee')}>
+          <HapticLink className="ui-btn ui-btn--secondary" to={appLink('/app/remote-tasmee')}>
             <RhIcon as={Users} size={18} strokeWidth={RH_ICON_STROKE} />
             كل البثوث
-          </Link>
+          </HapticLink>
         </div>
       </header>
 
@@ -222,9 +223,9 @@ export default function RemoteTasmeeBroadcastPage() {
             <code className="rh-plans__plan-id">{canon.linkedExamId}</code>
           </p>
           {canAccessPage('exams') ? (
-            <Link className="ui-btn ui-btn--secondary ui-btn--sm" to={appLink('/app/exams')} style={{ marginTop: '0.5rem' }}>
+            <HapticLink className="ui-btn ui-btn--secondary ui-btn--sm" to={appLink('/app/exams')} style={{ marginTop: '0.5rem' }}>
               صفحة الاختبارات
-            </Link>
+            </HapticLink>
           ) : null}
         </section>
       ) : null}

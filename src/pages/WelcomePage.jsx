@@ -1,6 +1,7 @@
 import { UserPlus } from 'lucide-react'
+import { HapticLink } from '../ui/HapticLink.jsx'
 import { useEffect, useMemo } from 'react'
-import { Link } from 'react-router-dom'
+
 import { CrossNav } from '../components/CrossNav.jsx'
 import { ProgramSections } from '../components/ProgramSections.jsx'
 import { isAdmin, normalizeRole } from '../config/roles.js'
@@ -66,14 +67,14 @@ export default function WelcomePage() {
       <ProgramSections />
 
       {isPendingPreApproval ? (
-        <Link
+        <HapticLink
           to="/app/application"
           className="rh-join-request-fab"
           aria-label="طلب الالتحاق — فتح صفحة نموذج الانضمام"
         >
           <RhIcon as={UserPlus} size={22} strokeWidth={2.25} aria-hidden />
           <span className="rh-join-request-fab__label">طلب الالتحاق</span>
-        </Link>
+        </HapticLink>
       ) : null}
     </div>
   )

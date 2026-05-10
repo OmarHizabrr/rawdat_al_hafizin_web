@@ -1,6 +1,7 @@
 import { Compass, Pencil, Plus, Save, Shield, Trash2, UserMinus, UserPlus, Users, X } from 'lucide-react'
+import { HapticLink } from '../ui/HapticLink.jsx'
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { Link, useLocation, useSearchParams } from 'react-router-dom'
+import { useLocation, useSearchParams } from 'react-router-dom'
 import { CrossNav } from '../components/CrossNav.jsx'
 import { PERMISSION_PAGE_IDS } from '../config/permissionRegistry.js'
 import { isAdmin } from '../config/roles.js'
@@ -471,10 +472,10 @@ export default function DawratPage() {
             </Button>
           </div>
           <div className="rh-plans__join-explore">
-            <Link className="ui-btn ui-btn--secondary rh-plans__explore-link" to={exploreHref}>
+            <HapticLink className="ui-btn ui-btn--secondary rh-plans__explore-link" to={exploreHref}>
               <RhIcon as={Compass} size={18} strokeWidth={RH_ICON_STROKE} />
               استكشاف الدورات العامة
-            </Link>
+            </HapticLink>
           </div>
         </section>
       )}

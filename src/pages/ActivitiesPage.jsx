@@ -14,8 +14,9 @@ import {
   Users,
   X,
 } from 'lucide-react'
+import { HapticLink } from '../ui/HapticLink.jsx'
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { Link, useLocation, useSearchParams } from 'react-router-dom'
+import { useLocation, useSearchParams } from 'react-router-dom'
 import { CrossNav } from '../components/CrossNav.jsx'
 import { PrintDocumentChrome } from '../components/PrintDocumentChrome.jsx'
 import { PERMISSION_PAGE_IDS } from '../config/permissionRegistry.js'
@@ -524,10 +525,10 @@ export default function ActivitiesPage() {
             </Button>
           </div>
           <div className="rh-plans__join-explore">
-            <Link className="ui-btn ui-btn--secondary rh-plans__explore-link" to={exploreHref}>
+            <HapticLink className="ui-btn ui-btn--secondary rh-plans__explore-link" to={exploreHref}>
               <RhIcon as={Compass} size={18} strokeWidth={RH_ICON_STROKE} />
               {str('activities.link_explore_public')}
-            </Link>
+            </HapticLink>
           </div>
         </section>
       )}

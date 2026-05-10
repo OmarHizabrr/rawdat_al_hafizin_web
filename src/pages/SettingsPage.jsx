@@ -1,6 +1,7 @@
 import { Ban, Bell, BellOff, Eye, EyeOff, Save, Upload, UserRound, Wind, Zap } from 'lucide-react'
+import { HapticLink } from '../ui/HapticLink.jsx'
 import { useEffect, useMemo, useState } from 'react'
-import { Link } from 'react-router-dom'
+
 import { ContactPhonesSection } from '../components/ContactPhonesSection.jsx'
 import { ImagePickPreview } from '../components/ImagePickPreview.jsx'
 import { CrossNav } from '../components/CrossNav.jsx'
@@ -180,14 +181,14 @@ export default function SettingsPage() {
         <h1 className="rh-settings-title">الإعدادات</h1>
         <p className="rh-settings-desc">إدارة مظهر المنصة وبيانات العرض في المنصة وحساب Google المرتبط.</p>
         <p className="rh-settings-desc" style={{ marginTop: 'var(--rh-space-3)' }}>
-          <Link
+          <HapticLink
             to="/app/profile"
             className="ui-btn ui-btn--secondary"
             style={{ display: 'inline-flex', textDecoration: 'none', width: 'fit-content' }}
           >
             <RhIcon as={UserRound} size={18} strokeWidth={RH_ICON_STROKE} className="ui-btn__icon" aria-hidden />
             عرض الملف الشخصي
-          </Link>
+          </HapticLink>
         </p>
         <CrossNav items={settingsCrossItems} className="rh-settings__cross" />
       </header>

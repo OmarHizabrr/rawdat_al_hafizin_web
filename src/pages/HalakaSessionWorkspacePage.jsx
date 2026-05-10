@@ -1,6 +1,7 @@
 import { ArrowRight, Ban, RotateCcw, Save, UserCheck, UserX } from 'lucide-react'
+import { HapticLink } from '../ui/HapticLink.jsx'
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { Link, useParams } from 'react-router-dom'
+import { useParams } from 'react-router-dom'
 import { CrossNav } from '../components/CrossNav.jsx'
 import { useAuth } from '../context/useAuth.js'
 import { usePermissions } from '../context/usePermissions.js'
@@ -340,10 +341,10 @@ export default function HalakaSessionWorkspacePage() {
             <p className="rh-plans__desc rh-halaka-sessions__lead">صفحة مستقلة للتحضير والتغييب مع إمكانية استثناء أي عضو من عملية الجلسة.</p>
             <CrossNav items={crossItems} className="rh-plans__cross" />
           </div>
-          <Link to={`/app/halakat/${halakaId}/sessions`} className="rh-halaka-sessions__hero-back ui-btn ui-btn--secondary">
+          <HapticLink to={`/app/halakat/${halakaId}/sessions`} className="rh-halaka-sessions__hero-back ui-btn ui-btn--secondary">
             <RhIcon as={ArrowRight} size={16} strokeWidth={RH_ICON_STROKE} />
             العودة للجلسات
-          </Link>
+          </HapticLink>
         </div>
       </header>
 

@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { HapticLink } from '../ui/HapticLink.jsx'
+import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/useAuth.js'
 import { useSiteContent } from '../context/useSiteContent.js'
 import { isValidPhoneNumber, parsePhoneNumberFromString } from 'libphonenumber-js/min'
@@ -366,17 +367,17 @@ export default function ApplicationRequestPage() {
             <Button type="button" variant="primary" icon={Send} onClick={onSubmit} loading={submitting}>
               إرسال الطلب
             </Button>
-            <Link to="/app/welcome" className="ui-btn ui-btn--ghost">
+            <HapticLink to="/app/welcome" className="ui-btn ui-btn--ghost">
               صفحة البداية
-            </Link>
+            </HapticLink>
           </div>
 
           {submitSuccess ? (
             <div className="rh-app-request-success">
               <p>تم إرسال الطلب. يمكنك الآن العودة إلى صفحة البداية متى شئت.</p>
-              <Link to="/app/welcome" className="ui-btn ui-btn--primary">
+              <HapticLink to="/app/welcome" className="ui-btn ui-btn--primary">
                 الذهاب إلى صفحة البداية
-              </Link>
+              </HapticLink>
             </div>
           ) : null}
         </section>

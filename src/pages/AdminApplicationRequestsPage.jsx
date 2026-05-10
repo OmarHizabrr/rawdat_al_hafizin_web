@@ -1,6 +1,7 @@
 import { CheckCircle2, Download, Pencil, Save, Trash2, X, XCircle } from 'lucide-react'
+import { HapticLink } from '../ui/HapticLink.jsx'
 import { useEffect, useMemo, useState } from 'react'
-import { Link } from 'react-router-dom'
+
 import { CrossNav } from '../components/CrossNav.jsx'
 import { useAuth } from '../context/useAuth.js'
 import { COUNTRY_DIAL_OPTIONS_AR, COUNTRY_OPTIONS_AR } from '../data/countriesAr.js'
@@ -370,9 +371,9 @@ export default function AdminApplicationRequestsPage() {
               >
                 حذف الطلب
               </Button>
-              <Link to={`/app/plans?uid=${encodeURIComponent(r.userId)}`} className="ui-btn ui-btn--secondary ui-btn--sm">
+              <HapticLink to={`/app/plans?uid=${encodeURIComponent(r.userId)}`} className="ui-btn ui-btn--secondary ui-btn--sm">
                 فتح خطط المستخدم
-              </Link>
+              </HapticLink>
             </div>
           </li>
         ))}

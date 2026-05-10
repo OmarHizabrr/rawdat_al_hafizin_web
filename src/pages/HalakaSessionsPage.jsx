@@ -1,6 +1,7 @@
 import { ArrowRight, Lock, Plus, Save, X } from 'lucide-react'
+import { HapticLink } from '../ui/HapticLink.jsx'
 import { useEffect, useState } from 'react'
-import { Link, useParams } from 'react-router-dom'
+import { useParams } from 'react-router-dom'
 import { CrossNav } from '../components/CrossNav.jsx'
 import { PeekButton } from '../components/PeekButton.jsx'
 import { useAuth } from '../context/useAuth.js'
@@ -112,10 +113,10 @@ export default function HalakaSessionsPage() {
             <p className="rh-plans__desc rh-halaka-sessions__lead">أنشئ جلسة ثم انقر أيقونة العين للدخول إلى صفحة الجلسة المستقلة.</p>
             <CrossNav items={crossItems} className="rh-plans__cross" />
           </div>
-          <Link to="/app/halakat" className="rh-halaka-sessions__hero-back ui-btn ui-btn--secondary">
+          <HapticLink to="/app/halakat" className="rh-halaka-sessions__hero-back ui-btn ui-btn--secondary">
             <RhIcon as={ArrowRight} size={16} strokeWidth={RH_ICON_STROKE} />
             العودة للحلقات
-          </Link>
+          </HapticLink>
         </div>
       </header>
 

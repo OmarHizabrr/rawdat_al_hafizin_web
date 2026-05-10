@@ -13,8 +13,9 @@ import {
   Users,
   X,
 } from 'lucide-react'
+import { HapticLink } from '../ui/HapticLink.jsx'
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { Link, useSearchParams } from 'react-router-dom'
+import { useSearchParams } from 'react-router-dom'
 import { VOLUMES, VOLUME_BY_ID } from '../data/volumes.js'
 import { useSiteContent } from '../context/useSiteContent.js'
 import { useHidePlanNavigation } from '../hooks/useHidePlanNavigation.js'
@@ -847,22 +848,22 @@ export default function PlansPage() {
             ) : null}
             {actingAsUser && isAdmin(user) && (
               <p className="rh-plans__admin-banner">
-                <Link to="/app/admin/users">← المستخدمون</Link>
+                <HapticLink to="/app/admin/users">← المستخدمون</HapticLink>
                 {' · '}
-                <Link to={`/app?uid=${encodeURIComponent(viewUserId)}`}>رئيسيته</Link>
+                <HapticLink to={`/app?uid=${encodeURIComponent(viewUserId)}`}>رئيسيته</HapticLink>
                 {' · '}
-                <Link to={`/app/awrad?uid=${encodeURIComponent(viewUserId)}`}>أوراده</Link>
+                <HapticLink to={`/app/awrad?uid=${encodeURIComponent(viewUserId)}`}>أوراده</HapticLink>
                 {' · '}
-                <Link to="/app/plans">خططي</Link>
+                <HapticLink to="/app/plans">خططي</HapticLink>
                 {' · '}
-                <Link to="/app">حسابي</Link>
+                <HapticLink to="/app">حسابي</HapticLink>
               </p>
             )}
             {readOnly && (
               <p className="rh-plans__admin-banner">
-                <Link to="/app/admin/users">← العودة إلى إدارة المستخدمين</Link>
+                <HapticLink to="/app/admin/users">← العودة إلى إدارة المستخدمين</HapticLink>
                 {' · '}
-                <Link to={`/app/awrad?uid=${encodeURIComponent(viewUserId)}`}>صفحة أوراد هذا المستخدم</Link>
+                <HapticLink to={`/app/awrad?uid=${encodeURIComponent(viewUserId)}`}>صفحة أوراد هذا المستخدم</HapticLink>
               </p>
             )}
             <CrossNav items={plansCrossItems} className="rh-plans__cross" />
@@ -905,10 +906,10 @@ export default function PlansPage() {
             </Button>
           </div>
           <div className="rh-plans__join-explore">
-            <Link className="ui-btn ui-btn--secondary rh-plans__explore-link" to={explorePlansHref}>
+            <HapticLink className="ui-btn ui-btn--secondary rh-plans__explore-link" to={explorePlansHref}>
               <RhIcon as={Compass} size={18} strokeWidth={RH_ICON_STROKE} />
               استكشاف كل الخطط العامة
-            </Link>
+            </HapticLink>
           </div>
         </section>
       )}

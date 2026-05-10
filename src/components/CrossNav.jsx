@@ -16,8 +16,9 @@ import {
   UsersRound,
   Video,
 } from 'lucide-react'
-import { NavLink, useLocation } from 'react-router-dom'
+import { useLocation } from 'react-router-dom'
 import { useAuth } from '../context/useAuth.js'
+import { HapticNavLink } from '../ui/HapticLink.jsx'
 import { getImpersonateUid, withImpersonationQuery } from '../utils/impersonation.js'
 import { RH_ICON_STROKE, RhIcon } from '../ui/RhIcon.jsx'
 
@@ -69,12 +70,16 @@ export function CrossNav({ items = [], className = '' }) {
         return (
           <span key={`${to}:${item.label}`} className="rh-cross-nav__frag">
             {i > 0 && <span className="rh-cross-nav__sep" aria-hidden> </span>}
-            <NavLink to={to} end className={({ isActive }) => ['rh-cross-nav__link', isActive ? 'is-active' : ''].filter(Boolean).join(' ')}>
+            <HapticNavLink
+              to={to}
+              end
+              className={({ isActive }) => ['rh-cross-nav__link', isActive ? 'is-active' : ''].filter(Boolean).join(' ')}
+            >
               <span className="rh-cross-nav__icon" aria-hidden>
                 <RhIcon as={Icon} size={14} strokeWidth={RH_ICON_STROKE} />
               </span>
               <span>{item.label}</span>
-            </NavLink>
+            </HapticNavLink>
           </span>
         )
       })}

@@ -1,6 +1,7 @@
 import { ArrowLeft, RotateCcw, Save } from 'lucide-react'
+import { HapticLink } from '../ui/HapticLink.jsx'
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { Link } from 'react-router-dom'
+
 import { SITE_STRING_REGISTRY } from '../data/siteStringRegistry.js'
 import { useAuth } from '../context/useAuth.js'
 import { useSiteContent } from '../context/useSiteContent.js'
@@ -85,9 +86,9 @@ export default function AdminSiteCopyPage() {
     <div className="rh-admin-copy">
       <header className="rh-admin-copy__hero card">
         <div className="rh-admin-copy__head-row">
-          <Link to="/app/admin" className="rh-admin-plan-types__back">
+          <HapticLink to="/app/admin" className="rh-admin-plan-types__back">
             <RhIcon as={ArrowLeft} size={18} strokeWidth={RH_ICON_STROKE} /> لوحة التحكم
-          </Link>
+          </HapticLink>
         </div>
         <h1 className="rh-admin-copy__title">النصوص الثابتة</h1>
         <p className="rh-admin-copy__desc">

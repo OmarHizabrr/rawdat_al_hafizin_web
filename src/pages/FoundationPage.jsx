@@ -9,12 +9,11 @@ import {
   Sparkles,
 } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
-import { Link } from 'react-router-dom'
 import { PERMISSION_PAGE_IDS } from '../config/permissionRegistry.js'
 import { useAuth } from '../context/useAuth.js'
 import { usePermissions } from '../context/usePermissions.js'
 import { useSiteContent } from '../context/useSiteContent.js'
-import { Button, SearchableSelect, TextAreaField, TextField, useToast } from '../ui/index.js'
+import { Button, HapticLink, SearchableSelect, TextAreaField, TextField, useToast } from '../ui/index.js'
 import { RhIcon, RH_ICON_STROKE } from '../ui/RhIcon.jsx'
 
 const STAGE_OPTIONS = [
@@ -67,15 +66,15 @@ export default function FoundationPage() {
   }
 
   return (
-    <div className="page foundation-page">
+    <div className="page foundation-page rh-page-surface">
       <header className="foundation-header">
         <div className="foundation-header-inner">
-          <Link to={homeHref} className="foundation-back">
+          <HapticLink to={homeHref} className="foundation-back">
             <span className="foundation-back__icon" aria-hidden>
               <RhIcon as={ArrowRight} size={18} strokeWidth={RH_ICON_STROKE} />
             </span>
             العودة للرئيسية
-          </Link>
+          </HapticLink>
           <h1>أساس الواجهة</h1>
           <p className="foundation-lead">
             حقول موحّدة، قائمة منسدلة قابلة للبحث، أزرار بأنماط متعددة، ورسائل للمستخدم — جاهزة للبناء عليها في{' '}
@@ -86,9 +85,9 @@ export default function FoundationPage() {
             canAccessPage('certificates') ||
             canAccessPage('settings')) ? (
             <div className="foundation-service-links">
-              {canAccessPage('leave_request') && <Link to="/app/leave-request">طلب إجازة</Link>}
-              {canAccessPage('certificates') && <Link to="/app/certificates">الشهادات</Link>}
-              {canAccessPage('settings') && <Link to="/app/settings">الإعدادات</Link>}
+              {canAccessPage('leave_request') && <HapticLink to="/app/leave-request">طلب إجازة</HapticLink>}
+              {canAccessPage('certificates') && <HapticLink to="/app/certificates">الشهادات</HapticLink>}
+              {canAccessPage('settings') && <HapticLink to="/app/settings">الإعدادات</HapticLink>}
             </div>
           ) : null}
         </div>
@@ -199,7 +198,7 @@ export default function FoundationPage() {
 
       <footer className="footer">
         <p>
-          <Link to={homeHref}>الرئيسية</Link>
+          <HapticLink to={homeHref}>الرئيسية</HapticLink>
         </p>
       </footer>
     </div>

@@ -1,4 +1,4 @@
-import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { Suspense, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import {
   BookOpen,
   CalendarClock,
@@ -35,6 +35,7 @@ import { usePlanReminders } from '../hooks/usePlanReminders.js'
 import { PROFILE_REQUEST_STATUS } from '../services/profileRequestService.js'
 import { upsertUserNotification } from '../services/userNotificationsService.js'
 import { getImpersonateUid, withImpersonationQuery } from '../utils/impersonation.js'
+import { rhHapticChromeTap, rhHapticNavigate } from '../utils/haptics.js'
 import { notificationsEnabled } from '../utils/notificationsPrefs.js'
 import { RhIcon, RH_ICON_STROKE } from '../ui/RhIcon.jsx'
 
@@ -158,6 +159,13 @@ export function MainLayout() {
     active.scrollIntoView({ block: 'nearest', inline: 'nearest' })
   }, [pathname, mobileOpen, collapsed])
 
+  useLayoutEffect(() => {
+    if (typeof window === 'undefined') return
+    window.scrollTo({ top: 0, left: 0, behavior: 'auto' })
+    const main = document.querySelector('.rh-main')
+    if (main && typeof main.scrollTop === 'number') main.scrollTop = 0
+  }, [pathname])
+
   useEffect(() => {
     if (typeof document === 'undefined') return undefined
     if (!mobileOpen) {
@@ -259,7 +267,9 @@ export function MainLayout() {
                 </div>
               }
             >
-              <Outlet />
+              <div key={pathname} className="rh-page-surface">
+                <Outlet />
+              </div>
             </Suspense>
           </div>
         </div>
@@ -280,6 +290,7 @@ export function MainLayout() {
               .filter(Boolean)
               .join(' ')
           }
+          onPointerDown={(e) => rhHapticNavigate(e)}
           onClick={closeMobile}
           aria-label={str('layout.sidebar_brand_aria')}
         >
@@ -295,6 +306,7 @@ export function MainLayout() {
               end={item.end}
               aria-label={item.label}
               className={({ isActive }) => ['rh-nav-link', isActive ? 'rh-nav-link--active' : ''].join(' ')}
+              onPointerDown={(e) => rhHapticNavigate(e)}
               onClick={closeMobile}
             >
               <span className="rh-nav-link__icon" aria-hidden>
@@ -309,6 +321,7 @@ export function MainLayout() {
           <button
             type="button"
             className="rh-sidebar__collapse"
+            onPointerDown={(e) => rhHapticChromeTap(e)}
             onClick={() => setCollapsed((c) => !c)}
             aria-pressed={collapsed}
             title={collapsed ? str('layout.collapse_expand') : str('layout.collapse_collapse')}
@@ -322,7 +335,13 @@ export function MainLayout() {
       </aside>
 
       {mobileOpen && (
-        <button type="button" className="rh-backdrop" aria-label="إغلاق القائمة" onClick={closeMobile} />
+        <button
+          type="button"
+          className="rh-backdrop"
+          aria-label="إغلاق القائمة"
+          onPointerDown={(e) => rhHapticChromeTap(e)}
+          onClick={closeMobile}
+        />
       )}
 
       <div className="rh-main">
@@ -331,6 +350,7 @@ export function MainLayout() {
             type="button"
             className="rh-icon-btn rh-topbar__menu"
             aria-label="فتح القائمة"
+            onPointerDown={(e) => rhHapticChromeTap(e)}
             onClick={() => setMobileOpen(true)}
           >
             <RhIcon as={Menu} size={22} strokeWidth={RH_ICON_STROKE} />
@@ -342,6 +362,7 @@ export function MainLayout() {
               className={({ isActive }) =>
                 ['rh-topbar__home-link', isActive ? 'rh-topbar__home-link--active' : ''].filter(Boolean).join(' ')
               }
+              onPointerDown={(e) => rhHapticNavigate(e)}
               onClick={closeMobile}
             >
               {str('layout.topbar_heading')}
@@ -368,7 +389,9 @@ export function MainLayout() {
                 </div>
               }
             >
-              <Outlet />
+              <div key={pathname} className="rh-page-surface">
+                <Outlet />
+              </div>
             </Suspense>
           </div>
         </main>

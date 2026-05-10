@@ -1,6 +1,7 @@
 import { ArrowLeft, Eraser, Plus, RotateCcw, Save, Trash2, X } from 'lucide-react'
+import { HapticLink } from '../ui/HapticLink.jsx'
 import { startTransition, useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { Link } from 'react-router-dom'
+
 import { BrandingColorRow } from '../components/BrandingColorRow.jsx'
 import { BrandingLivePreview } from '../components/BrandingLivePreview.jsx'
 import { SITE_DESCRIPTION, SITE_NAME, SITE_OG_IMAGE_PATH, SITE_TITLE } from '../config/site.js'
@@ -202,9 +203,9 @@ export default function AdminBrandingPage() {
     <div className="rh-admin-branding rh-admin-branding--split">
       <header className="rh-admin-branding__hero card">
         <div className="rh-admin-branding__head-row">
-          <Link to="/app/admin" className="rh-admin-plan-types__back">
+          <HapticLink to="/app/admin" className="rh-admin-plan-types__back">
             <RhIcon as={ArrowLeft} size={18} strokeWidth={RH_ICON_STROKE} /> لوحة التحكم
-          </Link>
+          </HapticLink>
         </div>
         <h1 className="rh-admin-branding__title">هوية الموقع</h1>
         <p className="rh-admin-branding__desc">

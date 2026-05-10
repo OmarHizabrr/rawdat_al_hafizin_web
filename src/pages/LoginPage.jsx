@@ -1,12 +1,13 @@
 import { Chrome, LogOut } from 'lucide-react'
 import { useEffect, useState } from 'react'
-import { Link, Navigate, useNavigate, useSearchParams } from 'react-router-dom'
+import { Navigate, useNavigate, useSearchParams } from 'react-router-dom'
 import { useAuth } from '../context/useAuth.js'
 import { resolvePostLoginPath } from '../utils/postLoginPath.js'
 import { signInWithGoogle, signOut } from '../services/authService.js'
 import { ensureUserProfile } from '../services/userService.js'
 import { useSiteContent } from '../context/useSiteContent.js'
 import { Button } from '../ui/Button.jsx'
+import { HapticLink } from '../ui/HapticLink.jsx'
 
 export default function LoginPage() {
   const { branding } = useSiteContent()
@@ -32,7 +33,7 @@ export default function LoginPage() {
 
   if (user && user.isActive === false) {
     return (
-      <div className="rh-login-page">
+      <div className="rh-login-page rh-page-surface">
         <div className="rh-login-card">
           <img className="rh-login-logo" src={branding.logoSrc} alt="" width={88} height={88} />
           <h1 className="rh-login-title">الحساب موقوف</h1>
@@ -86,7 +87,7 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="rh-login-page">
+    <div className="rh-login-page rh-page-surface">
       <div className="rh-login-card">
         <img className="rh-login-logo" src={branding.logoSrc} alt="" width={88} height={88} />
         <h1 className="rh-login-title">روضة الحافظين</h1>
@@ -110,9 +111,9 @@ export default function LoginPage() {
 
         <p className="rh-login-hint">بتسجيل الدخول أنت توافق على استخدام المنصة لأغراض تعليمية.</p>
 
-        <Link className="rh-login-back" to="/">
+        <HapticLink className="rh-login-back" to="/">
           العودة للصفحة الرئيسية
-        </Link>
+        </HapticLink>
       </div>
     </div>
   )

@@ -1,4 +1,4 @@
-import { Link } from 'react-router-dom'
+import { HapticLink } from '../ui/HapticLink.jsx'
 import { isAdmin } from '../config/roles.js'
 
 /**
@@ -19,13 +19,13 @@ export function ServicePageImpersonationBanner({ actor, impersonateUid, hidePlan
         . سيتم إرفاق ذلك في نص الرسالة عند الإرسال.
       </p>
       <p className="rh-service-page__impersonation-links">
-        <Link to="/app/admin/users">المستخدمون</Link>
+        <HapticLink to="/app/admin/users">المستخدمون</HapticLink>
         {' · '}
-        <Link to={`/app?uid=${encodeURIComponent(uid)}`}>رئيسيته</Link>
+        <HapticLink to={`/app?uid=${encodeURIComponent(uid)}`}>رئيسيته</HapticLink>
         {!hidePlansLink ? (
           <>
             {' · '}
-            <Link to={`/app/plans?uid=${encodeURIComponent(uid)}`}>خططه</Link>
+            <HapticLink to={`/app/plans?uid=${encodeURIComponent(uid)}`}>خططه</HapticLink>
           </>
         ) : null}
       </p>

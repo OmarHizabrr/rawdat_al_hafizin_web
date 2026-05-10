@@ -1,6 +1,7 @@
 import { BookOpen, ClipboardList, NotebookPen, Settings, UserRound } from 'lucide-react'
+import { HapticLink } from '../ui/HapticLink.jsx'
 import { useEffect, useMemo } from 'react'
-import { Link } from 'react-router-dom'
+
 import { CrossNav } from '../components/CrossNav.jsx'
 import { isAdmin, roleLabel } from '../config/roles.js'
 import { useAuth } from '../context/useAuth.js'
@@ -81,24 +82,24 @@ export default function ProfilePage() {
         <h3 className="rh-profile-card-panel__title">اختصارات سريعة</h3>
         <p className="rh-profile-card-panel__desc">الوصول إلى الخدمات الشائعة بنقرة واحدة.</p>
         <div className="rh-profile-actions">
-          <Link to="/app/settings" className="ui-btn ui-btn--primary">
+          <HapticLink to="/app/settings" className="ui-btn ui-btn--primary">
             <RhIcon as={Settings} size={18} strokeWidth={RH_ICON_STROKE} className="ui-btn__icon" aria-hidden />
             الإعدادات والتعديل
-          </Link>
+          </HapticLink>
           {!user?.hideHomePlanUi ? (
-            <Link to="/app/plans" className="ui-btn ui-btn--secondary">
+            <HapticLink to="/app/plans" className="ui-btn ui-btn--secondary">
               <RhIcon as={ClipboardList} size={18} strokeWidth={RH_ICON_STROKE} className="ui-btn__icon" aria-hidden />
               خططي
-            </Link>
+            </HapticLink>
           ) : null}
-          <Link to="/app/awrad" className="ui-btn ui-btn--secondary">
+          <HapticLink to="/app/awrad" className="ui-btn ui-btn--secondary">
             <RhIcon as={NotebookPen} size={18} strokeWidth={RH_ICON_STROKE} className="ui-btn__icon" aria-hidden />
             الأوراد
-          </Link>
-          <Link to="/app/welcome" className="ui-btn ui-btn--ghost">
+          </HapticLink>
+          <HapticLink to="/app/welcome" className="ui-btn ui-btn--ghost">
             <RhIcon as={BookOpen} size={18} strokeWidth={RH_ICON_STROKE} className="ui-btn__icon" aria-hidden />
             البداية
-          </Link>
+          </HapticLink>
         </div>
       </section>
 

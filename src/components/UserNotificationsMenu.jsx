@@ -1,6 +1,6 @@
 import { Bell, CheckCheck } from 'lucide-react'
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { Link, useLocation } from 'react-router-dom'
+import { useLocation } from 'react-router-dom'
 import { getImpersonateUid, withImpersonationQuery } from '../utils/impersonation.js'
 import { usePermissions } from '../context/usePermissions.js'
 import {
@@ -12,7 +12,9 @@ import {
   notificationsEnabled,
   notificationsModeChangeEvent,
 } from '../utils/notificationsPrefs.js'
+import { HapticLink } from '../ui/HapticLink.jsx'
 import { useOnClickOutside } from '../ui/hooks/useOnClickOutside.js'
+import { rhHapticChromeTap, rhHapticLight } from '../utils/haptics.js'
 import { RH_ICON_STROKE, RhIcon } from '../ui/RhIcon.jsx'
 
 function formatWhen(iso) {
@@ -59,6 +61,7 @@ export function UserNotificationsMenu({ user }) {
         className="rh-icon-btn rh-notify__trigger"
         aria-label="الإشعارات"
         aria-expanded={open}
+        onPointerDown={(e) => rhHapticChromeTap(e)}
         onClick={() => setOpen((v) => !v)}
       >
         <RhIcon as={Bell} size={20} strokeWidth={RH_ICON_STROKE} />
@@ -73,6 +76,10 @@ export function UserNotificationsMenu({ user }) {
               <button
                 type="button"
                 className="rh-notify__mark-all"
+                onPointerDown={(e) => {
+                  if (e.pointerType !== 'touch' && !window.matchMedia('(pointer: coarse)').matches) return
+                  rhHapticLight()
+                }}
                 onClick={() => markAllUserNotificationsRead(userId, items, user || {})}
               >
                 <RhIcon as={CheckCheck} size={15} strokeWidth={RH_ICON_STROKE} />
@@ -113,6 +120,10 @@ export function UserNotificationsMenu({ user }) {
                       <button
                         type="button"
                         className="rh-notify__mark"
+                        onPointerDown={(e) => {
+                          if (e.pointerType !== 'touch' && !window.matchMedia('(pointer: coarse)').matches) return
+                          rhHapticLight()
+                        }}
                         onClick={() => markUserNotificationRead(userId, n.id, user || {})}
                       >
                         تمّت القراءة
@@ -127,13 +138,13 @@ export function UserNotificationsMenu({ user }) {
           </div>
           {canAccessPage('notifications') ? (
             <footer className="rh-notify__footer">
-              <Link
+              <HapticLink
                 to={withImpersonationQuery('/app/notifications', impersonateUid)}
                 className="rh-notify__manage-link"
                 onClick={() => setOpen(false)}
               >
                 إدارة كل الإشعارات…
-              </Link>
+              </HapticLink>
             </footer>
           ) : null}
         </section>

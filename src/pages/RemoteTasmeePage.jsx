@@ -16,8 +16,9 @@ import {
   Video,
   X,
 } from 'lucide-react'
+import { HapticLink } from '../ui/HapticLink.jsx'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { Link, useLocation, useSearchParams } from 'react-router-dom'
+import { useLocation, useSearchParams } from 'react-router-dom'
 import { CrossNav } from '../components/CrossNav.jsx'
 import { MeetingProviderLaunchRow } from '../components/MeetingProviderLaunchRow.jsx'
 import { RemoteTasmeeProviderIcon } from '../components/RemoteTasmeeProviderIcon.jsx'
@@ -554,10 +555,10 @@ export default function RemoteTasmeePage() {
             </Button>
           </div>
           <div className="rh-plans__join-explore">
-            <Link className="ui-btn ui-btn--secondary rh-plans__explore-link" to={exploreHref}>
+            <HapticLink className="ui-btn ui-btn--secondary rh-plans__explore-link" to={exploreHref}>
               <RhIcon as={Compass} size={18} strokeWidth={RH_ICON_STROKE} />
               استكشاف البث العام
-            </Link>
+            </HapticLink>
           </div>
         </section>
       )}
@@ -611,13 +612,13 @@ export default function RemoteTasmeePage() {
                   المعرف: <code className="rh-plans__plan-id">{b.id}</code>
                 </p>
                 <div className="rh-plans__saved-actions">
-                  <Link
+                  <HapticLink
                     to={appLink(`/app/remote-tasmee/${encodeURIComponent(b.id)}`)}
                     className="ui-btn ui-btn--secondary ui-btn--sm"
                   >
                     <RemoteTasmeeProviderIcon provider={b.provider} size={16} aria-hidden />
                     صفحة البث
-                  </Link>
+                  </HapticLink>
                   {broadcastCanManageMembers(b) && can(PH, 'remote_tasmee_card_members') && (
                     <Button type="button" variant="secondary" size="sm" icon={Users} onClick={() => setMembersModal(b)}>
                       الأعضاء

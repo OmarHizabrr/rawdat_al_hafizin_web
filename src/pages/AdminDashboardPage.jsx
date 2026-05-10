@@ -1,6 +1,7 @@
 import { FileText, LayoutDashboard, Palette, Shapes, Shield, UserCheck, Users } from 'lucide-react'
+import { HapticLink } from '../ui/HapticLink.jsx'
 import { useEffect } from 'react'
-import { Link } from 'react-router-dom'
+
 import { useSiteContent } from '../context/useSiteContent.js'
 import { CrossNav } from '../components/CrossNav.jsx'
 import { RhIcon, RH_ICON_STROKE } from '../ui/RhIcon.jsx'
@@ -82,14 +83,14 @@ export default function AdminDashboardPage() {
 
       <div className="rh-admin-dashboard__grid">
         {tiles.map((t) => (
-          <Link key={t.to} to={t.to} className="rh-admin-dashboard__card card">
+          <HapticLink key={t.to} to={t.to} className="rh-admin-dashboard__card card">
             <span className="rh-admin-dashboard__card-icon" aria-hidden>
               <RhIcon as={t.Icon} size={26} strokeWidth={RH_ICON_STROKE} />
             </span>
             <h2 className="rh-admin-dashboard__card-title">{t.title}</h2>
             <p className="rh-admin-dashboard__card-desc">{t.desc}</p>
             <span className="rh-admin-dashboard__card-cta">فتح ←</span>
-          </Link>
+          </HapticLink>
         ))}
       </div>
     </div>
