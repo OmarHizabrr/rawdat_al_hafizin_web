@@ -1,5 +1,5 @@
 import { ArrowLeft } from 'lucide-react'
-import { startTransition, useCallback, useEffect, useMemo, useState } from 'react'
+import { startTransition, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { BrandingColorRow } from '../components/BrandingColorRow.jsx'
 import { BrandingLivePreview } from '../components/BrandingLivePreview.jsx'
@@ -13,6 +13,7 @@ import { firestoreApi } from '../services/firestoreApi.js'
 import { saveBranding, saveContactPhones } from '../services/siteConfigService.js'
 import { sanitizeImageUrl } from '../utils/brandingAssets.js'
 import { CrossNav } from '../components/CrossNav.jsx'
+import { ImagePickPreview } from '../components/ImagePickPreview.jsx'
 import { Button, Modal, TextAreaField, TextField, useToast } from '../ui/index.js'
 import { RhIcon, RH_ICON_STROKE } from '../ui/RhIcon.jsx'
 
@@ -39,6 +40,8 @@ export default function AdminBrandingPage() {
   const [previewMode, setPreviewMode] = useState(() => (appColorScheme === 'dark' ? 'dark' : 'light'))
   const [saveSubmitting, setSaveSubmitting] = useState(false)
   const [contactPhonesDraft, setContactPhonesDraft] = useState([])
+  const logoUrlInputRef = useRef(null)
+  const ogImageInputRef = useRef(null)
 
   const previewLogoSrc = useMemo(() => sanitizeImageUrl(logoUrl) || '/logo.png', [logoUrl])
 
@@ -235,24 +238,39 @@ export default function AdminBrandingPage() {
         />
         <TextAreaField label="وصف الموقع" value={siteDescription} onChange={(e) => setSiteDescription(e.target.value)} rows={4} />
         <TextField
+          ref={logoUrlInputRef}
           label="رابط صورة الشعار"
           hint="الصق رابطاً يبدأ بـ https، أو اكتب مساراً يبدأ بـ / مثل /logo.png"
           value={logoUrl}
           onChange={(e) => setLogoUrl(e.target.value)}
         />
-        {sanitizeImageUrl(logoUrl) ? (
-          <div className="rh-admin-branding__preview">
-            <span className="rh-admin-branding__preview-label">معاينة الشعار</span>
-            <img src={previewLogoSrc} alt="" className="rh-admin-branding__preview-img" width={80} height={80} />
-          </div>
-        ) : (
-          <p className="rh-admin-branding__preview-fallback">بدون رابط: سيُستخدم الشعار الافتراضي /logo.png</p>
-        )}
+        <ImagePickPreview
+          pickMode="url"
+          label="معاينة الشعار"
+          hint="معاينة للرابط أو المسار أعلاه. × يمسح الحقل فيعود الشعار الافتراضي عند الحفظ إن لم تُدخل رابطاً. اضغط على المعاينة للتركيز في الحقل."
+          remoteUrl={logoUrl}
+          onClearRemote={() => setLogoUrl('')}
+          onHitClick={() => logoUrlInputRef.current?.focus()}
+          disabled={saveSubmitting}
+          busy={saveSubmitting}
+        />
         <TextField
+          ref={ogImageInputRef}
           label="صورة المشاركة (عند نشر الرابط)"
           hint="رابط https كامل أو مسار من موقعك مثل /logo.png"
           value={ogImagePath}
           onChange={(e) => setOgImagePath(e.target.value)}
+        />
+        <ImagePickPreview
+          pickMode="url"
+          compact
+          label="معاينة صورة المشاركة"
+          hint="× يمسح الرابط من الحقل. اضغط على المعاينة للتركيز في الحقل وتعديل الرابط."
+          remoteUrl={ogImagePath}
+          onClearRemote={() => setOgImagePath('')}
+          onHitClick={() => ogImageInputRef.current?.focus()}
+          disabled={saveSubmitting}
+          busy={saveSubmitting}
         />
       </section>
 

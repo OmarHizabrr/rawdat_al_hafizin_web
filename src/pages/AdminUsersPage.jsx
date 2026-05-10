@@ -1,6 +1,6 @@
 import { Home } from 'lucide-react'
 import { Link } from 'react-router-dom'
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useSiteContent } from '../context/useSiteContent.js'
 import { USER_ROLES, isAdmin, normalizeRole } from '../config/roles.js'
 import { useAuth } from '../context/useAuth.js'
@@ -17,6 +17,7 @@ import {
 import { messageForProfilePhotoError } from '../services/profilePhotoStorage.js'
 import { subscribePermissionProfiles } from '../services/permissionProfilesService.js'
 import { CrossNav } from '../components/CrossNav.jsx'
+import { ImagePickPreview } from '../components/ImagePickPreview.jsx'
 import { PeekButton } from '../components/PeekButton.jsx'
 import { Button, Modal, SearchField, TextField, useToast } from '../ui/index.js'
 import { RhIcon, RH_ICON_STROKE } from '../ui/RhIcon.jsx'
@@ -40,7 +41,7 @@ export default function AdminUsersPage() {
   const [editDisplayName, setEditDisplayName] = useState('')
   const [displayModalBusyKind, setDisplayModalBusyKind] = useState(null)
   const [bulkConfirm, setBulkConfirm] = useState(null)
-  const adminPhotoInputRef = useRef(null)
+  const [adminPhotoDraft, setAdminPhotoDraft] = useState(null)
 
   useEffect(() => {
     document.title = `المستخدمون — ${branding.siteTitle}`
@@ -260,6 +261,7 @@ export default function AdminUsersPage() {
 
   const openDisplayModal = (u) => {
     setEditDisplayName(u.displayName?.trim() ?? '')
+    setAdminPhotoDraft(null)
     setDisplayModalUser(u)
   }
 
@@ -283,16 +285,15 @@ export default function AdminUsersPage() {
     }
   }
 
-  const onAdminPhotoSelected = async (e) => {
-    const file = e.target.files?.[0]
-    e.target.value = ''
-    if (!file || !displayModalUser || !actor) return
+  const uploadAdminPhotoDraft = async () => {
+    if (!adminPhotoDraft || !displayModalUser || !actor) return
     setDisplayModalBusyKind('photo')
     try {
       await runBusy(displayModalUser.uid, async () => {
-        await adminUploadUserProfilePhoto(actor, displayModalUser.uid, file)
+        await adminUploadUserProfilePhoto(actor, displayModalUser.uid, adminPhotoDraft)
       })
       toast.success('تم رفع الصورة وتحديث المستند.', 'تم')
+      setAdminPhotoDraft(null)
       setDisplayModalUser(null)
     } catch (err) {
       const msg = messageForProfilePhotoError(err)
@@ -310,6 +311,7 @@ export default function AdminUsersPage() {
         await adminClearUserProfilePhoto(actor, displayModalUser.uid)
       })
       toast.success('تمت إزالة رابط الصورة من المستند.', 'تم')
+      setAdminPhotoDraft(null)
       setDisplayModalUser(null)
     } catch {
       toast.warning('تعذّر التحديث.', 'تنبيه')
@@ -612,14 +614,19 @@ export default function AdminUsersPage() {
           autoComplete="off"
         />
         <p className="rh-admin-users__profile-meta rh-admin-users__profile-meta--compact">
-          صورة الملف الشخصي: ملف حتى 2 ميجابايت (‎JPEG / PNG / WebP / GIF).
+          صورة الملف الشخصي: ملف حتى 2 ميجابايت (‎JPEG / PNG / WebP / GIF). اختر صورة ثم «رفع الصورة المختارة».
         </p>
-        <input
-          ref={adminPhotoInputRef}
-          type="file"
+        <ImagePickPreview
+          compact
+          label="معاينة الصورة"
+          hint="اضغط المعاينة لاختيار ملف أو استبداله. × يزيل الاختيار المؤقت أو يحذف الصورة من مستند المنصة."
           accept="image/jpeg,image/png,image/webp,image/gif"
-          className="rh-admin-users__hidden-file"
-          onChange={onAdminPhotoSelected}
+          remoteUrl={displayModalUser?.photoURL || ''}
+          file={adminPhotoDraft}
+          onFileChange={setAdminPhotoDraft}
+          onClearRemote={() => void onAdminClearPhoto()}
+          disabled={Boolean(displayModalBusyKind)}
+          busy={Boolean(displayModalBusyKind)}
         />
         <div className="rh-admin-users__modal-actions rh-admin-users__modal-actions--wrap">
           <Button
@@ -635,21 +642,12 @@ export default function AdminUsersPage() {
             type="button"
             variant="secondary"
             loading={displayModalBusyKind === 'photo'}
-            disabled={Boolean(displayModalBusyKind) && displayModalBusyKind !== 'photo'}
-            onClick={() => adminPhotoInputRef.current?.click()}
-          >
-            رفع صورة
-          </Button>
-          <Button
-            type="button"
-            variant="ghost"
-            loading={displayModalBusyKind === 'clear'}
             disabled={
-              (Boolean(displayModalBusyKind) && displayModalBusyKind !== 'clear') || !displayModalUser?.photoURL
+              (Boolean(displayModalBusyKind) && displayModalBusyKind !== 'photo') || !adminPhotoDraft
             }
-            onClick={onAdminClearPhoto}
+            onClick={() => void uploadAdminPhotoDraft()}
           >
-            إزالة الصورة من المستند
+            رفع الصورة المختارة
           </Button>
         </div>
         <div className="rh-admin-users__modal-actions">

@@ -2,6 +2,7 @@ import { Globe, MessageCircle, Pencil, Plus, Send, Trash2, Users } from 'lucide-
 import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { CrossNav } from '../components/CrossNav.jsx'
+import { ImagePickPreview } from '../components/ImagePickPreview.jsx'
 import { useAuth } from '../context/useAuth.js'
 import {
   deleteJoinGroup,
@@ -309,17 +310,19 @@ export default function AdminJoinGroupsPage() {
           </div>
           <TextField label="رابط الانضمام" value={joinUrl} onChange={(e) => setJoinUrl(e.target.value)} placeholder="https://..." required />
           <TextField label="رابط الصورة (اختياري)" value={imageUrl} onChange={(e) => setImageUrl(e.target.value)} placeholder="https://.../image.jpg" />
-          <div className="ui-field">
-            <label className="ui-field__label" htmlFor="join-group-image-file">رفع صورة من الجهاز (اختياري)</label>
-            <input
-              id="join-group-image-file"
-              className="ui-input"
-              type="file"
-              accept="image/*"
-              onChange={(e) => setImageFile(e.target.files?.[0] || null)}
-            />
-            <small className="ui-field__hint">إذا اخترت ملفاً سيتم رفعه واستخدامه في البطاقة.</small>
-          </div>
+          <ImagePickPreview
+            label="صورة الغلاف من الجهاز (اختياري)"
+            hint="تظهر معاينة للرابط أو للملف المختار. اضغط على الصورة لاستبدالها، و× لإزالة المعاينة والرابط معاً. عند الحفظ يُرفع الملف إن وُجد."
+            accept="image/*"
+            remoteUrl={imageUrl}
+            file={imageFile}
+            onFileChange={setImageFile}
+            onClearRemote={() => {
+              setImageUrl('')
+            }}
+            disabled={busy}
+            busy={busy}
+          />
           <div className="rh-plans__dates-grid">
             <TextField
               label="عدد مرات الظهور/الانضمام"

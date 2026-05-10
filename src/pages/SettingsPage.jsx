@@ -1,6 +1,7 @@
 import { UserRound } from 'lucide-react'
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { ContactPhonesSection } from '../components/ContactPhonesSection.jsx'
+import { ImagePickPreview } from '../components/ImagePickPreview.jsx'
 import { CrossNav } from '../components/CrossNav.jsx'
 import { ThemeModePicker } from '../components/ThemeModePicker.jsx'
 import { PERMISSION_PAGE_IDS } from '../config/permissionRegistry.js'
@@ -39,10 +40,9 @@ export default function SettingsPage() {
   const [savingName, setSavingName] = useState(false)
   const [uploadingPhoto, setUploadingPhoto] = useState(false)
   const [clearingPhoto, setClearingPhoto] = useState(false)
+  const [photoDraftFile, setPhotoDraftFile] = useState(null)
   const [feelingsFlightMode, setFeelingsFlightMode] = useState(() => readFeelingsFlightMode())
   const [notificationsMode, setNotificationsMode] = useState(() => readNotificationsMode())
-  const photoInputRef = useRef(null)
-
   const settingsCrossItems = useMemo(() => {
     const base = [
       { to: '/app', label: str('layout.nav_home') },
@@ -104,14 +104,13 @@ export default function SettingsPage() {
     }
   }
 
-  const onProfilePhotoSelected = async (e) => {
+  const uploadPhotoDraft = async () => {
     const fu = auth.currentUser
-    const file = e.target.files?.[0]
-    e.target.value = ''
-    if (!file || !fu || fu.uid !== user?.uid) return
+    if (!photoDraftFile || !fu || fu.uid !== user?.uid) return
     setUploadingPhoto(true)
     try {
-      await updateMyProfilePhotoFromFile(fu, file)
+      await updateMyProfilePhotoFromFile(fu, photoDraftFile)
+      setPhotoDraftFile(null)
       toast.success('تم رفع الصورة وتحديث الملف الشخصي.', 'تم')
     } catch (err) {
       const msg = messageForProfilePhotoError(err)
@@ -127,6 +126,7 @@ export default function SettingsPage() {
     setClearingPhoto(true)
     try {
       await clearMyProfilePhoto(fu)
+      setPhotoDraftFile(null)
       toast.success('تمت إزالة صورة العرض من حسابك في المنصة.', 'تم')
     } catch {
       toast.warning('تعذّر إزالة الصورة. حاول مرة أخرى.', 'تنبيه')
@@ -301,33 +301,30 @@ export default function SettingsPage() {
               </Button>
             </div>
             <p className="rh-settings-footnote rh-settings-footnote--tight">
-              صورة العرض: اختر ملفاً (حتى 2 ميجابايت، ‎JPEG / PNG / WebP / GIF). يُرفع إلى تخزين المنصة ويُربط بحسابك.
+              صورة العرض: حتى 2 ميجابايت (‎JPEG / PNG / WebP / GIF). اختر صورة ثم اضغط «رفع إلى المنصة». يُرفع إلى تخزين المنصة ويُربط بحسابك.
             </p>
-            <input
-              ref={photoInputRef}
-              type="file"
+            <ImagePickPreview
+              label="صورة العرض"
+              hint="اضغط المعاينة لاختيار ملف أو استبداله. × يزيل الاختيار المؤقت أو يحذف الصورة المحفوظة من المنصة."
               accept="image/jpeg,image/png,image/webp,image/gif"
-              className="rh-settings-profile-form__file-input"
-              onChange={onProfilePhotoSelected}
-              tabIndex={-1}
+              remoteUrl={photo || ''}
+              file={photoDraftFile}
+              onFileChange={setPhotoDraftFile}
+              onClearRemote={() => {
+                void onClearPhoto()
+              }}
+              disabled={!canEditProfile}
+              busy={uploadingPhoto || clearingPhoto}
             />
             <div className="rh-settings-profile-form__actions">
               <Button
                 type="button"
-                variant="secondary"
+                variant="primary"
                 loading={uploadingPhoto}
-                onClick={() => photoInputRef.current?.click()}
+                disabled={!photoDraftFile || clearingPhoto}
+                onClick={() => void uploadPhotoDraft()}
               >
-                اختيار صورة ورفعها
-              </Button>
-              <Button
-                type="button"
-                variant="ghost"
-                loading={clearingPhoto}
-                disabled={!photo}
-                onClick={onClearPhoto}
-              >
-                إزالة الصورة من العرض
+                رفع إلى المنصة
               </Button>
             </div>
             <p className="rh-settings-footnote">
