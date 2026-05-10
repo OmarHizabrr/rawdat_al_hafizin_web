@@ -1,4 +1,4 @@
-import { ArrowLeft } from 'lucide-react'
+import { ArrowLeft, RotateCcw, Save } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { SITE_STRING_REGISTRY } from '../data/siteStringRegistry.js'
@@ -125,6 +125,7 @@ export default function AdminSiteCopyPage() {
                     type="button"
                     variant="primary"
                     size="sm"
+                    icon={Save}
                     loading={savingKey === e.key}
                     disabled={savingKey !== null}
                     onClick={() => saveOne(e.key)}
@@ -135,6 +136,7 @@ export default function AdminSiteCopyPage() {
                     type="button"
                     variant="ghost"
                     size="sm"
+                    icon={RotateCcw}
                     disabled={savingKey !== null}
                     onClick={() => {
                       setDraft(e.key, e.defaultValue)

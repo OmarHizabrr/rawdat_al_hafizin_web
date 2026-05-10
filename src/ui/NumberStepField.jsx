@@ -1,5 +1,6 @@
 import { Minus, Plus } from 'lucide-react'
 import { forwardRef, useCallback, useId } from 'react'
+import { rhHapticLight } from '../utils/haptics.js'
 import { RhIcon, RH_ICON_STROKE } from './RhIcon.jsx'
 
 function clampNum(n, min, max) {
@@ -47,11 +48,13 @@ export const NumberStepField = forwardRef(function NumberStepField(
 
   const increment = () => {
     if (incDisabled) return
+    rhHapticLight()
     onChange?.(clampNum(n + step, min, max))
   }
 
   const decrement = () => {
     if (decDisabled) return
+    rhHapticLight()
     onChange?.(clampNum(n - step, min, max))
   }
 

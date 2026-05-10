@@ -1,4 +1,4 @@
-import { ArrowRight, Copy, Link2, Users, Video } from 'lucide-react'
+import { ArrowRight, Copy, Link2, UserPlus, Users, Video } from 'lucide-react'
 import { RemoteTasmeeProviderIcon } from '../components/RemoteTasmeeProviderIcon.jsx'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Link, Navigate, useLocation, useParams } from 'react-router-dom'
@@ -233,7 +233,7 @@ export default function RemoteTasmeeBroadcastPage() {
         <section className="rh-settings-card rh-plans__join-card">
           <h2 className="rh-settings-card__title">انضم لرؤية رابط الاجتماع</h2>
           <p className="rh-settings-card__subtitle">بعد الانضمام يظهر الرابط وأزرار النسخ والفتح.</p>
-          <Button type="button" variant="primary" loading={joinBusy} onClick={handleJoin}>
+          <Button type="button" variant="primary" icon={UserPlus} loading={joinBusy} onClick={handleJoin}>
             انضمام للبث
           </Button>
         </section>
@@ -251,12 +251,10 @@ export default function RemoteTasmeeBroadcastPage() {
             </p>
           ) : null}
           <div className="rh-plans__saved-actions" style={{ marginTop: '1rem' }}>
-            <Button type="button" variant="primary" onClick={openMeeting}>
-              <RhIcon as={ArrowRight} size={18} strokeWidth={RH_ICON_STROKE} />
+            <Button type="button" variant="primary" icon={ArrowRight} onClick={openMeeting}>
               فتح في تبويب جديد
             </Button>
-            <Button type="button" variant="secondary" onClick={copyUrl}>
-              <RhIcon as={Copy} size={18} strokeWidth={RH_ICON_STROKE} />
+            <Button type="button" variant="secondary" icon={Copy} onClick={copyUrl}>
               نسخ الرابط
             </Button>
           </div>

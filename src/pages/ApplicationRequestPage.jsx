@@ -10,6 +10,7 @@ import {
   subscribeMyProfileRequest,
   upsertMyProfileRequest,
 } from '../services/profileRequestService.js'
+import { Check, Send } from 'lucide-react'
 import { Button, Modal, NumberStepField, SearchableSelect, TextField, useToast } from '../ui/index.js'
 
 const GENDER_OPTIONS = [
@@ -321,7 +322,7 @@ export default function ApplicationRequestPage() {
           />
 
           <div className="rh-settings-profile-form__actions rh-app-request-actions">
-            <Button type="button" variant="primary" onClick={onSubmit} loading={submitting}>
+            <Button type="button" variant="primary" icon={Send} onClick={onSubmit} loading={submitting}>
               إرسال الطلب
             </Button>
             <Link to="/app/welcome" className="ui-btn ui-btn--ghost">
@@ -352,7 +353,7 @@ export default function ApplicationRequestPage() {
         </p>
         {row?.statusMessage ? <p className="rh-settings-footnote">{row.statusMessage}</p> : null}
         <div className="rh-admin-users__modal-actions">
-          <Button type="button" variant="primary" onClick={() => setShowRejectedModal(false)}>
+          <Button type="button" variant="primary" icon={Check} onClick={() => setShowRejectedModal(false)}>
             فهمت
           </Button>
         </div>

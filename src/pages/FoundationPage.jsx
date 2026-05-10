@@ -1,4 +1,13 @@
-import { ArrowRight } from 'lucide-react'
+import {
+  AlertTriangle,
+  ArrowRight,
+  BadgeCheck,
+  Bell,
+  CircleDot,
+  Info,
+  Layers,
+  Sparkles,
+} from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { PERMISSION_PAGE_IDS } from '../config/permissionRegistry.js'
@@ -122,10 +131,10 @@ export default function FoundationPage() {
           />
           {playground && (
           <div className="foundation-actions">
-            <Button type="button" variant="primary" onClick={validateDemo}>
+            <Button type="button" variant="primary" icon={BadgeCheck} onClick={validateDemo}>
               تحقق وإظهار رسالة
             </Button>
-            <Button type="button" variant="secondary" onClick={() => setShowErrors(false)}>
+            <Button type="button" variant="secondary" icon={CircleDot} onClick={() => setShowErrors(false)}>
               إخفاء أخطاء العرض
             </Button>
           </div>
@@ -139,19 +148,27 @@ export default function FoundationPage() {
         <section className="card">
           <h2>الأزرار</h2>
           <div className="foundation-button-row">
-            <Button variant="primary">أساسي</Button>
-            <Button variant="secondary">ثانوي</Button>
-            <Button variant="ghost">شفاف</Button>
-            <Button variant="danger">تنبيه خطر</Button>
+            <Button variant="primary" icon={Sparkles}>
+              أساسي
+            </Button>
+            <Button variant="secondary" icon={Layers}>
+              ثانوي
+            </Button>
+            <Button variant="ghost" icon={CircleDot}>
+              شفاف
+            </Button>
+            <Button variant="danger" icon={AlertTriangle}>
+              تنبيه خطر
+            </Button>
           </div>
           <div className="foundation-button-row">
-            <Button variant="primary" size="sm">
+            <Button variant="primary" size="sm" icon={Sparkles}>
               صغير
             </Button>
-            <Button variant="secondary" size="md">
+            <Button variant="secondary" size="md" icon={Layers}>
               وسط
             </Button>
-            <Button variant="ghost" size="lg">
+            <Button variant="ghost" size="lg" icon={CircleDot}>
               كبير
             </Button>
           </div>
@@ -163,16 +180,16 @@ export default function FoundationPage() {
           <h2>رسائل المستخدم (Toast)</h2>
           <p className="lead">استخدم <code className="inline-code">useToast()</code> من أي صفحة داخل التطبيق.</p>
           <div className="foundation-button-row foundation-button-row--wrap">
-            <Button variant="secondary" onClick={() => toast.success('تم حفظ التقدم بنجاح.', 'تم')}>
+            <Button variant="secondary" icon={BadgeCheck} onClick={() => toast.success('تم حفظ التقدم بنجاح.', 'تم')}>
               نجاح
             </Button>
-            <Button variant="secondary" onClick={() => toast.info('يمكنك المتابعة لاحقاً من نفس النقطة.', 'معلومة')}>
+            <Button variant="secondary" icon={Info} onClick={() => toast.info('يمكنك المتابعة لاحقاً من نفس النقطة.', 'معلومة')}>
               معلومة
             </Button>
-            <Button variant="secondary" onClick={() => toast.warning('تحقق من الاتصال ثم أعد المحاولة.', 'تنبيه')}>
+            <Button variant="secondary" icon={Bell} onClick={() => toast.warning('تحقق من الاتصال ثم أعد المحاولة.', 'تنبيه')}>
               تنبيه
             </Button>
-            <Button variant="danger" onClick={() => toast.danger('تعذر إتمام العملية. جرّب لاحقاً.', 'خطأ')}>
+            <Button variant="danger" icon={AlertTriangle} onClick={() => toast.danger('تعذر إتمام العملية. جرّب لاحقاً.', 'خطأ')}>
               خطأ
             </Button>
           </div>

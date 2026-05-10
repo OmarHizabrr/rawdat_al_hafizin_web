@@ -45,6 +45,11 @@ html {
   --rh-info: #1a73e8;
   --rh-info-bg: #e8f0fe;
 
+  /* تمييز اختيار واضح في الوضع النهاري (مثل لوحات الإدارة العالمية) */
+  --rh-select-tint: color-mix(in srgb, var(--rh-forest-600) 14%, var(--rh-surface));
+  --rh-select-border: color-mix(in srgb, var(--rh-forest-600) 55%, var(--rh-border));
+  --rh-select-ring: 0 0 0 1px color-mix(in srgb, var(--rh-forest-600) 35%, transparent);
+
   /* دون شريط داخلي بلون السطح (يختفي على الحقول البيضاء) — حلقة خضراء واضحة */
   --rh-focus-ring: 0 0 0 2px color-mix(in srgb, var(--rh-forest-600) 65%, transparent),
     0 0 0 4px color-mix(in srgb, var(--rh-forest-600) 22%, transparent);

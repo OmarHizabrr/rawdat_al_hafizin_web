@@ -1,4 +1,18 @@
-import { Compass, Pencil, Plus, Star, Trash2, UserPlus, Users } from 'lucide-react'
+import {
+  Bell,
+  Compass,
+  Pencil,
+  Plus,
+  RotateCcw,
+  Save,
+  Shield,
+  Star,
+  Trash2,
+  UserMinus,
+  UserPlus,
+  Users,
+  X,
+} from 'lucide-react'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { VOLUMES, VOLUME_BY_ID } from '../data/volumes.js'
@@ -847,8 +861,7 @@ export default function PlansPage() {
           </div>
             {!readOnly && can(PP, 'plan_create') && (
             <div className="rh-plans__hero-actions">
-              <Button type="button" variant="primary" className="rh-plans__add-btn" onClick={openAddModal}>
-                <RhIcon as={Plus} size={18} strokeWidth={RH_ICON_STROKE} />
+              <Button type="button" variant="primary" className="rh-plans__add-btn" icon={Plus} onClick={openAddModal}>
                 إضافة خطة
               </Button>
             </div>
@@ -875,11 +888,11 @@ export default function PlansPage() {
               type="button"
               variant="secondary"
               className="rh-plans__join-btn"
+              icon={UserPlus}
               loading={joinPlanSubmitting}
               disabled={!joinPlanId.trim() || !viewUserId}
               onClick={handleJoinPublic}
             >
-              {!joinPlanSubmitting && <RhIcon as={UserPlus} size={18} strokeWidth={RH_ICON_STROKE} />}
               انضمام
             </Button>
           </div>
@@ -958,12 +971,12 @@ export default function PlansPage() {
                         variant={homeDefaultId === p.id ? 'primary' : 'secondary'}
                         size="sm"
                         className="rh-plans__default-btn"
+                        icon={Star}
                         loading={homeDefaultSavingId === p.id}
                         disabled={homeDefaultSavingId !== null && homeDefaultSavingId !== p.id}
                         onClick={() => setAsHomeDefault(p.id)}
                         title="تظهر هذه الخطة في الصفحة الرئيسية مع نسبة الإنجاز"
                       >
-                        {homeDefaultSavingId !== p.id && <RhIcon as={Star} size={16} strokeWidth={RH_ICON_STROKE} />}
                         {homeDefaultId === p.id ? 'افتراضية للرئيسية' : 'للرئيسية'}
                       </Button>
                     )}
@@ -972,18 +985,17 @@ export default function PlansPage() {
                         type="button"
                         variant="secondary"
                         size="sm"
+                        icon={Users}
                         onClick={() => {
                           setMembersModalPlan(p)
                           setMemberPickerQuery('')
                         }}
                       >
-                        <RhIcon as={Users} size={16} strokeWidth={RH_ICON_STROKE} />
                         الأعضاء
                       </Button>
                     )}
                     {planCanEdit(p) && can(PP, 'plan_card_edit') && (
-                      <Button type="button" variant="secondary" size="sm" onClick={() => openEditModal(p)}>
-                        <RhIcon as={Pencil} size={16} strokeWidth={RH_ICON_STROKE} />
+                      <Button type="button" variant="secondary" size="sm" icon={Pencil} onClick={() => openEditModal(p)}>
                         تعديل
                       </Button>
                     )}
@@ -993,10 +1005,10 @@ export default function PlansPage() {
                         variant="ghost"
                         size="sm"
                         className="rh-plans__delete-btn"
+                        icon={Trash2}
                         disabled={Boolean(deletingPlan) || deletePlanSubmitting}
                         onClick={() => setDeletingPlan(p)}
                       >
-                        <RhIcon as={Trash2} size={16} strokeWidth={RH_ICON_STROKE} />
                         {leavingUserDeletesWholeGroup(viewUserId, p.ownerUid, p.planRole, PLAN_MEMBER_ROLES)
                           ? 'حذف'
                           : 'مغادرة'}
@@ -1145,9 +1157,9 @@ export default function PlansPage() {
                       variant="ghost"
                       size="sm"
                       className="rh-plans__resource-remove"
+                      icon={Trash2}
                       onClick={() => setResourceLinks((prev) => prev.filter((r) => r.id !== row.id))}
                     >
-                      <RhIcon as={Trash2} size={16} strokeWidth={RH_ICON_STROKE} />
                       حذف
                     </Button>
                   </div>
@@ -1155,6 +1167,7 @@ export default function PlansPage() {
                 <Button
                   type="button"
                   variant="secondary"
+                  icon={Plus}
                   onClick={() =>
                     setResourceLinks((prev) => [
                       ...prev,
@@ -1162,7 +1175,6 @@ export default function PlansPage() {
                     ])
                   }
                 >
-                  <RhIcon as={Plus} size={18} strokeWidth={RH_ICON_STROKE} />
                   إضافة رابط
                 </Button>
               </div>
@@ -1338,6 +1350,7 @@ export default function PlansPage() {
               type="button"
               variant="secondary"
               size="sm"
+              icon={Bell}
               onClick={async () => {
                 const r = await Notification.requestPermission()
                 if (r === 'granted') {
@@ -1455,15 +1468,16 @@ export default function PlansPage() {
           </>
         )}
         <div className="rh-plans__actions">
-          <Button type="button" variant="primary" onClick={handleSavePlan} loading={savePlanSubmitting}>
+          <Button type="button" variant="primary" icon={Save} onClick={handleSavePlan} loading={savePlanSubmitting}>
             {editingPlanId ? 'حفظ التعديلات' : 'حفظ الخطة'}
           </Button>
-          <Button type="button" variant="ghost" onClick={resetForm} disabled={savePlanSubmitting}>
+          <Button type="button" variant="ghost" icon={RotateCcw} onClick={resetForm} disabled={savePlanSubmitting}>
             مسح النموذج
           </Button>
           <Button
             type="button"
             variant="ghost"
+            icon={X}
             disabled={savePlanSubmitting}
             onClick={() => {
               setIsEditorOpen(false)
@@ -1508,6 +1522,7 @@ export default function PlansPage() {
               <Button
                 type="button"
                 variant="danger"
+                icon={Trash2}
                 loading={deletePlanSubmitting}
                 onClick={() => deletingPlan && deletePlan(deletingPlan.id)}
               >
@@ -1521,7 +1536,7 @@ export default function PlansPage() {
                   ? 'نعم، حذف للجميع'
                   : 'نعم، مغادرة'}
               </Button>
-              <Button type="button" variant="ghost" disabled={deletePlanSubmitting} onClick={() => setDeletingPlan(null)}>
+              <Button type="button" variant="ghost" icon={X} disabled={deletePlanSubmitting} onClick={() => setDeletingPlan(null)}>
                 إلغاء
               </Button>
             </div>
@@ -1642,6 +1657,7 @@ export default function PlansPage() {
                             type="button"
                             variant="secondary"
                             size="sm"
+                            icon={Shield}
                             loading={memberRowBusy?.uid === row.userId && memberRowBusy?.kind === 'admin'}
                             disabled={Boolean(memberRowBusy)}
                             onClick={() => handleToggleAdminRow(row.userId, row.role)}
@@ -1655,6 +1671,7 @@ export default function PlansPage() {
                             variant="ghost"
                             size="sm"
                             className="rh-plans__delete-btn"
+                            icon={UserMinus}
                             loading={memberRowBusy?.uid === row.userId && memberRowBusy?.kind === 'remove'}
                             disabled={Boolean(memberRowBusy)}
                             onClick={() => handleRemoveMemberRow(row.userId)}

@@ -1,4 +1,14 @@
-import { Home } from 'lucide-react'
+import {
+  Check,
+  Home,
+  Trash2,
+  Upload,
+  UserRound,
+  UsersRound,
+  UserCog,
+  X,
+  Save,
+} from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { useEffect, useMemo, useState } from 'react'
 import { useSiteContent } from '../context/useSiteContent.js'
@@ -418,7 +428,14 @@ export default function AdminUsersPage() {
           </p>
         </div>
         <div className="rh-admin-users__bulk-actions">
-          <Button type="button" variant="ghost" size="sm" disabled={!selectedUids.size || bulkBusy} onClick={clearSelection}>
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            icon={X}
+            disabled={!selectedUids.size || bulkBusy}
+            onClick={clearSelection}
+          >
             إلغاء تحديد الكل
           </Button>
         </div>
@@ -438,7 +455,14 @@ export default function AdminUsersPage() {
               ))}
             </select>
           </div>
-          <Button type="button" variant="secondary" disabled={!bulkRole || bulkBusy} loading={bulkBusy} onClick={runBulkRoleUpdate}>
+          <Button
+            type="button"
+            variant="secondary"
+            icon={UserCog}
+            disabled={!bulkRole || bulkBusy}
+            loading={bulkBusy}
+            onClick={runBulkRoleUpdate}
+          >
             تطبيق الدور على المحدد
           </Button>
         </div>
@@ -462,6 +486,7 @@ export default function AdminUsersPage() {
           <Button
             type="button"
             variant="secondary"
+            icon={UsersRound}
             disabled={!bulkProfile || bulkBusy}
             loading={bulkBusy}
             onClick={runBulkProfileUpdate}
@@ -557,6 +582,7 @@ export default function AdminUsersPage() {
                   type="button"
                   variant="secondary"
                   size="sm"
+                  icon={UserRound}
                   disabled={loading}
                   onClick={() => openDisplayModal(u)}
                 >
@@ -575,6 +601,7 @@ export default function AdminUsersPage() {
                   type="button"
                   variant="danger"
                   size="sm"
+                  icon={Trash2}
                   disabled={loading || u.uid === actor?.uid}
                   onClick={() => setDeleteTarget(u)}
                 >
@@ -632,6 +659,7 @@ export default function AdminUsersPage() {
           <Button
             type="button"
             variant="primary"
+            icon={Save}
             loading={displayModalBusyKind === 'name'}
             disabled={Boolean(displayModalBusyKind) && displayModalBusyKind !== 'name'}
             onClick={saveDisplayName}
@@ -641,6 +669,7 @@ export default function AdminUsersPage() {
           <Button
             type="button"
             variant="secondary"
+            icon={Upload}
             loading={displayModalBusyKind === 'photo'}
             disabled={
               (Boolean(displayModalBusyKind) && displayModalBusyKind !== 'photo') || !adminPhotoDraft
@@ -654,6 +683,7 @@ export default function AdminUsersPage() {
           <Button
             type="button"
             variant="ghost"
+            icon={X}
             disabled={Boolean(displayModalBusyKind)}
             onClick={() => setDisplayModalUser(null)}
           >
@@ -682,6 +712,7 @@ export default function AdminUsersPage() {
           <Button
             type="button"
             variant="danger"
+            icon={Trash2}
             loading={Boolean(deleteTarget) && busyUid === deleteTarget?.uid}
             onClick={confirmDelete}
           >
@@ -690,6 +721,7 @@ export default function AdminUsersPage() {
           <Button
             type="button"
             variant="ghost"
+            icon={X}
             disabled={Boolean(deleteTarget) && busyUid === deleteTarget?.uid}
             onClick={() => setDeleteTarget(null)}
           >
@@ -709,10 +741,10 @@ export default function AdminUsersPage() {
       >
         <p className="rh-admin-users__warn">{bulkConfirm?.body}</p>
         <div className="rh-admin-users__modal-actions">
-          <Button type="button" variant="primary" loading={bulkBusy} onClick={confirmBulkUpdate}>
+          <Button type="button" variant="primary" icon={Check} loading={bulkBusy} onClick={confirmBulkUpdate}>
             نعم، نفّذ
           </Button>
-          <Button type="button" variant="ghost" disabled={bulkBusy} onClick={() => setBulkConfirm(null)}>
+          <Button type="button" variant="ghost" icon={X} disabled={bulkBusy} onClick={() => setBulkConfirm(null)}>
             إلغاء
           </Button>
         </div>

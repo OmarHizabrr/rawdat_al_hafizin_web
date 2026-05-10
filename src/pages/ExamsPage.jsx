@@ -1,4 +1,19 @@
-import { Compass, Pencil, Plus, Trash2, UserPlus, Users, Video } from 'lucide-react'
+import {
+  BookOpen,
+  Check,
+  Compass,
+  GraduationCap,
+  Pencil,
+  Plus,
+  Save,
+  Shield,
+  Trash2,
+  UserMinus,
+  UserPlus,
+  Users,
+  Video,
+  X,
+} from 'lucide-react'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Link, useLocation, useSearchParams } from 'react-router-dom'
 import { CrossNav } from '../components/CrossNav.jsx'
@@ -421,8 +436,7 @@ export default function ExamsPage() {
           </div>
           {!readOnly && can(PH, 'exam_create') && (
             <div className="rh-plans__hero-actions">
-              <Button type="button" variant="primary" className="rh-plans__add-btn" onClick={openAdd}>
-                <RhIcon as={Plus} size={18} strokeWidth={RH_ICON_STROKE} />
+              <Button type="button" variant="primary" className="rh-plans__add-btn" icon={Plus} onClick={openAdd}>
                 مجموعة جديدة
               </Button>
             </div>
@@ -442,11 +456,11 @@ export default function ExamsPage() {
               type="button"
               variant="secondary"
               className="rh-plans__join-btn"
+              icon={UserPlus}
               loading={joinBusy}
               disabled={!joinId.trim() || !viewUserId}
               onClick={handleJoin}
             >
-              {!joinBusy && <RhIcon as={UserPlus} size={18} strokeWidth={RH_ICON_STROKE} />}
               انضمام
             </Button>
           </div>
@@ -508,20 +522,17 @@ export default function ExamsPage() {
                     </Link>
                   )}
                   {examCanManageMembers(ex) && can(PH, 'exam_card_members') && (
-                    <Button type="button" variant="secondary" size="sm" onClick={() => setMembersModal(ex)}>
-                      <RhIcon as={Users} size={16} strokeWidth={RH_ICON_STROKE} />
+                    <Button type="button" variant="secondary" size="sm" icon={Users} onClick={() => setMembersModal(ex)}>
                       الأعضاء
                     </Button>
                   )}
                   {examCanEdit(ex) && can(PH, 'exam_card_edit') && (
-                    <Button type="button" variant="ghost" size="sm" onClick={() => openEdit(ex)}>
-                      <RhIcon as={Pencil} size={16} strokeWidth={RH_ICON_STROKE} />
+                    <Button type="button" variant="ghost" size="sm" icon={Pencil} onClick={() => openEdit(ex)}>
                       تعديل
                     </Button>
                   )}
                   {can(PH, 'exam_card_delete_leave') && (
-                    <Button type="button" variant="ghost" size="sm" onClick={() => setDeleting(ex)}>
-                      <RhIcon as={Trash2} size={16} strokeWidth={RH_ICON_STROKE} />
+                    <Button type="button" variant="ghost" size="sm" icon={Trash2} onClick={() => setDeleting(ex)}>
                       {leavingUserDeletesWholeGroup(viewUserId, ex.ownerUid, ex.examRole, HALAKA_MEMBER_ROLES)
                         ? 'حذف'
                         : 'مغادرة'}
@@ -623,8 +634,7 @@ export default function ExamsPage() {
                           </div>
                         )}
                       </div>
-                      <Button type="button" variant="ghost" size="sm" onClick={() => removeVolumeRow(r.key)}>
-                        <RhIcon as={Trash2} size={16} strokeWidth={RH_ICON_STROKE} />
+                      <Button type="button" variant="ghost" size="sm" icon={Trash2} onClick={() => removeVolumeRow(r.key)}>
                         إزالة
                       </Button>
                     </li>
@@ -632,8 +642,14 @@ export default function ExamsPage() {
                 })}
               </ul>
             )}
-            <Button type="button" variant="secondary" size="sm" onClick={addVolumeRow} disabled={!VOLUMES.length}>
-              <RhIcon as={Plus} size={16} strokeWidth={RH_ICON_STROKE} />
+            <Button
+              type="button"
+              variant="secondary"
+              size="sm"
+              icon={Plus}
+              onClick={addVolumeRow}
+              disabled={!VOLUMES.length}
+            >
               إضافة مجلد
             </Button>
             {draftExamTotalPages > 0 ? (
@@ -660,12 +676,13 @@ export default function ExamsPage() {
             </button>
           </div>
           <div className="rh-plans__editor-actions">
-            <Button type="button" variant="primary" loading={saveBusy} onClick={handleSave}>
+            <Button type="button" variant="primary" icon={Save} loading={saveBusy} onClick={handleSave}>
               حفظ
             </Button>
             <Button
               type="button"
               variant="ghost"
+              icon={X}
               disabled={saveBusy}
               onClick={() => {
                 setEditorOpen(false)
@@ -696,10 +713,10 @@ export default function ExamsPage() {
             : 'مغادرة هذه المجموعة؟'}
         </p>
         <div className="rh-plans__editor-actions">
-          <Button type="button" variant="danger" loading={deleteBusy} onClick={doDelete}>
+          <Button type="button" variant="danger" icon={Check} loading={deleteBusy} onClick={doDelete}>
             تأكيد
           </Button>
-          <Button type="button" variant="ghost" disabled={deleteBusy} onClick={() => setDeleting(null)}>
+          <Button type="button" variant="ghost" icon={X} disabled={deleteBusy} onClick={() => setDeleting(null)}>
             إلغاء
           </Button>
         </div>
@@ -822,6 +839,7 @@ export default function ExamsPage() {
                                 type="button"
                                 size="sm"
                                 variant={row.role === HALAKA_MEMBER_ROLES.STUDENT ? 'secondary' : 'ghost'}
+                                icon={GraduationCap}
                                 loading={
                                   memberRowBusy?.uid === row.userId &&
                                   memberRowBusy?.kind === `role:${HALAKA_MEMBER_ROLES.STUDENT}`
@@ -856,6 +874,7 @@ export default function ExamsPage() {
                                 type="button"
                                 size="sm"
                                 variant={row.role === HALAKA_MEMBER_ROLES.TEACHER ? 'secondary' : 'ghost'}
+                                icon={BookOpen}
                                 loading={
                                   memberRowBusy?.uid === row.userId &&
                                   memberRowBusy?.kind === `role:${HALAKA_MEMBER_ROLES.TEACHER}`
@@ -890,6 +909,7 @@ export default function ExamsPage() {
                                 type="button"
                                 size="sm"
                                 variant={row.role === HALAKA_MEMBER_ROLES.SUPERVISOR ? 'secondary' : 'ghost'}
+                                icon={Shield}
                                 loading={
                                   memberRowBusy?.uid === row.userId &&
                                   memberRowBusy?.kind === `role:${HALAKA_MEMBER_ROLES.SUPERVISOR}`
@@ -930,6 +950,7 @@ export default function ExamsPage() {
                               type="button"
                               size="sm"
                               variant="ghost"
+                              icon={UserMinus}
                               loading={memberRowBusy?.uid === row.userId && memberRowBusy?.kind === 'remove'}
                               disabled={
                                 Boolean(memberRowBusy) || !canManageRole(actorRole, normalizeRole(row.role))

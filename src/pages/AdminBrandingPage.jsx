@@ -1,4 +1,4 @@
-import { ArrowLeft } from 'lucide-react'
+import { ArrowLeft, Eraser, Plus, RotateCcw, Save, Trash2, X } from 'lucide-react'
 import { startTransition, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { BrandingColorRow } from '../components/BrandingColorRow.jsx'
@@ -216,10 +216,16 @@ export default function AdminBrandingPage() {
       <CrossNav items={crossItems} className="rh-admin-dashboard__cross" />
 
       <div className="rh-admin-branding__toolbar card">
-        <Button type="button" variant="primary" loading={saveSubmitting} onClick={onSave}>
+        <Button type="button" variant="primary" icon={Save} loading={saveSubmitting} onClick={onSave}>
           حفظ التغييرات في السحابة
         </Button>
-        <Button type="button" variant="secondary" disabled={saveSubmitting} onClick={() => setResetAllOpen(true)}>
+        <Button
+          type="button"
+          variant="secondary"
+          icon={RotateCcw}
+          disabled={saveSubmitting}
+          onClick={() => setResetAllOpen(true)}
+        >
           إعادة الوضع الافتراضي (النموذج)
         </Button>
       </div>
@@ -315,6 +321,7 @@ export default function AdminBrandingPage() {
               <Button
                 type="button"
                 variant="ghost"
+                icon={Trash2}
                 onClick={() => setContactPhonesDraft((prev) => prev.filter((r) => r.id !== row.id))}
               >
                 حذف
@@ -325,6 +332,7 @@ export default function AdminBrandingPage() {
         <Button
           type="button"
           variant="secondary"
+          icon={Plus}
           onClick={() =>
             setContactPhonesDraft((prev) => [
               ...prev,
@@ -357,10 +365,10 @@ export default function AdminBrandingPage() {
       )}
 
       <section className="rh-admin-branding__theme-actions card">
-        <Button type="button" variant="secondary" onClick={() => setThemeLight({})}>
+        <Button type="button" variant="secondary" icon={Eraser} onClick={() => setThemeLight({})}>
           مسح كل ألوان الوضع الفاتح
         </Button>
-        <Button type="button" variant="secondary" onClick={() => setThemeDark({})}>
+        <Button type="button" variant="secondary" icon={Eraser} onClick={() => setThemeDark({})}>
           مسح كل ألوان الوضع الداكن
         </Button>
       </section>
@@ -385,10 +393,10 @@ export default function AdminBrandingPage() {
           التغييرات في Firebase حتى تضغط «حفظ التغييرات في السحابة».
         </p>
         <div className="rh-admin-users__modal-actions">
-          <Button type="button" variant="danger" onClick={resetEntireFormToProgramDefaults}>
+          <Button type="button" variant="danger" icon={RotateCcw} onClick={resetEntireFormToProgramDefaults}>
             نعم، صفّر النموذج
           </Button>
-          <Button type="button" variant="ghost" onClick={() => setResetAllOpen(false)}>
+          <Button type="button" variant="ghost" icon={X} onClick={() => setResetAllOpen(false)}>
             إلغاء
           </Button>
         </div>

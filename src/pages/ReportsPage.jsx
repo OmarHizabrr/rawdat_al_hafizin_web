@@ -1,5 +1,15 @@
 import { CalendarDate } from '@internationalized/date'
-import { Download, Eye, FileText, Filter, Link2, Printer, Share2 } from 'lucide-react'
+import {
+  Calendar,
+  Download,
+  Eye,
+  FileText,
+  Filter,
+  FilterX,
+  Link2,
+  Printer,
+  Share2,
+} from 'lucide-react'
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { CrossNav } from '../components/CrossNav.jsx'
@@ -165,18 +175,18 @@ function SectionTable({ title, columns, rows, actions, printContext: printContex
             type="button"
             variant="ghost"
             size="sm"
+            icon={Download}
             onClick={() => downloadSingleTableCsv(title, columns, rows)}
           >
-            <RhIcon as={Download} size={16} strokeWidth={RH_ICON_STROKE} />
             CSV الجدول
           </Button>
           <Button
             type="button"
             variant="ghost"
             size="sm"
+            icon={Printer}
             onClick={() => printSingleTable(title, columns, rows, printContext)}
           >
-            <RhIcon as={Printer} size={16} strokeWidth={RH_ICON_STROKE} />
             طباعة الجدول
           </Button>
         </div>
@@ -646,20 +656,28 @@ export default function ReportsPage() {
             <CrossNav items={crossItems} className="rh-plans__cross" />
           </div>
           <div className="rh-plans__hero-actions">
-            <Button type="button" variant="secondary" onClick={onCopyReportLink}>
-              <RhIcon as={Link2} size={18} strokeWidth={RH_ICON_STROKE} />
+            <Button type="button" variant="secondary" icon={Link2} onClick={onCopyReportLink}>
               {str('reports.btn_copy_link')}
             </Button>
-            <Button type="button" variant="secondary" onClick={onSharePdf} disabled={!canPrint || !reportData}>
-              <RhIcon as={Share2} size={18} strokeWidth={RH_ICON_STROKE} />
+            <Button
+              type="button"
+              variant="secondary"
+              icon={Share2}
+              onClick={onSharePdf}
+              disabled={!canPrint || !reportData}
+            >
               {str('reports.btn_share_pdf')}
             </Button>
-            <Button type="button" variant="secondary" onClick={onPrint} disabled={!canPrint || !reportData}>
-              <RhIcon as={Printer} size={18} strokeWidth={RH_ICON_STROKE} />
+            <Button type="button" variant="secondary" icon={Printer} onClick={onPrint} disabled={!canPrint || !reportData}>
               {str('reports.btn_print')}
             </Button>
-            <Button type="button" variant="secondary" onClick={onExportCsv} disabled={!canExportCsv || !reportData}>
-              <RhIcon as={Download} size={18} strokeWidth={RH_ICON_STROKE} />
+            <Button
+              type="button"
+              variant="secondary"
+              icon={Download}
+              onClick={onExportCsv}
+              disabled={!canExportCsv || !reportData}
+            >
               {str('reports.btn_csv')}
             </Button>
           </div>
@@ -717,6 +735,7 @@ export default function ReportsPage() {
               type="button"
               variant={rangePreset === preset.value ? 'primary' : 'ghost'}
               size="sm"
+              icon={Calendar}
               onClick={() => applyRangePreset(preset.value)}
             >
               {rangePresetLabel(preset.value)}
@@ -725,11 +744,10 @@ export default function ReportsPage() {
         </div>
         {isRangeInvalid && <p className="rh-reports__range-error">{str('reports.range_invalid_hint')}</p>}
         <div className="rh-reports__filters-actions">
-          <Button type="button" variant="ghost" onClick={clearFilters}>
+          <Button type="button" variant="ghost" icon={FilterX} onClick={clearFilters}>
             {str('reports.btn_clear_filters')}
           </Button>
-          <Button type="button" variant="primary" disabled={!canBuild} loading={loadingReport} onClick={build}>
-            <RhIcon as={FileText} size={18} strokeWidth={RH_ICON_STROKE} />
+          <Button type="button" variant="primary" icon={FileText} disabled={!canBuild} loading={loadingReport} onClick={build}>
             {str('reports.btn_build')}
           </Button>
         </div>

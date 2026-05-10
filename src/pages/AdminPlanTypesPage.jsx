@@ -1,4 +1,4 @@
-import { ArrowLeft, Pencil, Plus, Trash2 } from 'lucide-react'
+import { ArrowLeft, Pencil, Plus, RefreshCw, Save, Trash2, X } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../context/useAuth.js'
@@ -126,11 +126,10 @@ export default function AdminPlanTypesPage() {
           <code className="rh-admin-dashboard__code">value</code>) يُخزَّن مع كل خطة؛ يُفضّل عدم تغييره بعد الاستخدام.
         </p>
         <div className="rh-admin-plan-types__toolbar">
-          <Button type="button" variant="primary" onClick={openAdd}>
-            <RhIcon as={Plus} size={18} strokeWidth={RH_ICON_STROKE} />
+          <Button type="button" variant="primary" icon={Plus} onClick={openAdd}>
             إضافة نوع
           </Button>
-          <Button type="button" variant="secondary" loading={seedSubmitting} onClick={handleSeed}>
+          <Button type="button" variant="secondary" icon={RefreshCw} loading={seedSubmitting} onClick={handleSeed}>
             مزامنة الأنواع الافتراضية الثلاثة
           </Button>
         </div>
@@ -167,12 +166,10 @@ export default function AdminPlanTypesPage() {
                   <td>{r.label}</td>
                   <td className="rh-admin-plan-types__hint">{r.hint || '—'}</td>
                   <td className="rh-admin-plan-types__actions">
-                    <Button type="button" variant="secondary" size="sm" onClick={() => openEdit(r)}>
-                      <RhIcon as={Pencil} size={16} strokeWidth={RH_ICON_STROKE} />
+                    <Button type="button" variant="secondary" size="sm" icon={Pencil} onClick={() => openEdit(r)}>
                       تعديل
                     </Button>
-                    <Button type="button" variant="ghost" size="sm" onClick={() => setDeleting(r)}>
-                      <RhIcon as={Trash2} size={16} strokeWidth={RH_ICON_STROKE} />
+                    <Button type="button" variant="ghost" size="sm" icon={Trash2} onClick={() => setDeleting(r)}>
                       حذف
                     </Button>
                   </td>
@@ -203,10 +200,10 @@ export default function AdminPlanTypesPage() {
         <TextField label="وصف قصير (اختياري)" value={hint} onChange={(e) => setHint(e.target.value)} />
         <NumberStepField label="الترتيب" value={order} onChange={setOrder} min={0} max={999} step={1} />
         <div className="rh-admin-users__modal-actions">
-          <Button type="button" variant="primary" loading={saveSubmitting} onClick={handleSave}>
+          <Button type="button" variant="primary" icon={Save} loading={saveSubmitting} onClick={handleSave}>
             حفظ
           </Button>
-          <Button type="button" variant="ghost" disabled={saveSubmitting} onClick={() => setEditorOpen(false)}>
+          <Button type="button" variant="ghost" icon={X} disabled={saveSubmitting} onClick={() => setEditorOpen(false)}>
             إلغاء
           </Button>
         </div>
@@ -223,10 +220,10 @@ export default function AdminPlanTypesPage() {
       >
         <p className="rh-admin-users__warn">سيتم حذف النوع «{deleting?.label}» ({deleting?.value}). الخطط القديمة قد تعرض المعرّف الخام إن لم يعد مسجّلاً.</p>
         <div className="rh-admin-users__modal-actions">
-          <Button type="button" variant="danger" loading={deleteSubmitting} onClick={handleDelete}>
+          <Button type="button" variant="danger" icon={Trash2} loading={deleteSubmitting} onClick={handleDelete}>
             حذف
           </Button>
-          <Button type="button" variant="ghost" disabled={deleteSubmitting} onClick={() => setDeleting(null)}>
+          <Button type="button" variant="ghost" icon={X} disabled={deleteSubmitting} onClick={() => setDeleting(null)}>
             إلغاء
           </Button>
         </div>

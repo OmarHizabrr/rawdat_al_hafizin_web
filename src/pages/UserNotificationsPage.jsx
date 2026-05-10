@@ -1,4 +1,4 @@
-import { Bell, Trash2 } from 'lucide-react'
+import { Bell, CheckCheck, Trash2 } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import { CrossNav } from '../components/CrossNav.jsx'
@@ -113,7 +113,7 @@ export default function UserNotificationsPage() {
             </p>
           </div>
           {unreadCount > 0 && items.length > 0 ? (
-            <Button type="button" variant="secondary" onClick={onMarkAllRead}>
+            <Button type="button" variant="secondary" icon={CheckCheck} onClick={onMarkAllRead}>
               تعليم الكل كمقروء
             </Button>
           ) : null}
@@ -161,16 +161,18 @@ export default function UserNotificationsPage() {
                         <span className="rh-notify__read-pill">مقروء</span>
                       )}
                       {canDelete ? (
-                        <button
+                        <Button
                           type="button"
+                          variant="ghost"
+                          size="sm"
                           className="rh-notifications-page__delete"
+                          icon={Trash2}
+                          loading={deletingId === n.id}
                           onClick={() => onDelete(n.id)}
-                          disabled={deletingId === n.id}
                           aria-label="حذف الإشعار"
                         >
-                          <RhIcon as={Trash2} size={16} strokeWidth={RH_ICON_STROKE} />
                           حذف
-                        </button>
+                        </Button>
                       ) : null}
                     </span>
                   </div>

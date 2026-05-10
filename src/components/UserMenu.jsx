@@ -1,4 +1,14 @@
-import { ChevronDown } from 'lucide-react'
+import {
+  BookOpen,
+  ChevronDown,
+  ClipboardList,
+  LogOut,
+  NotebookPen,
+  Send,
+  Settings,
+  UserRound,
+  Users,
+} from 'lucide-react'
 import { useCallback, useEffect, useId, useRef, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { isAdmin, normalizeRole } from '../config/roles.js'
@@ -76,34 +86,64 @@ export function UserMenu({ user }) {
                 role="menuitem"
                 onClick={() => setOpen(false)}
               >
+                <span className="rh-user-dropdown__item-icon" aria-hidden>
+                  <RhIcon as={Send} size={18} strokeWidth={RH_ICON_STROKE} />
+                </span>
                 طلب الالتحاق
               </Link>
               <Link to="/app/welcome" className="rh-user-dropdown__item" role="menuitem" onClick={() => setOpen(false)}>
+                <span className="rh-user-dropdown__item-icon" aria-hidden>
+                  <RhIcon as={BookOpen} size={18} strokeWidth={RH_ICON_STROKE} />
+                </span>
                 صفحة البداية
               </Link>
             </>
           ) : (
             <>
+              <Link to="/app/profile" className="rh-user-dropdown__item" role="menuitem" onClick={() => setOpen(false)}>
+                <span className="rh-user-dropdown__item-icon" aria-hidden>
+                  <RhIcon as={UserRound} size={18} strokeWidth={RH_ICON_STROKE} />
+                </span>
+                الملف الشخصي
+              </Link>
               <Link to="/app/settings" className="rh-user-dropdown__item" role="menuitem" onClick={() => setOpen(false)}>
+                <span className="rh-user-dropdown__item-icon" aria-hidden>
+                  <RhIcon as={Settings} size={18} strokeWidth={RH_ICON_STROKE} />
+                </span>
                 الإعدادات
               </Link>
               {isAdmin(user) && (
                 <Link to="/app/admin/users" className="rh-user-dropdown__item" role="menuitem" onClick={() => setOpen(false)}>
+                  <span className="rh-user-dropdown__item-icon" aria-hidden>
+                    <RhIcon as={Users} size={18} strokeWidth={RH_ICON_STROKE} />
+                  </span>
                   إدارة المستخدمين
                 </Link>
               )}
               <Link to="/app/plans" className="rh-user-dropdown__item" role="menuitem" onClick={() => setOpen(false)}>
+                <span className="rh-user-dropdown__item-icon" aria-hidden>
+                  <RhIcon as={ClipboardList} size={18} strokeWidth={RH_ICON_STROKE} />
+                </span>
                 الخطط
               </Link>
               <Link to="/app/awrad" className="rh-user-dropdown__item" role="menuitem" onClick={() => setOpen(false)}>
+                <span className="rh-user-dropdown__item-icon" aria-hidden>
+                  <RhIcon as={NotebookPen} size={18} strokeWidth={RH_ICON_STROKE} />
+                </span>
                 الأوراد
               </Link>
               <Link to="/app/welcome" className="rh-user-dropdown__item" role="menuitem" onClick={() => setOpen(false)}>
+                <span className="rh-user-dropdown__item-icon" aria-hidden>
+                  <RhIcon as={BookOpen} size={18} strokeWidth={RH_ICON_STROKE} />
+                </span>
                 صفحة البداية
               </Link>
             </>
           )}
           <button type="button" className="rh-user-dropdown__item rh-user-dropdown__item--danger" role="menuitem" onClick={handleLogout}>
+            <span className="rh-user-dropdown__item-icon" aria-hidden>
+              <RhIcon as={LogOut} size={18} strokeWidth={RH_ICON_STROKE} />
+            </span>
             تسجيل الخروج
           </button>
         </div>

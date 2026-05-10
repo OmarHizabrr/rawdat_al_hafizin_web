@@ -1,4 +1,19 @@
-import { Compass, Pencil, Plus, Printer, Trash2, UserPlus, Users } from 'lucide-react'
+import {
+  BookOpen,
+  Check,
+  Compass,
+  GraduationCap,
+  Pencil,
+  Plus,
+  Printer,
+  Save,
+  Shield,
+  Trash2,
+  UserMinus,
+  UserPlus,
+  Users,
+  X,
+} from 'lucide-react'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Link, useLocation, useSearchParams } from 'react-router-dom'
 import { CrossNav } from '../components/CrossNav.jsx'
@@ -461,13 +476,11 @@ export default function ActivitiesPage() {
             <CrossNav items={crossItems} className="rh-plans__cross" />
           </div>
           <div className="rh-plans__hero-actions no-print">
-            <Button type="button" variant="secondary" className="rh-plans__print-btn" onClick={onPrint}>
-              <RhIcon as={Printer} size={18} strokeWidth={RH_ICON_STROKE} />
+            <Button type="button" variant="secondary" className="rh-plans__print-btn" icon={Printer} onClick={onPrint}>
               {str('layout.print_btn')}
             </Button>
             {!readOnly && can(PA, 'activity_create') && (
-              <Button type="button" variant="primary" className="rh-plans__add-btn" onClick={openAdd}>
-                <RhIcon as={Plus} size={18} strokeWidth={RH_ICON_STROKE} />
+              <Button type="button" variant="primary" className="rh-plans__add-btn" icon={Plus} onClick={openAdd}>
                 {str('activities.btn_new_group')}
               </Button>
             )}
@@ -487,11 +500,11 @@ export default function ActivitiesPage() {
               type="button"
               variant="secondary"
               className="rh-plans__join-btn"
+              icon={UserPlus}
               loading={joinBusy}
               disabled={!joinId.trim() || !viewUserId}
               onClick={handleJoin}
             >
-              {!joinBusy && <RhIcon as={UserPlus} size={18} strokeWidth={RH_ICON_STROKE} />}
               {str('activities.join_submit')}
             </Button>
           </div>
@@ -589,20 +602,17 @@ export default function ActivitiesPage() {
                 </p>
                 <div className="rh-plans__saved-actions no-print">
                   {activityCanManageMembers(row) && can(PA, 'activity_card_members') && (
-                    <Button type="button" variant="secondary" size="sm" onClick={() => setMembersModal(row)}>
-                      <RhIcon as={Users} size={16} strokeWidth={RH_ICON_STROKE} />
+                    <Button type="button" variant="secondary" size="sm" icon={Users} onClick={() => setMembersModal(row)}>
                       {str('activities.card_btn_members')}
                     </Button>
                   )}
                   {activityCanEdit(row) && can(PA, 'activity_card_edit') && (
-                    <Button type="button" variant="ghost" size="sm" onClick={() => openEdit(row)}>
-                      <RhIcon as={Pencil} size={16} strokeWidth={RH_ICON_STROKE} />
+                    <Button type="button" variant="ghost" size="sm" icon={Pencil} onClick={() => openEdit(row)}>
                       {str('activities.card_btn_edit')}
                     </Button>
                   )}
                   {can(PA, 'activity_card_delete_leave') && (
-                    <Button type="button" variant="ghost" size="sm" onClick={() => setDeleting(row)}>
-                      <RhIcon as={Trash2} size={16} strokeWidth={RH_ICON_STROKE} />
+                    <Button type="button" variant="ghost" size="sm" icon={Trash2} onClick={() => setDeleting(row)}>
                       {leavingUserDeletesWholeGroup(viewUserId, row.ownerUid, row.activityRole, HALAKA_MEMBER_ROLES)
                         ? str('activities.card_btn_delete')
                         : str('activities.card_btn_leave')}
@@ -761,12 +771,13 @@ export default function ActivitiesPage() {
             </button>
           </div>
           <div className="rh-plans__editor-actions">
-            <Button type="button" variant="primary" loading={saveBusy} onClick={handleSave}>
+            <Button type="button" variant="primary" icon={Save} loading={saveBusy} onClick={handleSave}>
               {str('activities.modal_save')}
             </Button>
             <Button
               type="button"
               variant="ghost"
+              icon={X}
               disabled={saveBusy}
               onClick={() => {
                 setEditorOpen(false)
@@ -796,10 +807,10 @@ export default function ActivitiesPage() {
             : str('activities.delete_confirm_leave')}
         </p>
         <div className="rh-plans__editor-actions">
-          <Button type="button" variant="danger" loading={deleteBusy} onClick={doDelete}>
+          <Button type="button" variant="danger" icon={Check} loading={deleteBusy} onClick={doDelete}>
             {str('activities.delete_confirm_submit')}
           </Button>
-          <Button type="button" variant="ghost" disabled={deleteBusy} onClick={() => setDeleting(null)}>
+          <Button type="button" variant="ghost" icon={X} disabled={deleteBusy} onClick={() => setDeleting(null)}>
             {str('activities.modal_cancel')}
           </Button>
         </div>
@@ -922,6 +933,7 @@ export default function ActivitiesPage() {
                                 type="button"
                                 size="sm"
                                 variant={row.role === HALAKA_MEMBER_ROLES.STUDENT ? 'secondary' : 'ghost'}
+                                icon={GraduationCap}
                                 loading={
                                   memberRowBusy?.uid === row.userId &&
                                   memberRowBusy?.kind === `role:${HALAKA_MEMBER_ROLES.STUDENT}`
@@ -956,6 +968,7 @@ export default function ActivitiesPage() {
                                 type="button"
                                 size="sm"
                                 variant={row.role === HALAKA_MEMBER_ROLES.TEACHER ? 'secondary' : 'ghost'}
+                                icon={BookOpen}
                                 loading={
                                   memberRowBusy?.uid === row.userId &&
                                   memberRowBusy?.kind === `role:${HALAKA_MEMBER_ROLES.TEACHER}`
@@ -990,6 +1003,7 @@ export default function ActivitiesPage() {
                                 type="button"
                                 size="sm"
                                 variant={row.role === HALAKA_MEMBER_ROLES.SUPERVISOR ? 'secondary' : 'ghost'}
+                                icon={Shield}
                                 loading={
                                   memberRowBusy?.uid === row.userId &&
                                   memberRowBusy?.kind === `role:${HALAKA_MEMBER_ROLES.SUPERVISOR}`
@@ -1030,6 +1044,7 @@ export default function ActivitiesPage() {
                               type="button"
                               size="sm"
                               variant="ghost"
+                              icon={UserMinus}
                               loading={memberRowBusy?.uid === row.userId && memberRowBusy?.kind === 'remove'}
                               disabled={
                                 Boolean(memberRowBusy) || !canManageRole(actorRole, normalizeRole(row.role))

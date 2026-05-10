@@ -1,4 +1,4 @@
-import { Plus } from 'lucide-react'
+import { ArrowLeftRight, Hash, Plus, X } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { addWird } from '../utils/awradStorage.js'
 import {
@@ -272,7 +272,10 @@ export function HomeWirdModal({ open, onClose, activePlan, awrad, contextUserId,
               setMode('count')
             }}
           >
-            <span className="rh-segment__label">تحديد عدد الصفحات</span>
+            <span className="rh-segment__lead">
+              <RhIcon as={Hash} size={20} strokeWidth={RH_ICON_STROKE} aria-hidden />
+              <span className="rh-segment__label">تحديد عدد الصفحات</span>
+            </span>
           </button>
           <button
             type="button"
@@ -290,7 +293,10 @@ export function HomeWirdModal({ open, onClose, activePlan, awrad, contextUserId,
               setToPage(Math.max(start, end))
             }}
           >
-            <span className="rh-segment__label">من صفحة إلى صفحة</span>
+            <span className="rh-segment__lead">
+              <RhIcon as={ArrowLeftRight} size={20} strokeWidth={RH_ICON_STROKE} aria-hidden />
+              <span className="rh-segment__label">من صفحة إلى صفحة</span>
+            </span>
           </button>
         </div>
 
@@ -357,11 +363,10 @@ export function HomeWirdModal({ open, onClose, activePlan, awrad, contextUserId,
         )}
 
         <div className="rh-awrad__actions">
-          <Button type="button" onClick={submitWird} loading={wirdSubmitting}>
-            {!wirdSubmitting && <RhIcon as={Plus} size={16} strokeWidth={RH_ICON_STROKE} />}
+          <Button type="button" icon={Plus} onClick={submitWird} loading={wirdSubmitting}>
             إضافة الورد
           </Button>
-          <Button type="button" variant="ghost" onClick={cancel} disabled={wirdSubmitting}>
+          <Button type="button" variant="ghost" icon={X} onClick={cancel} disabled={wirdSubmitting}>
             إلغاء
           </Button>
         </div>

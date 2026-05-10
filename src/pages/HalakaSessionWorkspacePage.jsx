@@ -1,4 +1,4 @@
-import { ArrowRight } from 'lucide-react'
+import { ArrowRight, Ban, RotateCcw, Save, UserCheck, UserX } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { CrossNav } from '../components/CrossNav.jsx'
@@ -359,19 +359,19 @@ export default function HalakaSessionWorkspacePage() {
           <div className="rh-halaka-sessions__stat"><span className="rh-halaka-sessions__stat-value">{summary.pages}</span><span className="rh-halaka-sessions__stat-label">صفحات مرصودة</span></div>
         </div>
         <div className="rh-halaka-sessions__toolbar">
-          <Button type="button" variant="secondary" disabled={!canWrite || savingAll} onClick={() => applyBulkPatch({ excludedFromSession: true })}>
+          <Button type="button" variant="secondary" icon={Ban} disabled={!canWrite || savingAll} onClick={() => applyBulkPatch({ excludedFromSession: true })}>
             استثناء الكل
           </Button>
-          <Button type="button" variant="secondary" disabled={!canWrite || savingAll} onClick={() => applyBulkPatch({ excludedFromSession: false })}>
+          <Button type="button" variant="secondary" icon={RotateCcw} disabled={!canWrite || savingAll} onClick={() => applyBulkPatch({ excludedFromSession: false })}>
             إلغاء استثناء الكل
           </Button>
-          <Button type="button" variant="secondary" disabled={!canWrite || savingAll} onClick={() => applyBulkPatch({ attendanceStatus: HALAKA_ATTENDANCE_STATUSES.PRESENT }, { includeExcluded: false })}>
+          <Button type="button" variant="secondary" icon={UserCheck} disabled={!canWrite || savingAll} onClick={() => applyBulkPatch({ attendanceStatus: HALAKA_ATTENDANCE_STATUSES.PRESENT }, { includeExcluded: false })}>
             الكل حاضر
           </Button>
-          <Button type="button" variant="secondary" disabled={!canWrite || savingAll} onClick={() => applyBulkPatch({ attendanceStatus: HALAKA_ATTENDANCE_STATUSES.ABSENT }, { includeExcluded: false })}>
+          <Button type="button" variant="secondary" icon={UserX} disabled={!canWrite || savingAll} onClick={() => applyBulkPatch({ attendanceStatus: HALAKA_ATTENDANCE_STATUSES.ABSENT }, { includeExcluded: false })}>
             الكل غائب
           </Button>
-          <Button type="button" variant="primary" loading={savingAll} disabled={!canWrite || dirtyRowIds.size === 0} onClick={saveAll}>
+          <Button type="button" variant="primary" icon={Save} loading={savingAll} disabled={!canWrite || dirtyRowIds.size === 0} onClick={saveAll}>
             حفظ الكل ({dirtyRowIds.size})
           </Button>
         </div>
@@ -454,7 +454,7 @@ export default function HalakaSessionWorkspacePage() {
                   ) : null}
                   <TextAreaField label="ملاحظات" rows={2} value={row.notes} disabled={!canWrite} onChange={(e) => updateRowDraft(row.userId, { notes: e.target.value })} />
                   <div className="rh-halaka-sessions__row-actions">
-                    <Button type="button" size="sm" variant="secondary" loading={savingRowId === row.userId} disabled={!canWrite || !dirtyRowIds.has(row.userId)} onClick={() => saveRow(row)}>
+                    <Button type="button" size="sm" variant="secondary" icon={Save} loading={savingRowId === row.userId} disabled={!canWrite || !dirtyRowIds.has(row.userId)} onClick={() => saveRow(row)}>
                       {row.role === HALAKA_MEMBER_ROLES.STUDENT ? (editingEntryByUser[row.userId] ? 'حفظ تعديل الدفعة' : 'حفظ + تسجيل دفعة') : 'حفظ'}
                     </Button>
                   </div>

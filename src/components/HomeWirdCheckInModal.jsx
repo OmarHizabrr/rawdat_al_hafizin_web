@@ -127,20 +127,18 @@ export function HomeWirdCheckInModal({
         <Button
           type="button"
           className="rh-checkin-modal__btn-yes"
+          icon={BookOpenCheck}
           onClick={handleYes}
           loading={busy}
           disabled={busy}
         >
-          {!busy && <RhIcon as={BookOpenCheck} size={18} strokeWidth={RH_ICON_STROKE} />}
           نعم، أكملت — سجّل الآن
         </Button>
         <div className="rh-checkin-modal__row2">
-          <Button type="button" variant="ghost" onClick={handleSnooze} disabled={busy}>
-            <RhIcon as={BellRing} size={16} strokeWidth={RH_ICON_STROKE} />
+          <Button type="button" variant="ghost" icon={BellRing} onClick={handleSnooze} disabled={busy}>
             ذكّرني بعد دقيقتين
           </Button>
-          <Button type="button" variant="ghost" onClick={handleNo} disabled={busy}>
-            <RhIcon as={XCircle} size={16} strokeWidth={RH_ICON_STROKE} />
+          <Button type="button" variant="ghost" icon={XCircle} onClick={handleNo} disabled={busy}>
             لم أكمل بعد
           </Button>
         </div>

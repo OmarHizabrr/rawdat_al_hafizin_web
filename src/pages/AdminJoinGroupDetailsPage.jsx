@@ -1,4 +1,17 @@
-import { ArrowRight, Download, ExternalLink, Globe, MessageCircle, Send, Trash2, Users } from 'lucide-react'
+import {
+  ArrowLeft,
+  ArrowRight,
+  Download,
+  ExternalLink,
+  Globe,
+  MessageCircle,
+  RefreshCw,
+  Send,
+  Trash2,
+  UserMinus,
+  Users,
+  X,
+} from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { CrossNav } from '../components/CrossNav.jsx'
@@ -172,7 +185,7 @@ export default function AdminJoinGroupDetailsPage() {
       <section className="card">
         <p>لم يتم العثور على المجموعة المطلوبة.</p>
         <div className="rh-plans__actions">
-          <Button type="button" onClick={() => navigate('/app/admin/groups')}>
+          <Button type="button" icon={ArrowLeft} onClick={() => navigate('/app/admin/groups')}>
             العودة لإدارة المجموعات
           </Button>
         </div>
@@ -205,20 +218,24 @@ export default function AdminJoinGroupDetailsPage() {
         </div>
         {group.description ? <p className="rh-plans__saved-desc">{group.description}</p> : null}
         <div className="rh-admin-users__row--actions">
-          <Button type="button" variant="secondary" onClick={() => navigate('/app/admin/groups')}>
-            <RhIcon as={ArrowRight} size={16} strokeWidth={RH_ICON_STROKE} />
+          <Button type="button" variant="secondary" icon={ArrowRight} onClick={() => navigate('/app/admin/groups')}>
             العودة
           </Button>
-          <Button type="button" variant="ghost" onClick={() => {
-            if (!group.joinUrl) return
-            window.open(group.joinUrl, '_blank', 'noopener,noreferrer')
-          }}>
-            <RhIcon as={ExternalLink} size={16} strokeWidth={RH_ICON_STROKE} />
+          <Button
+            type="button"
+            variant="ghost"
+            icon={ExternalLink}
+            onClick={() => {
+              if (!group.joinUrl) return
+              window.open(group.joinUrl, '_blank', 'noopener,noreferrer')
+            }}
+          >
             فتح رابط المجموعة
           </Button>
           <Button
             type="button"
             variant="ghost"
+            icon={Download}
             onClick={() => {
               const headers = ['uid', 'name', 'email', 'role', 'gender', 'joinedAt']
               const lines = [headers.join(',')]
@@ -243,7 +260,6 @@ export default function AdminJoinGroupDetailsPage() {
               toast.success('تم تنزيل CSV للأعضاء.', 'تم')
             }}
           >
-            <RhIcon as={Download} size={16} strokeWidth={RH_ICON_STROKE} />
             تنزيل CSV
           </Button>
         </div>
@@ -310,6 +326,7 @@ export default function AdminJoinGroupDetailsPage() {
                   type="button"
                   variant="danger"
                   size="sm"
+                  icon={Trash2}
                   loading={removingUserId === m.userId}
                   disabled={isProtectedRole(m.role) || Boolean(removingUserId && removingUserId !== m.userId)}
                   onClick={() => {
@@ -320,7 +337,6 @@ export default function AdminJoinGroupDetailsPage() {
                     setPendingRemoveMember(m)
                   }}
                 >
-                  <RhIcon as={Trash2} size={14} strokeWidth={RH_ICON_STROKE} />
                   إزالة
                 </Button>
               </li>
@@ -329,7 +345,7 @@ export default function AdminJoinGroupDetailsPage() {
         )}
         <div className="rh-plans__actions">
           <Link to="/app/admin/groups">عودة إلى القائمة</Link>
-          <Button type="button" variant="ghost" onClick={() => toast.success('تم تحديث البيانات.', 'تم')}>
+          <Button type="button" variant="ghost" icon={RefreshCw} onClick={() => toast.success('تم تحديث البيانات.', 'تم')}>
             تحديث يدوي
           </Button>
         </div>
@@ -350,6 +366,7 @@ export default function AdminJoinGroupDetailsPage() {
           <Button
             type="button"
             variant="danger"
+            icon={UserMinus}
             loading={Boolean(removingUserId)}
             onClick={async () => {
               const target = pendingRemoveMember
@@ -386,7 +403,7 @@ export default function AdminJoinGroupDetailsPage() {
           >
             تأكيد الإزالة
           </Button>
-          <Button type="button" variant="ghost" disabled={Boolean(removingUserId)} onClick={() => setPendingRemoveMember(null)}>
+          <Button type="button" variant="ghost" icon={X} disabled={Boolean(removingUserId)} onClick={() => setPendingRemoveMember(null)}>
             إلغاء
           </Button>
         </div>

@@ -1,4 +1,4 @@
-import { Compass, Printer, UserPlus } from 'lucide-react'
+import { Check, Compass, Printer, UserPlus } from 'lucide-react'
 import { RemoteTasmeeProviderIcon } from '../components/RemoteTasmeeProviderIcon.jsx'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Link, useLocation } from 'react-router-dom'
@@ -164,8 +164,7 @@ export default function ExploreRemoteTasmeePage() {
             <CrossNav items={crossItems} className="rh-plans__cross" />
           </div>
           <div className="rh-explore-plans__hero-aside no-print">
-            <Button type="button" variant="secondary" className="rh-explore-plans__print-btn" onClick={onPrint}>
-              <RhIcon as={Printer} size={18} strokeWidth={RH_ICON_STROKE} />
+            <Button type="button" variant="secondary" className="rh-explore-plans__print-btn" icon={Printer} onClick={onPrint}>
               {str('layout.print_btn')}
             </Button>
             <Link className="ui-btn ui-btn--secondary rh-explore-plans__to-mine" to={appLink('/app/remote-tasmee')}>
@@ -213,11 +212,11 @@ export default function ExploreRemoteTasmeePage() {
             <Button
               type="button"
               variant="primary"
+              icon={UserPlus}
               onClick={handleJoinById}
               loading={joinByIdLoading}
               disabled={!joinId.trim() || !viewUserId || joinByIdLoading}
             >
-              {!joinByIdLoading && <RhIcon as={UserPlus} size={18} strokeWidth={RH_ICON_STROKE} />}
               انضمام
             </Button>
           </div>
@@ -280,6 +279,7 @@ export default function ExploreRemoteTasmeePage() {
                           type="button"
                           variant={inItem ? 'secondary' : 'primary'}
                           size="sm"
+                          icon={inItem ? Check : UserPlus}
                           loading={joiningCardId === p.id}
                           disabled={inItem || joiningCardId !== null}
                           onClick={() => !inItem && handleJoinCard(p.id)}

@@ -1,3 +1,4 @@
+import { RotateCcw, X } from 'lucide-react'
 import { THEME_VAR_DEFAULTS } from '../data/brandingPresets.js'
 import { Button, TextField } from '../ui/index.js'
 
@@ -42,10 +43,16 @@ export function BrandingColorRow({ label, name, value, onChange, mode, useColorP
             placeholder="مثال: rgba(27, 67, 50, 0.1)"
           />
           <div className="rh-admin-branding__color-field-actions">
-            <Button type="button" size="sm" variant="ghost" onClick={() => onChange(name, '')}>
+            <Button type="button" size="sm" variant="ghost" icon={X} onClick={() => onChange(name, '')}>
               مسح
             </Button>
-            <Button type="button" size="sm" variant="secondary" onClick={() => onChange(name, fallbackProgram)}>
+            <Button
+              type="button"
+              size="sm"
+              variant="secondary"
+              icon={RotateCcw}
+              onClick={() => onChange(name, fallbackProgram)}
+            >
               القيمة المقترحة
             </Button>
           </div>
@@ -76,10 +83,16 @@ export function BrandingColorRow({ label, name, value, onChange, mode, useColorP
           hint="يمكنك لصق rgba أيضاً؛ عندها يُعطّل المربّع أعلاه تلقائياً حتى تعدّل النص."
         />
         <div className="rh-admin-branding__color-field-actions">
-          <Button type="button" size="sm" variant="ghost" onClick={() => onChange(name, '')}>
+          <Button type="button" size="sm" variant="ghost" icon={X} onClick={() => onChange(name, '')}>
             مسح
           </Button>
-          <Button type="button" size="sm" variant="secondary" onClick={() => onChange(name, normalizeHex6(fallbackProgram) || fallbackProgram)}>
+          <Button
+            type="button"
+            size="sm"
+            variant="secondary"
+            icon={RotateCcw}
+            onClick={() => onChange(name, normalizeHex6(fallbackProgram) || fallbackProgram)}
+          >
             الافتراضي
           </Button>
         </div>

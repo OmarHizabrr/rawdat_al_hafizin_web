@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { Plus } from 'lucide-react'
+import { Pencil, Plus, Save, Trash2, X } from 'lucide-react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { useSiteContent } from '../context/useSiteContent.js'
 import { PERMISSION_PAGE_IDS } from '../config/permissionRegistry.js'
@@ -34,8 +34,6 @@ import {
   TextField,
   useToast,
 } from '../ui/index.js'
-import { RhIcon, RH_ICON_STROKE } from '../ui/RhIcon.jsx'
-
 function asDate(v) {
   const d = new Date(v)
   return Number.isNaN(d.getTime()) ? '' : d.toLocaleDateString('ar-SA')
@@ -504,6 +502,7 @@ export default function AwradPage() {
           <div className="rh-awrad__actions">
             <Button
               type="button"
+              icon={Plus}
               onClick={() => {
                 setEditingWirdId(null)
                 setMode('count')
@@ -515,7 +514,6 @@ export default function AwradPage() {
                 setIsEditorOpen(true)
               }}
             >
-              <RhIcon as={Plus} size={16} strokeWidth={RH_ICON_STROKE} />
               إضافة ورد
             </Button>
           </div>
@@ -566,12 +564,12 @@ export default function AwradPage() {
                 )}
                 <span className="rh-awrad__item-actions">
                   {!viewOnly && can(PA, 'wird_edit') && (
-                    <Button type="button" size="sm" variant="ghost" onClick={() => startEdit(w)}>
+                    <Button type="button" size="sm" variant="ghost" icon={Pencil} onClick={() => startEdit(w)}>
                       تعديل
                     </Button>
                   )}
                   {!viewOnly && can(PA, 'wird_delete') && (
-                    <Button type="button" size="sm" variant="ghost" onClick={() => setDeletingWird(w)}>
+                    <Button type="button" size="sm" variant="ghost" icon={Trash2} onClick={() => setDeletingWird(w)}>
                       حذف
                     </Button>
                   )}
@@ -736,11 +734,15 @@ export default function AwradPage() {
           )}
 
           <div className="rh-awrad__actions">
-            <Button type="button" onClick={submitWird} loading={wirdSubmitting}>
-              {!editingWirdId && !wirdSubmitting && <RhIcon as={Plus} size={16} strokeWidth={RH_ICON_STROKE} />}
+            <Button
+              type="button"
+              icon={editingWirdId ? Save : Plus}
+              onClick={submitWird}
+              loading={wirdSubmitting}
+            >
               {editingWirdId ? 'حفظ التعديل' : 'إضافة الورد'}
             </Button>
-            <Button type="button" variant="ghost" onClick={cancelEdit} disabled={wirdSubmitting}>
+            <Button type="button" variant="ghost" icon={X} onClick={cancelEdit} disabled={wirdSubmitting}>
               إلغاء
             </Button>
           </div>
@@ -763,6 +765,7 @@ export default function AwradPage() {
           <Button
             type="button"
             variant="danger"
+            icon={Trash2}
             loading={wirdDeleteSubmitting}
             onClick={async () => {
               if (!deletingWird) return
@@ -781,12 +784,7 @@ export default function AwradPage() {
           >
             نعم، حذف
           </Button>
-          <Button
-            type="button"
-            variant="ghost"
-            disabled={wirdDeleteSubmitting}
-            onClick={() => setDeletingWird(null)}
-          >
+          <Button type="button" variant="ghost" icon={X} disabled={wirdDeleteSubmitting} onClick={() => setDeletingWird(null)}>
             إلغاء
           </Button>
         </div>

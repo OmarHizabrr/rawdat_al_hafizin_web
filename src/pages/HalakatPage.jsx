@@ -1,4 +1,20 @@
-import { Compass, Pencil, Plus, Trash2, UserPlus, Users } from 'lucide-react'
+import {
+  BookOpen,
+  CalendarPlus,
+  Compass,
+  Eye,
+  GraduationCap,
+  Lock,
+  Pencil,
+  Plus,
+  Save,
+  Shield,
+  Trash2,
+  UserMinus,
+  UserPlus,
+  Users,
+  X,
+} from 'lucide-react'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Link, useLocation, useSearchParams } from 'react-router-dom'
 import { CrossNav } from '../components/CrossNav.jsx'
@@ -707,8 +723,7 @@ export default function HalakatPage() {
           </div>
           {!readOnly && can(PH, 'halaka_create') && (
             <div className="rh-plans__hero-actions">
-              <Button type="button" variant="primary" className="rh-plans__add-btn" onClick={openAdd}>
-                <RhIcon as={Plus} size={18} strokeWidth={RH_ICON_STROKE} />
+              <Button type="button" variant="primary" className="rh-plans__add-btn" icon={Plus} onClick={openAdd}>
                 إضافة حلقة
               </Button>
             </div>
@@ -728,11 +743,11 @@ export default function HalakatPage() {
               type="button"
               variant="secondary"
               className="rh-plans__join-btn"
+              icon={UserPlus}
               loading={joinBusy}
               disabled={!joinId.trim() || !viewUserId}
               onClick={handleJoin}
             >
-              {!joinBusy && <RhIcon as={UserPlus} size={18} strokeWidth={RH_ICON_STROKE} />}
               انضمام
             </Button>
           </div>
@@ -802,20 +817,17 @@ export default function HalakatPage() {
                     </Link>
                   )}
                   {halakaCanManageMembers(h) && can(PH, 'halaka_card_members') && (
-                    <Button type="button" variant="secondary" size="sm" onClick={() => setMembersModal(h)}>
-                      <RhIcon as={Users} size={16} strokeWidth={RH_ICON_STROKE} />
+                    <Button type="button" variant="secondary" size="sm" icon={Users} onClick={() => setMembersModal(h)}>
                       الأعضاء
                     </Button>
                   )}
                   {halakaCanEdit(h) && can(PH, 'halaka_card_edit') && (
-                    <Button type="button" variant="ghost" size="sm" onClick={() => openEdit(h)}>
-                      <RhIcon as={Pencil} size={16} strokeWidth={RH_ICON_STROKE} />
+                    <Button type="button" variant="ghost" size="sm" icon={Pencil} onClick={() => openEdit(h)}>
                       تعديل
                     </Button>
                   )}
                   {can(PH, 'halaka_card_delete_leave') && (
-                    <Button type="button" variant="ghost" size="sm" onClick={() => setDeleting(h)}>
-                      <RhIcon as={Trash2} size={16} strokeWidth={RH_ICON_STROKE} />
+                    <Button type="button" variant="ghost" size="sm" icon={Trash2} onClick={() => setDeleting(h)}>
                       {leavingUserDeletesWholeGroup(viewUserId, h.ownerUid, h.halakaRole, HALAKA_MEMBER_ROLES)
                         ? 'حذف'
                         : 'مغادرة'}
@@ -967,10 +979,10 @@ export default function HalakatPage() {
           </div>
           <p className="ui-field__hint">المدة: {durationLabel}</p>
           <div className="rh-plans__actions">
-            <Button type="button" variant="primary" onClick={handleSave} loading={saveBusy}>
+            <Button type="button" variant="primary" icon={Save} onClick={handleSave} loading={saveBusy}>
               حفظ
             </Button>
-            <Button type="button" variant="ghost" onClick={() => setEditorOpen(false)} disabled={saveBusy}>
+            <Button type="button" variant="ghost" icon={X} onClick={() => setEditorOpen(false)} disabled={saveBusy}>
               إلغاء
             </Button>
           </div>
@@ -998,7 +1010,7 @@ export default function HalakatPage() {
             : 'مغادرة الحلقة من قائمتك فقط؟'}
         </p>
         <div className="rh-plans__actions">
-          <Button type="button" variant="danger" loading={deleteBusy} onClick={doDelete}>
+          <Button type="button" variant="danger" icon={Trash2} loading={deleteBusy} onClick={doDelete}>
             {deleting &&
             leavingUserDeletesWholeGroup(
               viewUserId,
@@ -1009,7 +1021,7 @@ export default function HalakatPage() {
               ? 'نعم، حذف للجميع'
               : 'نعم، مغادرة'}
           </Button>
-          <Button type="button" variant="ghost" disabled={deleteBusy} onClick={() => setDeleting(null)}>
+          <Button type="button" variant="ghost" icon={X} disabled={deleteBusy} onClick={() => setDeleting(null)}>
             إلغاء
           </Button>
         </div>
@@ -1069,6 +1081,7 @@ export default function HalakatPage() {
               <Button
                 type="button"
                 variant="primary"
+                icon={CalendarPlus}
                 loading={sessionSaveBusy}
                 disabled={!canWriteSessionRows}
                 onClick={async () => {
@@ -1128,6 +1141,7 @@ export default function HalakatPage() {
                         type="button"
                         size="sm"
                         variant={activeSession?.id === s.id ? 'secondary' : 'ghost'}
+                        icon={Eye}
                         onClick={() => setActiveSession(s)}
                       >
                         فتح التفاصيل
@@ -1137,6 +1151,7 @@ export default function HalakatPage() {
                           type="button"
                           size="sm"
                           variant="ghost"
+                          icon={Lock}
                           loading={sessionCloseBusyId === s.id}
                           disabled={!canWriteSessionRows}
                           onClick={async () => {
@@ -1465,6 +1480,7 @@ export default function HalakatPage() {
                                 type="button"
                                 size="sm"
                                 variant={row.role === HALAKA_MEMBER_ROLES.STUDENT ? 'secondary' : 'ghost'}
+                                icon={GraduationCap}
                                 loading={
                                   memberRowBusy?.uid === row.userId &&
                                   memberRowBusy?.kind === `role:${HALAKA_MEMBER_ROLES.STUDENT}`
@@ -1499,6 +1515,7 @@ export default function HalakatPage() {
                                 type="button"
                                 size="sm"
                                 variant={row.role === HALAKA_MEMBER_ROLES.TEACHER ? 'secondary' : 'ghost'}
+                                icon={BookOpen}
                                 loading={
                                   memberRowBusy?.uid === row.userId &&
                                   memberRowBusy?.kind === `role:${HALAKA_MEMBER_ROLES.TEACHER}`
@@ -1533,6 +1550,7 @@ export default function HalakatPage() {
                                 type="button"
                                 size="sm"
                                 variant={row.role === HALAKA_MEMBER_ROLES.SUPERVISOR ? 'secondary' : 'ghost'}
+                                icon={Shield}
                                 loading={
                                   memberRowBusy?.uid === row.userId &&
                                   memberRowBusy?.kind === `role:${HALAKA_MEMBER_ROLES.SUPERVISOR}`
@@ -1573,6 +1591,7 @@ export default function HalakatPage() {
                               type="button"
                               size="sm"
                               variant="ghost"
+                              icon={UserMinus}
                               loading={memberRowBusy?.uid === row.userId && memberRowBusy?.kind === 'remove'}
                               disabled={
                                 Boolean(memberRowBusy) || !canManageRole(actorRole, normalizeRole(row.role))

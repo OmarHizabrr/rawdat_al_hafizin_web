@@ -1,4 +1,4 @@
-import { Bird, Heart, Star, Trash2, Pencil } from 'lucide-react'
+import { Bird, Heart, Pencil, Save, Star, Trash2, X } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Link, useLocation, useSearchParams } from 'react-router-dom'
 import { CrossNav } from '../components/CrossNav.jsx'
@@ -15,7 +15,7 @@ import {
   subscribeStudentFeelingsForUser,
   updateStudentFeeling,
 } from '../services/studentFeelingsService.js'
-import { TextAreaField, useToast } from '../ui/index.js'
+import { Button, TextAreaField, useToast } from '../ui/index.js'
 import { getImpersonateUid, withImpersonationQuery } from '../utils/impersonation.js'
 import { RhIcon, RH_ICON_STROKE } from '../ui/RhIcon.jsx'
 
@@ -244,14 +244,19 @@ export default function StudentFeelingsPage() {
         </div>
 
         <div className="rh-feelings__actions">
-          <button type="button" className="ui-btn ui-btn--primary" onClick={onSubmit} disabled={!canWrite || busy}>
-            <RhIcon as={Heart} size={18} strokeWidth={RH_ICON_STROKE} />
+          <Button
+            type="button"
+            variant="primary"
+            icon={editingId ? Save : Heart}
+            onClick={onSubmit}
+            disabled={!canWrite || busy}
+          >
             {editingId ? 'حفظ التعديل' : 'نشر الشعور'}
-          </button>
+          </Button>
           {editingId ? (
-            <button type="button" className="ui-btn ui-btn--ghost" onClick={resetDraft} disabled={busy}>
+            <Button type="button" variant="ghost" icon={X} onClick={resetDraft} disabled={busy}>
               إلغاء التعديل
-            </button>
+            </Button>
           ) : null}
         </div>
       </section>
@@ -291,14 +296,12 @@ export default function StudentFeelingsPage() {
                   {'☆'.repeat(Math.max(0, 5 - Math.max(1, row.rating)))}
                 </div>
                 <div className="rh-feelings-item__actions">
-                  <button type="button" className="ui-btn ui-btn--sm ui-btn--ghost" onClick={() => onEdit(row)} disabled={busy}>
-                    <RhIcon as={Pencil} size={16} strokeWidth={RH_ICON_STROKE} />
+                  <Button type="button" size="sm" variant="ghost" icon={Pencil} onClick={() => onEdit(row)} disabled={busy}>
                     تعديل
-                  </button>
-                  <button type="button" className="ui-btn ui-btn--sm ui-btn--ghost" onClick={() => onDelete(row)} disabled={busy}>
-                    <RhIcon as={Trash2} size={16} strokeWidth={RH_ICON_STROKE} />
+                  </Button>
+                  <Button type="button" size="sm" variant="ghost" icon={Trash2} onClick={() => onDelete(row)} disabled={busy}>
                     حذف
-                  </button>
+                  </Button>
                 </div>
               </li>
             ))}

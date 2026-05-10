@@ -1,4 +1,4 @@
-import { Globe, MessageCircle, Pencil, Plus, Send, Trash2, Users } from 'lucide-react'
+import { ArrowRight, Globe, MessageCircle, Pencil, Plus, Save, Send, Trash2, Users, X } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { CrossNav } from '../components/CrossNav.jsx'
@@ -214,8 +214,7 @@ export default function AdminJoinGroupsPage() {
             onChange={(e) => setQ(e.target.value)}
             className="rh-admin-applications__search"
           />
-          <Button type="button" variant="primary" onClick={openAdd}>
-            <RhIcon as={Plus} size={18} strokeWidth={RH_ICON_STROKE} />
+          <Button type="button" variant="primary" icon={Plus} onClick={openAdd}>
             إضافة مجموعة
           </Button>
         </div>
@@ -243,11 +242,10 @@ export default function AdminJoinGroupsPage() {
               <p className="rh-plans__saved-meta">عدد مرات الظهور لكل طالب: {Math.max(1, Number(r.maxAppearances || 1))}</p>
               <p className="rh-plans__saved-meta">عدد الأعضاء: {memberCounts[r.id] || 0}</p>
               <div className="rh-admin-users__row--actions">
-                <Button type="button" size="sm" variant="secondary" onClick={() => navigate(`/app/admin/groups/${encodeURIComponent(r.id)}`)}>
-                  <RhIcon as={Users} size={16} strokeWidth={RH_ICON_STROKE} />
+                <Button type="button" size="sm" variant="secondary" icon={ArrowRight} onClick={() => navigate(`/app/admin/groups/${encodeURIComponent(r.id)}`)}>
                   التفاصيل
                 </Button>
-                <Button type="button" size="sm" variant="secondary" onClick={async () => {
+                <Button type="button" size="sm" variant="secondary" icon={Users} onClick={async () => {
                   setMembersModal(r)
                   setMembersLoading(true)
                   try {
@@ -257,15 +255,12 @@ export default function AdminJoinGroupsPage() {
                     setMembersLoading(false)
                   }
                 }}>
-                  <RhIcon as={Users} size={16} strokeWidth={RH_ICON_STROKE} />
                   الأعضاء
                 </Button>
-                <Button type="button" size="sm" variant="ghost" onClick={() => openEdit(r)}>
-                  <RhIcon as={Pencil} size={16} strokeWidth={RH_ICON_STROKE} />
+                <Button type="button" size="sm" variant="ghost" icon={Pencil} onClick={() => openEdit(r)}>
                   تعديل
                 </Button>
-                <Button type="button" size="sm" variant="danger" onClick={() => setDeletingRow(r)}>
-                  <RhIcon as={Trash2} size={16} strokeWidth={RH_ICON_STROKE} />
+                <Button type="button" size="sm" variant="danger" icon={Trash2} onClick={() => setDeletingRow(r)}>
                   حذف
                 </Button>
               </div>
@@ -339,8 +334,8 @@ export default function AdminJoinGroupsPage() {
             </div>
           </div>
           <div className="rh-plans__actions">
-            <Button type="button" variant="primary" loading={busy} onClick={onSave}>حفظ</Button>
-            <Button type="button" variant="ghost" disabled={busy} onClick={() => setEditorOpen(false)}>إلغاء</Button>
+            <Button type="button" variant="primary" icon={Save} loading={busy} onClick={onSave}>حفظ</Button>
+            <Button type="button" variant="ghost" icon={X} disabled={busy} onClick={() => setEditorOpen(false)}>إلغاء</Button>
           </div>
         </ScrollArea>
       </Modal>
@@ -353,7 +348,7 @@ export default function AdminJoinGroupsPage() {
       >
         <p className="rh-plans__warn rh-plans__warn--confirm">هل تريد حذف هذه المجموعة نهائياً؟</p>
         <div className="rh-plans__actions">
-          <Button type="button" variant="danger" onClick={async () => {
+          <Button type="button" variant="danger" icon={Trash2} onClick={async () => {
             if (!deletingRow || !user?.uid) return
             setBusy(true)
             try {
@@ -366,7 +361,7 @@ export default function AdminJoinGroupsPage() {
               setBusy(false)
             }
           }}>حذف</Button>
-          <Button type="button" variant="ghost" onClick={() => setDeletingRow(null)}>إلغاء</Button>
+          <Button type="button" variant="ghost" icon={X} onClick={() => setDeletingRow(null)}>إلغاء</Button>
         </div>
       </Modal>
 

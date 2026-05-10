@@ -35,6 +35,10 @@
   pointer-events: none;
 }
 
+.ui-btn__icon {
+  flex-shrink: 0;
+}
+
 .ui-btn__spinner {
   flex-shrink: 0;
   animation: ui-btn-spin 0.7s linear infinite;
@@ -522,7 +526,9 @@
   position: absolute;
   inset: 0;
   border: none;
-  background: rgba(8, 10, 18, 0.58);
+  background: rgba(8, 10, 18, 0.52);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
   cursor: pointer;
 }
 

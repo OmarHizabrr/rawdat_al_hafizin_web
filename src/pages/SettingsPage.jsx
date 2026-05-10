@@ -1,5 +1,6 @@
-import { UserRound } from 'lucide-react'
+import { Ban, Bell, BellOff, Save, Upload, UserRound, Wind, Zap } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
+import { Link } from 'react-router-dom'
 import { ContactPhonesSection } from '../components/ContactPhonesSection.jsx'
 import { ImagePickPreview } from '../components/ImagePickPreview.jsx'
 import { CrossNav } from '../components/CrossNav.jsx'
@@ -26,6 +27,7 @@ import {
   updateMyDisplayName,
   updateMyProfilePhotoFromFile,
 } from '../services/userService.js'
+import { rhHapticLight } from '../utils/haptics.js'
 import { Button, TextField, useToast } from '../ui/index.js'
 import { RhIcon, RH_ICON_STROKE } from '../ui/RhIcon.jsx'
 
@@ -154,6 +156,16 @@ export default function SettingsPage() {
       <header className="rh-settings-header">
         <h1 className="rh-settings-title">الإعدادات</h1>
         <p className="rh-settings-desc">إدارة مظهر المنصة وبيانات العرض في المنصة وحساب Google المرتبط.</p>
+        <p className="rh-settings-desc" style={{ marginTop: 'var(--rh-space-3)' }}>
+          <Link
+            to="/app/profile"
+            className="ui-btn ui-btn--secondary"
+            style={{ display: 'inline-flex', textDecoration: 'none', width: 'fit-content' }}
+          >
+            <RhIcon as={UserRound} size={18} strokeWidth={RH_ICON_STROKE} className="ui-btn__icon" aria-hidden />
+            عرض الملف الشخصي
+          </Link>
+        </p>
         <CrossNav items={settingsCrossItems} className="rh-settings__cross" />
       </header>
 
@@ -196,10 +208,16 @@ export default function SettingsPage() {
                 className={['rh-segment__btn', feelingsFlightMode === FEELINGS_FLIGHT_MODE.OFF ? 'rh-segment__btn--active' : '']
                   .filter(Boolean)
                   .join(' ')}
-                onClick={() => onChangeFeelingsFlightMode(FEELINGS_FLIGHT_MODE.OFF)}
+                onClick={() => {
+                  rhHapticLight()
+                  onChangeFeelingsFlightMode(FEELINGS_FLIGHT_MODE.OFF)
+                }}
                 aria-pressed={feelingsFlightMode === FEELINGS_FLIGHT_MODE.OFF}
               >
-                <span className="rh-segment__label">تعطيل</span>
+                <span className="rh-segment__lead">
+                  <RhIcon as={Ban} size={20} strokeWidth={RH_ICON_STROKE} aria-hidden />
+                  <span className="rh-segment__label">تعطيل</span>
+                </span>
                 <span className="rh-segment__hint">إخفاء الطيور المتحركة من الرئيسية</span>
               </button>
               <button
@@ -207,10 +225,16 @@ export default function SettingsPage() {
                 className={['rh-segment__btn', feelingsFlightMode === FEELINGS_FLIGHT_MODE.CALM ? 'rh-segment__btn--active' : '']
                   .filter(Boolean)
                   .join(' ')}
-                onClick={() => onChangeFeelingsFlightMode(FEELINGS_FLIGHT_MODE.CALM)}
+                onClick={() => {
+                  rhHapticLight()
+                  onChangeFeelingsFlightMode(FEELINGS_FLIGHT_MODE.CALM)
+                }}
                 aria-pressed={feelingsFlightMode === FEELINGS_FLIGHT_MODE.CALM}
               >
-                <span className="rh-segment__label">تخفيف</span>
+                <span className="rh-segment__lead">
+                  <RhIcon as={Wind} size={20} strokeWidth={RH_ICON_STROKE} aria-hidden />
+                  <span className="rh-segment__label">تخفيف</span>
+                </span>
                 <span className="rh-segment__hint">عدد أقل وسرعة أهدأ</span>
               </button>
               <button
@@ -218,10 +242,16 @@ export default function SettingsPage() {
                 className={['rh-segment__btn', feelingsFlightMode === FEELINGS_FLIGHT_MODE.FAST ? 'rh-segment__btn--active' : '']
                   .filter(Boolean)
                   .join(' ')}
-                onClick={() => onChangeFeelingsFlightMode(FEELINGS_FLIGHT_MODE.FAST)}
+                onClick={() => {
+                  rhHapticLight()
+                  onChangeFeelingsFlightMode(FEELINGS_FLIGHT_MODE.FAST)
+                }}
                 aria-pressed={feelingsFlightMode === FEELINGS_FLIGHT_MODE.FAST}
               >
-                <span className="rh-segment__label">تسريع</span>
+                <span className="rh-segment__lead">
+                  <RhIcon as={Zap} size={20} strokeWidth={RH_ICON_STROKE} aria-hidden />
+                  <span className="rh-segment__label">تسريع</span>
+                </span>
                 <span className="rh-segment__hint">حركة أسرع وكثافة أعلى</span>
               </button>
             </div>
@@ -237,10 +267,16 @@ export default function SettingsPage() {
                 className={['rh-segment__btn', notificationsMode === NOTIFICATIONS_MODE.ON ? 'rh-segment__btn--active' : '']
                   .filter(Boolean)
                   .join(' ')}
-                onClick={() => onChangeNotificationsMode(NOTIFICATIONS_MODE.ON)}
+                onClick={() => {
+                  rhHapticLight()
+                  onChangeNotificationsMode(NOTIFICATIONS_MODE.ON)
+                }}
                 aria-pressed={notificationsMode === NOTIFICATIONS_MODE.ON}
               >
-                <span className="rh-segment__label">تشغيل</span>
+                <span className="rh-segment__lead">
+                  <RhIcon as={Bell} size={20} strokeWidth={RH_ICON_STROKE} aria-hidden />
+                  <span className="rh-segment__label">تشغيل</span>
+                </span>
                 <span className="rh-segment__hint">إظهار الإشعارات بشكل طبيعي</span>
               </button>
               <button
@@ -248,10 +284,16 @@ export default function SettingsPage() {
                 className={['rh-segment__btn', notificationsMode === NOTIFICATIONS_MODE.OFF ? 'rh-segment__btn--active' : '']
                   .filter(Boolean)
                   .join(' ')}
-                onClick={() => onChangeNotificationsMode(NOTIFICATIONS_MODE.OFF)}
+                onClick={() => {
+                  rhHapticLight()
+                  onChangeNotificationsMode(NOTIFICATIONS_MODE.OFF)
+                }}
                 aria-pressed={notificationsMode === NOTIFICATIONS_MODE.OFF}
               >
-                <span className="rh-segment__label">إيقاف</span>
+                <span className="rh-segment__lead">
+                  <RhIcon as={BellOff} size={20} strokeWidth={RH_ICON_STROKE} aria-hidden />
+                  <span className="rh-segment__label">إيقاف</span>
+                </span>
                 <span className="rh-segment__hint">إخفاء كل إشعارات المنصة على هذا الجهاز</span>
               </button>
             </div>
@@ -296,7 +338,7 @@ export default function SettingsPage() {
               autoComplete="name"
             />
             <div className="rh-settings-profile-form__actions">
-              <Button type="button" variant="primary" loading={savingName} onClick={onSaveName}>
+              <Button type="button" variant="primary" icon={Save} loading={savingName} onClick={onSaveName}>
                 حفظ الاسم
               </Button>
             </div>
@@ -320,6 +362,7 @@ export default function SettingsPage() {
               <Button
                 type="button"
                 variant="primary"
+                icon={Upload}
                 loading={uploadingPhoto}
                 disabled={!photoDraftFile || clearingPhoto}
                 onClick={() => void uploadPhotoDraft()}

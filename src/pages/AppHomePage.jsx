@@ -9,6 +9,8 @@ import {
   Sparkles,
   Sunrise,
   Bird,
+  UserPlus,
+  X,
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link, useLocation, useSearchParams } from "react-router-dom";
@@ -1256,6 +1258,7 @@ export default function AppHomePage() {
               <div className="rh-home-backlog-confirm__actions">
                 <Button
                   type="button"
+                  icon={CheckCircle2}
                   onClick={async () => {
                     if (!pendingBacklogDay?.ymd) return;
                     await markBacklogDone(pendingBacklogDay.ymd);
@@ -1269,6 +1272,7 @@ export default function AppHomePage() {
                 <Button
                   type="button"
                   variant="ghost"
+                  icon={X}
                   onClick={() => setBacklogConfirmYmd("")}
                   disabled={Boolean(backfillBusyYmd)}
                 >
@@ -1355,6 +1359,7 @@ export default function AppHomePage() {
                 </div>
                 <Button
                   type="button"
+                  icon={UserPlus}
                   loading={joiningGroupId === group.id}
                   disabled={
                     joiningGroupId !== "" && joiningGroupId !== group.id

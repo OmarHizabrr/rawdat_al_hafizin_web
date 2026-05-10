@@ -1,3 +1,4 @@
+import { ExternalLink } from 'lucide-react'
 import { useCallback, useMemo, useState } from 'react'
 import {
   normalizeContactPhones,
@@ -180,7 +181,7 @@ export function ContactPhonesBulkSend({ phones, messageBody, className = '' }) {
       </ul>
 
       <div className="rh-contact-bulk__footer">
-        <Button type="button" variant="primary" loading={opening} disabled={opening} onClick={openChannels}>
+        <Button type="button" variant="primary" icon={ExternalLink} loading={opening} disabled={opening} onClick={openChannels}>
           فتح قنوات الإرسال المختارة
         </Button>
       </div>

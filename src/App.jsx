@@ -34,6 +34,7 @@ const ActivitiesPage = lazy(() => import('./pages/ActivitiesPage.jsx'))
 const ExploreActivitiesPage = lazy(() => import('./pages/ExploreActivitiesPage.jsx'))
 const ReportsPage = lazy(() => import('./pages/ReportsPage.jsx'))
 const SettingsPage = lazy(() => import('./pages/SettingsPage.jsx'))
+const ProfilePage = lazy(() => import('./pages/ProfilePage.jsx'))
 const LeaveRequestPage = lazy(() => import('./pages/LeaveRequestPage.jsx'))
 const CertificatesPage = lazy(() => import('./pages/CertificatesPage.jsx'))
 const StudentFeelingsPage = lazy(() => import('./pages/StudentFeelingsPage.jsx'))
@@ -171,6 +172,7 @@ export default function App() {
                         </PageGuard>
                       }
                     />
+                    <Route path="profile" element={<PageGuard pageId="settings"><ProfilePage /></PageGuard>} />
                     <Route path="settings" element={<PageGuard pageId="settings"><SettingsPage /></PageGuard>} />
                     <Route element={<AdminRoute />}>
                       <Route path="admin" element={<AdminDashboardPage />} />

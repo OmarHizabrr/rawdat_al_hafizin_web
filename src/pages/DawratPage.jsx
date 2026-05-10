@@ -1,4 +1,4 @@
-import { Compass, Pencil, Plus, Trash2, UserPlus, Users } from 'lucide-react'
+import { Compass, Pencil, Plus, Save, Shield, Trash2, UserMinus, UserPlus, Users, X } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Link, useLocation, useSearchParams } from 'react-router-dom'
 import { CrossNav } from '../components/CrossNav.jsx'
@@ -426,8 +426,7 @@ export default function DawratPage() {
           </div>
           {!readOnly && can(PH, 'dawra_create') && (
             <div className="rh-plans__hero-actions">
-              <Button type="button" variant="primary" className="rh-plans__add-btn" onClick={openAdd}>
-                <RhIcon as={Plus} size={18} strokeWidth={RH_ICON_STROKE} />
+              <Button type="button" variant="primary" className="rh-plans__add-btn" icon={Plus} onClick={openAdd}>
                 إضافة دورة
               </Button>
             </div>
@@ -446,11 +445,11 @@ export default function DawratPage() {
               type="button"
               variant="secondary"
               className="rh-plans__join-btn"
+              icon={UserPlus}
               loading={joinBusy}
               disabled={!joinId.trim() || !viewUserId}
               onClick={handleJoin}
             >
-              {!joinBusy && <RhIcon as={UserPlus} size={18} strokeWidth={RH_ICON_STROKE} />}
               انضمام
             </Button>
           </div>
@@ -519,20 +518,17 @@ export default function DawratPage() {
                 </p>
                 <div className="rh-plans__saved-actions">
                   {dawraCanManageMembers(d) && can(PH, 'dawra_card_members') && (
-                    <Button type="button" variant="secondary" size="sm" onClick={() => setMembersModal(d)}>
-                      <RhIcon as={Users} size={16} strokeWidth={RH_ICON_STROKE} />
+                    <Button type="button" variant="secondary" size="sm" icon={Users} onClick={() => setMembersModal(d)}>
                       الأعضاء
                     </Button>
                   )}
                   {dawraCanEdit(d) && can(PH, 'dawra_card_edit') && (
-                    <Button type="button" variant="ghost" size="sm" onClick={() => openEdit(d)}>
-                      <RhIcon as={Pencil} size={16} strokeWidth={RH_ICON_STROKE} />
+                    <Button type="button" variant="ghost" size="sm" icon={Pencil} onClick={() => openEdit(d)}>
                       تعديل
                     </Button>
                   )}
                   {can(PH, 'dawra_card_delete_leave') && (
-                    <Button type="button" variant="ghost" size="sm" onClick={() => setDeleting(d)}>
-                      <RhIcon as={Trash2} size={16} strokeWidth={RH_ICON_STROKE} />
+                    <Button type="button" variant="ghost" size="sm" icon={Trash2} onClick={() => setDeleting(d)}>
                       {leavingUserDeletesWholeGroup(viewUserId, d.ownerUid, d.dawraRole, DAWRA_MEMBER_ROLES)
                         ? 'حذف'
                         : 'مغادرة'}
@@ -649,20 +645,19 @@ export default function DawratPage() {
                   variant="ghost"
                   size="sm"
                   className="rh-bullet-list-editor__remove"
+                  icon={Trash2}
                   onClick={() => setBenefitRows((prev) => prev.filter((r) => r.id !== row.id))}
                   aria-label="حذف النقطة"
-                >
-                  <RhIcon as={Trash2} size={18} strokeWidth={RH_ICON_STROKE} />
-                </Button>
+                />
               </div>
             ))}
             <Button
               type="button"
               variant="secondary"
               size="sm"
+              icon={Plus}
               onClick={() => setBenefitRows((prev) => [...prev, newBulletRow()])}
             >
-              <RhIcon as={Plus} size={18} strokeWidth={RH_ICON_STROKE} />
               إضافة نقطة
             </Button>
           </div>
@@ -684,28 +679,27 @@ export default function DawratPage() {
                   variant="ghost"
                   size="sm"
                   className="rh-bullet-list-editor__remove"
+                  icon={Trash2}
                   onClick={() => setConditionRows((prev) => prev.filter((r) => r.id !== row.id))}
                   aria-label="حذف الشرط"
-                >
-                  <RhIcon as={Trash2} size={18} strokeWidth={RH_ICON_STROKE} />
-                </Button>
+                />
               </div>
             ))}
             <Button
               type="button"
               variant="secondary"
               size="sm"
+              icon={Plus}
               onClick={() => setConditionRows((prev) => [...prev, newBulletRow()])}
             >
-              <RhIcon as={Plus} size={18} strokeWidth={RH_ICON_STROKE} />
               إضافة شرط
             </Button>
           </div>
           <div className="rh-plans__actions">
-            <Button type="button" variant="primary" onClick={handleSave} loading={saveBusy}>
+            <Button type="button" variant="primary" icon={Save} onClick={handleSave} loading={saveBusy}>
               حفظ
             </Button>
-            <Button type="button" variant="ghost" onClick={() => setEditorOpen(false)} disabled={saveBusy}>
+            <Button type="button" variant="ghost" icon={X} onClick={() => setEditorOpen(false)} disabled={saveBusy}>
               إلغاء
             </Button>
           </div>
@@ -728,13 +722,13 @@ export default function DawratPage() {
             : 'مغادرة الدورة من قائمتك فقط؟'}
         </p>
         <div className="rh-plans__actions">
-          <Button type="button" variant="danger" loading={deleteBusy} onClick={doDelete}>
+          <Button type="button" variant="danger" icon={Trash2} loading={deleteBusy} onClick={doDelete}>
             {deleting &&
             leavingUserDeletesWholeGroup(viewUserId, deleting.ownerUid, deleting.dawraRole, DAWRA_MEMBER_ROLES)
               ? 'نعم، حذف للجميع'
               : 'نعم، مغادرة'}
           </Button>
-          <Button type="button" variant="ghost" disabled={deleteBusy} onClick={() => setDeleting(null)}>
+          <Button type="button" variant="ghost" icon={X} disabled={deleteBusy} onClick={() => setDeleting(null)}>
             إلغاء
           </Button>
         </div>
@@ -831,6 +825,7 @@ export default function DawratPage() {
                               type="button"
                               size="sm"
                               variant="secondary"
+                              icon={Shield}
                               loading={memberRowBusy?.uid === row.userId && memberRowBusy?.kind === 'admin'}
                               disabled={Boolean(memberRowBusy)}
                               onClick={async () => {
@@ -858,6 +853,7 @@ export default function DawratPage() {
                               type="button"
                               size="sm"
                               variant="ghost"
+                              icon={UserMinus}
                               loading={memberRowBusy?.uid === row.userId && memberRowBusy?.kind === 'remove'}
                               disabled={Boolean(memberRowBusy)}
                               onClick={async () => {

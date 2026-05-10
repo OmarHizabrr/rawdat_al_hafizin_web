@@ -1,4 +1,4 @@
-import { ArrowRight, Clock3, Plus } from 'lucide-react'
+import { ArrowRight, Lock, Plus, Save, X } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { CrossNav } from '../components/CrossNav.jsx'
@@ -125,8 +125,7 @@ export default function HalakaSessionsPage() {
         </div>
         <p className="rh-settings-card__subtitle">فتح جلسة من النافذة المنبثقة، ثم إدارة التحضير والتغييب من صفحة مستقلة لكل جلسة.</p>
         <div className="rh-plans__actions">
-          <Button type="button" variant="primary" disabled={!canWrite} onClick={() => setSessionModalOpen(true)}>
-            <RhIcon as={Plus} size={16} strokeWidth={RH_ICON_STROKE} />
+          <Button type="button" variant="primary" icon={Plus} disabled={!canWrite} onClick={() => setSessionModalOpen(true)}>
             إضافة جلسة
           </Button>
         </div>
@@ -165,6 +164,7 @@ export default function HalakaSessionsPage() {
           <Button
             type="button"
             variant="primary"
+            icon={Save}
             loading={saving}
             disabled={!canWrite}
             onClick={async () => {
@@ -192,7 +192,7 @@ export default function HalakaSessionsPage() {
           >
             حفظ وفتح الجلسة
           </Button>
-          <Button type="button" variant="ghost" disabled={saving} onClick={() => setSessionModalOpen(false)}>
+          <Button type="button" variant="ghost" icon={X} disabled={saving} onClick={() => setSessionModalOpen(false)}>
             إلغاء
           </Button>
         </div>
@@ -236,6 +236,7 @@ export default function HalakaSessionsPage() {
                       size="sm"
                       variant="ghost"
                       className="rh-halaka-sessions__action-btn"
+                      icon={Lock}
                       loading={closingId === s.id}
                       disabled={!canWrite}
                       onClick={async () => {
@@ -249,7 +250,6 @@ export default function HalakaSessionsPage() {
                         }
                       }}
                     >
-                      <RhIcon as={Clock3} size={14} strokeWidth={RH_ICON_STROKE} />
                       إغلاق
                     </Button>
                   )}

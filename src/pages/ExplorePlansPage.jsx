@@ -1,4 +1,4 @@
-import { Compass, Printer, UserPlus } from 'lucide-react'
+import { Check, Compass, Printer, UserPlus } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import { useAuth } from '../context/useAuth.js'
@@ -180,8 +180,7 @@ export default function ExplorePlansPage() {
             <CrossNav items={crossItems} className="rh-plans__cross" />
           </div>
           <div className="rh-explore-plans__hero-aside no-print">
-            <Button type="button" variant="secondary" className="rh-explore-plans__print-btn" onClick={onPrint}>
-              <RhIcon as={Printer} size={18} strokeWidth={RH_ICON_STROKE} />
+            <Button type="button" variant="secondary" className="rh-explore-plans__print-btn" icon={Printer} onClick={onPrint}>
               {str('layout.print_btn')}
             </Button>
             <Link className="ui-btn ui-btn--secondary rh-explore-plans__to-mine" to={appLink('/app/plans')}>
@@ -229,11 +228,11 @@ export default function ExplorePlansPage() {
           <Button
             type="button"
             variant="primary"
+            icon={UserPlus}
             onClick={handleJoinById}
             loading={joinByIdLoading}
             disabled={!joinId.trim() || !viewUserId || joinByIdLoading}
           >
-            {!joinByIdLoading && <RhIcon as={UserPlus} size={18} strokeWidth={RH_ICON_STROKE} />}
             انضمام
           </Button>
         </div>
@@ -284,6 +283,7 @@ export default function ExplorePlansPage() {
                           type="button"
                           variant={inPlan ? 'secondary' : 'primary'}
                           size="sm"
+                          icon={inPlan ? Check : UserPlus}
                           loading={joiningCardId === p.id}
                           disabled={inPlan || joiningCardId !== null}
                           onClick={() => !inPlan && handleJoinCard(p.id)}

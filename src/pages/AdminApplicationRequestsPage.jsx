@@ -1,4 +1,4 @@
-import { CheckCircle2, Download, Trash2, XCircle } from 'lucide-react'
+import { CheckCircle2, Download, Pencil, Save, Trash2, X, XCircle } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { CrossNav } from '../components/CrossNav.jsx'
@@ -14,7 +14,6 @@ import {
 } from '../services/profileRequestService.js'
 import { downloadProfileRequestsCsv } from '../utils/downloadProfileRequestsCsv.js'
 import { Button, Modal, NumberStepField, SearchField, SearchableSelect, TextField, useToast } from '../ui/index.js'
-import { RhIcon, RH_ICON_STROKE } from '../ui/RhIcon.jsx'
 
 const GENDER_OPTIONS = [
   { value: 'male', label: 'ذكر' },
@@ -277,11 +276,11 @@ export default function AdminApplicationRequestsPage() {
             <Button
               type="button"
               variant="secondary"
+              icon={Download}
               onClick={onSaveCsv}
               disabled={filtered.length === 0}
               title="يصدّر الطلبات الظاهرة في القائمة حالياً (إن وُجد بحث، يُصدَّر المطابقة فقط)"
             >
-              <RhIcon as={Download} size={18} strokeWidth={RH_ICON_STROKE} />
               حفظ الطلبات (Excel / CSV)
             </Button>
             <p className="rh-admin-applications__save-hint">
@@ -328,6 +327,7 @@ export default function AdminApplicationRequestsPage() {
                 type="button"
                 size="sm"
                 variant="secondary"
+                icon={Pencil}
                 disabled={busyId === r.userId}
                 onClick={() => openEdit(r)}
               >
@@ -337,34 +337,34 @@ export default function AdminApplicationRequestsPage() {
                 type="button"
                 size="sm"
                 variant="primary"
+                icon={CheckCircle2}
                 loading={busyId === r.userId}
                 onClick={() => onApprove(r)}
               >
-                <RhIcon as={CheckCircle2} size={16} strokeWidth={RH_ICON_STROKE} />
                 قبول
               </Button>
               <Button
                 type="button"
                 size="sm"
                 variant="ghost"
+                icon={XCircle}
                 disabled={busyId === r.userId}
                 onClick={() => {
                   setRejectingRow(r)
                   setRejectReason(r.statusMessage || '')
                 }}
               >
-                <RhIcon as={XCircle} size={16} strokeWidth={RH_ICON_STROKE} />
                 رفض
               </Button>
               <Button
                 type="button"
                 size="sm"
                 variant="danger"
+                icon={Trash2}
                 disabled={busyId === r.userId}
                 onClick={() => setDeleteTarget(r)}
                 title="حذف سجل طلب الالتحاق من قاعدة البيانات"
               >
-                <RhIcon as={Trash2} size={16} strokeWidth={RH_ICON_STROKE} />
                 حذف الطلب
               </Button>
               <Link to={`/app/plans?uid=${encodeURIComponent(r.userId)}`} className="ui-btn ui-btn--secondary ui-btn--sm">
@@ -403,13 +403,14 @@ export default function AdminApplicationRequestsPage() {
           <Button
             type="button"
             variant="danger"
+            icon={Trash2}
             onClick={onConfirmDelete}
             loading={busyId === deleteTarget?.userId}
             disabled={Boolean(busyId && busyId !== deleteTarget?.userId)}
           >
             نعم، حذف نهائياً
           </Button>
-          <Button type="button" variant="ghost" onClick={() => setDeleteTarget(null)} disabled={Boolean(busyId)}>
+          <Button type="button" variant="ghost" icon={X} onClick={() => setDeleteTarget(null)} disabled={Boolean(busyId)}>
             إلغاء
           </Button>
         </div>
@@ -509,12 +510,13 @@ export default function AdminApplicationRequestsPage() {
           </>
         ) : null}
         <div className="rh-admin-users__modal-actions">
-          <Button type="button" variant="primary" loading={busyId === editingRow?.userId} onClick={onSaveEdit}>
+          <Button type="button" variant="primary" icon={Save} loading={busyId === editingRow?.userId} onClick={onSaveEdit}>
             حفظ التعديلات
           </Button>
           <Button
             type="button"
             variant="ghost"
+            icon={X}
             disabled={Boolean(busyId)}
             onClick={() => {
               setEditingRow(null)
@@ -542,10 +544,10 @@ export default function AdminApplicationRequestsPage() {
           placeholder="مثال: يرجى استيفاء شرط الحفظ كاملاً ثم إعادة التقديم."
         />
         <div className="rh-admin-users__modal-actions">
-          <Button type="button" variant="danger" onClick={onReject} loading={busyId === rejectingRow?.userId}>
+          <Button type="button" variant="danger" icon={XCircle} onClick={onReject} loading={busyId === rejectingRow?.userId}>
             تأكيد الرفض
           </Button>
-          <Button type="button" variant="ghost" onClick={() => setRejectingRow(null)}>
+          <Button type="button" variant="ghost" icon={X} onClick={() => setRejectingRow(null)}>
             إلغاء
           </Button>
         </div>

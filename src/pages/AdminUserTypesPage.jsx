@@ -1,4 +1,4 @@
-import { Shield, Trash2 } from 'lucide-react'
+import { Plus, Save, Shield, Trash2, X } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 import { useSiteContent } from '../context/useSiteContent.js'
 import { useAuth } from '../context/useAuth.js'
@@ -179,7 +179,7 @@ export default function AdminUserTypesPage() {
         <aside className="rh-admin-user-types__list card">
           <div className="rh-admin-user-types__list-head">
             <h2 className="rh-admin-user-types__h2">الأنواع</h2>
-            <Button type="button" size="sm" variant="secondary" onClick={onCreate}>
+            <Button type="button" size="sm" variant="secondary" icon={Plus} onClick={onCreate}>
               + نوع جديد
             </Button>
           </div>
@@ -245,7 +245,7 @@ export default function AdminUserTypesPage() {
               </div>
 
               <div className="rh-admin-user-types__actions-row">
-                <Button type="button" variant="primary" onClick={onSave} loading={saving} disabled={saving}>
+                <Button type="button" variant="primary" icon={Save} onClick={onSave} loading={saving} disabled={saving}>
                   حفظ
                 </Button>
                 {selected && (
@@ -253,9 +253,9 @@ export default function AdminUserTypesPage() {
                     type="button"
                     variant="ghost"
                     className="rh-admin-user-types__danger"
+                    icon={Trash2}
                     onClick={() => setDeleteTarget(selected)}
                   >
-                    <RhIcon as={Trash2} size={18} strokeWidth={RH_ICON_STROKE} />
                     حذف النوع
                   </Button>
                 )}
@@ -332,10 +332,10 @@ export default function AdminUserTypesPage() {
           المستخدمين.
         </p>
         <div className="rh-admin-users__modal-actions">
-          <Button type="button" variant="danger" loading={busyDelete} onClick={confirmDelete}>
+          <Button type="button" variant="danger" icon={Trash2} loading={busyDelete} onClick={confirmDelete}>
             حذف
           </Button>
-          <Button type="button" variant="ghost" disabled={busyDelete} onClick={() => setDeleteTarget(null)}>
+          <Button type="button" variant="ghost" icon={X} disabled={busyDelete} onClick={() => setDeleteTarget(null)}>
             إلغاء
           </Button>
         </div>
