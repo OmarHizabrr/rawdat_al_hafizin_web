@@ -49,7 +49,10 @@ import {
   joinGroup,
   subscribeJoinGroups,
 } from "../services/joinGroupsService.js";
-import { PROFILE_REQUEST_STATUS } from "../services/profileRequestService.js";
+import {
+  PROFILE_REQUEST_STATUS,
+  loadMyProfileRequest,
+} from "../services/profileRequestService.js";
 import { hijriYmdToLocalNoonDate, prevHijriYmd } from "../utils/hijriDates.js";
 import {
   isoFromLocalYmd,
@@ -384,8 +387,16 @@ export default function AppHomePage() {
   useEffect(() => {
     if (!actingAsUser || !contextUserId) return undefined;
     let cancelled = false;
-    firestoreApi.getData(firestoreApi.getUserDoc(contextUserId)).then((d) => {
-      if (!cancelled) setSubjectProfile(d ? { ...d } : {});
+    Promise.all([
+      firestoreApi.getData(firestoreApi.getUserDoc(contextUserId)),
+      loadMyProfileRequest(contextUserId),
+    ]).then(([d, req]) => {
+      if (cancelled) return;
+      const base = d ? { ...d } : {};
+      if (!String(base.gender || "").trim() && req?.gender) {
+        base.gender = req.gender;
+      }
+      setSubjectProfile(base);
     });
     return () => {
       cancelled = true;

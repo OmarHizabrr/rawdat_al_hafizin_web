@@ -50,11 +50,15 @@ export function AuthProvider({ children }) {
             (row) => {
               setUser((prev) => {
                 if (!prev || prev.uid !== u.uid) return prev
-                return {
+                const next = {
                   ...prev,
                   profileRequestStatus: row?.status || 'none',
                   profileRequestReviewedAt: row?.reviewedAt || null,
                 }
+                if (!prev.gender && row?.gender) {
+                  next.gender = row.gender
+                }
+                return next
               })
             },
             () => {

@@ -58,6 +58,8 @@ export async function upsertMyProfileRequest(user, payload) {
   }
 
   const ref = firestoreApi.getUserProfileRequestDoc(userId)
+  const genderNorm = payload?.gender === 'female' ? 'female' : 'male'
+
   await firestoreApi.setData({
     docRef: ref,
     data: {
@@ -71,7 +73,7 @@ export async function upsertMyProfileRequest(user, payload) {
       city: String(payload?.city || '').trim(),
       age: Math.max(7, Math.min(150, Number(payload?.age) || 7)),
       email: String(user?.email || payload?.email || '').trim(),
-      gender: payload?.gender === 'female' ? 'female' : 'male',
+      gender: genderNorm,
       educationLevel: String(payload?.educationLevel || '').trim(),
       occupation: String(payload?.occupation || '').trim(),
       quranMemorizedJuz: juz,
@@ -85,6 +87,12 @@ export async function upsertMyProfileRequest(user, payload) {
       reviewerName: '',
     },
     merge: true,
+    userData: user || {},
+  })
+
+  await firestoreApi.updateData({
+    docRef: firestoreApi.getUserDoc(userId),
+    data: { gender: genderNorm },
     userData: user || {},
   })
 }
@@ -143,6 +151,14 @@ export async function reviewProfileRequest(actorUser, targetUserId, nextStatus, 
   })
   if (nextStatus === PROFILE_REQUEST_STATUS.APPROVED) {
     await adminApplyRoleBasedPermissionProfile(actorUser, targetUserId)
+    const reqRow = await loadMyProfileRequest(targetUserId)
+    if (reqRow?.gender === 'male' || reqRow?.gender === 'female') {
+      await firestoreApi.updateData({
+        docRef: firestoreApi.getUserDoc(targetUserId),
+        data: { gender: reqRow.gender },
+        userData: actorUser,
+      })
+    }
   }
 }
 
