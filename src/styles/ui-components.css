@@ -14,6 +14,8 @@
   border-radius: 0.9rem;
   border: 1px solid transparent;
   cursor: pointer;
+  user-select: none;
+  -webkit-user-select: none;
   transition:
     background 0.2s ease,
     color 0.2s ease,
@@ -37,11 +39,19 @@
 
 .ui-btn__icon {
   flex-shrink: 0;
+  pointer-events: none;
 }
 
 .ui-btn__spinner {
   flex-shrink: 0;
   animation: ui-btn-spin 0.7s linear infinite;
+  pointer-events: none;
+}
+
+/* يبقي مؤشر اليد فوق النص والأيقونات بدل مؤشر النص أو السهم الافتراضي */
+.ui-btn .rh-lucide {
+  cursor: inherit;
+  pointer-events: none;
 }
 
 @keyframes ui-btn-spin {
