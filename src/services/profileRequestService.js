@@ -50,6 +50,12 @@ export async function loadMyProfileRequest(userId) {
 export async function upsertMyProfileRequest(user, payload) {
   const userId = user?.uid
   if (!userId) return
+  const genderNorm = payload?.gender === 'female' ? 'female' : payload?.gender === 'male' ? 'male' : ''
+  if (!genderNorm) {
+    const e = new Error('GENDER_REQUIRED')
+    e.code = 'GENDER_REQUIRED'
+    throw e
+  }
   const juz = Math.max(0, Math.min(30, Number(payload?.quranMemorizedJuz) || 0))
   if (juz < 30) {
     const e = new Error('QURAN_MEMORIZATION_REQUIREMENT_NOT_MET')
@@ -58,7 +64,6 @@ export async function upsertMyProfileRequest(user, payload) {
   }
 
   const ref = firestoreApi.getUserProfileRequestDoc(userId)
-  const genderNorm = payload?.gender === 'female' ? 'female' : 'male'
 
   await firestoreApi.setData({
     docRef: ref,
@@ -95,6 +100,40 @@ export async function upsertMyProfileRequest(user, payload) {
     data: { gender: genderNorm },
     userData: user || {},
   })
+}
+
+export async function adminUpdateProfileRequestFields(actorUser, targetUserId, payload = {}) {
+  if (!actorUser?.uid || !targetUserId) return
+  const nextGender = payload?.gender === 'female' ? 'female' : payload?.gender === 'male' ? 'male' : ''
+  const data = {
+    fullName: String(payload?.fullName || '').trim(),
+    phone: String(payload?.phone || '').trim(),
+    phoneCountry: String(payload?.phoneCountry || '').trim(),
+    phoneDialCode: String(payload?.phoneDialCode || '').trim(),
+    nationality: String(payload?.nationality || '').trim(),
+    permanentResidence: String(payload?.permanentResidence || '').trim(),
+    city: String(payload?.city || '').trim(),
+    age: Math.max(7, Math.min(150, Number(payload?.age) || 7)),
+    gender: nextGender || null,
+    educationLevel: String(payload?.educationLevel || '').trim(),
+    occupation: String(payload?.occupation || '').trim(),
+    quranMemorizedJuz: Math.max(0, Math.min(30, Number(payload?.quranMemorizedJuz) || 0)),
+    reviewedAt: new Date().toISOString(),
+    reviewerUid: actorUser.uid,
+    reviewerName: String(actorUser.displayName || actorUser.email || '').trim(),
+  }
+  await firestoreApi.updateData({
+    docRef: firestoreApi.getUserProfileRequestDoc(targetUserId),
+    data,
+    userData: actorUser,
+  })
+  if (nextGender) {
+    await firestoreApi.updateData({
+      docRef: firestoreApi.getUserDoc(targetUserId),
+      data: { gender: nextGender },
+      userData: actorUser,
+    })
+  }
 }
 
 export function subscribeMyProfileRequest(userId, onNext, onError) {

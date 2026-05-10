@@ -96,7 +96,7 @@ function defaultForm(user) {
     city: '',
     age: 18,
     email: String(user?.email || '').trim(),
-    gender: 'male',
+    gender: '',
     educationLevel: '',
     occupation: '',
     quranMemorizedJuz: 30,
@@ -194,6 +194,10 @@ export default function ApplicationRequestPage() {
       toast.warning('يرجى إدخال الوظيفة (حقل إجباري).', 'تنبيه')
       return
     }
+    if (form.gender !== 'male' && form.gender !== 'female') {
+      toast.warning('يرجى تحديد الجنس قبل إرسال الطلب.', 'تنبيه')
+      return
+    }
 
     if (Number(form.quranMemorizedJuz) < 30) {
       toast.info(
@@ -213,6 +217,10 @@ export default function ApplicationRequestPage() {
       setSubmitSuccess(true)
       toast.success('تم إرسال طلبك بنجاح، وسيتم مراجعته قريباً بإذن الله.', 'تم')
     } catch (e) {
+      if (e?.code === 'GENDER_REQUIRED') {
+        toast.warning('يجب تحديد الجنس قبل إرسال الطلب.', 'تنبيه')
+        return
+      }
       if (e?.code === 'QURAN_MEMORIZATION_REQUIREMENT_NOT_MET') {
         toast.info(
           'نعتذر، الشرط الحالي للقبول هو إتمام حفظ 30 جزءاً. عند إتمام الشرط يمكنك التقديم مباشرة.',
@@ -281,10 +289,11 @@ export default function ApplicationRequestPage() {
           <TextField label="البريد الإلكتروني" value={user?.email || form.email} disabled />
           <SearchableSelect
             label="الجنس"
+            required
             options={GENDER_OPTIONS}
             value={form.gender}
             onChange={(v) => onChange('gender', v)}
-            placeholder="اختر الجنس"
+            placeholder="— اختر الجنس —"
             searchPlaceholder="ابحث..."
           />
           <SearchableSelect

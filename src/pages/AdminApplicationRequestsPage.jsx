@@ -3,16 +3,23 @@ import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { CrossNav } from '../components/CrossNav.jsx'
 import { useAuth } from '../context/useAuth.js'
+import { COUNTRY_DIAL_OPTIONS_AR, COUNTRY_OPTIONS_AR } from '../data/countriesAr.js'
 import { useSiteContent } from '../context/useSiteContent.js'
 import {
+  adminUpdateProfileRequestFields,
   deleteProfileRequest,
   PROFILE_REQUEST_STATUS,
   reviewProfileRequest,
   subscribeAllProfileRequests,
 } from '../services/profileRequestService.js'
 import { downloadProfileRequestsCsv } from '../utils/downloadProfileRequestsCsv.js'
-import { Button, Modal, SearchField, TextField, useToast } from '../ui/index.js'
+import { Button, Modal, NumberStepField, SearchField, SearchableSelect, TextField, useToast } from '../ui/index.js'
 import { RhIcon, RH_ICON_STROKE } from '../ui/RhIcon.jsx'
+
+const GENDER_OPTIONS = [
+  { value: 'male', label: 'ذكر' },
+  { value: 'female', label: 'أنثى' },
+]
 
 export default function AdminApplicationRequestsPage() {
   const { user } = useAuth()
@@ -25,6 +32,8 @@ export default function AdminApplicationRequestsPage() {
   const [rejectingRow, setRejectingRow] = useState(null)
   const [rejectReason, setRejectReason] = useState('')
   const [deleteTarget, setDeleteTarget] = useState(null)
+  const [editingRow, setEditingRow] = useState(null)
+  const [editForm, setEditForm] = useState(null)
 
   useEffect(() => {
     document.title = `طلبات الالتحاق — ${branding.siteTitle}`
@@ -104,6 +113,47 @@ export default function AdminApplicationRequestsPage() {
     }
     if (res.ok) {
       toast.success('تم تنزيل ملف الطلبات (CSV) إلى جهازك.', 'تم')
+    }
+  }
+
+  const openEdit = (row) => {
+    setEditingRow(row)
+    setEditForm({
+      fullName: row?.fullName || '',
+      phone: row?.phone || '',
+      phoneCountry: row?.phoneCountry || 'SA',
+      phoneDialCode: row?.phoneDialCode || '+966',
+      nationality: row?.nationality || '',
+      permanentResidence: row?.permanentResidence || '',
+      city: row?.city || '',
+      age: Number(row?.age) || 18,
+      gender: row?.gender === 'female' ? 'female' : row?.gender === 'male' ? 'male' : '',
+      educationLevel: row?.educationLevel || '',
+      occupation: row?.occupation || '',
+      quranMemorizedJuz: Math.max(0, Math.min(30, Number(row?.quranMemorizedJuz) || 0)),
+    })
+  }
+
+  const onSaveEdit = async () => {
+    if (!user?.uid || !editingRow?.userId || !editForm) return
+    if (!String(editForm.fullName || '').trim()) {
+      toast.warning('الاسم مطلوب.', 'تنبيه')
+      return
+    }
+    if (editForm.gender !== 'male' && editForm.gender !== 'female') {
+      toast.warning('حدد الجنس بشكل صحيح (ذكر/أنثى).', 'تنبيه')
+      return
+    }
+    setBusyId(editingRow.userId)
+    try {
+      await adminUpdateProfileRequestFields(user, editingRow.userId, editForm)
+      toast.success('تم تحديث بيانات الطلب.', 'تم')
+      setEditingRow(null)
+      setEditForm(null)
+    } catch {
+      toast.warning('تعذّر حفظ التعديلات.', 'تنبيه')
+    } finally {
+      setBusyId('')
     }
   }
 
@@ -277,6 +327,15 @@ export default function AdminApplicationRequestsPage() {
               <Button
                 type="button"
                 size="sm"
+                variant="secondary"
+                disabled={busyId === r.userId}
+                onClick={() => openEdit(r)}
+              >
+                تعديل البيانات
+              </Button>
+              <Button
+                type="button"
+                size="sm"
                 variant="primary"
                 loading={busyId === r.userId}
                 onClick={() => onApprove(r)}
@@ -351,6 +410,117 @@ export default function AdminApplicationRequestsPage() {
             نعم، حذف نهائياً
           </Button>
           <Button type="button" variant="ghost" onClick={() => setDeleteTarget(null)} disabled={Boolean(busyId)}>
+            إلغاء
+          </Button>
+        </div>
+      </Modal>
+
+      <Modal
+        open={Boolean(editingRow && editForm)}
+        title="تعديل بيانات الطلب"
+        onClose={() => {
+          if (!busyId) {
+            setEditingRow(null)
+            setEditForm(null)
+          }
+        }}
+        size="lg"
+      >
+        {editForm ? (
+          <>
+            <TextField
+              label="الاسم الرباعي"
+              value={editForm.fullName}
+              onChange={(e) => setEditForm((prev) => ({ ...prev, fullName: e.target.value }))}
+              required
+            />
+            <SearchableSelect
+              label="مفتاح الدولة"
+              options={COUNTRY_DIAL_OPTIONS_AR}
+              value={editForm.phoneCountry}
+              onChange={(v) => {
+                const selected = COUNTRY_DIAL_OPTIONS_AR.find((opt) => opt.value === v)
+                setEditForm((prev) => ({
+                  ...prev,
+                  phoneCountry: v,
+                  phoneDialCode: selected?.dialCode || '',
+                }))
+              }}
+              placeholder="اختر الدولة ومفتاحها"
+              searchPlaceholder="ابحث عن الدولة..."
+            />
+            <TextField
+              label="رقم الهاتف"
+              value={editForm.phone}
+              onChange={(e) => setEditForm((prev) => ({ ...prev, phone: e.target.value }))}
+              placeholder="مثال: +9665xxxxxxx"
+            />
+            <SearchableSelect
+              label="الجنسية"
+              options={COUNTRY_OPTIONS_AR}
+              value={editForm.nationality}
+              onChange={(v) => setEditForm((prev) => ({ ...prev, nationality: v }))}
+              placeholder="اختر الجنسية"
+              searchPlaceholder="ابحث عن دولة..."
+            />
+            <TextField
+              label="مكان الإقامة الدائم"
+              value={editForm.permanentResidence}
+              onChange={(e) => setEditForm((prev) => ({ ...prev, permanentResidence: e.target.value }))}
+            />
+            <TextField
+              label="المدينة/المحافظة"
+              value={editForm.city}
+              onChange={(e) => setEditForm((prev) => ({ ...prev, city: e.target.value }))}
+            />
+            <NumberStepField
+              label="العمر"
+              value={editForm.age}
+              min={7}
+              max={150}
+              onChange={(v) => setEditForm((prev) => ({ ...prev, age: v }))}
+            />
+            <SearchableSelect
+              label="الجنس"
+              required
+              options={GENDER_OPTIONS}
+              value={editForm.gender}
+              onChange={(v) => setEditForm((prev) => ({ ...prev, gender: v }))}
+              placeholder="— اختر الجنس —"
+              searchPlaceholder="ابحث..."
+            />
+            <TextField
+              label="المستوى التعليمي"
+              value={editForm.educationLevel}
+              onChange={(e) => setEditForm((prev) => ({ ...prev, educationLevel: e.target.value }))}
+            />
+            <TextField
+              label="الوظيفة"
+              value={editForm.occupation}
+              onChange={(e) => setEditForm((prev) => ({ ...prev, occupation: e.target.value }))}
+            />
+            <NumberStepField
+              label="مقدار الحفظ (عدد الأجزاء)"
+              value={editForm.quranMemorizedJuz}
+              min={0}
+              max={30}
+              onChange={(v) => setEditForm((prev) => ({ ...prev, quranMemorizedJuz: v }))}
+            />
+          </>
+        ) : null}
+        <div className="rh-admin-users__modal-actions">
+          <Button type="button" variant="primary" loading={busyId === editingRow?.userId} onClick={onSaveEdit}>
+            حفظ التعديلات
+          </Button>
+          <Button
+            type="button"
+            variant="ghost"
+            disabled={Boolean(busyId)}
+            onClick={() => {
+              setEditingRow(null)
+              setEditForm(null)
+            }}
+          >
             إلغاء
           </Button>
         </div>
