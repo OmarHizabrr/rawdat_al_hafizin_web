@@ -32,9 +32,14 @@ export function ProtectedRoute() {
   const onWelcomePage = location.pathname === '/app/welcome'
   const approved = status === PROFILE_REQUEST_STATUS.APPROVED
   const applicationReviewAfterLogout = hasApplicationReviewSessionFlag()
+  const atAppHome = location.pathname.replace(/\/$/, '') === '/app'
 
   if (isStudent && !approved && !onApplicationPage && !onWelcomePage) {
     return <Navigate to="/app/application" replace state={{ from: location }} />
+  }
+
+  if (isStudent && approved && applicationReviewAfterLogout && atAppHome) {
+    return <Navigate to="/app/application" replace />
   }
 
   if (isStudent && approved && onApplicationPage && !applicationReviewAfterLogout) {

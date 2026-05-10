@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom'
 import { CrossNav } from '../components/CrossNav.jsx'
 import { useAuth } from '../context/useAuth.js'
 import { COUNTRY_DIAL_OPTIONS_AR, COUNTRY_OPTIONS_AR } from '../data/countriesAr.js'
+import { getQuranMemorizedJuzOptions } from '../data/quranJuzOptionsAr.js'
 import { useSiteContent } from '../context/useSiteContent.js'
 import {
   adminUpdateProfileRequestFields,
@@ -45,6 +46,8 @@ export default function AdminApplicationRequestsPage() {
     )
     return () => unsub()
   }, [])
+
+  const quranJuzAdminOptions = useMemo(() => getQuranMemorizedJuzOptions({ includeZero: true }), [])
 
   const statusCounts = useMemo(() => {
     const out = {
@@ -500,12 +503,21 @@ export default function AdminApplicationRequestsPage() {
               value={editForm.occupation}
               onChange={(e) => setEditForm((prev) => ({ ...prev, occupation: e.target.value }))}
             />
-            <NumberStepField
+            <SearchableSelect
+              className="rh-quran-juz-select"
               label="مقدار الحفظ (عدد الأجزاء)"
-              value={editForm.quranMemorizedJuz}
-              min={0}
-              max={30}
+              hint="قائمة الأجزاء الثلاثين مع مدى كل جزء في المصحف وعدد السور التي يمر بها."
+              options={quranJuzAdminOptions}
+              value={
+                Number.isFinite(Number(editForm.quranMemorizedJuz)) &&
+                Number(editForm.quranMemorizedJuz) >= 0 &&
+                Number(editForm.quranMemorizedJuz) <= 30
+                  ? Number(editForm.quranMemorizedJuz)
+                  : 0
+              }
               onChange={(v) => setEditForm((prev) => ({ ...prev, quranMemorizedJuz: v }))}
+              placeholder="اختر عدد الأجزاء"
+              searchPlaceholder="بحث برقم الجزء أو السورة…"
             />
           </>
         ) : null}

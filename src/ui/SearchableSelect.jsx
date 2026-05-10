@@ -32,10 +32,18 @@ export function SearchableSelect({
 
   const selected = useMemo(() => options.find((o) => o.value === value) ?? null, [options, value])
 
+  const displayTriggerText = selected ? selected.triggerLabel || selected.label : null
+
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase()
     if (!q) return options
-    return options.filter((o) => o.label.toLowerCase().includes(q))
+    return options.filter((o) => {
+      const hay = [o.label, o.detail, o.searchText, o.triggerLabel]
+        .filter(Boolean)
+        .join(' ')
+        .toLowerCase()
+      return hay.includes(q)
+    })
   }, [options, query])
 
   const maxIdx = Math.max(0, filtered.length - 1)
@@ -130,6 +138,7 @@ export function SearchableSelect({
         type="button"
         id={id}
         className="ui-select__trigger"
+        title={selected?.label || undefined}
         aria-haspopup="listbox"
         aria-expanded={open}
         aria-controls={listId}
@@ -146,7 +155,7 @@ export function SearchableSelect({
             .filter(Boolean)
             .join(' ')}
         >
-          {selected ? selected.label : placeholder}
+          {selected ? displayTriggerText : placeholder}
         </span>
         <span className="ui-select__chevron" aria-hidden>
           <RhIcon as={ChevronDown} size={20} strokeWidth={RH_ICON_STROKE} />
@@ -183,6 +192,7 @@ export function SearchableSelect({
                     aria-selected={opt.value === value}
                     className={[
                       'ui-select__option',
+                      opt.detail ? 'ui-select__option--stacked' : '',
                       i === effectiveHighlight ? 'ui-select__option--highlight' : '',
                       opt.value === value ? 'ui-select__option--selected' : '',
                     ]
@@ -191,7 +201,12 @@ export function SearchableSelect({
                     onMouseEnter={() => setHighlight(i)}
                     onClick={() => commit(opt)}
                   >
-                    {opt.label}
+                    <span className="ui-select__option-label">{opt.label}</span>
+                    {opt.detail ? (
+                      <span className="ui-select__option-detail" dir="rtl">
+                        {opt.detail}
+                      </span>
+                    ) : null}
                   </button>
                 </li>
               ))

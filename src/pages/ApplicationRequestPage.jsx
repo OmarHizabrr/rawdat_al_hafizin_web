@@ -4,6 +4,7 @@ import { useAuth } from '../context/useAuth.js'
 import { useSiteContent } from '../context/useSiteContent.js'
 import { isValidPhoneNumber, parsePhoneNumberFromString } from 'libphonenumber-js/min'
 import { COUNTRY_DIAL_OPTIONS_AR, COUNTRY_OPTIONS_AR } from '../data/countriesAr.js'
+import { getQuranMemorizedJuzOptions } from '../data/quranJuzOptionsAr.js'
 import {
   loadMyProfileRequest,
   PROFILE_REQUEST_STATUS,
@@ -175,6 +176,14 @@ export default function ApplicationRequestPage() {
     [user?.profileRequestStatus],
   )
 
+  const quranJuzOptions = useMemo(() => getQuranMemorizedJuzOptions({ includeZero: false }), [])
+
+  const quranJuzSelectValue = useMemo(() => {
+    const n = Number(form.quranMemorizedJuz)
+    if (Number.isFinite(n) && n >= 1 && n <= 30) return n
+    return 30
+  }, [form.quranMemorizedJuz])
+
   const onChange = (key, value) => setForm((prev) => ({ ...prev, [key]: value }))
 
   const onSubmit = async () => {
@@ -342,13 +351,15 @@ export default function ApplicationRequestPage() {
             onChange={(e) => onChange('occupation', e.target.value)}
             placeholder="مثال: طالب — موظف — معلم..."
           />
-          <NumberStepField
+          <SearchableSelect
+            className="rh-quran-juz-select"
             label="مقدار حفظ القرآن (عدد الأجزاء)"
-            hint="يشترط حالياً حفظ 30 جزءاً لقبول الطلب."
-            value={form.quranMemorizedJuz}
+            hint="اختر آخر جزء أنجزته حفظاً. القائمة تعرض مدى كل جزء في المصحف وعدد السور التي يمر بها. يشترط حالياً حفظ 30 جزءاً لقبول الطلب."
+            options={quranJuzOptions}
+            value={quranJuzSelectValue}
             onChange={(v) => onChange('quranMemorizedJuz', v)}
-            min={1}
-            max={30}
+            placeholder="اختر عدد الأجزاء"
+            searchPlaceholder="ابحث برقم الجزء أو اسم السورة…"
           />
 
           <div className="rh-settings-profile-form__actions rh-app-request-actions">

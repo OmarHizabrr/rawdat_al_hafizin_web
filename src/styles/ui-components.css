@@ -370,11 +370,46 @@
   color: var(--rh-primary);
 }
 
+.ui-select__option--stacked {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.2rem;
+  line-height: 1.35;
+}
+
+.ui-select__option--stacked.ui-select__option--selected .ui-select__option-detail {
+  color: var(--rh-primary);
+  opacity: 0.92;
+}
+
+.ui-select__option-label {
+  display: block;
+  text-align: start;
+}
+
+.ui-select__option-detail {
+  display: block;
+  font-size: 0.8125rem;
+  font-weight: 400;
+  color: var(--rh-text-muted);
+  text-align: start;
+}
+
 .ui-select__empty {
   padding: var(--rh-space-4);
   text-align: center;
   font-size: var(--rh-text-sm);
   color: var(--rh-text-muted);
+}
+
+/** قائمة أجزاء القرآن — عرض أوضح للسطر الثاني */
+.rh-quran-juz-select .ui-select__panel {
+  max-height: min(22rem, 72vh);
+}
+
+.rh-quran-juz-select .ui-select__option--stacked {
+  padding-block: var(--rh-space-3);
 }
 
 /* رسائل Toast */

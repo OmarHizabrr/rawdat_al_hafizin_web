@@ -1,5 +1,5 @@
 import { Plus, Save, Shield, Trash2, X } from 'lucide-react'
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useSiteContent } from '../context/useSiteContent.js'
 import { useAuth } from '../context/useAuth.js'
 import { isAdmin, USER_ROLES } from '../config/roles.js'
@@ -32,6 +32,7 @@ export default function AdminUserTypesPage() {
   const [saving, setSaving] = useState(false)
   const [deleteTarget, setDeleteTarget] = useState(null)
   const [busyDelete, setBusyDelete] = useState(false)
+  const prevSelectedProfileIdRef = useRef(null)
 
   useEffect(() => {
     document.title = `أنواع المستخدمين والصلاحيات — ${branding.siteTitle}`
@@ -50,12 +51,16 @@ export default function AdminUserTypesPage() {
 
   useEffect(() => {
     if (!selected) {
+      prevSelectedProfileIdRef.current = null
       setNameDraft('')
       setPagesDraft(emptyPagesMap())
       setRoleBindingDraft('')
       setApplicationFormAfterLogoutDraft(false)
       return
     }
+    const switchedProfile = prevSelectedProfileIdRef.current !== selected.id
+    prevSelectedProfileIdRef.current = selected.id
+
     setNameDraft(selected.name || '')
     setPagesDraft(
       selected.pages && typeof selected.pages === 'object'
@@ -64,7 +69,13 @@ export default function AdminUserTypesPage() {
     )
     const rb = selected.roleBinding
     setRoleBindingDraft(rb === 'student' || rb === 'teacher' ? rb : '')
-    setApplicationFormAfterLogoutDraft(selected.applicationFormAfterLogout === true)
+
+    const appAfterLogout = selected.applicationFormAfterLogout
+    if (appAfterLogout === true || appAfterLogout === false) {
+      setApplicationFormAfterLogoutDraft(appAfterLogout === true)
+    } else if (switchedProfile) {
+      setApplicationFormAfterLogoutDraft(false)
+    }
   }, [selected])
 
   const adminCrossItems = useMemo(
