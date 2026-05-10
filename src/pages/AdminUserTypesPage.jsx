@@ -167,8 +167,10 @@ export default function AdminUserTypesPage() {
           وغيرها لكل صفحة. يمكن ربط كل نوع بدور المنصة (طالب/معلم): عند تغيير حقل{' '}
           <code className="rh-admin-users__code">role</code> في مستند <code className="rh-admin-users__code">users</code>{' '}
           يُحدَّث <code className="rh-admin-users__code">permissionProfileId</code> تلقائياً لأول نوع مطابق لذلك الدور (حسب
-          الاسم إن وُجد أكثر من نوع). المستخدمون بدون إسناد أو بدون نوع مطابق يحصلون على وصول كامل كالسابق. تأكد من
-          قواعد Firestore لمجموعة <code className="rh-admin-users__code">permission_profiles</code>.
+          الاسم إن وُجد أكثر من نوع). عند قبول طلب الالتحاق يُطبَّق نفس الإسناد للطالب ويُلغى وضع الدخول الأولي حتى تظهر
+          الصفحات التي حفظتها هنا لا القائمة الافتراضية للمستخدم الجديد. المستخدمون بدون إسناد أو بدون نوع مطابق يحصلون على
+          وصول كامل كالسابق. تأكد من قواعد Firestore لمجموعة{' '}
+          <code className="rh-admin-users__code">permission_profiles</code>.
         </p>
         <CrossNav items={adminCrossItems} className="rh-admin-users__cross" />
       </header>

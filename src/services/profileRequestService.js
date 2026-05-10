@@ -1,5 +1,6 @@
 import { collectionGroup, getFirestore, onSnapshot, query } from 'firebase/firestore'
 import { app } from '../firebase.js'
+import { adminApplyRoleBasedPermissionProfile } from './adminUsersService.js'
 import { firestoreApi } from './firestoreApi.js'
 
 export const PROFILE_REQUEST_STATUS = {
@@ -140,6 +141,9 @@ export async function reviewProfileRequest(actorUser, targetUserId, nextStatus, 
     },
     userData: actorUser,
   })
+  if (nextStatus === PROFILE_REQUEST_STATUS.APPROVED) {
+    await adminApplyRoleBasedPermissionProfile(actorUser, targetUserId)
+  }
 }
 
 /** حذف سجل طلب الالتحاق (مستند المستخدم) — يتطلب صلاحيات قواعد المطابقة لمن يدير النظام. */

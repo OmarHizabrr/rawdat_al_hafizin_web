@@ -54,6 +54,30 @@ export async function adminUpdateUserRole(actorUser, targetUid, role) {
   })
 }
 
+/**
+ * يطبّق نوع الصلاحيات المربوط بدور المستخدم الحالي (من permission_profiles) ويلغي وضع الدخول الأولي.
+ * يُستدعى مثلاً عند قبول طلب الالتحاق حتى تُستخدم الصفحات المحفوظة للطالب وليس القائمة الافتراضية للمبتدئين.
+ */
+export async function adminApplyRoleBasedPermissionProfile(actorUser, targetUid) {
+  if (!targetUid || !actorUser?.uid) return
+  const docRef = firestoreApi.getUserDoc(targetUid)
+  const existing = await firestoreApi.getData(docRef)
+  const nr = normalizeRole(existing?.role)
+
+  let permissionProfileId = null
+  if (nr === 'admin') {
+    permissionProfileId = null
+  } else if (nr === 'student' || nr === 'teacher') {
+    permissionProfileId = await getDefaultPermissionProfileIdForPlatformRole(nr)
+  }
+
+  await firestoreApi.updateData({
+    docRef,
+    data: { starterAccess: false, permissionProfileId },
+    userData: actorUser,
+  })
+}
+
 /** الاسم فقط في Firestore (لا يغيّر Google Auth للمستخدم المستهدف) */
 export async function adminUpdateUserDisplayName(actorUser, targetUid, displayName) {
   if (!targetUid || !actorUser?.uid) return
