@@ -59,6 +59,11 @@ export default function AdminPushNotificationsPage() {
     })
   }, [rows, q])
 
+  const vapidConfigured = useMemo(
+    () => Boolean(String(import.meta.env.VITE_FIREBASE_VAPID_KEY || '').trim()),
+    [],
+  )
+
   const hasDeviceToken = (u) => Boolean(String(u.pushToken || u.fcmToken || '').trim())
 
   const openSend = (u) => {
@@ -155,7 +160,23 @@ export default function AdminPushNotificationsPage() {
           قائمة بجميع مستندات المستخدمين في Firestore. يمكنك إرسال إشعار داخلي لأي مستخدم؛ يُسجَّل التفصيل في
           وحدة تحكم المتصفح (F12 → Console) عند النجاح أو الفشل.
         </p>
+        <p className="rh-settings-footnote" style={{ marginTop: '0.75rem', marginBottom: 0 }}>
+          شارة «تم حفظ توكن الدفع» تعني أن المستخدم فتح المنصة ووافق على إشعارات المتصفح وتم تخزين{' '}
+          <code dir="ltr">pushToken</code> / <code dir="ltr">fcmToken</code> في مستنده. إن ظهر للجميع «لم يُحفظ
+          بعد» فغالباً مفتاح <code dir="ltr">VITE_FIREBASE_VAPID_KEY</code> غير مضبوط في نشر الواجهة، أو لم يُمنح
+          إذن الإشعارات من المتصفح.
+        </p>
       </header>
+
+      {!vapidConfigured ? (
+        <section className="card" style={{ borderColor: 'var(--rh-warning-border, #c9a227)' }}>
+          <p className="rh-settings-footnote" style={{ margin: 0 }}>
+            <strong>تنبيه للمشرف:</strong> مفتاح <code dir="ltr">VITE_FIREBASE_VAPID_KEY</code> غير موجود في هذا
+            البناء — لن يستطيع أي مستخدم حفظ توكن FCM حتى تُضيف المفتاح من Firebase Console (Cloud Messaging → Web Push
+            certificates) ثم تعيد نشر الموقع.
+          </p>
+        </section>
+      ) : null}
 
       <CrossNav items={crossItems} className="rh-admin-users__cross" />
 
@@ -182,7 +203,9 @@ export default function AdminPushNotificationsPage() {
               <div className="rh-admin-users__card-head">
                 <strong className="rh-admin-users__name">{u.displayName || 'بدون اسم'}</strong>
                 <span className="rh-admin-users__email">{u.email || '—'}</span>
-                <span className="rh-plans__saved-badge">{hasDeviceToken(u) ? 'جهاز مسجّل للدفع' : 'لا يوجد توكن جهاز'}</span>
+                <span className="rh-plans__saved-badge">
+                  {hasDeviceToken(u) ? 'تم حفظ توكن الدفع' : 'لم يُحفظ توكن الدفع بعد'}
+                </span>
               </div>
             </div>
             <p className="rh-settings-footnote" dir="ltr" style={{ marginTop: 0, wordBreak: 'break-all' }}>

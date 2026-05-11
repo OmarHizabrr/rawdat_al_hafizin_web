@@ -1,6 +1,7 @@
 import { getMessaging, getToken, isSupported, onMessage } from 'firebase/messaging'
 import { app } from '../firebase.js'
 import { firestoreApi } from './firestoreApi.js'
+import { notificationsEnabled } from '../utils/notificationsPrefs.js'
 
 let foregroundUnsubscribe = null
 
@@ -42,6 +43,7 @@ async function registerPushTokenForUser(user, token) {
 }
 
 function showForegroundNotification(payload) {
+  if (!notificationsEnabled()) return
   if (!canUseBrowserNotifications()) return
   if (Notification.permission !== 'granted') return
   const title = String(payload?.notification?.title || payload?.data?.title || 'إشعار جديد').trim()
@@ -49,36 +51,69 @@ function showForegroundNotification(payload) {
   const url = String(payload?.data?.url || '/app/notifications').trim() || '/app/notifications'
   const icon = String(payload?.notification?.icon || '/logo.png').trim() || '/logo.png'
   const tag = String(payload?.messageId || payload?.collapseKey || `fg-${Date.now()}`).trim()
-  // إشعار فوري أثناء فتح التطبيق.
   new Notification(title, { body, icon, tag, data: { url } })
 }
 
-export async function enablePushNotificationsForUser(user) {
+function attachForegroundListener(messaging) {
+  if (typeof foregroundUnsubscribe === 'function') foregroundUnsubscribe()
+  if (!messaging || Notification.permission !== 'granted') {
+    foregroundUnsubscribe = null
+    return
+  }
+  foregroundUnsubscribe = onMessage(messaging, (payload) => {
+    showForegroundNotification(payload)
+  })
+}
+
+/**
+ * يحصل على توكن FCM ويحفظه في مستند المستخدم — مستقل عن وضع «إشعارات المنصة» في الإعدادات
+ * (ذلك الوضع يتحكم فقط في التنبيهات المحلية داخل الصفحة، وليس في حفظ توكن الدفع).
+ */
+export async function syncFcmTokenToProfile(user) {
   if (!user?.uid || !canUseBrowserNotifications()) return { ok: false, reason: 'UNAVAILABLE' }
-  const permission = await Notification.requestPermission().catch(() => 'denied')
-  if (permission !== 'granted') return { ok: false, reason: 'DENIED' }
 
   const vapidKey = String(import.meta.env.VITE_FIREBASE_VAPID_KEY || '').trim()
-  if (!vapidKey) return { ok: false, reason: 'MISSING_VAPID_KEY' }
+  if (!vapidKey) {
+    console.warn('[push] VITE_FIREBASE_VAPID_KEY missing — cannot obtain FCM token')
+    return { ok: false, reason: 'MISSING_VAPID_KEY' }
+  }
+
+  let permission = Notification.permission
+  if (permission === 'default') {
+    permission = await Notification.requestPermission().catch(() => 'denied')
+  }
+  if (permission !== 'granted') {
+    console.warn('[push] Notification permission not granted:', permission)
+    return { ok: false, reason: 'DENIED' }
+  }
 
   const reg = await navigator.serviceWorker.ready
   const messaging = await getMessagingInstance()
-  if (!messaging) return { ok: false, reason: 'MESSAGING_UNSUPPORTED' }
+  if (!messaging) {
+    console.warn('[push] Firebase Messaging not supported in this browser')
+    return { ok: false, reason: 'MESSAGING_UNSUPPORTED' }
+  }
 
   const token = await getToken(messaging, {
     vapidKey,
     serviceWorkerRegistration: reg,
   })
-  if (!token) return { ok: false, reason: 'NO_TOKEN' }
+  if (!token) {
+    console.warn('[push] getToken returned empty')
+    return { ok: false, reason: 'NO_TOKEN' }
+  }
 
   await registerPushTokenForUser(user, token)
   writePushTokenCache(user.uid, token)
+  attachForegroundListener(messaging)
 
-  if (typeof foregroundUnsubscribe === 'function') foregroundUnsubscribe()
-  foregroundUnsubscribe = onMessage(messaging, (payload) => {
-    showForegroundNotification(payload)
+  console.log('[push] FCM token saved to users doc', {
+    uid: user.uid,
+    tokenPreview: `${String(token).slice(0, 24)}…`,
   })
 
   return { ok: true, token }
 }
 
+/** اسم قديم / للواجهات التي تطلب «تفعيل الإشعارات» صراحةً */
+export const enablePushNotificationsForUser = syncFcmTokenToProfile

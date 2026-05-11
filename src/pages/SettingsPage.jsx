@@ -391,7 +391,8 @@ export default function SettingsPage() {
           <p className="rh-settings-card__subtitle">
             لإرسال إشعارات للهاتف بعد تثبيت المنصة، يُخزَّن توكن الجهاز في مستند المستخدم ضمن مجموعة Firestore{' '}
             <code dir="ltr">users</code> في الحقلين <code dir="ltr">pushToken</code> و <code dir="ltr">fcmToken</code>{' '}
-            (نفس القيمة). يمكنك نسخ التوكن من هنا أو من لوحة Firebase.
+            (نفس القيمة). هذا مستقل عن قسم «الإشعارات» أعلاه الذي يتحكم في التنبيهات داخل الصفحة فقط. يمكنك نسخ
+            التوكن من هنا أو من لوحة Firebase.
           </p>
         </div>
         {user?.uid ? (
