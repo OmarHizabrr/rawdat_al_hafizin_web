@@ -7,6 +7,8 @@
     "dev": "vite",
     "build": "vite build",
     "deploy": "vite build && npx firebase-tools deploy --only hosting",
+    "deploy:functions": "npx firebase-tools deploy --only functions",
+    "deploy:all": "vite build && npx firebase-tools deploy --only hosting,functions",
     "lint": "eslint .",
     "preview": "vite preview"
   },

@@ -33,6 +33,7 @@ import { usePermissions } from '../context/usePermissions.js'
 import { useSiteContent } from '../context/useSiteContent.js'
 import { usePlanReminders } from '../hooks/usePlanReminders.js'
 import { PROFILE_REQUEST_STATUS } from '../services/profileRequestService.js'
+import { enablePushNotificationsForUser } from '../services/pushNotificationsService.js'
 import { upsertUserNotification } from '../services/userNotificationsService.js'
 import { getImpersonateUid, withImpersonationQuery } from '../utils/impersonation.js'
 import { rhHapticChromeTap, rhHapticNavigate } from '../utils/haptics.js'
@@ -199,6 +200,25 @@ export function MainLayout() {
     window.addEventListener('appinstalled', onInstalled)
     return () => window.removeEventListener('appinstalled', onInstalled)
   }, [impersonateUid])
+
+  useEffect(() => {
+    if (!user?.uid || impersonateUid) return undefined
+    if (!notificationsEnabled()) return undefined
+    let mounted = true
+    enablePushNotificationsForUser(user)
+      .then((res) => {
+        if (!mounted || !res || res.ok) return
+        if (res.reason === 'MISSING_VAPID_KEY') {
+          console.warn('[push] VITE_FIREBASE_VAPID_KEY is missing')
+        }
+      })
+      .catch((e) => {
+        if (mounted) console.warn('[push] initialization failed', e)
+      })
+    return () => {
+      mounted = false
+    }
+  }, [user, impersonateUid])
 
   useEffect(() => {
     if (!user?.uid || impersonateUid || user?.hideHomePlanUi) return undefined

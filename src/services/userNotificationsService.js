@@ -88,6 +88,29 @@ export async function upsertUserNotification({
     merge: true,
     userData,
   })
+  // تجهيز مهمة دفع Push (تُرسل من Cloud Function/Worker خارجي).
+  try {
+    const pushQueueId = `push-${notificationId}`
+    await firestoreApi.setData({
+      docRef: firestoreApi.getDocument('pushQueue', pushQueueId),
+      data: {
+        id: pushQueueId,
+        userId,
+        notificationId,
+        notificationType,
+        title: String(title || '').trim() || 'إشعار',
+        body: String(body || '').trim(),
+        url: '/app/notifications',
+        status: 'pending',
+        createdAt: new Date().toISOString(),
+      },
+      merge: true,
+      userData,
+    })
+  } catch (e) {
+    // عدم كسر الإشعار الداخلي إذا فشل تجهيز الـ Push.
+    console.warn('[notifications] pushQueue write failed', e)
+  }
 }
 
 export async function markUserNotificationRead(userId, dawraId, userData = {}) {
