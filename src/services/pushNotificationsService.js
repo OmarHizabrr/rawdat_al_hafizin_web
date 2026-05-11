@@ -1,7 +1,11 @@
 import { getMessaging, getToken, isSupported, onMessage } from 'firebase/messaging'
 import { app } from '../firebase.js'
 import { firestoreApi } from './firestoreApi.js'
+import { rhHapticPushDelivery } from '../utils/haptics.js'
 import { notificationsEnabled } from '../utils/notificationsPrefs.js'
+
+/** أنماط اهتزاز للإشعار في المتصفحات التي تدعمها ضمن Web Notifications */
+const PUSH_NOTIFICATION_VIBRATE = Object.freeze([22, 45, 28, 45, 32, 55, 28, 70, 200])
 
 let foregroundUnsubscribe = null
 
@@ -61,7 +65,14 @@ function showForegroundNotification(payload) {
   const url = String(payload?.data?.url || '/app/notifications').trim() || '/app/notifications'
   const icon = String(payload?.notification?.icon || '/logo.png').trim() || '/logo.png'
   const tag = String(payload?.messageId || payload?.collapseKey || `fg-${Date.now()}`).trim()
-  new Notification(title, { body, icon, tag, data: { url } })
+  rhHapticPushDelivery()
+  new Notification(title, {
+    body,
+    icon,
+    tag,
+    vibrate: [...PUSH_NOTIFICATION_VIBRATE],
+    data: { url },
+  })
 }
 
 function attachForegroundListener(messaging) {

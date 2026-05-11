@@ -7,6 +7,8 @@ self.addEventListener('activate', (event) => {
   event.waitUntil(self.clients.claim())
 })
 
+const DEFAULT_PUSH_VIBRATE = [22, 45, 28, 45, 32, 55, 28, 70, 200]
+
 self.addEventListener('push', (event) => {
   const fallback = {
     title: 'إشعار جديد',
@@ -14,23 +16,44 @@ self.addEventListener('push', (event) => {
     icon: '/logo.png',
     badge: '/logo.png',
     data: { url: '/app/notifications' },
+    tag: `push-${Date.now()}`,
   }
   let payload = fallback
   try {
     const raw = event.data ? event.data.json() : {}
     const data = raw?.data || raw || {}
-    payload = {
-      title: String(raw?.notification?.title || data.title || fallback.title),
-      body: String(raw?.notification?.body || data.body || fallback.body),
-      icon: String(raw?.notification?.icon || data.icon || fallback.icon),
-      badge: String(data.badge || fallback.badge),
-      data: { url: String(data.url || '/app/notifications') },
-      tag: String(data.tag || raw?.collapseKey || `push-${Date.now()}`),
+    let vibrate = DEFAULT_PUSH_VIBRATE
+    try {
+      const v = data.vibrate
+      if (typeof v === 'string' && v.trim()) {
+        const parsed = JSON.parse(v)
+        if (Array.isArray(parsed) && parsed.length) vibrate = parsed.map((n) => Number(n) || 0).filter((n) => n > 0)
+      }
+    } catch {
+      /* keep default */
     }
+    const title = String(raw?.notification?.title || data.title || fallback.title)
+    const body = String(raw?.notification?.body || data.body || fallback.body)
+    const icon = String(raw?.notification?.icon || data.icon || fallback.icon)
+    const badge = String(data.badge || fallback.badge)
+    const url = String(data.url || '/app/notifications')
+    const tag = String(data.tag || raw?.collapseKey || `push-${Date.now()}`)
+    payload = { title, body, icon, badge, data: { url }, tag, vibrate }
   } catch {
-    payload = fallback
+    payload = { ...fallback, vibrate: DEFAULT_PUSH_VIBRATE }
   }
-  event.waitUntil(self.registration.showNotification(payload.title, payload))
+  const { title, body, icon, badge, data, tag, vibrate } = payload
+  event.waitUntil(
+    self.registration.showNotification(title, {
+      body,
+      icon,
+      badge,
+      data,
+      tag,
+      vibrate,
+      renotify: true,
+    }),
+  )
 })
 
 self.addEventListener('notificationclick', (event) => {

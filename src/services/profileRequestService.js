@@ -201,47 +201,6 @@ async function notifyApplicantOfReview(actorUser, targetUserId, nextStatus, stat
   })
 }
 
-async function queueApplicantReviewEmail(actorUser, { targetUserId, applicantEmail, nextStatus, statusMessage = '' }) {
-  const to = String(applicantEmail || '').trim()
-  if (!to) return
-  const reviewerLabel = String(actorUser?.displayName || actorUser?.email || 'المشرف').trim()
-  const note = String(statusMessage || '').trim()
-  const isApproved = nextStatus === PROFILE_REQUEST_STATUS.APPROVED
-  const subject = isApproved ? 'تم قبول طلب الالتحاق' : 'تم رفض طلب الالتحاق — يمكنك التعديل وإعادة التقديم'
-  const text = isApproved
-    ? `السلام عليكم ورحمة الله وبركاته،
-
-تم قبول طلب الالتحاق الخاص بك بنجاح.
-يمكنك الآن الدخول إلى المنصة واستخدامها وفق صلاحيات حسابك.
-
-مراجعة: ${reviewerLabel}`
-    : `السلام عليكم ورحمة الله وبركاته،
-
-لم يُعتمد طلب الالتحاق الخاص بك في هذه المرحلة.
-${note ? `\nملاحظة المشرف:\n${note}\n` : '\n'}
-يرجى مراجعة البيانات وتعديل ما يلزم ثم إعادة إرسال طلب الالتحاق عند الجاهزية.
-
-مراجعة: ${reviewerLabel}`
-
-  // تكامل Firebase Trigger Email (mail collection).
-  const mailId = firestoreApi.getNewId('mail')
-  await firestoreApi.setData({
-    docRef: firestoreApi.getDocument('mail', mailId),
-    data: {
-      to,
-      userId: targetUserId,
-      kind: 'application_review_result',
-      message: {
-        subject,
-        text,
-      },
-      createdAt: new Date().toISOString(),
-    },
-    merge: true,
-    userData: actorUser || {},
-  })
-}
-
 async function queueApplicantReviewSms(
   actorUser,
   { targetUserId, applicantPhone, nextStatus, statusMessage = '', smsMessage = '' },
@@ -310,12 +269,7 @@ export async function reviewProfileRequest(
   }
   try {
     await notifyApplicantOfReview(actorUser, targetUserId, nextStatus, statusMessage)
-    await queueApplicantReviewEmail(actorUser, {
-      targetUserId,
-      applicantEmail: reqRow?.email,
-      nextStatus,
-      statusMessage,
-    })
+    // البريد يُنشأ من Cloud Function enqueueApplicationReviewMail (صلاحيات المشرف → مجموعة mail لتوسعة Trigger Email).
     if (sendSms) {
       await queueApplicantReviewSms(actorUser, {
         targetUserId,
@@ -327,7 +281,7 @@ export async function reviewProfileRequest(
     }
   } catch (e) {
     /* لا نُبطل القرار إذا تعذّر إنشاء الإشعار أو البريد (صلاحيات القواعد/الامتداد إلخ) */
-    console.warn('[profileRequest] notifyApplicantOfReview/email failed', e)
+    console.warn('[profileRequest] notifyApplicantOfReview/sms failed', e)
   }
 }
 

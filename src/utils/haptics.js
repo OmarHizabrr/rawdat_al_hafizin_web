@@ -32,6 +32,16 @@ export function rhHapticMedium() {
   }
 }
 
+/** نمط أطول عند وصول إشعار دفع/منصّة (يُحترم prefers-reduced-motion) */
+export function rhHapticPushDelivery() {
+  if (reducedMotion() || !canVibrate()) return
+  try {
+    navigator.vibrate([22, 45, 28, 45, 32, 55, 28, 70, 200])
+  } catch {
+    /* ignore */
+  }
+}
+
 function pointerAllowsHaptic(e) {
   if (!e || typeof window === 'undefined') return true
   if (e.pointerType === 'touch' || e.pointerType === 'pen') return true
