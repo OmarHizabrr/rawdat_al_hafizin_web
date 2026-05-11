@@ -23,6 +23,7 @@ import {
   UsersRound,
   Video,
   MessageCircleMore,
+  Bell,
 } from 'lucide-react'
 import { NavLink, Outlet, useLocation } from 'react-router-dom'
 import { UserNotificationsMenu } from '../components/UserNotificationsMenu.jsx'
@@ -102,6 +103,7 @@ export function MainLayout() {
     () => [
       { to: '/app/admin', label: str('layout.nav_dashboard'), Icon: LayoutDashboard },
       { to: '/app/admin/users', label: str('layout.nav_users'), Icon: Users },
+      { to: '/app/admin/push-notifications', label: 'إشعارات المستخدمين', Icon: Bell },
       { to: '/app/admin/applications', label: 'طلبات الالتحاق', Icon: Users },
       { to: '/app/admin/groups', label: 'إدارة المجموعات', Icon: MessageCircleMore },
     ],

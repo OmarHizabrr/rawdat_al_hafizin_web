@@ -1,4 +1,5 @@
 import {
+  Bell,
   BookOpen,
   ChevronDown,
   ClipboardList,
@@ -129,12 +130,25 @@ export function UserMenu({ user }) {
                 الإعدادات
               </HapticLink>
               {isAdmin(user) && (
-                <HapticLink to="/app/admin/users" className="rh-user-dropdown__item" role="menuitem" onClick={() => setOpen(false)}>
-                  <span className="rh-user-dropdown__item-icon" aria-hidden>
-                    <RhIcon as={Users} size={18} strokeWidth={RH_ICON_STROKE} />
-                  </span>
-                  إدارة المستخدمين
-                </HapticLink>
+                <>
+                  <HapticLink to="/app/admin/users" className="rh-user-dropdown__item" role="menuitem" onClick={() => setOpen(false)}>
+                    <span className="rh-user-dropdown__item-icon" aria-hidden>
+                      <RhIcon as={Users} size={18} strokeWidth={RH_ICON_STROKE} />
+                    </span>
+                    إدارة المستخدمين
+                  </HapticLink>
+                  <HapticLink
+                    to="/app/admin/push-notifications"
+                    className="rh-user-dropdown__item"
+                    role="menuitem"
+                    onClick={() => setOpen(false)}
+                  >
+                    <span className="rh-user-dropdown__item-icon" aria-hidden>
+                      <RhIcon as={Bell} size={18} strokeWidth={RH_ICON_STROKE} />
+                    </span>
+                    إشعارات المستخدمين
+                  </HapticLink>
+                </>
               )}
               {!user?.hideHomePlanUi ? (
                 <HapticLink to="/app/plans" className="rh-user-dropdown__item" role="menuitem" onClick={() => setOpen(false)}>

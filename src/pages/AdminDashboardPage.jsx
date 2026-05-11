@@ -1,4 +1,4 @@
-import { FileText, LayoutDashboard, Palette, Shapes, Shield, UserCheck, Users } from 'lucide-react'
+import { Bell, FileText, LayoutDashboard, Palette, Shapes, Shield, UserCheck, Users } from 'lucide-react'
 import { HapticLink } from '../ui/HapticLink.jsx'
 import { useEffect } from 'react'
 
@@ -36,6 +36,12 @@ const tiles = [
     title: 'المستخدمون',
     desc: 'إدارة الحسابات والأدوار (كما في الصفحة الحالية).',
     Icon: Users,
+  },
+  {
+    to: '/app/admin/push-notifications',
+    title: 'إشعارات المستخدمين',
+    desc: 'عرض كل المستخدمين وإرسال إشعار داخلي (ودفع للهاتف عند توفر التوكن).',
+    Icon: Bell,
   },
   {
     to: '/app/admin/applications',
