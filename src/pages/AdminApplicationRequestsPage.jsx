@@ -30,8 +30,13 @@ export default function AdminApplicationRequestsPage() {
   const [q, setQ] = useState('')
   const [statusFilter, setStatusFilter] = useState(PROFILE_REQUEST_STATUS.PENDING)
   const [busyId, setBusyId] = useState('')
+  const [approvingRow, setApprovingRow] = useState(null)
+  const [approveSendSms, setApproveSendSms] = useState(false)
+  const [approveSmsMessage, setApproveSmsMessage] = useState('')
   const [rejectingRow, setRejectingRow] = useState(null)
   const [rejectReason, setRejectReason] = useState('')
+  const [rejectSendSms, setRejectSendSms] = useState(false)
+  const [rejectSmsMessage, setRejectSmsMessage] = useState('')
   const [deleteTarget, setDeleteTarget] = useState(null)
   const [editingRow, setEditingRow] = useState(null)
   const [editForm, setEditForm] = useState(null)
@@ -95,12 +100,23 @@ export default function AdminApplicationRequestsPage() {
     })
   }, [rows, q, statusFilter])
 
-  const onApprove = async (row) => {
-    if (!user?.uid || !row?.userId) return
-    setBusyId(row.userId)
+  const onApprove = async () => {
+    if (!user?.uid || !approvingRow?.userId) return
+    setBusyId(approvingRow.userId)
     try {
-      await reviewProfileRequest(user, row.userId, PROFILE_REQUEST_STATUS.APPROVED, '')
-      toast.success('تم قبول الطلب وأُرسل إشعار إلى المتقدّم.', 'تم')
+      await reviewProfileRequest(user, approvingRow.userId, PROFILE_REQUEST_STATUS.APPROVED, '', {
+        sendSms: approveSendSms,
+        smsMessage: approveSmsMessage.trim(),
+      })
+      toast.success(
+        approveSendSms
+          ? 'تم قبول الطلب مع إشعار المنصة والبريد وإرسال رسالة نصية.'
+          : 'تم قبول الطلب وأُرسل إشعار إلى المتقدّم.',
+        'تم',
+      )
+      setApprovingRow(null)
+      setApproveSendSms(false)
+      setApproveSmsMessage('')
     } catch {
       toast.warning('تعذّر تحديث حالة الطلب.', 'تنبيه')
     } finally {
@@ -183,10 +199,21 @@ export default function AdminApplicationRequestsPage() {
         rejectingRow.userId,
         PROFILE_REQUEST_STATUS.REJECTED,
         rejectReason.trim(),
+        {
+          sendSms: rejectSendSms,
+          smsMessage: rejectSmsMessage.trim(),
+        },
       )
-      toast.info('تم رفض الطلب وأُرسل إشعار إلى المتقدّم (مع الملاحظة إن وُجدت).', '')
+      toast.info(
+        rejectSendSms
+          ? 'تم رفض الطلب مع إشعار المنصة والبريد وإرسال رسالة نصية.'
+          : 'تم رفض الطلب وأُرسل إشعار إلى المتقدّم (مع الملاحظة إن وُجدت).',
+        '',
+      )
       setRejectingRow(null)
       setRejectReason('')
+      setRejectSendSms(false)
+      setRejectSmsMessage('')
     } catch {
       toast.warning('تعذّر تحديث الحالة.', 'تنبيه')
     } finally {
@@ -343,7 +370,11 @@ export default function AdminApplicationRequestsPage() {
                 variant="primary"
                 icon={CheckCircle2}
                 loading={busyId === r.userId}
-                onClick={() => onApprove(r)}
+                onClick={() => {
+                  setApprovingRow(r)
+                  setApproveSendSms(false)
+                  setApproveSmsMessage('')
+                }}
               >
                 قبول
               </Button>
@@ -356,6 +387,8 @@ export default function AdminApplicationRequestsPage() {
                 onClick={() => {
                   setRejectingRow(r)
                   setRejectReason(r.statusMessage || '')
+                  setRejectSendSms(false)
+                  setRejectSmsMessage('')
                 }}
               >
                 رفض
@@ -542,11 +575,53 @@ export default function AdminApplicationRequestsPage() {
       </Modal>
 
       <Modal
+        open={Boolean(approvingRow)}
+        title="قبول الطلب"
+        onClose={() => {
+          setApprovingRow(null)
+          setApproveSendSms(false)
+          setApproveSmsMessage('')
+        }}
+        size="sm"
+      >
+        <p className="rh-settings-footnote" style={{ marginTop: 0 }}>
+          سيتم إرسال إشعار داخل المنصة وبريد إلكتروني للطالب تلقائياً.
+        </p>
+        <label className="rh-settings-footnote" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+          <input
+            type="checkbox"
+            checked={approveSendSms}
+            onChange={(e) => setApproveSendSms(e.target.checked)}
+          />
+          إرسال رسالة نصية (SMS) إلى رقم الطالب مباشرة
+        </label>
+        {approveSendSms ? (
+          <TextAreaField
+            label="نص الرسالة النصية (اختياري)"
+            value={approveSmsMessage}
+            onChange={(e) => setApproveSmsMessage(e.target.value)}
+            placeholder="إن تركته فارغاً سيتم استخدام نص قبول افتراضي."
+            rows={3}
+          />
+        ) : null}
+        <div className="rh-admin-users__modal-actions">
+          <Button type="button" variant="primary" icon={CheckCircle2} onClick={onApprove} loading={busyId === approvingRow?.userId}>
+            تأكيد القبول
+          </Button>
+          <Button type="button" variant="ghost" icon={X} onClick={() => setApprovingRow(null)}>
+            إلغاء
+          </Button>
+        </div>
+      </Modal>
+
+      <Modal
         open={Boolean(rejectingRow)}
         title="رفض الطلب حالياً"
         onClose={() => {
           setRejectingRow(null)
           setRejectReason('')
+          setRejectSendSms(false)
+          setRejectSmsMessage('')
         }}
         size="sm"
       >
@@ -560,6 +635,23 @@ export default function AdminApplicationRequestsPage() {
           placeholder="مثال: يرجى تصحيح رقم الجوال ثم إعادة إرسال الطلب. أو: لا يستوفي شرط الحفظ المطلوب حالياً."
           rows={4}
         />
+        <label className="rh-settings-footnote" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+          <input
+            type="checkbox"
+            checked={rejectSendSms}
+            onChange={(e) => setRejectSendSms(e.target.checked)}
+          />
+          إرسال رسالة نصية (SMS) إلى رقم الطالب مباشرة
+        </label>
+        {rejectSendSms ? (
+          <TextAreaField
+            label="نص الرسالة النصية (اختياري)"
+            value={rejectSmsMessage}
+            onChange={(e) => setRejectSmsMessage(e.target.value)}
+            placeholder="إن تركته فارغاً سيتم استخدام نص الرفض (وملاحظة المشرف إن وُجدت)."
+            rows={3}
+          />
+        ) : null}
         <div className="rh-admin-users__modal-actions">
           <Button type="button" variant="danger" icon={XCircle} onClick={onReject} loading={busyId === rejectingRow?.userId}>
             تأكيد الرفض

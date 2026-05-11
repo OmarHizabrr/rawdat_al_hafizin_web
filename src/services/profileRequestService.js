@@ -201,9 +201,91 @@ async function notifyApplicantOfReview(actorUser, targetUserId, nextStatus, stat
   })
 }
 
-export async function reviewProfileRequest(actorUser, targetUserId, nextStatus, statusMessage = '') {
+async function queueApplicantReviewEmail(actorUser, { targetUserId, applicantEmail, nextStatus, statusMessage = '' }) {
+  const to = String(applicantEmail || '').trim()
+  if (!to) return
+  const reviewerLabel = String(actorUser?.displayName || actorUser?.email || 'المشرف').trim()
+  const note = String(statusMessage || '').trim()
+  const isApproved = nextStatus === PROFILE_REQUEST_STATUS.APPROVED
+  const subject = isApproved ? 'تم قبول طلب الالتحاق' : 'تم رفض طلب الالتحاق — يمكنك التعديل وإعادة التقديم'
+  const text = isApproved
+    ? `السلام عليكم ورحمة الله وبركاته،
+
+تم قبول طلب الالتحاق الخاص بك بنجاح.
+يمكنك الآن الدخول إلى المنصة واستخدامها وفق صلاحيات حسابك.
+
+مراجعة: ${reviewerLabel}`
+    : `السلام عليكم ورحمة الله وبركاته،
+
+لم يُعتمد طلب الالتحاق الخاص بك في هذه المرحلة.
+${note ? `\nملاحظة المشرف:\n${note}\n` : '\n'}
+يرجى مراجعة البيانات وتعديل ما يلزم ثم إعادة إرسال طلب الالتحاق عند الجاهزية.
+
+مراجعة: ${reviewerLabel}`
+
+  // تكامل Firebase Trigger Email (mail collection).
+  const mailId = firestoreApi.getNewId('mail')
+  await firestoreApi.setData({
+    docRef: firestoreApi.getDocument('mail', mailId),
+    data: {
+      to,
+      userId: targetUserId,
+      kind: 'application_review_result',
+      message: {
+        subject,
+        text,
+      },
+      createdAt: new Date().toISOString(),
+    },
+    merge: true,
+    userData: actorUser || {},
+  })
+}
+
+async function queueApplicantReviewSms(
+  actorUser,
+  { targetUserId, applicantPhone, nextStatus, statusMessage = '', smsMessage = '' },
+) {
+  const to = String(applicantPhone || '').trim()
+  if (!to) return
+  const reviewerLabel = String(actorUser?.displayName || actorUser?.email || 'المشرف').trim()
+  const note = String(statusMessage || '').trim()
+  const custom = String(smsMessage || '').trim()
+  const isApproved = nextStatus === PROFILE_REQUEST_STATUS.APPROVED
+  const body = custom || (isApproved
+    ? `تم قبول طلب الالتحاق الخاص بك. يمكنك الآن استخدام المنصة. (مراجعة: ${reviewerLabel})`
+    : note
+      ? `تم رفض طلب الالتحاق حالياً. ملاحظة المشرف: ${note}. يمكنك تعديل البيانات وإعادة التقديم.`
+      : 'تم رفض طلب الالتحاق حالياً. يمكنك تعديل البيانات وإعادة التقديم.')
+
+  // قائمة انتظار SMS لتكامل مزود الرسائل النصية (Cloud Function/مزود خارجي).
+  const smsId = firestoreApi.getNewId('sms')
+  await firestoreApi.setData({
+    docRef: firestoreApi.getDocument('sms', smsId),
+    data: {
+      to,
+      userId: targetUserId,
+      kind: 'application_review_result',
+      body,
+      createdAt: new Date().toISOString(),
+    },
+    merge: true,
+    userData: actorUser || {},
+  })
+}
+
+export async function reviewProfileRequest(
+  actorUser,
+  targetUserId,
+  nextStatus,
+  statusMessage = '',
+  deliveryOptions = {},
+) {
   if (!actorUser?.uid || !targetUserId) return
   if (nextStatus !== PROFILE_REQUEST_STATUS.APPROVED && nextStatus !== PROFILE_REQUEST_STATUS.REJECTED) return
+  const sendSms = Boolean(deliveryOptions?.sendSms)
+  const smsMessage = String(deliveryOptions?.smsMessage || '').trim()
+  const reqRow = await loadMyProfileRequest(targetUserId)
   const ref = firestoreApi.getUserProfileRequestDoc(targetUserId)
   await firestoreApi.updateData({
     docRef: ref,
@@ -218,7 +300,6 @@ export async function reviewProfileRequest(actorUser, targetUserId, nextStatus, 
   })
   if (nextStatus === PROFILE_REQUEST_STATUS.APPROVED) {
     await adminApplyRoleBasedPermissionProfile(actorUser, targetUserId)
-    const reqRow = await loadMyProfileRequest(targetUserId)
     if (reqRow?.gender === 'male' || reqRow?.gender === 'female') {
       await firestoreApi.updateData({
         docRef: firestoreApi.getUserDoc(targetUserId),
@@ -229,9 +310,24 @@ export async function reviewProfileRequest(actorUser, targetUserId, nextStatus, 
   }
   try {
     await notifyApplicantOfReview(actorUser, targetUserId, nextStatus, statusMessage)
+    await queueApplicantReviewEmail(actorUser, {
+      targetUserId,
+      applicantEmail: reqRow?.email,
+      nextStatus,
+      statusMessage,
+    })
+    if (sendSms) {
+      await queueApplicantReviewSms(actorUser, {
+        targetUserId,
+        applicantPhone: reqRow?.phone,
+        nextStatus,
+        statusMessage,
+        smsMessage,
+      })
+    }
   } catch (e) {
-    /* لا نُبطل القرار إذا تعذّر إنشاء الإشعار (صلاحيات القواعد إلخ) */
-    console.warn('[profileRequest] notifyApplicantOfReview failed', e)
+    /* لا نُبطل القرار إذا تعذّر إنشاء الإشعار أو البريد (صلاحيات القواعد/الامتداد إلخ) */
+    console.warn('[profileRequest] notifyApplicantOfReview/email failed', e)
   }
 }
 
