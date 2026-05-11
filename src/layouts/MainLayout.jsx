@@ -219,7 +219,9 @@ export function MainLayout() {
     return () => {
       mounted = false
     }
-  }, [user, impersonateUid])
+    // uid فقط: تحديث مستند المستخدم (مثلاً pushToken) يُعيد إنشاء كائن user في AuthProvider؛ [user] كان يسبب حلقة مزامنة
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- نُعيد المزامنة عند تغيّر المستخدم (uid) أو انتهاء التقمص فقط
+  }, [user?.uid, impersonateUid])
 
   useEffect(() => {
     if (!user?.uid || impersonateUid || user?.hideHomePlanUi) return undefined

@@ -24,8 +24,17 @@ async function getMessagingInstance() {
   return getMessaging(app)
 }
 
+function profileAlreadyHasToken(user, token) {
+  const t = String(token || '').trim()
+  if (!t) return false
+  const a = String(user?.pushToken || '').trim()
+  const b = String(user?.fcmToken || '').trim()
+  return a === t || b === t
+}
+
 async function registerPushTokenForUser(user, token) {
-  if (!user?.uid || !token) return
+  if (!user?.uid || !token) return false
+  if (profileAlreadyHasToken(user, token)) return false
   const nowIso = new Date().toISOString()
   await firestoreApi.updateData({
     docRef: firestoreApi.getUserDoc(user.uid),
@@ -40,6 +49,7 @@ async function registerPushTokenForUser(user, token) {
     },
     userData: user,
   })
+  return true
 }
 
 function showForegroundNotification(payload) {
@@ -103,16 +113,20 @@ export async function syncFcmTokenToProfile(user) {
     return { ok: false, reason: 'NO_TOKEN' }
   }
 
-  await registerPushTokenForUser(user, token)
-  writePushTokenCache(user.uid, token)
+  const tokenStr = String(token).trim()
+
+  const didWrite = await registerPushTokenForUser(user, tokenStr)
+  writePushTokenCache(user.uid, tokenStr)
   attachForegroundListener(messaging)
 
-  console.log('[push] FCM token saved to users doc', {
-    uid: user.uid,
-    tokenPreview: `${String(token).slice(0, 24)}…`,
-  })
+  if (import.meta.env.DEV && didWrite) {
+    console.log('[push] FCM token saved to users doc', {
+      uid: user.uid,
+      tokenPreview: `${tokenStr.slice(0, 24)}…`,
+    })
+  }
 
-  return { ok: true, token }
+  return { ok: true, token: tokenStr }
 }
 
 /** اسم قديم / للواجهات التي تطلب «تفعيل الإشعارات» صراحةً */

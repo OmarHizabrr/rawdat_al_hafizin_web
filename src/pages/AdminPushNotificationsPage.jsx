@@ -34,7 +34,9 @@ export default function AdminPushNotificationsPage() {
     const unsub = subscribeAllUsers(
       (list) => {
         const arr = Array.isArray(list) ? list : []
-        console.log('[AdminPushNotifications] users snapshot', { count: arr.length })
+        if (import.meta.env.DEV) {
+          console.log('[AdminPushNotifications] users snapshot', { count: arr.length })
+        }
         setRows(arr)
       },
       (err) => {
