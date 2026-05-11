@@ -42,7 +42,7 @@ exports.dispatchPushFromQueue = functions
     const userRef = db.collection('users').doc(userId)
     const userSnap = await userRef.get()
     const userData = userSnap.exists ? userSnap.data() || {} : {}
-    const token = toSafeString(userData.pushToken)
+    const token = toSafeString(userData.pushToken || userData.fcmToken)
 
     if (!token) {
       await queueRef.set(

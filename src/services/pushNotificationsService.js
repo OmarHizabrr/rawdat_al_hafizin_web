@@ -8,15 +8,6 @@ function canUseBrowserNotifications() {
   return typeof window !== 'undefined' && 'Notification' in window && 'serviceWorker' in navigator
 }
 
-function readPushTokenCache(uid) {
-  if (!uid) return ''
-  try {
-    return String(localStorage.getItem(`rh.push.token.${uid}`) || '').trim()
-  } catch {
-    return ''
-  }
-}
-
 function writePushTokenCache(uid, token) {
   if (!uid) return
   try {
@@ -34,11 +25,16 @@ async function getMessagingInstance() {
 
 async function registerPushTokenForUser(user, token) {
   if (!user?.uid || !token) return
+  const nowIso = new Date().toISOString()
   await firestoreApi.updateData({
     docRef: firestoreApi.getUserDoc(user.uid),
     data: {
+      /** توكن FCM للويب — يُستخدم في Cloud Functions لإرسال الإشعارات */
       pushToken: token,
-      pushTokenUpdatedAt: new Date().toISOString(),
+      /** نفس القيمة باسم أوضح للمشرفين والتكاملات الخارجية */
+      fcmToken: token,
+      pushTokenUpdatedAt: nowIso,
+      fcmTokenUpdatedAt: nowIso,
       pushTokenPlatform: 'web',
     },
     userData: user,
@@ -75,11 +71,8 @@ export async function enablePushNotificationsForUser(user) {
   })
   if (!token) return { ok: false, reason: 'NO_TOKEN' }
 
-  const cached = readPushTokenCache(user.uid)
-  if (cached !== token) {
-    await registerPushTokenForUser(user, token)
-    writePushTokenCache(user.uid, token)
-  }
+  await registerPushTokenForUser(user, token)
+  writePushTokenCache(user.uid, token)
 
   if (typeof foregroundUnsubscribe === 'function') foregroundUnsubscribe()
   foregroundUnsubscribe = onMessage(messaging, (payload) => {

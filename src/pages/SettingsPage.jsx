@@ -1,6 +1,6 @@
 import { Ban, Bell, BellOff, Eye, EyeOff, Save, Upload, UserRound, Wind, Zap } from 'lucide-react'
 import { HapticLink } from '../ui/HapticLink.jsx'
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 
 import { ContactPhonesSection } from '../components/ContactPhonesSection.jsx'
 import { ImagePickPreview } from '../components/ImagePickPreview.jsx'
@@ -23,6 +23,7 @@ import {
   writeNotificationsMode,
 } from '../utils/notificationsPrefs.js'
 import { messageForProfilePhotoError } from '../services/profilePhotoStorage.js'
+import { enablePushNotificationsForUser } from '../services/pushNotificationsService.js'
 import {
   clearMyProfilePhoto,
   updateMyDisplayName,
@@ -48,6 +49,9 @@ export default function SettingsPage() {
   const [feelingsFlightMode, setFeelingsFlightMode] = useState(() => readFeelingsFlightMode())
   const [notificationsMode, setNotificationsMode] = useState(() => readNotificationsMode())
   const [hideHomePlanSaving, setHideHomePlanSaving] = useState(false)
+  const [pushTokenSaving, setPushTokenSaving] = useState(false)
+  const [pushTokenSaved, setPushTokenSaved] = useState(false)
+  const lastFcmTokenRef = useRef('')
   const settingsCrossItems = useMemo(() => {
     const base = [{ to: '/app', label: str('layout.nav_home') }]
     if (!user?.hideHomePlanUi) {
@@ -109,6 +113,60 @@ export default function SettingsPage() {
       toast.warning('تعذّر حفظ الإعداد. حاول مرة أخرى.', 'تنبيه')
     } finally {
       setHideHomePlanSaving(false)
+    }
+  }
+
+  const onSaveFcmTokenToUserDoc = async () => {
+    const fu = auth.currentUser
+    if (!fu?.uid || pushTokenSaving) return
+    setPushTokenSaving(true)
+    setPushTokenSaved(false)
+    lastFcmTokenRef.current = ''
+    try {
+      const res = await enablePushNotificationsForUser(fu)
+      if (res?.ok && res.token) {
+        lastFcmTokenRef.current = res.token
+        setPushTokenSaved(true)
+        toast.success(
+          'تم حفظ توكن الإشعارات في Firestore ضمن مستند المستخدم (الحقول pushToken و fcmToken).',
+          'تم',
+        )
+        return
+      }
+      if (res?.reason === 'MISSING_VAPID_KEY') {
+        toast.warning(
+          'أضف مفتاح VAPID في إعدادات البناء: VITE_FIREBASE_VAPID_KEY (من Firebase Console → Cloud Messaging).',
+          'تنبيه',
+        )
+        return
+      }
+      if (res?.reason === 'DENIED') {
+        toast.warning('لم يُمنح إذن الإشعارات من المتصفح.', 'تنبيه')
+        return
+      }
+      if (res?.reason === 'UNAVAILABLE') {
+        toast.warning('المتصفح لا يدعم إشعارات الدفع على هذا الجهاز.', 'تنبيه')
+        return
+      }
+      toast.warning('تعذّر الحصول على التوكن. جرّب من Chrome على الجوال أو بعد تثبيت التطبيق.', 'تنبيه')
+    } catch {
+      toast.warning('تعذّر حفظ التوكن. تحقق من الاتصال أو قواعد Firestore.', 'تنبيه')
+    } finally {
+      setPushTokenSaving(false)
+    }
+  }
+
+  const onCopyFcmToken = async () => {
+    const t = String(lastFcmTokenRef.current || '').trim()
+    if (!t) {
+      toast.info('احفظ التوكن أولاً بالزر أعلاه.', 'تنبيه')
+      return
+    }
+    try {
+      await navigator.clipboard.writeText(t)
+      toast.success('تم نسخ التوكن إلى الحافظة.', 'تم')
+    } catch {
+      toast.warning('تعذّر النسخ تلقائياً. انسخ يدوياً من Firestore من حقل pushToken أو fcmToken.', 'تنبيه')
     }
   }
 
@@ -324,6 +382,43 @@ export default function SettingsPage() {
           </>
         ) : (
           <p className="rh-settings-footnote">تغيير المظهر غير مفعّل لصلاحيات حسابك.</p>
+        )}
+      </section>
+
+      <section className="rh-settings-card">
+        <div className="rh-settings-card__head">
+          <h2 className="rh-settings-card__title">توكن إشعارات الهاتف (FCM)</h2>
+          <p className="rh-settings-card__subtitle">
+            لإرسال إشعارات للهاتف بعد تثبيت المنصة، يُخزَّن توكن الجهاز في مستند المستخدم ضمن مجموعة Firestore{' '}
+            <code dir="ltr">users</code> في الحقلين <code dir="ltr">pushToken</code> و <code dir="ltr">fcmToken</code>{' '}
+            (نفس القيمة). يمكنك نسخ التوكن من هنا أو من لوحة Firebase.
+          </p>
+        </div>
+        {user?.uid ? (
+          <>
+            <p className="rh-settings-footnote" style={{ marginTop: 0 }}>
+              اضغط الزر ثم وافق على إذن الإشعارات من المتصفح. يتطلب إعداد مفتاح{' '}
+              <code dir="ltr">VITE_FIREBASE_VAPID_KEY</code> في بيئة البناء.
+            </p>
+            <div className="rh-settings-profile-form__actions" style={{ marginTop: 'var(--rh-space-3)' }}>
+              <Button
+                type="button"
+                variant="secondary"
+                icon={Bell}
+                loading={pushTokenSaving}
+                onClick={() => void onSaveFcmTokenToUserDoc()}
+              >
+                حفظ توكن هذا الجهاز في الحساب
+              </Button>
+              {pushTokenSaved ? (
+                <Button type="button" variant="ghost" onClick={() => void onCopyFcmToken()}>
+                  نسخ التوكن الكامل
+                </Button>
+              ) : null}
+            </div>
+          </>
+        ) : (
+          <p className="rh-settings-footnote">سجّل الدخول لحفظ توكن الإشعارات.</p>
         )}
       </section>
 
