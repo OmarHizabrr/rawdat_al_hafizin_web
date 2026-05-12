@@ -68,13 +68,21 @@ export default function CertificatesPage() {
     if (canAccessPage('dawrat')) {
       base.push({ to: appLink('/app/dawrat'), label: str('layout.nav_dawrat') })
     }
-    base.push(
-      { to: appLink('/app/awrad'), label: str('layout.nav_awrad') },
-      { to: appLink('/app/welcome'), label: str('layout.nav_welcome') },
-      { to: appLink('/app/feelings'), label: str('layout.nav_feelings') },
-      { to: appLink('/app/leave-request'), label: str('layout.nav_leave_request') },
-      { to: appLink('/app/settings'), label: str('layout.nav_settings') },
-    )
+    if (canAccessPage('awrad')) {
+      base.push({ to: appLink('/app/awrad'), label: str('layout.nav_awrad') })
+    }
+    if (canAccessPage('welcome')) {
+      base.push({ to: appLink('/app/welcome'), label: str('layout.nav_welcome') })
+    }
+    if (canAccessPage('feelings')) {
+      base.push({ to: appLink('/app/feelings'), label: str('layout.nav_feelings') })
+    }
+    if (canAccessPage('leave_request')) {
+      base.push({ to: appLink('/app/leave-request'), label: str('layout.nav_leave_request') })
+    }
+    if (canAccessPage('settings')) {
+      base.push({ to: appLink('/app/settings'), label: str('layout.nav_settings') })
+    }
     if (isAdmin(user)) {
       base.push({ to: '/app/admin', label: str('layout.nav_dashboard') })
       base.push({ to: '/app/admin/users', label: str('layout.nav_users') })

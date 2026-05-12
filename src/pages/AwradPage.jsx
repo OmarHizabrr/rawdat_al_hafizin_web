@@ -102,7 +102,9 @@ export default function AwradPage() {
         label: str('layout.nav_certificates'),
       })
     }
-    base.push({ to: appPathWithImpersonation('/app/settings'), label: str('layout.nav_settings') })
+    if (canAccessPage('settings')) {
+      base.push({ to: appPathWithImpersonation('/app/settings'), label: str('layout.nav_settings') })
+    }
     if (isAdmin(user)) {
       base.push({ to: '/app/admin', label: str('layout.nav_dashboard') })
       base.push({ to: '/app/admin/users', label: str('layout.nav_users') })

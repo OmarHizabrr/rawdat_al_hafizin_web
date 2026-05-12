@@ -613,7 +613,7 @@ export default function HalakatPage() {
     return normalizeRole(row?.halakaRole)
   }, [saved, sessionsModalHalaka?.id])
 
-  const canOpenSessions = (h) => Boolean(h?.id)
+  const canOpenSessions = (h) => Boolean(h?.id) && can(PH, 'halaka_card_sessions')
 
   const canWriteSessionRows = canManageRole(activeHalakaRole, HALAKA_MEMBER_ROLES.STUDENT)
   const memberAppLink = useCallback(

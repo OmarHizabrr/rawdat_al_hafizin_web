@@ -492,7 +492,7 @@ export default function RemoteTasmeePage() {
     const items = [
       { to: appLink('/app'), label: str('layout.nav_home') },
       ...(hidePlanNavigation ? [] : [{ to: appLink('/app/plans'), label: str('layout.nav_plans') }]),
-      { to: appLink('/app/halakat'), label: str('layout.nav_halakat') },
+      ...(canAccessPage('halakat') ? [{ to: appLink('/app/halakat'), label: str('layout.nav_halakat') }] : []),
       { to: exploreHref, label: str('layout.nav_remote_tasmee_explore') },
       ...(canAccessPage('exams') ? [{ to: appLink('/app/exams'), label: str('layout.nav_exams') }] : []),
       ...(canAccessPage('exams_explore')
@@ -502,12 +502,14 @@ export default function RemoteTasmeePage() {
       ...(canAccessPage('activities_explore')
         ? [{ to: appLink('/app/activities/explore'), label: str('layout.nav_activities_explore') }]
         : []),
-      { to: appLink('/app/dawrat'), label: str('layout.nav_dawrat') },
+      ...(canAccessPage('dawrat') ? [{ to: appLink('/app/dawrat'), label: str('layout.nav_dawrat') }] : []),
     ]
     if (canAccessPage('leave_request')) {
       items.push({ to: appLink('/app/leave-request'), label: str('layout.nav_leave_request') })
     }
-    items.push({ to: appLink('/app/settings'), label: str('layout.nav_settings') })
+    if (canAccessPage('settings')) {
+      items.push({ to: appLink('/app/settings'), label: str('layout.nav_settings') })
+    }
     return items
   }, [str, exploreHref, appLink, canAccessPage, hidePlanNavigation])
 
@@ -612,13 +614,15 @@ export default function RemoteTasmeePage() {
                   المعرف: <code className="rh-plans__plan-id">{b.id}</code>
                 </p>
                 <div className="rh-plans__saved-actions">
-                  <HapticLink
-                    to={appLink(`/app/remote-tasmee/${encodeURIComponent(b.id)}`)}
-                    className="ui-btn ui-btn--secondary ui-btn--sm"
-                  >
-                    <RemoteTasmeeProviderIcon provider={b.provider} size={16} aria-hidden />
-                    صفحة البث
-                  </HapticLink>
+                  {can(PH, 'remote_tasmee_card_open_page') ? (
+                    <HapticLink
+                      to={appLink(`/app/remote-tasmee/${encodeURIComponent(b.id)}`)}
+                      className="ui-btn ui-btn--secondary ui-btn--sm"
+                    >
+                      <RemoteTasmeeProviderIcon provider={b.provider} size={16} aria-hidden />
+                      صفحة البث
+                    </HapticLink>
+                  ) : null}
                   {broadcastCanManageMembers(b) && can(PH, 'remote_tasmee_card_members') && (
                     <Button type="button" variant="secondary" size="sm" icon={Users} onClick={() => setMembersModal(b)}>
                       الأعضاء

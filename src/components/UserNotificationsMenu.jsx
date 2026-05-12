@@ -2,6 +2,7 @@ import { Bell, CheckCheck } from 'lucide-react'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useLocation } from 'react-router-dom'
 import { getImpersonateUid, withImpersonationQuery } from '../utils/impersonation.js'
+import { PERMISSION_PAGE_IDS } from '../config/permissionRegistry.js'
 import { usePermissions } from '../context/usePermissions.js'
 import {
   markAllUserNotificationsRead,
@@ -17,6 +18,8 @@ import { useOnClickOutside } from '../ui/hooks/useOnClickOutside.js'
 import { rhHapticChromeTap, rhHapticLight } from '../utils/haptics.js'
 import { RH_ICON_STROKE, RhIcon } from '../ui/RhIcon.jsx'
 
+const PN = PERMISSION_PAGE_IDS.notifications
+
 function formatWhen(iso) {
   const t = Date.parse(String(iso || ''))
   if (!Number.isFinite(t)) return ''
@@ -29,13 +32,15 @@ function formatWhen(iso) {
 }
 
 export function UserNotificationsMenu({ user }) {
-  const { canAccessPage } = usePermissions()
+  const { can, canAccessPage } = usePermissions()
   const { search } = useLocation()
   const impersonateUid = getImpersonateUid(user, search)
   const userId = user?.uid || ''
   const [open, setOpen] = useState(false)
   const [items, setItems] = useState([])
   const [enabled, setEnabled] = useState(() => notificationsEnabled())
+  const canMarkAllRead = can(PN, 'notification_mark_all_read')
+  const canMarkRead = can(PN, 'notification_mark_read')
   const rootRef = useRef(null)
   useOnClickOutside(rootRef, () => setOpen(false), open)
 
@@ -72,7 +77,7 @@ export function UserNotificationsMenu({ user }) {
         <section className="rh-notify__panel" role="dialog" aria-label="الإشعارات">
           <header className="rh-notify__head">
             <strong>الإشعارات</strong>
-            {unreadCount > 0 ? (
+            {canMarkAllRead && unreadCount > 0 ? (
               <button
                 type="button"
                 className="rh-notify__mark-all"
@@ -116,7 +121,7 @@ export function UserNotificationsMenu({ user }) {
                   {n.body ? <p className="rh-notify__body">{n.body}</p> : null}
                   <div className="rh-notify__meta">
                     <span>{formatWhen(n.createdAt)}</span>
-                    {!n.isRead ? (
+                    {canMarkRead && !n.isRead ? (
                       <button
                         type="button"
                         className="rh-notify__mark"
@@ -128,9 +133,9 @@ export function UserNotificationsMenu({ user }) {
                       >
                         تمّت القراءة
                       </button>
-                    ) : (
+                    ) : n.isRead ? (
                       <span className="rh-notify__read-pill">مقروء</span>
-                    )}
+                    ) : null}
                   </div>
                 </article>
               ))

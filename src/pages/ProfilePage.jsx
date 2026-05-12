@@ -25,15 +25,17 @@ export default function ProfilePage() {
 
   const crossItems = useMemo(() => {
     const base = [{ to: '/app', label: str('layout.nav_home') }]
-    if (!user?.hideHomePlanUi) {
+    if (!user?.hideHomePlanUi && canAccessPage('plans')) {
       base.push({ to: '/app/plans', label: str('layout.nav_plans') })
     }
     if (canAccessPage('halakat')) base.push({ to: '/app/halakat', label: str('layout.nav_halakat') })
     if (canAccessPage('dawrat')) base.push({ to: '/app/dawrat', label: str('layout.nav_dawrat') })
-    base.push(
-      { to: '/app/awrad', label: str('layout.nav_awrad') },
-      { to: '/app/settings', label: str('layout.nav_settings') },
-    )
+    if (canAccessPage('awrad')) {
+      base.push({ to: '/app/awrad', label: str('layout.nav_awrad') })
+    }
+    if (canAccessPage('settings')) {
+      base.push({ to: '/app/settings', label: str('layout.nav_settings') })
+    }
     return base
   }, [user?.hideHomePlanUi, str, canAccessPage])
 
@@ -82,24 +84,30 @@ export default function ProfilePage() {
         <h3 className="rh-profile-card-panel__title">اختصارات سريعة</h3>
         <p className="rh-profile-card-panel__desc">الوصول إلى الخدمات الشائعة بنقرة واحدة.</p>
         <div className="rh-profile-actions">
-          <HapticLink to="/app/settings" className="ui-btn ui-btn--primary">
-            <RhIcon as={Settings} size={18} strokeWidth={RH_ICON_STROKE} className="ui-btn__icon" aria-hidden />
-            الإعدادات والتعديل
-          </HapticLink>
-          {!user?.hideHomePlanUi ? (
+          {canAccessPage('settings') ? (
+            <HapticLink to="/app/settings" className="ui-btn ui-btn--primary">
+              <RhIcon as={Settings} size={18} strokeWidth={RH_ICON_STROKE} className="ui-btn__icon" aria-hidden />
+              الإعدادات والتعديل
+            </HapticLink>
+          ) : null}
+          {!user?.hideHomePlanUi && canAccessPage('plans') ? (
             <HapticLink to="/app/plans" className="ui-btn ui-btn--secondary">
               <RhIcon as={ClipboardList} size={18} strokeWidth={RH_ICON_STROKE} className="ui-btn__icon" aria-hidden />
               خططي
             </HapticLink>
           ) : null}
-          <HapticLink to="/app/awrad" className="ui-btn ui-btn--secondary">
-            <RhIcon as={NotebookPen} size={18} strokeWidth={RH_ICON_STROKE} className="ui-btn__icon" aria-hidden />
-            الأوراد
-          </HapticLink>
-          <HapticLink to="/app/welcome" className="ui-btn ui-btn--ghost">
-            <RhIcon as={BookOpen} size={18} strokeWidth={RH_ICON_STROKE} className="ui-btn__icon" aria-hidden />
-            البداية
-          </HapticLink>
+          {canAccessPage('awrad') ? (
+            <HapticLink to="/app/awrad" className="ui-btn ui-btn--secondary">
+              <RhIcon as={NotebookPen} size={18} strokeWidth={RH_ICON_STROKE} className="ui-btn__icon" aria-hidden />
+              الأوراد
+            </HapticLink>
+          ) : null}
+          {canAccessPage('welcome') ? (
+            <HapticLink to="/app/welcome" className="ui-btn ui-btn--ghost">
+              <RhIcon as={BookOpen} size={18} strokeWidth={RH_ICON_STROKE} className="ui-btn__icon" aria-hidden />
+              البداية
+            </HapticLink>
+          ) : null}
         </div>
       </section>
 

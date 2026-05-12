@@ -41,6 +41,8 @@ export default function UserNotificationsPage() {
   const [items, setItems] = useState([])
   const [deletingId, setDeletingId] = useState(null)
   const userId = user?.uid || ''
+  const canMarkAllRead = can(PN, 'notification_mark_all_read')
+  const canMarkRead = can(PN, 'notification_mark_read')
   const canDelete = can(PN, 'notification_delete')
 
   const settingsCrossItems = useMemo(() => {
@@ -81,16 +83,16 @@ export default function UserNotificationsPage() {
 
   const onMarkRead = useCallback(
     (id) => {
-      if (!userId) return
+      if (!userId || !canMarkRead) return
       markUserNotificationRead(userId, id, user || {})
     },
-    [userId, user],
+    [userId, user, canMarkRead],
   )
 
   const onMarkAllRead = useCallback(() => {
-    if (!userId) return
+    if (!userId || !canMarkAllRead) return
     markAllUserNotificationsRead(userId, items, user || {})
-  }, [userId, items, user])
+  }, [userId, items, user, canMarkAllRead])
 
   return (
     <div className="rh-settings rh-notifications-page">
@@ -113,7 +115,7 @@ export default function UserNotificationsPage() {
               عرض كل الإشعارات وحذف ما تشاء. القائمة المنسدلة في الشريط تعرض أحدث العناصر فقط.
             </p>
           </div>
-          {unreadCount > 0 && items.length > 0 ? (
+          {canMarkAllRead && unreadCount > 0 && items.length > 0 ? (
             <Button type="button" variant="secondary" icon={CheckCheck} onClick={onMarkAllRead}>
               تعليم الكل كمقروء
             </Button>
@@ -154,13 +156,13 @@ export default function UserNotificationsPage() {
                   <div className="rh-notify__meta" style={{ flexWrap: 'wrap', gap: '0.5rem' }}>
                     <span>{formatWhen(n.createdAt)}</span>
                     <span style={{ display: 'inline-flex', gap: 8, alignItems: 'center' }}>
-                      {!n.isRead ? (
+                      {canMarkRead && !n.isRead ? (
                         <button type="button" className="rh-notify__mark" onClick={() => onMarkRead(n.id)}>
                           تمّت القراءة
                         </button>
-                      ) : (
+                      ) : n.isRead ? (
                         <span className="rh-notify__read-pill">مقروء</span>
-                      )}
+                      ) : null}
                       {canDelete ? (
                         <Button
                           type="button"

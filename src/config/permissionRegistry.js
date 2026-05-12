@@ -86,6 +86,7 @@ export const PERMISSION_PAGES = [
       { id: 'halaka_create', label: 'إضافة حلقة' },
       { id: 'halaka_join_public', label: 'الانضمام بمعرّف + استكشاف الحلقات العامة' },
       { id: 'halaka_card_members', label: 'بطاقة: إدارة الأعضاء' },
+      { id: 'halaka_card_sessions', label: 'بطاقة: فتح جلسات الحلقة' },
       { id: 'halaka_card_edit', label: 'بطاقة: تعديل الحلقة' },
       { id: 'halaka_card_delete_leave', label: 'بطاقة: حذف الحلقة / مغادرة الحلقة' },
       { id: 'halaka_member_add', label: 'نافذة الأعضاء: إضافة عضو' },
@@ -109,6 +110,7 @@ export const PERMISSION_PAGES = [
     actions: [
       { id: 'remote_tasmee_create', label: 'إضافة بث / جلسة عن بعد' },
       { id: 'remote_tasmee_join_public', label: 'الانضمام بمعرّف + استكشاف البث العام' },
+      { id: 'remote_tasmee_card_open_page', label: 'بطاقة: فتح صفحة البث' },
       { id: 'remote_tasmee_card_members', label: 'بطاقة: إدارة الأعضاء' },
       { id: 'remote_tasmee_card_edit', label: 'بطاقة: تعديل البث' },
       { id: 'remote_tasmee_card_delete_leave', label: 'بطاقة: حذف البث / مغادرة' },
@@ -133,6 +135,7 @@ export const PERMISSION_PAGES = [
     actions: [
       { id: 'exam_create', label: 'إضافة مجموعة اختبار' },
       { id: 'exam_join_public', label: 'الانضمام بمعرّف + استكشاف العام' },
+      { id: 'exam_card_remote_tasmee', label: 'بطاقة: زر بث التسميع المرتبط بالاختبار' },
       { id: 'exam_card_members', label: 'بطاقة: إدارة الأعضاء' },
       { id: 'exam_card_edit', label: 'بطاقة: تعديل' },
       { id: 'exam_card_delete_leave', label: 'بطاقة: حذف / مغادرة' },
@@ -193,6 +196,7 @@ export const PERMISSION_PAGES = [
     actions: [
       { id: 'activity_create', label: 'إضافة مجموعة نشاط' },
       { id: 'activity_join_public', label: 'الانضمام بمعرّف + استكشاف العام' },
+      { id: 'activity_print', label: 'الأنشطة: زر الطباعة' },
       { id: 'activity_card_members', label: 'بطاقة: إدارة الأعضاء' },
       { id: 'activity_card_edit', label: 'بطاقة: تعديل' },
       { id: 'activity_card_delete_leave', label: 'بطاقة: حذف / مغادرة' },
@@ -244,6 +248,9 @@ export const PERMISSION_PAGES = [
     label: 'الإعدادات',
     actions: [
       { id: 'settings_theme', label: 'تغيير وضع المظهر (فاتح/داكن)' },
+      { id: 'settings_feelings_flight_mode', label: 'تعديل حركة طيور المشاعر (تعطيل/تخفيف/تسريع)' },
+      { id: 'settings_notifications_mode', label: 'تعديل وضع الإشعارات على الجهاز (تشغيل/إيقاف)' },
+      { id: 'settings_push_token_manage', label: 'إدارة توكن إشعارات الهاتف (حفظ/نسخ)' },
       { id: 'settings_edit_profile', label: 'تعديل الاسم ورفع صورة الملف الشخصي (تخزين)' },
       {
         id: 'settings_toggle_hide_home_plan',
@@ -256,6 +263,8 @@ export const PERMISSION_PAGES = [
     path: '/app/notifications',
     label: 'الإشعارات',
     actions: [
+      { id: 'notification_mark_all_read', label: 'الإشعارات: زر تعليم الكل كمقروء' },
+      { id: 'notification_mark_read', label: 'الإشعارات: زر تمّت القراءة لكل إشعار' },
       { id: 'notification_delete', label: 'حذف إشعار' },
     ],
   },

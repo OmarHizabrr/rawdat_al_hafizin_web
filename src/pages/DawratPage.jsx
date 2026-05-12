@@ -402,7 +402,7 @@ export default function DawratPage() {
   const crossItems = useMemo(() => {
     const items = [
       { to: appLink('/app'), label: str('layout.nav_home') },
-      { to: appLink('/app/halakat'), label: str('layout.nav_halakat') },
+      ...(canAccessPage('halakat') ? [{ to: appLink('/app/halakat'), label: str('layout.nav_halakat') }] : []),
       { to: exploreHref, label: str('layout.nav_dawrat_explore') },
     ]
     if (!hidePlanNavigation) {
@@ -426,7 +426,9 @@ export default function DawratPage() {
     if (canAccessPage('certificates')) {
       items.push({ to: appLink('/app/certificates'), label: str('layout.nav_certificates') })
     }
-    items.push({ to: appLink('/app/settings'), label: str('layout.nav_settings') })
+    if (canAccessPage('settings')) {
+      items.push({ to: appLink('/app/settings'), label: str('layout.nav_settings') })
+    }
     return items
   }, [str, exploreHref, appLink, canAccessPage, hidePlanNavigation])
 

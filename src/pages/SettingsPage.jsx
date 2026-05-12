@@ -93,6 +93,10 @@ export default function SettingsPage() {
   const name = user?.displayName?.trim() || '—'
   const email = user?.email || '—'
   const photo = user?.photoURL
+  const canChangeTheme = can(PS, 'settings_theme')
+  const canManageFeelingsFlight = can(PS, 'settings_feelings_flight_mode')
+  const canManageNotificationsMode = can(PS, 'settings_notifications_mode')
+  const canManagePushToken = can(PS, 'settings_push_token_manage')
   const canEditProfile = can(PS, 'settings_edit_profile')
   const canToggleHideHomePlan = can(PS, 'settings_toggle_hide_home_plan')
 
@@ -274,114 +278,122 @@ export default function SettingsPage() {
           <h2 className="rh-settings-card__title">المظهر</h2>
           <p className="rh-settings-card__subtitle">اختر وضع الألوان المناسب لك أو اتركه يتبع النظام.</p>
         </div>
-        {can(PS, 'settings_theme') ? (
+        {canChangeTheme || canManageFeelingsFlight || canManageNotificationsMode ? (
           <>
-            <ThemeModePicker />
-            <div className="rh-settings-card__head" style={{ marginTop: 'var(--rh-space-4)' }}>
-              <h3 className="rh-settings-card__title">حركة طيور المشاعر</h3>
-              <p className="rh-settings-card__subtitle">
-                تتحكم بحركة الرسائل الطائرة في الصفحة الرئيسية: تعطيل كامل، حركة هادئة، أو حركة أسرع. يمكنك أيضاً سحب
-                أي طائر بعيداً بإصبعك أو بالفأرة لإخفائه حتى تحديث الصفحة (مثل إيماءة إغلاق على الجوال).
-              </p>
-            </div>
-            <div className="rh-segment" role="radiogroup" aria-label="وضع حركة طيور المشاعر">
-              <button
-                type="button"
-                className={['rh-segment__btn', feelingsFlightMode === FEELINGS_FLIGHT_MODE.OFF ? 'rh-segment__btn--active' : '']
-                  .filter(Boolean)
-                  .join(' ')}
-                onClick={() => {
-                  rhHapticLight()
-                  onChangeFeelingsFlightMode(FEELINGS_FLIGHT_MODE.OFF)
-                }}
-                aria-pressed={feelingsFlightMode === FEELINGS_FLIGHT_MODE.OFF}
-              >
-                <span className="rh-segment__lead">
-                  <RhIcon as={Ban} size={20} strokeWidth={RH_ICON_STROKE} aria-hidden />
-                  <span className="rh-segment__label">تعطيل</span>
-                </span>
-                <span className="rh-segment__hint">إخفاء الطيور المتحركة من الرئيسية</span>
-              </button>
-              <button
-                type="button"
-                className={['rh-segment__btn', feelingsFlightMode === FEELINGS_FLIGHT_MODE.CALM ? 'rh-segment__btn--active' : '']
-                  .filter(Boolean)
-                  .join(' ')}
-                onClick={() => {
-                  rhHapticLight()
-                  onChangeFeelingsFlightMode(FEELINGS_FLIGHT_MODE.CALM)
-                }}
-                aria-pressed={feelingsFlightMode === FEELINGS_FLIGHT_MODE.CALM}
-              >
-                <span className="rh-segment__lead">
-                  <RhIcon as={Wind} size={20} strokeWidth={RH_ICON_STROKE} aria-hidden />
-                  <span className="rh-segment__label">تخفيف</span>
-                </span>
-                <span className="rh-segment__hint">عدد أقل وسرعة أهدأ</span>
-              </button>
-              <button
-                type="button"
-                className={['rh-segment__btn', feelingsFlightMode === FEELINGS_FLIGHT_MODE.FAST ? 'rh-segment__btn--active' : '']
-                  .filter(Boolean)
-                  .join(' ')}
-                onClick={() => {
-                  rhHapticLight()
-                  onChangeFeelingsFlightMode(FEELINGS_FLIGHT_MODE.FAST)
-                }}
-                aria-pressed={feelingsFlightMode === FEELINGS_FLIGHT_MODE.FAST}
-              >
-                <span className="rh-segment__lead">
-                  <RhIcon as={Zap} size={20} strokeWidth={RH_ICON_STROKE} aria-hidden />
-                  <span className="rh-segment__label">تسريع</span>
-                </span>
-                <span className="rh-segment__hint">حركة أسرع وكثافة أعلى</span>
-              </button>
-            </div>
-            <div className="rh-settings-card__head" style={{ marginTop: 'var(--rh-space-4)' }}>
-              <h3 className="rh-settings-card__title">الإشعارات</h3>
-              <p className="rh-settings-card__subtitle">
-                عند الإيقاف لن تظهر إشعارات المنصة (التنبيهات العائمة والجرس والتنبيهات المحلية) على هذا الجهاز.
-              </p>
-            </div>
-            <div className="rh-segment" role="radiogroup" aria-label="وضع الإشعارات">
-              <button
-                type="button"
-                className={['rh-segment__btn', notificationsMode === NOTIFICATIONS_MODE.ON ? 'rh-segment__btn--active' : '']
-                  .filter(Boolean)
-                  .join(' ')}
-                onClick={() => {
-                  rhHapticLight()
-                  onChangeNotificationsMode(NOTIFICATIONS_MODE.ON)
-                }}
-                aria-pressed={notificationsMode === NOTIFICATIONS_MODE.ON}
-              >
-                <span className="rh-segment__lead">
-                  <RhIcon as={Bell} size={20} strokeWidth={RH_ICON_STROKE} aria-hidden />
-                  <span className="rh-segment__label">تشغيل</span>
-                </span>
-                <span className="rh-segment__hint">إظهار الإشعارات بشكل طبيعي</span>
-              </button>
-              <button
-                type="button"
-                className={['rh-segment__btn', notificationsMode === NOTIFICATIONS_MODE.OFF ? 'rh-segment__btn--active' : '']
-                  .filter(Boolean)
-                  .join(' ')}
-                onClick={() => {
-                  rhHapticLight()
-                  onChangeNotificationsMode(NOTIFICATIONS_MODE.OFF)
-                }}
-                aria-pressed={notificationsMode === NOTIFICATIONS_MODE.OFF}
-              >
-                <span className="rh-segment__lead">
-                  <RhIcon as={BellOff} size={20} strokeWidth={RH_ICON_STROKE} aria-hidden />
-                  <span className="rh-segment__label">إيقاف</span>
-                </span>
-                <span className="rh-segment__hint">إخفاء كل إشعارات المنصة على هذا الجهاز</span>
-              </button>
-            </div>
+            {canChangeTheme ? <ThemeModePicker /> : <p className="rh-settings-footnote">تغيير المظهر غير مفعّل لصلاحيات حسابك.</p>}
+            {canManageFeelingsFlight ? (
+              <>
+                <div className="rh-settings-card__head" style={{ marginTop: 'var(--rh-space-4)' }}>
+                  <h3 className="rh-settings-card__title">حركة طيور المشاعر</h3>
+                  <p className="rh-settings-card__subtitle">
+                    تتحكم بحركة الرسائل الطائرة في الصفحة الرئيسية: تعطيل كامل، حركة هادئة، أو حركة أسرع. يمكنك أيضاً سحب
+                    أي طائر بعيداً بإصبعك أو بالفأرة لإخفائه حتى تحديث الصفحة (مثل إيماءة إغلاق على الجوال).
+                  </p>
+                </div>
+                <div className="rh-segment" role="radiogroup" aria-label="وضع حركة طيور المشاعر">
+                  <button
+                    type="button"
+                    className={['rh-segment__btn', feelingsFlightMode === FEELINGS_FLIGHT_MODE.OFF ? 'rh-segment__btn--active' : '']
+                      .filter(Boolean)
+                      .join(' ')}
+                    onClick={() => {
+                      rhHapticLight()
+                      onChangeFeelingsFlightMode(FEELINGS_FLIGHT_MODE.OFF)
+                    }}
+                    aria-pressed={feelingsFlightMode === FEELINGS_FLIGHT_MODE.OFF}
+                  >
+                    <span className="rh-segment__lead">
+                      <RhIcon as={Ban} size={20} strokeWidth={RH_ICON_STROKE} aria-hidden />
+                      <span className="rh-segment__label">تعطيل</span>
+                    </span>
+                    <span className="rh-segment__hint">إخفاء الطيور المتحركة من الرئيسية</span>
+                  </button>
+                  <button
+                    type="button"
+                    className={['rh-segment__btn', feelingsFlightMode === FEELINGS_FLIGHT_MODE.CALM ? 'rh-segment__btn--active' : '']
+                      .filter(Boolean)
+                      .join(' ')}
+                    onClick={() => {
+                      rhHapticLight()
+                      onChangeFeelingsFlightMode(FEELINGS_FLIGHT_MODE.CALM)
+                    }}
+                    aria-pressed={feelingsFlightMode === FEELINGS_FLIGHT_MODE.CALM}
+                  >
+                    <span className="rh-segment__lead">
+                      <RhIcon as={Wind} size={20} strokeWidth={RH_ICON_STROKE} aria-hidden />
+                      <span className="rh-segment__label">تخفيف</span>
+                    </span>
+                    <span className="rh-segment__hint">عدد أقل وسرعة أهدأ</span>
+                  </button>
+                  <button
+                    type="button"
+                    className={['rh-segment__btn', feelingsFlightMode === FEELINGS_FLIGHT_MODE.FAST ? 'rh-segment__btn--active' : '']
+                      .filter(Boolean)
+                      .join(' ')}
+                    onClick={() => {
+                      rhHapticLight()
+                      onChangeFeelingsFlightMode(FEELINGS_FLIGHT_MODE.FAST)
+                    }}
+                    aria-pressed={feelingsFlightMode === FEELINGS_FLIGHT_MODE.FAST}
+                  >
+                    <span className="rh-segment__lead">
+                      <RhIcon as={Zap} size={20} strokeWidth={RH_ICON_STROKE} aria-hidden />
+                      <span className="rh-segment__label">تسريع</span>
+                    </span>
+                    <span className="rh-segment__hint">حركة أسرع وكثافة أعلى</span>
+                  </button>
+                </div>
+              </>
+            ) : null}
+            {canManageNotificationsMode ? (
+              <>
+                <div className="rh-settings-card__head" style={{ marginTop: 'var(--rh-space-4)' }}>
+                  <h3 className="rh-settings-card__title">الإشعارات</h3>
+                  <p className="rh-settings-card__subtitle">
+                    عند الإيقاف لن تظهر إشعارات المنصة (التنبيهات العائمة والجرس والتنبيهات المحلية) على هذا الجهاز.
+                  </p>
+                </div>
+                <div className="rh-segment" role="radiogroup" aria-label="وضع الإشعارات">
+                  <button
+                    type="button"
+                    className={['rh-segment__btn', notificationsMode === NOTIFICATIONS_MODE.ON ? 'rh-segment__btn--active' : '']
+                      .filter(Boolean)
+                      .join(' ')}
+                    onClick={() => {
+                      rhHapticLight()
+                      onChangeNotificationsMode(NOTIFICATIONS_MODE.ON)
+                    }}
+                    aria-pressed={notificationsMode === NOTIFICATIONS_MODE.ON}
+                  >
+                    <span className="rh-segment__lead">
+                      <RhIcon as={Bell} size={20} strokeWidth={RH_ICON_STROKE} aria-hidden />
+                      <span className="rh-segment__label">تشغيل</span>
+                    </span>
+                    <span className="rh-segment__hint">إظهار الإشعارات بشكل طبيعي</span>
+                  </button>
+                  <button
+                    type="button"
+                    className={['rh-segment__btn', notificationsMode === NOTIFICATIONS_MODE.OFF ? 'rh-segment__btn--active' : '']
+                      .filter(Boolean)
+                      .join(' ')}
+                    onClick={() => {
+                      rhHapticLight()
+                      onChangeNotificationsMode(NOTIFICATIONS_MODE.OFF)
+                    }}
+                    aria-pressed={notificationsMode === NOTIFICATIONS_MODE.OFF}
+                  >
+                    <span className="rh-segment__lead">
+                      <RhIcon as={BellOff} size={20} strokeWidth={RH_ICON_STROKE} aria-hidden />
+                      <span className="rh-segment__label">إيقاف</span>
+                    </span>
+                    <span className="rh-segment__hint">إخفاء كل إشعارات المنصة على هذا الجهاز</span>
+                  </button>
+                </div>
+              </>
+            ) : null}
           </>
         ) : (
-          <p className="rh-settings-footnote">تغيير المظهر غير مفعّل لصلاحيات حسابك.</p>
+          <p className="rh-settings-footnote">خيارات المظهر والإشعارات غير مفعّلة لصلاحيات حسابك.</p>
         )}
       </section>
 
@@ -395,31 +407,35 @@ export default function SettingsPage() {
             التوكن من هنا أو من لوحة Firebase.
           </p>
         </div>
-        {user?.uid ? (
-          <>
-            <p className="rh-settings-footnote" style={{ marginTop: 0 }}>
-              اضغط الزر ثم وافق على إذن الإشعارات من المتصفح. يتطلب إعداد مفتاح{' '}
-              <code dir="ltr">VITE_FIREBASE_VAPID_KEY</code> في بيئة البناء.
-            </p>
-            <div className="rh-settings-profile-form__actions" style={{ marginTop: 'var(--rh-space-3)' }}>
-              <Button
-                type="button"
-                variant="secondary"
-                icon={Bell}
-                loading={pushTokenSaving}
-                onClick={() => void onSaveFcmTokenToUserDoc()}
-              >
-                حفظ توكن هذا الجهاز في الحساب
-              </Button>
-              {pushTokenSaved ? (
-                <Button type="button" variant="ghost" onClick={() => void onCopyFcmToken()}>
-                  نسخ التوكن الكامل
+        {canManagePushToken ? (
+          user?.uid ? (
+            <>
+              <p className="rh-settings-footnote" style={{ marginTop: 0 }}>
+                اضغط الزر ثم وافق على إذن الإشعارات من المتصفح. يتطلب إعداد مفتاح{' '}
+                <code dir="ltr">VITE_FIREBASE_VAPID_KEY</code> في بيئة البناء.
+              </p>
+              <div className="rh-settings-profile-form__actions" style={{ marginTop: 'var(--rh-space-3)' }}>
+                <Button
+                  type="button"
+                  variant="secondary"
+                  icon={Bell}
+                  loading={pushTokenSaving}
+                  onClick={() => void onSaveFcmTokenToUserDoc()}
+                >
+                  حفظ توكن هذا الجهاز في الحساب
                 </Button>
-              ) : null}
-            </div>
-          </>
+                {pushTokenSaved ? (
+                  <Button type="button" variant="ghost" onClick={() => void onCopyFcmToken()}>
+                    نسخ التوكن الكامل
+                  </Button>
+                ) : null}
+              </div>
+            </>
+          ) : (
+            <p className="rh-settings-footnote">سجّل الدخول لحفظ توكن الإشعارات.</p>
+          )
         ) : (
-          <p className="rh-settings-footnote">سجّل الدخول لحفظ توكن الإشعارات.</p>
+          <p className="rh-settings-footnote">إدارة توكن إشعارات الهاتف غير مفعّلة لصلاحيات حسابك.</p>
         )}
       </section>
 

@@ -454,7 +454,7 @@ export default function ActivitiesPage() {
     const items = [
       { to: appLink('/app'), label: str('layout.nav_home') },
       ...(hidePlanNavigation ? [] : [{ to: appLink('/app/plans'), label: str('layout.nav_plans') }]),
-      { to: appLink('/app/halakat'), label: str('layout.nav_halakat') },
+      ...(canAccessPage('halakat') ? [{ to: appLink('/app/halakat'), label: str('layout.nav_halakat') }] : []),
       { to: exploreHref, label: str('layout.nav_activities_explore') },
     ]
     if (canAccessPage('exams')) {
@@ -463,11 +463,15 @@ export default function ActivitiesPage() {
     if (canAccessPage('exams_explore')) {
       items.push({ to: appLink('/app/exams/explore'), label: str('layout.nav_exams_explore') })
     }
-    items.push({ to: appLink('/app/dawrat'), label: str('layout.nav_dawrat') })
+    if (canAccessPage('dawrat')) {
+      items.push({ to: appLink('/app/dawrat'), label: str('layout.nav_dawrat') })
+    }
     if (canAccessPage('leave_request')) {
       items.push({ to: appLink('/app/leave-request'), label: str('layout.nav_leave_request') })
     }
-    items.push({ to: appLink('/app/settings'), label: str('layout.nav_settings') })
+    if (canAccessPage('settings')) {
+      items.push({ to: appLink('/app/settings'), label: str('layout.nav_settings') })
+    }
     return items
   }, [str, exploreHref, appLink, canAccessPage, hidePlanNavigation])
 
@@ -492,9 +496,11 @@ export default function ActivitiesPage() {
             <CrossNav items={crossItems} className="rh-plans__cross" />
           </div>
           <div className="rh-plans__hero-actions no-print">
-            <Button type="button" variant="secondary" className="rh-plans__print-btn" icon={Printer} onClick={onPrint}>
-              {str('layout.print_btn')}
-            </Button>
+            {can(PA, 'activity_print') ? (
+              <Button type="button" variant="secondary" className="rh-plans__print-btn" icon={Printer} onClick={onPrint}>
+                {str('layout.print_btn')}
+              </Button>
+            ) : null}
             {!readOnly && can(PA, 'activity_create') && (
               <Button type="button" variant="primary" className="rh-plans__add-btn" icon={Plus} onClick={openAdd}>
                 {str('activities.btn_new_group')}

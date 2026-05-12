@@ -613,6 +613,9 @@ export default function AppHomePage() {
     `/app/awrad?plan=${encodeURIComponent(activePlan?.id || "")}`,
   );
   const canVisitFeelings = canAccessPage("feelings");
+  const canVisitAwradFromHome = canAccessPage("awrad") && can(PH, "home_footer_awrad_link");
+  const canVisitPlansFromHome = canAccessPage("plans") && can(PH, "home_quick_plans");
+  const canBackfillWird = can(PH, "home_log_wird");
   const canRenderFlights =
     canVisitFeelings &&
     recentFeelings.length > 0 &&
@@ -1101,7 +1104,7 @@ export default function AppHomePage() {
             </div>
           )}
 
-          {backlogDays.length > 0 ? (
+          {canBackfillWird && backlogDays.length > 0 ? (
             <div className="rh-home-dash__backlog">
               <p className="rh-home-dash__backlog-title">
                 أيام تحتاج إنجاز/تعويض — اضغط (تأكيد الإنجاز)
@@ -1215,12 +1218,14 @@ export default function AppHomePage() {
               تسجيل الورد السريع
             </button>
             */}
-            <HapticLink
-              className="rh-home-dash__btn rh-home-dash__btn--secondary"
-              to={awradHref}
-            >
-              صفحة الأوراد — تفاصيل كاملة
-            </HapticLink>
+            {canVisitAwradFromHome ? (
+              <HapticLink
+                className="rh-home-dash__btn rh-home-dash__btn--secondary"
+                to={awradHref}
+              >
+                صفحة الأوراد — تفاصيل كاملة
+              </HapticLink>
+            ) : null}
             {canVisitFeelings ? (
               <HapticLink
                 className="rh-home-dash__btn rh-home-dash__btn--secondary"
@@ -1334,12 +1339,14 @@ export default function AppHomePage() {
               عند إنشاء خطة حفظ أو مراجعة تظهر هنا لوحة تفاعلية: التأخر
               التراكمي، أمس واليوم، ونسبة الإنجاز.
             </p>
-            <HapticLink
-              className="rh-home-dash__btn rh-home-dash__btn--primary"
-              to={appPath("/app/plans")}
-            >
-              الانتقال إلى الخطط
-            </HapticLink>
+            {canVisitPlansFromHome ? (
+              <HapticLink
+                className="rh-home-dash__btn rh-home-dash__btn--primary"
+                to={appPath("/app/plans")}
+              >
+                الانتقال إلى الخطط
+              </HapticLink>
+            ) : null}
           </div>
         </section>
       )}
