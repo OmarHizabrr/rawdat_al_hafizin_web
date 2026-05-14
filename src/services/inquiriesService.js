@@ -1,3 +1,4 @@
+import { getApp } from 'firebase/app'
 import { limit, orderBy, query, where } from 'firebase/firestore'
 import { firestoreApi } from './firestoreApi.js'
 
@@ -6,6 +7,66 @@ import { firestoreApi } from './firestoreApi.js'
  * تأكد من قواعد Firestore: قراءة/كتابة حسب الدور، وفهرس مركّب لـ studentUid + createTimes.
  */
 export const INQUIRY_KIND = 'platform_inquiry'
+
+/** مواصفة الفهرس المركّب لاستعلام «استفساراتي» (where + orderBy). */
+export const INQUIRIES_MY_LIST_INDEX_SPEC = {
+  collectionGroup: 'inquiries',
+  queryScope: 'COLLECTION',
+  fields: [
+    { fieldPath: 'studentUid', order: 'ASCENDING' },
+    { fieldPath: 'createTimes', order: 'DESCENDING' },
+  ],
+}
+
+/**
+ * يطبع في الـ console رابط صفحة الفهارس ومواصفة الفهرس (للنسخ أو للنقر على الرابط من المتصفح).
+ * يُستدعى عند فتح صفحة الاستفسارات.
+ */
+export function logInquiriesFirestoreIndexesHelp() {
+  if (typeof window === 'undefined' || typeof console === 'undefined') return
+  let projectId = ''
+  try {
+    projectId = getApp().options?.projectId || ''
+  } catch {
+    return
+  }
+  if (!projectId) return
+
+  const indexesTab = `https://console.firebase.google.com/project/${encodeURIComponent(projectId)}/firestore/indexes`
+  const indexesJson = {
+    indexes: [INQUIRIES_MY_LIST_INDEX_SPEC],
+    fieldOverrides: [],
+  }
+
+  console.info(
+    '%c[inquiries] فهرس Firestore للاستعلام: studentUid == … + createTimes تنازلي',
+    'font-weight:bold;color:#0284c7',
+  )
+  console.info('%cافتح «الفهارس» في وحدة التحكم (انقر على السطر التالي):', 'color:var(--rh-text-muted,inherit)')
+  console.info(indexesTab)
+  console.info(
+    '%cأو أضف إلى firestore.indexes.json ثم نشر الفهارس:',
+    'color:var(--rh-text-muted,inherit)',
+  )
+  console.info(JSON.stringify(indexesJson, null, 2))
+}
+
+/**
+ * إن احتوت رسالة الخطأ على رابط إنشاء فهرس من Firestore، يُطبع في الـ console لسهولة النقر.
+ * @param {unknown} err
+ * @param {string} [context]
+ */
+export function logFirestoreIndexErrorIfAny(err, context = '') {
+  if (typeof console === 'undefined') return
+  const msg = err && typeof err === 'object' && 'message' in err ? String(err.message) : String(err || '')
+  const match = msg.match(/https:\/\/[^\s"'<>]+/)
+  if (!match) return
+  const prefix = context ? `[inquiries/${context}] ` : '[inquiries] '
+  console.warn(
+    `${prefix}رابط إنشاء الفهرس (من Firestore — انقر إن ظهر كرابطاً في المتصفح):`,
+  )
+  console.info(match[0])
+}
 
 function toMs(v) {
   if (!v) return 0

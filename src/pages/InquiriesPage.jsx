@@ -11,6 +11,8 @@ import { useSiteContent } from '../context/useSiteContent.js'
 import { useHidePlanNavigation } from '../hooks/useHidePlanNavigation.js'
 import {
   createInquiry,
+  logFirestoreIndexErrorIfAny,
+  logInquiriesFirestoreIndexesHelp,
   replyToInquiry,
   subscribeAllInquiries,
   subscribeMyInquiries,
@@ -96,11 +98,18 @@ export default function InquiriesPage() {
   }, [actingAsUser, branding.siteTitle])
 
   useEffect(() => {
+    logInquiriesFirestoreIndexesHelp()
+  }, [])
+
+  useEffect(() => {
     if (!contextUid) return undefined
     return subscribeMyInquiries(
       contextUid,
       setMine,
-      () => toast.warning('تعذّر تحميل استفساراتك. تحقق من الاتصال أو قواعد Firestore للفهرس المركّب.', 'تنبيه'),
+      (err) => {
+        logFirestoreIndexErrorIfAny(err, 'استفساراتي')
+        toast.warning('تعذّر تحميل استفساراتك. تحقق من الاتصال أو قواعد Firestore للفهرس المركّب.', 'تنبيه')
+      },
     )
   }, [contextUid, toast])
 
@@ -111,7 +120,10 @@ export default function InquiriesPage() {
     }
     return subscribeAllInquiries(
       setAllRows,
-      () => toast.warning('تعذّر تحميل كل الاستفسارات.', 'تنبيه'),
+      (err) => {
+        logFirestoreIndexErrorIfAny(err, 'الكل')
+        toast.warning('تعذّر تحميل كل الاستفسارات.', 'تنبيه')
+      },
     )
   }, [canViewAll, toast])
 
