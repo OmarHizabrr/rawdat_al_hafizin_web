@@ -26,6 +26,7 @@ export const PERMISSION_PAGE_IDS = {
   foundation: 'foundation',
   leave_request: 'leave_request',
   certificates: 'certificates',
+  inquiries: 'inquiries',
 }
 
 /** @typedef {{ id: string, label: string }} PermissionActionDef */
@@ -285,6 +286,19 @@ export const PERMISSION_PAGES = [
     path: '/app/certificates',
     label: 'الشهادات',
     actions: [],
+  },
+  {
+    id: PERMISSION_PAGE_IDS.inquiries,
+    path: '/app/inquiries',
+    label: 'الاستفسارات',
+    actions: [
+      { id: 'inquiries_submit', label: 'إرسال استفسار جديد' },
+      { id: 'inquiries_edit_own', label: 'تعديل استفساري (قبل الرد)' },
+      { id: 'inquiries_view_all', label: 'عرض جميع الاستفسارات (لوحة الإدارة)' },
+      { id: 'inquiries_reply', label: 'الرد على الاستفسارات' },
+      { id: 'inquiries_see_student_identity', label: 'إظهار هوية الطالب في القائمة العامة' },
+      { id: 'inquiries_see_admin_identity', label: 'إظهار اسم المُجيب في الرد' },
+    ],
   },
 ]
 

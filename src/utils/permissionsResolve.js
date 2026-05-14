@@ -31,6 +31,12 @@ function starterSyntheticPagesMap() {
     notifications: { actions: { notification_delete: true } },
     leave_request: { actions: {} },
     certificates: { actions: {} },
+    inquiries: {
+      actions: {
+        inquiries_submit: true,
+        inquiries_edit_own: true,
+      },
+    },
   }
 }
 

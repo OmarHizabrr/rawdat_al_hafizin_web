@@ -43,6 +43,9 @@ export default function WelcomePage() {
     if (canAccessPage('certificates')) {
       base.push({ to: '/app/certificates', label: str('layout.nav_certificates') })
     }
+    if (canAccessPage('inquiries')) {
+      base.push({ to: '/app/inquiries', label: str('layout.nav_inquiries') })
+    }
     if (canAccessPage('settings')) {
       base.push({ to: '/app/settings', label: str('layout.nav_settings') })
     }

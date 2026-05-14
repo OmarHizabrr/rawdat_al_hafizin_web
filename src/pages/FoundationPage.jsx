@@ -83,10 +83,12 @@ export default function FoundationPage() {
           {user &&
           (canAccessPage('leave_request') ||
             canAccessPage('certificates') ||
+            canAccessPage('inquiries') ||
             canAccessPage('settings')) ? (
             <div className="foundation-service-links">
               {canAccessPage('leave_request') && <HapticLink to="/app/leave-request">طلب إجازة</HapticLink>}
               {canAccessPage('certificates') && <HapticLink to="/app/certificates">الشهادات</HapticLink>}
+              {canAccessPage('inquiries') && <HapticLink to="/app/inquiries">الاستفسارات</HapticLink>}
               {canAccessPage('settings') && <HapticLink to="/app/settings">الإعدادات</HapticLink>}
             </div>
           ) : null}

@@ -82,6 +82,7 @@ export default function AdminUsersPage() {
       { to: '/app/welcome', label: str('layout.nav_welcome') },
       { to: '/app/leave-request', label: str('layout.nav_leave_request') },
       { to: '/app/certificates', label: str('layout.nav_certificates') },
+      { to: '/app/inquiries', label: str('layout.nav_inquiries') },
       { to: '/app/settings', label: str('layout.nav_settings') },
     ],
     [str],

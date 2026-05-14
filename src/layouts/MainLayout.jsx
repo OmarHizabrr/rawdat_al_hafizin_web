@@ -23,6 +23,7 @@ import {
   UsersRound,
   Video,
   MessageCircleMore,
+  MessageCircleQuestion,
   Bell,
 } from 'lucide-react'
 import { NavLink, Outlet, useLocation } from 'react-router-dom'
@@ -84,6 +85,7 @@ export function MainLayout() {
         pageId: 'activities_explore',
       },
       { to: '/app/feelings', label: str('layout.nav_feelings'), Icon: Bird, pageId: 'feelings' },
+      { to: '/app/inquiries', label: str('layout.nav_inquiries'), Icon: MessageCircleQuestion, pageId: 'inquiries' },
       { to: '/app/reports', label: str('layout.nav_reports'), Icon: FileText, pageId: 'reports' },
       {
         to: '/app/leave-request',

@@ -63,6 +63,9 @@ const db = getFirestore(app);
  *
  * طلبات الالتحاق (profile request):
  *   MyProfile/{userId}/MyProfile/{userId}
+ *
+ * الاستفسارات العامة (inquiryId):
+ *   inquiries/{inquiryId} — سؤال الطالب والرد؛ يتطلب فهرساً مركّباً (studentUid + createTimes) وفق قواعد الأمان في Firebase.
  */
 class FirestoreApi {
   static get Api() {
@@ -202,6 +205,16 @@ class FirestoreApi {
   /** conversations/{conversationId} */
   getConversationDoc(conversationId) {
     return this.getDocument("conversations", conversationId);
+  }
+
+  /** inquiries — استفسارات الطلاب والردود */
+  getInquiriesCollection() {
+    return this.getCollection("inquiries");
+  }
+
+  /** inquiries/{inquiryId} */
+  getInquiryDoc(inquiryId) {
+    return this.getDocument("inquiries", inquiryId);
   }
 
   /**
