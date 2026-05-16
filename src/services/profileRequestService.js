@@ -1,6 +1,6 @@
 import { collectionGroup, getFirestore, onSnapshot, query } from 'firebase/firestore'
 import { app } from '../firebase.js'
-import { adminApplyRoleBasedPermissionProfile } from './adminUsersService.js'
+import { adminApplyRoleBasedPermissionProfile, loadAdminUsers } from './adminUsersService.js'
 import { firestoreApi } from './firestoreApi.js'
 import { upsertUserNotification } from './userNotificationsService.js'
 
@@ -48,6 +48,43 @@ export async function loadMyProfileRequest(userId) {
   return d ? normalizeProfileRequestRow(userId, d) : null
 }
 
+async function notifyAdminsOfNewApplicationRequest(applicantUser, { fullName = '', submittedAt = '' } = {}) {
+  const applicantUid = applicantUser?.uid
+  if (!applicantUid) return
+
+  let admins = []
+  try {
+    admins = await loadAdminUsers()
+  } catch (e) {
+    console.warn('[profileRequest] loadAdminUsers failed', e)
+    return
+  }
+  if (!admins.length) return
+
+  const applicantName =
+    String(fullName || applicantUser?.displayName || applicantUser?.email || '').trim() || 'مستخدم'
+  const submittedKey = Date.parse(String(submittedAt || '')) || Date.now()
+  const title = 'طلب التحاق جديد'
+  const body = `قدّم ${applicantName} طلب التحاق جديد. يمكنك مراجعته من «طلبات الالتحاق».`
+
+  await Promise.all(
+    admins.map((admin) => {
+      const adminUid = String(admin?.uid || '').trim()
+      if (!adminUid || adminUid === applicantUid) return Promise.resolve()
+      const notificationId = `application-submit-${applicantUid}-${adminUid}-${submittedKey}`
+      return upsertUserNotification({
+        userId: adminUid,
+        notificationId,
+        title,
+        body,
+        notificationType: 'application_submitted',
+        url: '/app/admin/applications',
+        userData: applicantUser || {},
+      })
+    }),
+  )
+}
+
 export async function upsertMyProfileRequest(user, payload) {
   const userId = user?.uid
   if (!userId) return
@@ -65,12 +102,14 @@ export async function upsertMyProfileRequest(user, payload) {
   }
 
   const ref = firestoreApi.getUserProfileRequestDoc(userId)
+  const submittedAt = new Date().toISOString()
+  const fullName = String(payload?.fullName || '').trim()
 
   await firestoreApi.setData({
     docRef: ref,
     data: {
       userId,
-      fullName: String(payload?.fullName || '').trim(),
+      fullName,
       phone: String(payload?.phone || '').trim(),
       phoneCountry: String(payload?.phoneCountry || '').trim(),
       phoneDialCode: String(payload?.phoneDialCode || '').trim(),
@@ -87,7 +126,7 @@ export async function upsertMyProfileRequest(user, payload) {
       displayName: String(user?.displayName || '').trim(),
       status: PROFILE_REQUEST_STATUS.PENDING,
       statusMessage: '',
-      submittedAt: new Date().toISOString(),
+      submittedAt,
       reviewedAt: null,
       reviewerUid: '',
       reviewerName: '',
@@ -101,6 +140,12 @@ export async function upsertMyProfileRequest(user, payload) {
     data: { gender: genderNorm },
     userData: user || {},
   })
+
+  try {
+    await notifyAdminsOfNewApplicationRequest(user, { fullName, submittedAt })
+  } catch (e) {
+    console.warn('[profileRequest] notifyAdminsOfNewApplicationRequest failed', e)
+  }
 }
 
 export async function adminUpdateProfileRequestFields(actorUser, targetUserId, payload = {}) {

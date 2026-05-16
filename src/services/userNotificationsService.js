@@ -53,6 +53,7 @@ export async function upsertUserNotification({
   ymd = '',
   overdueSinceYmd = '',
   owedPages = 0,
+  url = '/app/notifications',
   userData = {},
 }) {
   if (!userId || !notificationId) return
@@ -100,7 +101,7 @@ export async function upsertUserNotification({
         notificationType,
         title: String(title || '').trim() || 'إشعار',
         body: String(body || '').trim(),
-        url: '/app/notifications',
+        url: String(url || '').trim() || '/app/notifications',
         status: 'pending',
         createdAt: new Date().toISOString(),
       },

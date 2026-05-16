@@ -30,6 +30,15 @@ export function subscribeAllUsers(onNext, onError) {
   )
 }
 
+/** جلب مستخدمي دور «ادمن» — لإشعارات طلبات الالتحاق وغيرها */
+export async function loadAdminUsers() {
+  const docs = await firestoreApi.getDocuments(firestoreApi.getUsersCollection(), {
+    whereField: 'role',
+    isEqualTo: 'admin',
+  })
+  return docs.map((d) => ({ uid: d.id, ...d.data() }))
+}
+
 export async function adminUpdateUserRole(actorUser, targetUid, role) {
   if (!targetUid || !actorUser?.uid) return
   const docRef = firestoreApi.getUserDoc(targetUid)

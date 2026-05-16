@@ -30,6 +30,81 @@ function toSafeString(value) {
   return String(value || '').trim()
 }
 
+function shouldNotifyAdminsOfApplicationSubmit(before, after) {
+  if (!after) return false
+  const status = toSafeString(after.status) || 'pending'
+  if (status !== 'pending') return false
+
+  const afterSubmitted = toSafeString(after.submittedAt)
+  if (!afterSubmitted) return false
+
+  if (!before) return true
+
+  const beforeStatus = toSafeString(before.status)
+  const beforeSubmitted = toSafeString(before.submittedAt)
+  if (beforeStatus !== 'pending') return true
+  return afterSubmitted !== beforeSubmitted
+}
+
+async function loadAdminUserIds() {
+  const snap = await db.collection('users').where('role', '==', 'admin').get()
+  return snap.docs.map((d) => d.id).filter(Boolean)
+}
+
+async function enqueueApplicationSubmitAdminNotification({
+  adminUid,
+  applicantUid,
+  submittedKey,
+  applicantName,
+}) {
+  if (!adminUid || !applicantUid || adminUid === applicantUid) return
+
+  const notificationId = `application-submit-${applicantUid}-${adminUid}-${submittedKey}`
+  const title = 'طلب التحاق جديد'
+  const body = `قدّم ${applicantName} طلب التحاق جديد. يمكنك مراجعته من «طلبات الالتحاق».`
+  const url = '/app/admin/applications'
+  const nowIso = new Date().toISOString()
+
+  const notifRef = db
+    .collection('notifications')
+    .doc(adminUid)
+    .collection('notifications')
+    .doc(notificationId)
+
+  await notifRef.set(
+    {
+      id: notificationId,
+      kind: 'notification',
+      notificationType: 'application_submitted',
+      title,
+      body,
+      userId: adminUid,
+      applicantUid,
+      isRead: false,
+      readAt: null,
+      createdAt: nowIso,
+      updatedAt: nowIso,
+    },
+    { merge: true },
+  )
+
+  const pushQueueId = `push-${notificationId}`
+  await db.collection('pushQueue').doc(pushQueueId).set(
+    {
+      id: pushQueueId,
+      userId: adminUid,
+      notificationId,
+      notificationType: 'application_submitted',
+      title,
+      body,
+      url,
+      status: 'pending',
+      createdAt: nowIso,
+    },
+    { merge: true },
+  )
+}
+
 /** إرسال Push عند إنشاء مستند في pushQueue (اسم مختلف لتجنب تعارض Cloud Run مع نشر سابق). */
 exports.dispatchPushFromQueue = functions
   .region('us-central1')
@@ -136,6 +211,63 @@ exports.dispatchPushFromQueue = functions
         },
         { merge: true },
       )
+    }
+  })
+
+/**
+ * عند تقديم/إعادة تقديم طلب الالتحاق: إشعار داخلي + pushQueue لكل الأدمن.
+ * dispatchPushFromQueue يرسل FCM عند إنشاء مستند pushQueue.
+ */
+exports.enqueueApplicationSubmitAdminNotify = functions
+  .region('us-central1')
+  .firestore.document('MyProfile/{userId}/MyProfile/{profileId}')
+  .onWrite(async (change, context) => {
+    const { userId, profileId } = context.params
+    if (userId !== profileId) return
+
+    const after = change.after.exists ? change.after.data() || {} : null
+    const before = change.before.exists ? change.before.data() || {} : null
+    if (!shouldNotifyAdminsOfApplicationSubmit(before, after)) return
+
+    const applicantName =
+      toSafeString(after.fullName || after.displayName) || 'مستخدم'
+    const submittedKey = Date.parse(toSafeString(after.submittedAt)) || Date.now()
+
+    let adminUids = []
+    try {
+      adminUids = await loadAdminUserIds()
+    } catch (err) {
+      functions.logger.error('enqueueApplicationSubmitAdminNotify: load admins failed', {
+        userId,
+        message: String(err?.message || err),
+      })
+      return
+    }
+    if (!adminUids.length) {
+      functions.logger.warn('enqueueApplicationSubmitAdminNotify: no admins found', { userId })
+      return
+    }
+
+    try {
+      await Promise.all(
+        adminUids.map((adminUid) =>
+          enqueueApplicationSubmitAdminNotification({
+            adminUid,
+            applicantUid: userId,
+            submittedKey,
+            applicantName,
+          }),
+        ),
+      )
+      functions.logger.info('enqueueApplicationSubmitAdminNotify: queued for admins', {
+        userId,
+        adminCount: adminUids.length,
+      })
+    } catch (err) {
+      functions.logger.error('enqueueApplicationSubmitAdminNotify failed', {
+        userId,
+        message: String(err?.message || err),
+      })
     }
   })
 
