@@ -623,7 +623,10 @@ export default function DawratPage() {
           </ul>
         </section>
       ) : (
-        <p className="rh-plans__empty">لا توجد دورات بعد.</p>
+        <section className="rh-settings-card rh-plans__empty">
+          <h2 className="rh-settings-card__title">لا توجد دورات بعد</h2>
+          <p className="rh-settings-card__subtitle">أضف دورة جديدة من الزر بالأعلى، أو استكشف الدورات العامة.</p>
+        </section>
       )}
 
       <Modal

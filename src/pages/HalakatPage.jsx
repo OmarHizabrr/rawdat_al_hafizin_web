@@ -849,7 +849,10 @@ export default function HalakatPage() {
           </ul>
         </section>
       ) : (
-        <p className="rh-plans__empty">لا توجد حلقات بعد. أضف حلقة أو انضم لحلقة عامة.</p>
+        <section className="rh-settings-card rh-plans__empty">
+          <h2 className="rh-settings-card__title">لا توجد حلقات بعد</h2>
+          <p className="rh-settings-card__subtitle">أضف حلقة جديدة من الزر بالأعلى، أو انضم لحلقة عامة من الاستكشاف.</p>
+        </section>
       )}
 
       <Modal

@@ -710,7 +710,12 @@ export default function ActivitiesPage() {
           </ul>
         </section>
       ) : (
-        <p className="rh-plans__empty">{str('activities.empty_list')}</p>
+        <section className="rh-settings-card rh-plans__empty">
+          <h2 className="rh-settings-card__title">
+            {readOnly ? str('activities.hero_title_readonly') : 'لا توجد مجموعات نشاط بعد'}
+          </h2>
+          <p className="rh-settings-card__subtitle">{str('activities.empty_list')}</p>
+        </section>
           )}
         </PrintDocumentChrome>
       </div>

@@ -644,8 +644,9 @@
   flex-shrink: 0;
   margin: 0;
   padding: var(--rh-space-4);
-  background: var(--rh-bg);
+  background: color-mix(in srgb, var(--rh-surface) 94%, var(--rh-bg));
   border-bottom: 1px solid var(--rh-border);
+  backdrop-filter: blur(10px);
 }
 
 .ui-modal__content--explore .rh-explore-modal__body {
@@ -657,6 +658,7 @@
   -webkit-overflow-scrolling: touch;
   padding-bottom: var(--rh-space-4);
   scroll-behavior: smooth;
+  background: var(--rh-bg);
 }
 
 .ui-modal__content--explore .rh-explore-modal__lead,

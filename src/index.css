@@ -4115,10 +4115,10 @@ html:not([data-theme='dark']) .rh-segment__btn--active .rh-segment__label {
   }
 }
 
-/* صفحة الخطط */
+/* صفحة الخطط وأقسام بنفس الهيكل (حلقات، أنشطة، اختبارات…) */
 .rh-plans {
   width: 100%;
-  max-width: min(48rem, 100%);
+  max-width: var(--rh-content-max);
   margin-inline: auto;
   padding-inline: clamp(0.65rem, 3.5vw, 1.15rem);
   padding-block-end: var(--rh-space-8);
@@ -4139,10 +4139,14 @@ html:not([data-theme='dark']) .rh-segment__btn--active .rh-segment__label {
 }
 
 .rh-plans__hero-head {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: var(--rh-space-4);
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: start;
+  gap: var(--rh-space-3) var(--rh-space-4);
+}
+
+.rh-plans__hero-head > div:first-child {
+  min-width: 0;
 }
 
 .rh-plans__add-btn {
@@ -4150,23 +4154,16 @@ html:not([data-theme='dark']) .rh-segment__btn--active .rh-segment__label {
 }
 
 .rh-plans__hero-actions {
-  flex-shrink: 0;
   display: flex;
-  flex-direction: column;
-  align-items: flex-end;
+  flex-flow: row wrap;
+  align-items: center;
+  justify-content: flex-end;
   gap: var(--rh-space-2);
+  justify-self: end;
 }
 
-@media (min-width: 42rem) {
-  .rh-plans__hero-actions {
-    flex-flow: row wrap;
-    justify-content: flex-end;
-    align-items: center;
-  }
-
-  .rh-plans__hero-actions .ui-btn {
-    width: auto;
-  }
+.rh-plans__hero-actions .ui-btn {
+  width: auto;
 }
 
 .rh-plans__join-card {
@@ -5609,7 +5606,33 @@ html:not([data-theme='dark']) .rh-segment__btn--active .rh-segment__label {
 }
 
 .rh-plans__empty {
+  margin: var(--rh-space-4) 0;
+}
+
+.rh-plans__empty:not(.rh-settings-card) {
   text-align: center;
+  padding: var(--rh-space-6) var(--rh-space-4);
+  border-radius: var(--rh-radius-lg);
+  border: 1px dashed color-mix(in srgb, var(--rh-border) 75%, var(--rh-primary) 15%);
+  background: color-mix(in srgb, var(--rh-surface) 97%, var(--rh-primary-muted) 3%);
+  color: var(--rh-text-muted);
+  line-height: 1.65;
+}
+
+.rh-plans__empty.rh-settings-card {
+  text-align: start;
+}
+
+/* رأس/تذييل الطباعة داخل منطقة التقاط — مخفي على الشاشة (الهيرو يعرض العنوان) */
+@media screen {
+  .rh-print-capture .rh-print-doc__header,
+  .rh-print-capture .rh-print-doc__footer {
+    display: none;
+  }
+}
+
+.rh-print-capture {
+  min-height: 0;
 }
 
 .rh-plans__editor-scroll {
@@ -6695,8 +6718,11 @@ a.rh-peek-btn {
 
 @media (max-width: 680px) {
   .rh-plans__hero-head {
-    flex-direction: column;
-    align-items: stretch;
+    grid-template-columns: 1fr;
+  }
+
+  .rh-plans__hero-actions {
+    justify-self: stretch;
   }
 
   .rh-plans__add-btn {
@@ -8904,12 +8930,13 @@ a.rh-peek-btn {
   }
 
   .rh-plans__hero-head {
-    flex-direction: column;
-    align-items: stretch;
+    grid-template-columns: 1fr;
   }
 
   .rh-plans__hero-actions {
+    flex-direction: column;
     align-items: stretch;
+    justify-self: stretch;
     width: 100%;
   }
 
@@ -9252,6 +9279,13 @@ a.rh-peek-btn {
   font-size: 0.78rem;
   color: var(--rh-text-muted);
   text-align: center;
+}
+
+@media print {
+  .rh-print-capture .rh-print-doc__header,
+  .rh-print-capture .rh-print-doc__footer {
+    display: block;
+  }
 }
 
 .rh-reports__table td,

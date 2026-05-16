@@ -670,7 +670,10 @@ export default function ExamsPage() {
           </ul>
         </section>
       ) : (
-        <p className="rh-plans__empty">لا توجد مجموعات بعد. أنشئ مجموعة أو انضم لعامة من الاستكشاف.</p>
+        <section className="rh-settings-card rh-plans__empty">
+          <h2 className="rh-settings-card__title">لا توجد مجموعات اختبار بعد</h2>
+          <p className="rh-settings-card__subtitle">أنشئ مجموعة من الزر بالأعلى، أو انضم لمجموعة عامة من الاستكشاف.</p>
+        </section>
       )}
 
       <Modal

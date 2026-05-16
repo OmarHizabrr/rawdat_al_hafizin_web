@@ -654,7 +654,10 @@ export default function RemoteTasmeePage() {
           </ul>
         </section>
       ) : (
-        <p className="rh-plans__empty">لا توجد جلسات عن بعد بعد. أنشئ بثاً أو انضم لبث عام.</p>
+        <section className="rh-settings-card rh-plans__empty">
+          <h2 className="rh-settings-card__title">لا توجد جلسات عن بُعد بعد</h2>
+          <p className="rh-settings-card__subtitle">أنشئ بثاً جديداً من الزر بالأعلى، أو انضم لبث عام من الاستكشاف.</p>
+        </section>
       )}
 
       <Modal
