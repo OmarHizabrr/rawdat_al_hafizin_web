@@ -5158,6 +5158,13 @@ html:not([data-theme='dark']) .rh-segment__btn--active .rh-segment__label {
   transform: translateY(-1px);
 }
 
+.rh-explore-modal__card:focus-within {
+  border-color: color-mix(in srgb, var(--rh-primary) 45%, var(--rh-border));
+  box-shadow:
+    var(--rh-shadow-md),
+    0 0 0 2px color-mix(in srgb, var(--rh-primary) 18%, transparent);
+}
+
 .rh-explore-modal__card-cover-wrap {
   position: relative;
   aspect-ratio: 16 / 7;

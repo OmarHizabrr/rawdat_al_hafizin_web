@@ -422,6 +422,12 @@ export const SITE_STRING_REGISTRY = [
     label: 'استكشاف — جملة النيابة',
     defaultValue: ' أنت تعمل نيابة عن مستخدم آخر.',
   },
+  {
+    key: 'activities.explore.loading',
+    group: 'الأنشطة',
+    label: 'استكشاف — تحميل',
+    defaultValue: 'جاري تحميل الأنشطة العامة…',
+  },
   { key: 'activities.explore.btn_mine', group: 'الأنشطة', label: 'استكشاف — زر أنشطتي', defaultValue: 'أنشطتي' },
   { key: 'activities.explore.search_label', group: 'الأنشطة', label: 'استكشاف — تسمية البحث', defaultValue: 'بحث' },
   { key: 'activities.explore.search_placeholder', group: 'الأنشطة', label: 'استكشاف — حقل البحث', defaultValue: 'ابحث…' },

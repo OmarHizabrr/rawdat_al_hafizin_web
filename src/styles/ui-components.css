@@ -627,27 +627,43 @@
   width: min(1040px, 100%);
 }
 
-/** نافذة استكشاف العامة: عرض كامل مع جسم قابل للتمرير */
+/** نافذة استكشاف العامة: رأس ثابت وجسم واحد قابل للتمرير */
 .ui-modal__content--explore {
   width: min(1080px, 100%);
   max-height: min(92dvh, calc(100dvh - 2 * var(--rh-space-3)));
   overflow: hidden;
   padding: 0;
+  display: flex;
+  flex-direction: column;
 }
 
 .ui-modal__content--explore .ui-modal__head {
   position: sticky;
   top: 0;
   z-index: 3;
+  flex-shrink: 0;
   margin: 0;
   padding: var(--rh-space-4);
   background: var(--rh-bg);
   border-bottom: 1px solid var(--rh-border);
 }
 
+.ui-modal__content--explore .rh-explore-modal__body {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  padding-bottom: var(--rh-space-4);
+  scroll-behavior: smooth;
+}
+
 .ui-modal__content--explore .rh-explore-modal__lead,
 .ui-modal__content--explore .rh-explore-modal__toolbar,
-.ui-modal__content--explore .rh-explore-plans__count {
+.ui-modal__content--explore .rh-explore-plans__count,
+.ui-modal__content--explore .rh-explore-modal__results,
+.ui-modal__content--explore .rh-explore-modal__list {
   padding-inline: var(--rh-space-4);
 }
 
@@ -660,32 +676,67 @@
 }
 
 .ui-modal__content--explore .rh-explore-modal__toolbar {
-  padding-block-end: var(--rh-space-2);
+  margin-bottom: var(--rh-space-3);
+  padding: var(--rh-space-4);
+  border-radius: var(--rh-radius-lg);
+  border: 1px solid var(--rh-border);
+  background: color-mix(in srgb, var(--rh-surface) 88%, var(--rh-bg));
+  transition: opacity 0.2s ease;
+}
+
+.ui-modal__content--explore .rh-explore-modal__toolbar[aria-disabled='true'] {
+  opacity: 0.72;
+  pointer-events: none;
 }
 
 .ui-modal__content--explore .rh-explore-plans__count {
-  margin-bottom: var(--rh-space-3);
+  margin: 0 0 var(--rh-space-3);
 }
 
-.ui-modal__content--explore .rh-explore-modal__scroll {
-  flex: 1 1 auto;
-  min-height: 0;
-  max-height: min(58dvh, 36rem);
-  padding-inline: var(--rh-space-4);
-  padding-bottom: var(--rh-space-4);
+.ui-modal__content--explore .rh-explore-modal__results {
+  animation: rh-explore-modal-in 0.28s ease;
+}
+
+.ui-modal__content--explore .rh-explore-modal__loading {
+  min-height: min(40dvh, 18rem);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--rh-space-3);
+  color: var(--rh-text-muted);
+  font-size: var(--rh-text-sm);
+  text-align: center;
+  padding-block: var(--rh-space-6);
 }
 
 .ui-modal__content--explore .rh-explore-modal__empty {
-  margin-inline: var(--rh-space-4);
-  margin-bottom: var(--rh-space-4);
+  margin-bottom: var(--rh-space-2);
 }
 
-.ui-modal__content--explore .rh-explore-modal__body {
-  flex: 1 1 auto;
-  min-height: 0;
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
+@keyframes rh-explore-modal-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ui-modal__content--explore .rh-explore-modal__results {
+    animation: none;
+  }
+
+  .rh-explore-modal__card {
+    transition: none;
+  }
+
+  .rh-explore-modal__card:hover {
+    transform: none;
+  }
 }
 
 /** نافذة أعضاء الخطة: تمرير الجسم مع ثبات الرأس */

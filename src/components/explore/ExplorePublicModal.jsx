@@ -5,10 +5,19 @@ import { useAuth } from '../../context/useAuth.js'
 import { usePermissions } from '../../context/usePermissions.js'
 import { useSiteContent } from '../../context/useSiteContent.js'
 import { getImpersonateUid } from '../../utils/impersonation.js'
-import { Button, Modal, ScrollArea, TextField, useToast } from '../../ui/index.js'
+import { Button, Modal, TextField, useToast } from '../../ui/index.js'
 import { RhIcon, RH_ICON_STROKE } from '../../ui/RhIcon.jsx'
 import { EXPLORE_KIND_CONFIG } from './explorePublicKinds.js'
 import { ExplorePublicItemCard } from './ExplorePublicItemCard.jsx'
+
+function ExploreModalLoading({ label }) {
+  return (
+    <div className="rh-explore-modal__loading" role="status" aria-live="polite" aria-busy="true">
+      <div className="rh-spinner" aria-hidden />
+      <p>{label}</p>
+    </div>
+  )
+}
 
 /**
  * @param {object} props
@@ -36,15 +45,28 @@ export function ExplorePublicModal({ kind, open, onClose }) {
   const [myIds, setMyIds] = useState(() => new Set())
   const [joinByIdLoading, setJoinByIdLoading] = useState(false)
   const [joiningCardId, setJoiningCardId] = useState(null)
+  const [listLoading, setListLoading] = useState(true)
+  const [listError, setListError] = useState(false)
 
   useEffect(() => {
     if (!open) return undefined
     setSearchQ('')
     setSortValue('newest')
     setJoinId('')
+    setListLoading(true)
+    setListError(false)
+    setRawRows([])
     const unsub = config.subscribe(
-      (rows) => setRawRows(rows),
-      () => setRawRows([]),
+      (rows) => {
+        setRawRows(rows)
+        setListLoading(false)
+        setListError(false)
+      },
+      () => {
+        setRawRows([])
+        setListLoading(false)
+        setListError(true)
+      },
     )
     return () => unsub()
   }, [open, config])
@@ -112,6 +134,9 @@ export function ExplorePublicModal({ kind, open, onClose }) {
       ? `${str('activities.explore.hero_lead')}${actingAsUser ? str('activities.explore.hero_lead_acting') : ''}`
       : `${config.description}${actingAsUser ? ' أنت تعمل نيابة عن مستخدم: الانضمام يُسجَّل لحسابه.' : ''}`
 
+  const loadingLabel =
+    kind === 'activities' ? str('activities.explore.loading') : 'جاري تحميل العروض العامة…'
+
   return (
     <Modal
       open={open}
@@ -127,9 +152,9 @@ export function ExplorePublicModal({ kind, open, onClose }) {
       contentClassName="ui-modal__content--explore"
     >
       <div className="rh-explore-modal__body">
-      <p className="rh-explore-modal__lead">{description}</p>
+        <p className="rh-explore-modal__lead">{description}</p>
 
-      <section className="rh-explore-modal__toolbar">
+        <section className="rh-explore-modal__toolbar" aria-disabled={listLoading}>
         <div className="rh-explore-plans__toolbar-grid">
           <TextField
             label={kind === 'activities' ? str('activities.explore.search_label') : 'بحث'}
@@ -137,6 +162,7 @@ export function ExplorePublicModal({ kind, open, onClose }) {
             placeholder={kind === 'activities' ? str('activities.explore.search_placeholder') : 'ابحث…'}
             value={searchQ}
             onChange={(e) => setSearchQ(e.target.value)}
+            disabled={listLoading}
           />
           <div className="ui-field">
             <label className="ui-field__label" htmlFor={`explore-modal-sort-${kind}`}>
@@ -147,6 +173,7 @@ export function ExplorePublicModal({ kind, open, onClose }) {
               className="ui-input"
               value={sortValue}
               onChange={(e) => setSortValue(e.target.value)}
+              disabled={listLoading}
             >
               {config.sortOptions.map((o) => (
                 <option key={o.value} value={o.value}>
@@ -178,7 +205,7 @@ export function ExplorePublicModal({ kind, open, onClose }) {
               icon={UserPlus}
               onClick={handleJoinById}
               loading={joinByIdLoading}
-              disabled={!joinId.trim() || !viewUserId || joinByIdLoading}
+              disabled={listLoading || !joinId.trim() || !viewUserId || joinByIdLoading}
             >
               {kind === 'activities' ? str('activities.explore.join_submit') : 'انضمام'}
             </Button>
@@ -186,51 +213,60 @@ export function ExplorePublicModal({ kind, open, onClose }) {
         ) : null}
       </section>
 
-      <p className="rh-explore-plans__count">
-        {kind === 'activities'
-          ? displayed.length === rawRows.length
-            ? str('activities.explore.count_all', { count: String(rawRows.length) })
-            : str('activities.explore.count_filtered', {
-                shown: String(displayed.length),
-                total: String(rawRows.length),
-              })
-          : config.countLabel(displayed.length, rawRows.length)}
-      </p>
-
-      {displayed.length === 0 ? (
-        <section className="rh-settings-card rh-plans__empty rh-explore-modal__empty">
-          <h3 className="rh-settings-card__title">
-            {kind === 'activities' ? str('activities.explore.empty_title') : 'لا توجد نتائج'}
-          </h3>
-          <p className="rh-settings-card__subtitle">
-            {rawRows.length === 0
-              ? kind === 'activities'
-                ? str('activities.explore.empty_none')
-                : config.emptyNone
-              : kind === 'activities'
-                ? str('activities.explore.empty_filter')
-                : config.emptyFilter}
+        {!listLoading ? (
+          <p className="rh-explore-plans__count">
+            {kind === 'activities'
+              ? displayed.length === rawRows.length
+                ? str('activities.explore.count_all', { count: String(rawRows.length) })
+                : str('activities.explore.count_filtered', {
+                    shown: String(displayed.length),
+                    total: String(rawRows.length),
+                  })
+              : config.countLabel(displayed.length, rawRows.length)}
           </p>
-        </section>
-      ) : (
-        <ScrollArea className="rh-explore-modal__scroll" padded>
-          <ul className="rh-explore-modal__list">
-            {displayed.map((p) => (
-              <ExplorePublicItemCard
-                key={p.id}
-                kind={kind}
-                item={p}
-                inItem={myIds.has(p.id)}
-                canJoin={canJoinCard}
-                joining={joiningCardId === p.id}
-                onJoin={() => handleJoinCard(p.id)}
-                impersonateUid={impersonateUid}
-                str={str}
-              />
-            ))}
-          </ul>
-        </ScrollArea>
-      )}
+        ) : null}
+
+        <div className="rh-explore-modal__results">
+          {listLoading ? (
+            <ExploreModalLoading label={loadingLabel} />
+          ) : listError ? (
+            <section className="rh-settings-card rh-plans__empty rh-explore-modal__empty">
+              <h3 className="rh-settings-card__title">تعذر تحميل البيانات</h3>
+              <p className="rh-settings-card__subtitle">تحقق من الاتصال ثم أغلق النافذة وافتحها مجدداً.</p>
+            </section>
+          ) : displayed.length === 0 ? (
+            <section className="rh-settings-card rh-plans__empty rh-explore-modal__empty">
+              <h3 className="rh-settings-card__title">
+                {kind === 'activities' ? str('activities.explore.empty_title') : 'لا توجد نتائج'}
+              </h3>
+              <p className="rh-settings-card__subtitle">
+                {rawRows.length === 0
+                  ? kind === 'activities'
+                    ? str('activities.explore.empty_none')
+                    : config.emptyNone
+                  : kind === 'activities'
+                    ? str('activities.explore.empty_filter')
+                    : config.emptyFilter}
+              </p>
+            </section>
+          ) : (
+            <ul className="rh-explore-modal__list">
+              {displayed.map((p) => (
+                <ExplorePublicItemCard
+                  key={p.id}
+                  kind={kind}
+                  item={p}
+                  inItem={myIds.has(p.id)}
+                  canJoin={canJoinCard}
+                  joining={joiningCardId === p.id}
+                  onJoin={() => handleJoinCard(p.id)}
+                  impersonateUid={impersonateUid}
+                  str={str}
+                />
+              ))}
+            </ul>
+          )}
+        </div>
       </div>
     </Modal>
   )
