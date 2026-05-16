@@ -3,6 +3,14 @@
  * عند إضافة صفحة جديدة في التطبيق، أضفها هنا ثم استخدم نفس المعرّف في PageGuard وusePermissions.
  */
 
+/** إجراء موحّد — إظهار منشئ/مالك/كاتب العنصر (اسم، صورة، بريد، معرّف) */
+export const VIEW_CREATOR_ACTION = 'view_creator'
+
+const VIEW_CREATOR_ACTION_DEF = {
+  id: VIEW_CREATOR_ACTION,
+  label: 'إظهار منشئ/مالك العنصر (الاسم، الصورة، المعرف)',
+}
+
 export const PERMISSION_PAGE_IDS = {
   home: 'home',
   welcome: 'welcome',
@@ -46,6 +54,7 @@ export const PERMISSION_PAGES = [
       { id: 'home_quick_welcome', label: 'اختصار «البداية»' },
       { id: 'home_footer_awrad_link', label: 'رابط «صفحة الأوراد لهذه الخطة»' },
       { id: 'home_footer_plans_link', label: 'رابط «تعديل الخطط وتعيين الافتراضية»' },
+      VIEW_CREATOR_ACTION_DEF,
     ],
   },
   {
@@ -68,6 +77,7 @@ export const PERMISSION_PAGES = [
       { id: 'plan_member_add', label: 'نافذة الأعضاء: إضافة عضو' },
       { id: 'plan_member_promote', label: 'نافذة الأعضاء: ترقية/إلغاء مشرف' },
       { id: 'plan_member_remove', label: 'نافذة الأعضاء: إزالة عضو' },
+      VIEW_CREATOR_ACTION_DEF,
     ],
   },
   {
@@ -77,6 +87,7 @@ export const PERMISSION_PAGES = [
     actions: [
       { id: 'explore_join_by_id', label: 'انضمام بمعرّف الخطة' },
       { id: 'explore_join_card', label: 'زر الانضمام على البطاقة' },
+      VIEW_CREATOR_ACTION_DEF,
     ],
   },
   {
@@ -93,6 +104,7 @@ export const PERMISSION_PAGES = [
       { id: 'halaka_member_add', label: 'نافذة الأعضاء: إضافة عضو' },
       { id: 'halaka_member_promote', label: 'نافذة الأعضاء: ترقية/إلغاء مشرف' },
       { id: 'halaka_member_remove', label: 'نافذة الأعضاء: إزالة عضو' },
+      VIEW_CREATOR_ACTION_DEF,
     ],
   },
   {
@@ -102,6 +114,7 @@ export const PERMISSION_PAGES = [
     actions: [
       { id: 'explore_join_by_id', label: 'انضمام بمعرّف الحلقة' },
       { id: 'explore_join_card', label: 'زر الانضمام على البطاقة' },
+      VIEW_CREATOR_ACTION_DEF,
     ],
   },
   {
@@ -118,6 +131,7 @@ export const PERMISSION_PAGES = [
       { id: 'remote_tasmee_member_add', label: 'نافذة الأعضاء: إضافة عضو' },
       { id: 'remote_tasmee_member_promote', label: 'نافذة الأعضاء: تغيير الدور' },
       { id: 'remote_tasmee_member_remove', label: 'نافذة الأعضاء: إزالة عضو' },
+      VIEW_CREATOR_ACTION_DEF,
     ],
   },
   {
@@ -127,6 +141,7 @@ export const PERMISSION_PAGES = [
     actions: [
       { id: 'explore_join_by_id', label: 'انضمام بمعرّف البث' },
       { id: 'explore_join_card', label: 'زر الانضمام على البطاقة' },
+      VIEW_CREATOR_ACTION_DEF,
     ],
   },
   {
@@ -144,6 +159,7 @@ export const PERMISSION_PAGES = [
       { id: 'exam_member_promote', label: 'نافذة الأعضاء: تغيير الدور' },
       { id: 'exam_member_remove', label: 'نافذة الأعضاء: إزالة عضو' },
       { id: 'exam_student_self_report', label: 'الطالب: تسجيل حالة الإنجاز (تجهيز، إتمام، ملاحظات)' },
+      VIEW_CREATOR_ACTION_DEF,
     ],
   },
   {
@@ -153,6 +169,7 @@ export const PERMISSION_PAGES = [
     actions: [
       { id: 'explore_join_by_id', label: 'انضمام بمعرّف' },
       { id: 'explore_join_card', label: 'زر الانضمام على البطاقة' },
+      VIEW_CREATOR_ACTION_DEF,
     ],
   },
   {
@@ -169,6 +186,7 @@ export const PERMISSION_PAGES = [
       { id: 'dawra_member_promote', label: 'نافذة الأعضاء: ترقية/إلغاء مشرف' },
       { id: 'dawra_member_remove', label: 'نافذة الأعضاء: إزالة عضو' },
       { id: 'dawra_student_contribute', label: 'عضو الدورة: كتابة مساهمة أو تعليق (تكليف، ملاحظة، …)' },
+      VIEW_CREATOR_ACTION_DEF,
     ],
   },
   {
@@ -178,6 +196,7 @@ export const PERMISSION_PAGES = [
     actions: [
       { id: 'explore_join_by_id', label: 'انضمام بمعرّف الدورة' },
       { id: 'explore_join_card', label: 'زر الانضمام على البطاقة' },
+      VIEW_CREATOR_ACTION_DEF,
     ],
   },
   {
@@ -205,6 +224,7 @@ export const PERMISSION_PAGES = [
       { id: 'activity_member_promote', label: 'نافذة الأعضاء: تغيير الدور' },
       { id: 'activity_member_remove', label: 'نافذة الأعضاء: إزالة عضو' },
       { id: 'activity_student_contribute', label: 'الطالب: كتابة مساهمة أو تعليق على النشاط (تكليف، فائدة، …)' },
+      VIEW_CREATOR_ACTION_DEF,
     ],
   },
   {
@@ -214,6 +234,7 @@ export const PERMISSION_PAGES = [
     actions: [
       { id: 'explore_join_by_id', label: 'انضمام بمعرّف' },
       { id: 'explore_join_card', label: 'زر الانضمام على البطاقة' },
+      VIEW_CREATOR_ACTION_DEF,
     ],
   },
   {
@@ -231,6 +252,7 @@ export const PERMISSION_PAGES = [
       { id: 'remote_tasmee_report', label: 'تقرير: تسميع عن بعد مفصل' },
       { id: 'reports_print', label: 'التقارير: طباعة' },
       { id: 'reports_export_csv', label: 'التقارير: تنزيل CSV' },
+      VIEW_CREATOR_ACTION_DEF,
     ],
   },
   {
@@ -241,6 +263,7 @@ export const PERMISSION_PAGES = [
       { id: 'feelings_create', label: 'إنشاء شعور جديد' },
       { id: 'feelings_edit_own', label: 'تعديل شعوري' },
       { id: 'feelings_delete_own', label: 'حذف شعوري' },
+      VIEW_CREATOR_ACTION_DEF,
     ],
   },
   {
@@ -267,6 +290,7 @@ export const PERMISSION_PAGES = [
       { id: 'notification_mark_all_read', label: 'الإشعارات: زر تعليم الكل كمقروء' },
       { id: 'notification_mark_read', label: 'الإشعارات: زر تمّت القراءة لكل إشعار' },
       { id: 'notification_delete', label: 'حذف إشعار' },
+      VIEW_CREATOR_ACTION_DEF,
     ],
   },
   {

@@ -67,20 +67,23 @@ export function subscribePublicExamsForExplore(onNext, onError) {
   )
 }
 
-export function filterPublicExamsBySearch(rows, searchRaw) {
+export function filterPublicExamsBySearch(rows, searchRaw, opts = {}) {
+  const includeCreator = opts.includeCreator !== false
   const q = (searchRaw || '').trim().toLowerCase()
   if (!q) return rows
   return rows.filter((p) => {
     const name = (p.name || '').toLowerCase()
     const desc = (p.description || '').toLowerCase()
     const id = (p.id || '').toLowerCase()
-    const creator = `${p.creatorDisplayName || ''} ${p.creatorEmail || ''}`.toLowerCase()
+    const creatorMatch =
+      includeCreator &&
+      `${p.creatorDisplayName || ''} ${p.creatorEmail || ''}`.toLowerCase().includes(q)
     const volumesHay = examVolumeSpecsSearchHay(p.examVolumeSpecs)
     return (
       name.includes(q) ||
       desc.includes(q) ||
       id.includes(q) ||
-      creator.includes(q) ||
+      creatorMatch ||
       volumesHay.includes(q)
     )
   })

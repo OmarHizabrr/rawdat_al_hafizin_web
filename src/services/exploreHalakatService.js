@@ -64,7 +64,8 @@ export function subscribePublicHalakatForExplore(onNext, onError) {
   )
 }
 
-export function filterPublicHalakatBySearch(rows, searchRaw) {
+export function filterPublicHalakatBySearch(rows, searchRaw, opts = {}) {
+  const includeCreator = opts.includeCreator !== false
   const q = (searchRaw || '').trim().toLowerCase()
   if (!q) return rows
   return rows.filter((p) => {
@@ -72,8 +73,10 @@ export function filterPublicHalakatBySearch(rows, searchRaw) {
     const desc = (p.description || '').toLowerCase()
     const loc = (p.location || '').toLowerCase()
     const id = (p.id || '').toLowerCase()
-    const creator = `${p.creatorDisplayName || ''} ${p.creatorEmail || ''}`.toLowerCase()
-    return name.includes(q) || desc.includes(q) || loc.includes(q) || id.includes(q) || creator.includes(q)
+    const creatorMatch =
+      includeCreator &&
+      `${p.creatorDisplayName || ''} ${p.creatorEmail || ''}`.toLowerCase().includes(q)
+    return name.includes(q) || desc.includes(q) || loc.includes(q) || id.includes(q) || creatorMatch
   })
 }
 

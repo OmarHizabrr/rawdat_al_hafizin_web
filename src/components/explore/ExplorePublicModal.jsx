@@ -7,6 +7,11 @@ import { useSiteContent } from '../../context/useSiteContent.js'
 import { getImpersonateUid } from '../../utils/impersonation.js'
 import { Button, Modal, TextField, useToast } from '../../ui/index.js'
 import { RhIcon, RH_ICON_STROKE } from '../../ui/RhIcon.jsx'
+import {
+  canViewCreator,
+  searchHintWithoutCreator,
+  stripExploreCreatorFields,
+} from '../../utils/viewCreatorPermission.js'
 import { EXPLORE_KIND_CONFIG } from './explorePublicKinds.js'
 import { ExplorePublicItemCard } from './ExplorePublicItemCard.jsx'
 
@@ -76,13 +81,25 @@ export function ExplorePublicModal({ kind, open, onClose }) {
     config.loadMyIds(viewUserId).then(setMyIds)
   }, [open, viewUserId, config])
 
+  const showCreator = canViewCreator(can, PE)
+
   const displayed = useMemo(() => {
-    const filtered = config.filter(rawRows, searchQ)
+    const source = showCreator ? rawRows : rawRows.map(stripExploreCreatorFields)
+    const filtered = config.filter(source, searchQ, { includeCreator: showCreator })
     return config.sort(filtered, sortValue)
-  }, [rawRows, searchQ, sortValue, config])
+  }, [rawRows, searchQ, sortValue, config, showCreator])
 
   const canJoinById = can(PE, 'explore_join_by_id')
   const canJoinCard = can(PE, 'explore_join_card')
+
+  const searchHint =
+    kind === 'activities'
+      ? showCreator
+        ? str('activities.explore.search_hint')
+        : searchHintWithoutCreator(str('activities.explore.search_hint'))
+      : showCreator
+        ? config.searchHint
+        : searchHintWithoutCreator(config.searchHint)
 
   const handleJoinById = async () => {
     const id = joinId.trim()
@@ -158,7 +175,7 @@ export function ExplorePublicModal({ kind, open, onClose }) {
         <div className="rh-explore-plans__toolbar-grid">
           <TextField
             label={kind === 'activities' ? str('activities.explore.search_label') : 'بحث'}
-            hint={kind === 'activities' ? str('activities.explore.search_hint') : config.searchHint}
+            hint={searchHint}
             placeholder={kind === 'activities' ? str('activities.explore.search_placeholder') : 'ابحث…'}
             value={searchQ}
             onChange={(e) => setSearchQ(e.target.value)}
@@ -262,6 +279,7 @@ export function ExplorePublicModal({ kind, open, onClose }) {
                   onJoin={() => handleJoinCard(p.id)}
                   impersonateUid={impersonateUid}
                   str={str}
+                  showCreator={showCreator}
                 />
               ))}
             </ul>

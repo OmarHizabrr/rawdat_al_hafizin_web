@@ -28,6 +28,7 @@ import {
   loadUsersDirectory,
 } from '../services/reportsService.js'
 import { getImpersonateUid, withImpersonationQuery } from '../utils/impersonation.js'
+import { canViewCreator } from '../utils/viewCreatorPermission.js'
 import {
   HIJRI,
   formatHijriYmd,
@@ -252,6 +253,7 @@ export default function ReportsPage() {
 
   const canPrint = can(PAGE_ID, 'reports_print')
   const canExportCsv = can(PAGE_ID, 'reports_export_csv')
+  const showEntityOwner = canViewCreator(can, PAGE_ID)
   const canRunForKind = useCallback(
     (k) => {
       if (k === 'student') return can(PAGE_ID, 'student_report')
@@ -1113,7 +1115,7 @@ export default function ReportsPage() {
             columns={[
               { key: 'name', label: 'الاسم' },
               { key: 'visibility', label: 'الظهور' },
-              { key: 'ownerUid', label: 'المالك' },
+              ...(showEntityOwner ? [{ key: 'ownerUid', label: 'المالك' }] : []),
               { key: 'createdAt', label: 'الإنشاء' },
               { key: 'updatedAt', label: 'آخر تحديث' },
               { key: 'startAt', label: 'البداية' },

@@ -20,6 +20,7 @@ import { HomeWirdCheckInModal } from "../components/HomeWirdCheckInModal.jsx";
 import { HomeWirdModal } from "../components/HomeWirdModal.jsx";
 import { pickHomeMotivationQuote } from "../data/homeMotivationQuotes.js";
 import { PERMISSION_PAGE_IDS } from "../config/permissionRegistry.js";
+import { canViewCreator } from "../utils/viewCreatorPermission.js";
 import { isAdmin, normalizeRole } from "../config/roles.js";
 import { useAuth } from "../context/useAuth.js";
 import { usePermissions } from "../context/usePermissions.js";
@@ -225,6 +226,7 @@ function FlyingFeelingBird({
   paused,
   onSingleClick,
   onDismissSwipe,
+  showAuthor = true,
 }) {
   const [dragging, setDragging] = useState(false);
   const [dx, setDx] = useState(0);
@@ -300,22 +302,24 @@ function FlyingFeelingBird({
         <span className="rh-home-feelings-birds__bird" aria-hidden>
           {feeling.bird || "🐦"}
         </span>
-        <header className="rh-home-feelings-birds__who">
-          {feeling.photoURL ? (
-            <img
-              src={feeling.photoURL}
-              alt=""
-              width={28}
-              height={28}
-              className="rh-home-feelings-birds__avatar"
-            />
-          ) : (
-            <span className="rh-home-feelings-birds__avatar rh-home-feelings-birds__avatar--fallback">
-              {(feeling.displayName || "ط").charAt(0)}
-            </span>
-          )}
-          <strong>{feeling.displayName || "طالب"}</strong>
-        </header>
+        {showAuthor ? (
+          <header className="rh-home-feelings-birds__who">
+            {feeling.photoURL ? (
+              <img
+                src={feeling.photoURL}
+                alt=""
+                width={28}
+                height={28}
+                className="rh-home-feelings-birds__avatar"
+              />
+            ) : (
+              <span className="rh-home-feelings-birds__avatar rh-home-feelings-birds__avatar--fallback">
+                {(feeling.displayName || "ط").charAt(0)}
+              </span>
+            )}
+            <strong>{feeling.displayName || "طالب"}</strong>
+          </header>
+        ) : null}
         <p className="rh-home-feelings-birds__text">{feeling.text}</p>
         <span className="rh-home-feelings-birds__meta">
           {"★".repeat(Math.max(1, feeling.rating || 1))}
@@ -616,6 +620,7 @@ export default function AppHomePage() {
   const canVisitAwradFromHome = canAccessPage("awrad") && can(PH, "home_footer_awrad_link");
   const canVisitPlansFromHome = canAccessPage("plans") && can(PH, "home_quick_plans");
   const canBackfillWird = can(PH, "home_log_wird");
+  const showFeelingAuthor = canViewCreator(can, PH);
   const canRenderFlights =
     canVisitFeelings &&
     recentFeelings.length > 0 &&
@@ -864,6 +869,7 @@ export default function AppHomePage() {
                 paused={pausedBirdIds[key] === true}
                 onSingleClick={onBirdSingleClick}
                 onDismissSwipe={onBirdDismissSwipe}
+                showAuthor={showFeelingAuthor}
               />
             );
           })}
@@ -883,22 +889,24 @@ export default function AppHomePage() {
           >
             ×
           </button>
-          <div className="rh-home-feelings-birds__detail-head">
-            {activeFeelingDetail.photoURL ? (
-              <img
-                src={activeFeelingDetail.photoURL}
-                alt=""
-                width={36}
-                height={36}
-                className="rh-home-feelings-birds__avatar"
-              />
-            ) : (
-              <span className="rh-home-feelings-birds__avatar rh-home-feelings-birds__avatar--fallback">
-                {(activeFeelingDetail.displayName || "ط").charAt(0)}
-              </span>
-            )}
-            <strong>{activeFeelingDetail.displayName || "طالب"}</strong>
-          </div>
+          {showFeelingAuthor ? (
+            <div className="rh-home-feelings-birds__detail-head">
+              {activeFeelingDetail.photoURL ? (
+                <img
+                  src={activeFeelingDetail.photoURL}
+                  alt=""
+                  width={36}
+                  height={36}
+                  className="rh-home-feelings-birds__avatar"
+                />
+              ) : (
+                <span className="rh-home-feelings-birds__avatar rh-home-feelings-birds__avatar--fallback">
+                  {(activeFeelingDetail.displayName || "ط").charAt(0)}
+                </span>
+              )}
+              <strong>{activeFeelingDetail.displayName || "طالب"}</strong>
+            </div>
+          ) : null}
           <p className="rh-home-feelings-birds__detail-text">
             {activeFeelingDetail.text}
           </p>

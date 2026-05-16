@@ -4,6 +4,7 @@ import { useLocation } from 'react-router-dom'
 import { getImpersonateUid, withImpersonationQuery } from '../utils/impersonation.js'
 import { PERMISSION_PAGE_IDS } from '../config/permissionRegistry.js'
 import { usePermissions } from '../context/usePermissions.js'
+import { canViewCreator } from '../utils/viewCreatorPermission.js'
 import {
   markAllUserNotificationsRead,
   markUserNotificationRead,
@@ -33,6 +34,7 @@ function formatWhen(iso) {
 
 export function UserNotificationsMenu({ user }) {
   const { can, canAccessPage } = usePermissions()
+  const showCreator = canViewCreator(can, PN)
   const { search } = useLocation()
   const impersonateUid = getImpersonateUid(user, search)
   const userId = user?.uid || ''
@@ -99,24 +101,26 @@ export function UserNotificationsMenu({ user }) {
             ) : (
               items.slice(0, 30).map((n) => (
                 <article key={n.id} className={['rh-notify__item', n.isRead ? 'is-read' : ''].filter(Boolean).join(' ')}>
-                  <div className="rh-notify__creator">
-                    {n.creatorPhotoURL ? (
-                      <img
-                        src={n.creatorPhotoURL}
-                        alt=""
-                        width={28}
-                        height={28}
-                        className="rh-notify__creator-avatar"
-                        loading="lazy"
-                        decoding="async"
-                      />
-                    ) : (
-                      <span className="rh-notify__creator-avatar rh-notify__creator-avatar--fallback">
-                        {(n.creatorDisplayName || 'م').charAt(0)}
-                      </span>
-                    )}
-                    <span className="rh-notify__creator-name">{n.creatorDisplayName || 'منشئ الإشعار'}</span>
-                  </div>
+                  {showCreator ? (
+                    <div className="rh-notify__creator">
+                      {n.creatorPhotoURL ? (
+                        <img
+                          src={n.creatorPhotoURL}
+                          alt=""
+                          width={28}
+                          height={28}
+                          className="rh-notify__creator-avatar"
+                          loading="lazy"
+                          decoding="async"
+                        />
+                      ) : (
+                        <span className="rh-notify__creator-avatar rh-notify__creator-avatar--fallback">
+                          {(n.creatorDisplayName || 'م').charAt(0)}
+                        </span>
+                      )}
+                      <span className="rh-notify__creator-name">{n.creatorDisplayName || 'منشئ الإشعار'}</span>
+                    </div>
+                  ) : null}
                   <p className="rh-notify__title">{n.title || 'إشعار'}</p>
                   {n.body ? <p className="rh-notify__body">{n.body}</p> : null}
                   <div className="rh-notify__meta">

@@ -98,7 +98,8 @@ export const EXPLORE_SORT_OPTIONS = [
   { value: 'name_desc', label: 'الاسم ي → أ' },
 ]
 
-export function filterPublicPlansBySearch(plans, searchRaw) {
+export function filterPublicPlansBySearch(plans, searchRaw, opts = {}) {
+  const includeCreator = opts.includeCreator !== false
   const q = (searchRaw || '').trim().toLowerCase()
   if (!q) return plans
   return plans.filter((p) => {
@@ -106,13 +107,13 @@ export function filterPublicPlansBySearch(plans, searchRaw) {
     const id = (p.id || '').toLowerCase()
     const pt = (p.planType || '').toLowerCase()
     const vols = (p.volumes || []).map((v) => `${v.label || ''} ${v.id || ''}`).join(' ').toLowerCase()
-    const creator = `${p.creatorDisplayName || ''} ${p.creatorEmail || ''} ${p.creatorUid || ''}`.toLowerCase()
     return (
       name.includes(q) ||
       id.includes(q) ||
       pt.includes(q) ||
       vols.includes(q) ||
-      creator.includes(q)
+      (includeCreator &&
+        `${p.creatorDisplayName || ''} ${p.creatorEmail || ''} ${p.creatorUid || ''}`.toLowerCase().includes(q))
     )
   })
 }

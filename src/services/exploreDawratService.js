@@ -65,7 +65,8 @@ export function subscribePublicDawratForExplore(onNext, onError) {
   )
 }
 
-export function filterPublicDawratBySearch(rows, searchRaw) {
+export function filterPublicDawratBySearch(rows, searchRaw, opts = {}) {
+  const includeCreator = opts.includeCreator !== false
   const q = (searchRaw || '').trim().toLowerCase()
   if (!q) return rows
   return rows.filter((p) => {
@@ -74,7 +75,9 @@ export function filterPublicDawratBySearch(rows, searchRaw) {
     const cost = (p.costLabel || '').toLowerCase()
     const mode = (p.deliveryMode || '').toLowerCase()
     const id = (p.id || '').toLowerCase()
-    const creator = `${p.creatorDisplayName || ''} ${p.creatorEmail || ''}`.toLowerCase()
+    const creatorMatch =
+      includeCreator &&
+      `${p.creatorDisplayName || ''} ${p.creatorEmail || ''}`.toLowerCase().includes(q)
     const benefitsHay = Array.isArray(p.benefitsList)
       ? p.benefitsList.filter((x) => typeof x === 'string').join(' ').toLowerCase()
       : ''
@@ -89,7 +92,7 @@ export function filterPublicDawratBySearch(rows, searchRaw) {
       cost.includes(q) ||
       mode.includes(q) ||
       id.includes(q) ||
-      creator.includes(q) ||
+      creatorMatch ||
       benefitsHay.includes(q) ||
       conditionsHay.includes(q) ||
       benefitsTextHay.includes(q) ||

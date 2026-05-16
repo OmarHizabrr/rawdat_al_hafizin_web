@@ -66,14 +66,17 @@ export function subscribePublicActivitiesForExplore(onNext, onError) {
   )
 }
 
-export function filterPublicActivitiesBySearch(rows, searchRaw) {
+export function filterPublicActivitiesBySearch(rows, searchRaw, opts = {}) {
+  const includeCreator = opts.includeCreator !== false
   const q = (searchRaw || '').trim().toLowerCase()
   if (!q) return rows
   return rows.filter((p) => {
     const name = (p.name || '').toLowerCase()
     const desc = (p.description || '').toLowerCase()
     const id = (p.id || '').toLowerCase()
-    const creator = `${p.creatorDisplayName || ''} ${p.creatorEmail || ''}`.toLowerCase()
+    const creatorMatch =
+      includeCreator &&
+      `${p.creatorDisplayName || ''} ${p.creatorEmail || ''}`.toLowerCase().includes(q)
     const kind = (p.activityKind || '').toLowerCase()
     const loc = (p.location || '').toLowerCase()
     const fee = (p.feeInfo || '').toLowerCase()
@@ -84,7 +87,7 @@ export function filterPublicActivitiesBySearch(rows, searchRaw) {
       name.includes(q) ||
       desc.includes(q) ||
       id.includes(q) ||
-      creator.includes(q) ||
+      creatorMatch ||
       kind.includes(q) ||
       loc.includes(q) ||
       fee.includes(q) ||

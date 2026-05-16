@@ -69,20 +69,23 @@ export function subscribePublicRemoteTasmeeForExplore(onNext, onError) {
   )
 }
 
-export function filterPublicRemoteTasmeeBySearch(rows, searchRaw) {
+export function filterPublicRemoteTasmeeBySearch(rows, searchRaw, opts = {}) {
+  const includeCreator = opts.includeCreator !== false
   const q = (searchRaw || '').trim().toLowerCase()
   if (!q) return rows
   return rows.filter((p) => {
     const title = (p.title || '').toLowerCase()
     const desc = (p.description || '').toLowerCase()
     const id = (p.id || '').toLowerCase()
-    const creator = `${p.creatorDisplayName || ''} ${p.creatorEmail || ''}`.toLowerCase()
+    const creatorMatch =
+      includeCreator &&
+      `${p.creatorDisplayName || ''} ${p.creatorEmail || ''}`.toLowerCase().includes(q)
     const linkedExam = `${p.linkedExamId || ''} ${p.linkedExamTitle || ''}`.toLowerCase()
     return (
       title.includes(q) ||
       desc.includes(q) ||
       id.includes(q) ||
-      creator.includes(q) ||
+      creatorMatch ||
       linkedExam.includes(q)
     )
   })

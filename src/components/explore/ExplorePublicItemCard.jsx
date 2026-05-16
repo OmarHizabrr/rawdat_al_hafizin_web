@@ -150,8 +150,8 @@ function ExploreCardShell({ coverUrl, title, badges, joinControl, children }) {
   )
 }
 
-function CreatorBlock({ p }) {
-  if (!hasCreatorInfo(p)) return null
+function CreatorBlock({ p, showCreator = true }) {
+  if (!showCreator || !hasCreatorInfo(p)) return null
   const photo = creatorPhotoUrl(p)
   return (
     <div className="rh-explore-plans__creator">
@@ -206,6 +206,7 @@ export function ExplorePublicItemCard({
   onJoin,
   impersonateUid,
   str,
+  showCreator = true,
 }) {
   const { typeLabel } = useSiteContent()
   const joinControl = (
@@ -243,7 +244,7 @@ export function ExplorePublicItemCard({
         joinControl={joinControl}
       >
         {idLine}
-        <CreatorBlock p={p} />
+        <CreatorBlock p={p} showCreator={showCreator} />
         <ul className="rh-explore-plans__facts">
           <li>
             <strong>الورد اليومي:</strong> {p.dailyPages ?? '—'} صفحة
@@ -327,7 +328,7 @@ export function ExplorePublicItemCard({
       >
         {p.description ? <p className="rh-plans__saved-desc">{p.description}</p> : null}
         {idLine}
-        <CreatorBlock p={p} />
+        <CreatorBlock p={p} showCreator={showCreator} />
         <ul className="rh-explore-plans__facts">
           {p.location ? (
             <li>
@@ -392,7 +393,7 @@ export function ExplorePublicItemCard({
           </p>
         ) : null}
         {idLine}
-        <CreatorBlock p={p} />
+        <CreatorBlock p={p} showCreator={showCreator} />
         {inItem ? (
           <p style={{ marginTop: '0.75rem' }}>
             <HapticLink
@@ -437,7 +438,7 @@ export function ExplorePublicItemCard({
           </>
         ) : null}
         {idLine}
-        <CreatorBlock p={p} />
+        <CreatorBlock p={p} showCreator={showCreator} />
         <p className="rh-explore-plans__meta-muted">
           أُنشئت: {p.createdAt ? String(p.createdAt) : '—'} · حُدّثت:{' '}
           {p.updatedAt ? String(p.updatedAt) : '—'}
@@ -461,7 +462,7 @@ export function ExplorePublicItemCard({
       >
         {p.description ? <p className="rh-plans__saved-desc">{p.description}</p> : null}
         {idLine}
-        <CreatorBlock p={p} />
+        <CreatorBlock p={p} showCreator={showCreator} />
         <ul className="rh-explore-plans__facts">
           <li>
             <strong>التكلفة:</strong> {p.costLabel || '—'}
@@ -570,7 +571,7 @@ export function ExplorePublicItemCard({
           </p>
         )}
         {idLine}
-        <CreatorBlock p={p} />
+        <CreatorBlock p={p} showCreator={showCreator} />
         <p className="rh-explore-plans__meta-muted">
           {str('activities.explore.meta_timestamps', {
             created: formatActivityFirestoreMetaAr(p.createdAt),

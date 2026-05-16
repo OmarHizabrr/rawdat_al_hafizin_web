@@ -19,6 +19,7 @@ import {
 } from '../services/studentFeelingsService.js'
 import { Button, TextAreaField, useToast } from '../ui/index.js'
 import { getImpersonateUid, withImpersonationQuery } from '../utils/impersonation.js'
+import { canViewCreator } from '../utils/viewCreatorPermission.js'
 import { RhIcon, RH_ICON_STROKE } from '../ui/RhIcon.jsx'
 
 const FEELINGS_PAGE_ID = PERMISSION_PAGE_IDS.feelings
@@ -50,7 +51,8 @@ export default function StudentFeelingsPage() {
   const [searchParams] = useSearchParams()
   const toast = useToast()
   const { str, branding } = useSiteContent()
-  const { canAccessPage } = usePermissions()
+  const { can, canAccessPage } = usePermissions()
+  const showAuthor = canViewCreator(can, FEELINGS_PAGE_ID)
 
   const uidParam = searchParams.get('uid')?.trim() || ''
   const contextUserId = useMemo(() => {
@@ -279,13 +281,13 @@ export default function StudentFeelingsPage() {
               <li key={row.id} className="rh-feelings-item">
                 <div className="rh-feelings-item__head">
                   <div className="rh-feelings-item__profile">
-                    {row.photoURL ? (
+                    {showAuthor && row.photoURL ? (
                       <img src={row.photoURL} alt="" width={36} height={36} className="rh-feelings-item__avatar" />
                     ) : (
                       <span className="rh-feelings-item__avatar rh-feelings-item__avatar--fallback">{row.bird}</span>
                     )}
                     <div>
-                      <strong>{row.displayName || 'طالب'}</strong>
+                      {showAuthor ? <strong>{row.displayName || 'طالب'}</strong> : null}
                       <p>{row.moodLabel}</p>
                     </div>
                   </div>
