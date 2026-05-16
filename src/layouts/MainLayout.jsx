@@ -113,18 +113,9 @@ export function MainLayout() {
   )
 
   const nav = useMemo(() => {
-    const hidePlanUi = Boolean(user?.hideHomePlanUi)
     const visible = (item) =>
       !item.pageId || !permReady || isAdmin(user) || canAccessPage(item.pageId)
-    const filtered = baseNav.filter((item) => {
-      if (
-        hidePlanUi &&
-        (item.to === '/app/plans' || item.to === '/app/plans/explore')
-      ) {
-        return false
-      }
-      return visible(item)
-    })
+    const filtered = baseNav.filter(visible)
     return isAdmin(user) ? [...filtered.slice(0, 9), ...adminNavItems, ...filtered.slice(9)] : filtered
   }, [baseNav, adminNavItems, user, permReady, canAccessPage])
   usePlanReminders(impersonateUid || user?.hideHomePlanUi ? null : user, { iconSrc: branding.logoSrc })

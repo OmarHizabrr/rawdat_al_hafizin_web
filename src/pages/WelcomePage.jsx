@@ -25,7 +25,7 @@ export default function WelcomePage() {
       return [{ to: '/app/application', label: 'طلب الالتحاق' }]
     }
     const base = [{ to: '/app', label: str('layout.nav_home') }]
-    if (!user?.hideHomePlanUi && canAccessPage('plans')) {
+    if (canAccessPage('plans')) {
       base.push({ to: '/app/plans', label: str('layout.nav_plans') })
     }
     if (canAccessPage('halakat')) {

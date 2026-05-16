@@ -54,9 +54,7 @@ export default function SettingsPage() {
   const lastFcmTokenRef = useRef('')
   const settingsCrossItems = useMemo(() => {
     const base = [{ to: '/app', label: str('layout.nav_home') }]
-    if (!user?.hideHomePlanUi) {
-      base.push({ to: '/app/plans', label: str('layout.nav_plans') })
-    }
+    base.push({ to: '/app/plans', label: str('layout.nav_plans') })
     if (canAccessPage('halakat')) {
       base.push({ to: '/app/halakat', label: str('layout.nav_halakat') })
     }
@@ -109,8 +107,8 @@ export default function SettingsPage() {
       await updateMyHideHomePlanUi(fu, hide)
       toast.success(
         hide
-          ? 'تم إيقاف عرض لوحة الخطة على الرئيسية وإخفاء اختصارات الخطط من القائمة.'
-          : 'تم إظهار لوحة الخطة على الرئيسية واختصارات الخطط في القائمة.',
+          ? 'تم إيقاف عرض لوحة الخطة على الرئيسية دون إخفاء الخطط من القائمة.'
+          : 'تم إظهار لوحة الخطة على الصفحة الرئيسية.',
         'تم',
       )
     } catch {
@@ -444,9 +442,9 @@ export default function SettingsPage() {
           <div className="rh-settings-card__head">
             <h2 className="rh-settings-card__title">لوحة الخطة على الرئيسية</h2>
             <p className="rh-settings-card__subtitle">
-              عند الإيقاف تُخفى لوحة الخطة التفاعلية من الصفحة الرئيسية، ويُزال رابط «الخطط» و«استكشاف الخطط» من القائمة
-              الجانبية، ولا يظهر زر الانتقال إلى الخطط في حالة عدم وجود خطة نشطة. يتحكم المشرف في إظهار هذا القسم لنوع
-              صلاحياتك من لوحة أنواع المستخدمين.
+              عند الإيقاف تُخفى لوحة الخطة التفاعلية من الصفحة الرئيسية فقط، ولا تظهر تذكيرات الورد اليومية على الرئيسية.
+              تبقى «الخطط» و«استكشاف الخطط» في القائمة الجانبية ويمكنك إدارتها من هناك. يتحكم المشرف في إظهار هذا
+              القسم لنوع صلاحياتك من لوحة أنواع المستخدمين.
             </p>
           </div>
           <div className="rh-segment" role="radiogroup" aria-label="عرض لوحة الخطة على الرئيسية">
@@ -469,7 +467,7 @@ export default function SettingsPage() {
                 <RhIcon as={Eye} size={20} strokeWidth={RH_ICON_STROKE} aria-hidden />
                 <span className="rh-segment__label">عرض لوحة الخطة</span>
               </span>
-              <span className="rh-segment__hint">الوضع الاعتيادي على الرئيسية والقائمة</span>
+              <span className="rh-segment__hint">لوحة الخطة وتذكيرات الورد على الرئيسية</span>
             </button>
             <button
               type="button"
@@ -490,7 +488,7 @@ export default function SettingsPage() {
                 <RhIcon as={EyeOff} size={20} strokeWidth={RH_ICON_STROKE} aria-hidden />
                 <span className="rh-segment__label">إيقاف العرض</span>
               </span>
-              <span className="rh-segment__hint">إخفاء اللوحة واختصارات الخطط من الواجهة</span>
+              <span className="rh-segment__hint">إخفاء اللوحة والتذكيرات من الرئيسية فقط</span>
             </button>
           </div>
           <p className="rh-settings-footnote rh-settings-footnote--tight" style={{ marginTop: 'var(--rh-space-3)' }}>

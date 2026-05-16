@@ -1,7 +1,7 @@
 import { HapticLink } from '../ui/HapticLink.jsx'
 
 /**
- * تنبيه يُعرض عند فتح مسارات الخطط رغم تفعيل إخفاء اختصارات الخطة من الرئيسية والقائمة.
+ * تنبيه يُعرض عند فتح مسارات الخطط رغم إيقاف عرض لوحة الخطة على الرئيسية فقط.
  * @param {{ variant?: 'self' | 'adminViewing', className?: string }} props
  */
 export function HiddenPlanUiNotice({ variant = 'self', className = '' }) {
@@ -11,14 +11,14 @@ export function HiddenPlanUiNotice({ variant = 'self', className = '' }) {
         className={['rh-plans__admin-banner', className].filter(Boolean).join(' ')}
         role="status"
       >
-        هذا المستخدم أخفى اختصارات الخطط من واجهته؛ يمكنك متابعة إدارته هنا كمشرف.
+        هذا المستخدم أوقف عرض لوحة الخطة على الرئيسية؛ يمكنك متابعة إدارته هنا كمشرف.
       </p>
     )
   }
   return (
     <p className={['rh-plans__admin-banner', className].filter(Boolean).join(' ')} role="status">
-      أوقفت عرض الخطط من القائمة الجانبية والرئيسية. ما زال بإمكانك إدارة خططك من هذه الصفحة أو من الأوراد.
-      لإعادة إظهار الاختصارات في الواجهة، انتقل إلى{' '}
+      أوقفت عرض لوحة الخطة على الرئيسية. ما زال بإمكانك إدارة خططك من هذه الصفحة أو من «الخطط» في القائمة.
+      لإعادة اللوحة على الرئيسية، انتقل إلى{' '}
       <HapticLink to="/app/settings">الإعدادات</HapticLink>
       إن سمح نوع صلاحياتك.
     </p>

@@ -122,7 +122,7 @@ export async function setUserDefaultPlanId(firebaseUser, planId, options = {}) {
   })
 }
 
-/** إخفاء لوحة الخطة الرئيسية واختصارات الخطط من الرئيسية والقائمة (يُحفظ في مستند المستخدم). */
+/** إخفاء لوحة الخطة التفاعلية وتذكيرات الورد من الصفحة الرئيسية فقط (يُحفظ في مستند المستخدم). */
 export async function updateMyHideHomePlanUi(firebaseUser, hide) {
   if (!firebaseUser?.uid) return
   await firestoreApi.updateData({

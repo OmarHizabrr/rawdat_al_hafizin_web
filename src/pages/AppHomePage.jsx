@@ -815,14 +815,10 @@ export default function AppHomePage() {
             <HapticLink to="/app/admin/users">
               {str("app.home_impersonation_users")}
             </HapticLink>
-            {!hideHomePlanUi ? (
-              <>
-                {" · "}
-                <HapticLink to={`/app/plans?uid=${encodeURIComponent(contextUserId)}`}>
-                  {str("app.home_impersonation_plans")}
-                </HapticLink>
-              </>
-            ) : null}
+            {" · "}
+            <HapticLink to={`/app/plans?uid=${encodeURIComponent(contextUserId)}`}>
+              {str("app.home_impersonation_plans")}
+            </HapticLink>
             {" · "}
             <HapticLink to={`/app/halakat?uid=${encodeURIComponent(contextUserId)}`}>
               {str("app.home_impersonation_halakat")}
@@ -923,8 +919,9 @@ export default function AppHomePage() {
           <div className="rh-home-dash-empty__inner">
             <h2 className="rh-home-dash-empty__title">عرض الخطة متوقف</h2>
             <p className="rh-home-dash-empty__text">
-              أوقفت عرض لوحة الخطة الرئيسية من الإعدادات. لا تظهر هنا لوحة التقدم ولا اختصارات الانتقال إلى الخطط. إذا
-              سمح نوع صلاحياتك، يمكنك إعادة الإظهار من صفحة الإعدادات.
+              أوقفت عرض لوحة الخطة على الرئيسية من الإعدادات. لا تظهر هنا لوحة التقدم ولا تذكيرات الورد اليومية. يمكنك
+              متابعة خططك من «الخطط» في القائمة الجانبية، أو إعادة الإظهار على الرئيسية من الإعدادات إن سمح نوع
+              صلاحياتك.
             </p>
           </div>
         </section>

@@ -25,7 +25,7 @@ export default function ProfilePage() {
 
   const crossItems = useMemo(() => {
     const base = [{ to: '/app', label: str('layout.nav_home') }]
-    if (!user?.hideHomePlanUi && canAccessPage('plans')) {
+    if (canAccessPage('plans')) {
       base.push({ to: '/app/plans', label: str('layout.nav_plans') })
     }
     if (canAccessPage('halakat')) base.push({ to: '/app/halakat', label: str('layout.nav_halakat') })
@@ -37,7 +37,7 @@ export default function ProfilePage() {
       base.push({ to: '/app/settings', label: str('layout.nav_settings') })
     }
     return base
-  }, [user?.hideHomePlanUi, str, canAccessPage])
+  }, [str, canAccessPage])
 
   return (
     <div className="rh-profile-page">
@@ -90,7 +90,7 @@ export default function ProfilePage() {
               الإعدادات والتعديل
             </HapticLink>
           ) : null}
-          {!user?.hideHomePlanUi && canAccessPage('plans') ? (
+          {canAccessPage('plans') ? (
             <HapticLink to="/app/plans" className="ui-btn ui-btn--secondary">
               <RhIcon as={ClipboardList} size={18} strokeWidth={RH_ICON_STROKE} className="ui-btn__icon" aria-hidden />
               خططي
