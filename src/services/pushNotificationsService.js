@@ -2,6 +2,7 @@ import { getMessaging, getToken, isSupported, onMessage } from 'firebase/messagi
 import { app } from '../firebase.js'
 import { firestoreApi } from './firestoreApi.js'
 import { rhHapticPushDelivery } from '../utils/haptics.js'
+import { absoluteUrl } from '../config/site.js'
 import { notificationsEnabled } from '../utils/notificationsPrefs.js'
 
 /** أنماط اهتزاز للإشعار في المتصفحات التي تدعمها ضمن Web Notifications */
@@ -63,7 +64,9 @@ function showForegroundNotification(payload) {
   const title = String(payload?.notification?.title || payload?.data?.title || 'إشعار جديد').trim()
   const body = String(payload?.notification?.body || payload?.data?.body || '').trim()
   const url = String(payload?.data?.url || '/app/notifications').trim() || '/app/notifications'
-  const icon = String(payload?.notification?.icon || '/logo.png').trim() || '/logo.png'
+  const icon =
+    String(payload?.notification?.icon || payload?.data?.icon || absoluteUrl('/logo.png')).trim() ||
+    absoluteUrl('/logo.png')
   const tag = String(payload?.messageId || payload?.collapseKey || `fg-${Date.now()}`).trim()
   rhHapticPushDelivery()
   new Notification(title, {

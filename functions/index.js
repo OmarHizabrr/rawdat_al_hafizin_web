@@ -30,6 +30,18 @@ function toSafeString(value) {
   return String(value || '').trim()
 }
 
+/** روابط مطلقة — Android لا يحمّل /logo.png النسبي في إشعار النظام */
+const SITE_ORIGIN =
+  toSafeString(process.env.SITE_ORIGIN) || 'https://rawdat-al-hafizin-web.vercel.app'
+const PUSH_LOGO_URL = `${SITE_ORIGIN.replace(/\/$/, '')}/logo.png`
+
+function pushVisualPayload() {
+  return {
+    icon: PUSH_LOGO_URL,
+    image: PUSH_LOGO_URL,
+  }
+}
+
 function shouldNotifyAdminsOfApplicationSubmit(before, after) {
   if (!after) return false
   const status = toSafeString(after.status) || 'pending'
@@ -148,16 +160,20 @@ exports.dispatchPushFromQueue = functions
     }
 
     try {
+      const visuals = pushVisualPayload()
       const messageId = await messaging.send({
         token,
         notification: {
           title,
           body,
+          image: visuals.image,
         },
         data: {
           title,
           body,
           url: link,
+          icon: visuals.icon,
+          image: visuals.image,
           tag: `push-${queueId}`,
           vibrate: PUSH_VIBRATE_JSON,
         },
@@ -166,10 +182,15 @@ exports.dispatchPushFromQueue = functions
           notification: {
             title,
             body,
-            icon: '/logo.png',
-            badge: '/logo.png',
+            icon: visuals.icon,
+            image: visuals.image,
             tag: `push-${queueId}`,
             vibrate: [22, 45, 28, 45, 32, 55, 28, 70, 200],
+          },
+        },
+        android: {
+          notification: {
+            imageUrl: visuals.image,
           },
         },
       })
