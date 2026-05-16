@@ -310,7 +310,19 @@ export const SITE_STRING_REGISTRY = [
   { key: 'activities.members_picker_empty', group: 'الأنشطة', label: 'نافذة الأعضاء — لا نتائج بحث', defaultValue: 'لا نتائج مطابقة للبحث.' },
   { key: 'activities.members_badge_added', group: 'الأنشطة', label: 'نافذة الأعضاء — شارة مضاف', defaultValue: 'مضاف' },
   { key: 'activities.visibility_private_btn', group: 'الأنشطة', label: 'النموذج — خاصة', defaultValue: 'خاصة' },
-  { key: 'activities.visibility_public_btn', group: 'الأنشطة', label: 'النموذج — عامة', defaultValue: 'عامة (استكشاف + انضمام بالمعرف)' },
+  {
+    key: 'activities.visibility_private_hint',
+    group: 'الأنشطة',
+    label: 'النموذج — تلميح خاصة',
+    defaultValue: 'الانضمام بالدعوة أو بمعرّف النشاط فقط',
+  },
+  { key: 'activities.visibility_public_btn', group: 'الأنشطة', label: 'النموذج — عامة', defaultValue: 'عامة' },
+  {
+    key: 'activities.visibility_public_hint',
+    group: 'الأنشطة',
+    label: 'النموذج — تلميح عامة',
+    defaultValue: 'تظهر في استكشاف الأنشطة؛ الانضمام بمعرّف النشاط',
+  },
   { key: 'activities.field_visibility', group: 'الأنشطة', label: 'النموذج — تسمية الظهور', defaultValue: 'الظهور' },
   { key: 'activities.ui_select_search_ph', group: 'الأنشطة', label: 'النموذج — نص البحث في القائمة المنسدلة', defaultValue: 'ابحث…' },
   { key: 'activities.ui_select_empty', group: 'الأنشطة', label: 'النموذج — لا نتائج في القائمة', defaultValue: 'لا نتائج' },
@@ -395,14 +407,14 @@ export const SITE_STRING_REGISTRY = [
   {
     key: 'activities.explore.hero_title',
     group: 'الأنشطة',
-    label: 'استكشاف — عنوان الصفحة',
+    label: 'استكشاف — عنوان النافذة',
     defaultValue: 'استكشاف الأنشطة العامة',
   },
   {
     key: 'activities.explore.hero_lead',
     group: 'الأنشطة',
-    label: 'استكشاف — الوصف',
-    defaultValue: 'مجموعات معلنة كعامة. ابحث وانضمّ بزر أو بمعرّف المجموعة.',
+    label: 'استكشاف — وصف النافذة',
+    defaultValue: 'مجموعات معلنة كعامة في نافذة الاستكشاف. ابحث وانضمّ من البطاقة أو بمعرّف المجموعة.',
   },
   {
     key: 'activities.explore.hero_lead_acting',

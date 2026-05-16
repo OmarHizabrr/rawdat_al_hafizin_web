@@ -9,6 +9,7 @@ import { usePermissions } from '../context/usePermissions.js'
 import { useSiteContent } from '../context/useSiteContent.js'
 import { firestoreApi } from '../services/firestoreApi.js'
 import { getImpersonateUid, withImpersonationQuery } from '../utils/impersonation.js'
+import { exploreModalLink } from '../utils/exploreModalLink.js'
 import {
   HALAKA_MEMBER_ROLES,
   normalizeHalakaRole,
@@ -92,11 +93,14 @@ export default function RemoteTasmeeBroadcastPage() {
       { to: appLink('/app/remote-tasmee'), label: str('layout.nav_remote_tasmee') },
     ]
     if (canAccessPage('remote_tasmee_explore')) {
-      items.push({ to: appLink('/app/remote-tasmee/explore'), label: str('layout.nav_remote_tasmee_explore') })
+      items.push({
+        to: exploreModalLink('remote_tasmee', impersonateUid),
+        label: str('layout.nav_remote_tasmee_explore'),
+      })
     }
     items.push({ to: appLink('/app/settings'), label: str('layout.nav_settings') })
     return items
-  }, [str, appLink, canAccessPage])
+  }, [str, impersonateUid, canAccessPage])
 
   const copyUrl = async () => {
     if (!meetingUrl) return

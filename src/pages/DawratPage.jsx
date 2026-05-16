@@ -1,4 +1,4 @@
-import { Compass, Pencil, Plus, Save, Shield, Trash2, UserMinus, UserPlus, Users, X } from 'lucide-react'
+import { Pencil, Plus, Save, Shield, Trash2, UserMinus, UserPlus, Users, X } from 'lucide-react'
 import { HapticLink } from '../ui/HapticLink.jsx'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useLocation, useSearchParams } from 'react-router-dom'
@@ -9,6 +9,9 @@ import { useAuth } from '../context/useAuth.js'
 import { usePermissions } from '../context/usePermissions.js'
 import { useSiteContent } from '../context/useSiteContent.js'
 import { useHidePlanNavigation } from '../hooks/useHidePlanNavigation.js'
+import { useExploreUrlAutoOpen } from '../hooks/useExploreUrlAutoOpen.js'
+import { ExplorePublicTrigger } from '../components/explore/ExplorePublicTrigger.jsx'
+import { exploreModalLink } from '../utils/exploreModalLink.js'
 import { firestoreApi } from '../services/firestoreApi.js'
 import { subscribeAllUsers } from '../services/adminUsersService.js'
 import {
@@ -126,7 +129,8 @@ export default function DawratPage() {
   const actingAsUser = Boolean(user?.uid && viewUserId && viewUserId !== user.uid)
   const readOnly = Boolean(actingAsUser && !isAdmin(user))
 
-  const exploreHref = appLink('/app/dawrat/explore')
+  const [exploreOpen, setExploreOpen] = useState(false)
+  useExploreUrlAutoOpen(PERMISSION_PAGE_IDS.dawrat_explore, setExploreOpen)
 
   const [saved, setSaved] = useState([])
   const [editorOpen, setEditorOpen] = useState(false)
@@ -403,7 +407,9 @@ export default function DawratPage() {
     const items = [
       { to: appLink('/app'), label: str('layout.nav_home') },
       ...(canAccessPage('halakat') ? [{ to: appLink('/app/halakat'), label: str('layout.nav_halakat') }] : []),
-      { to: exploreHref, label: str('layout.nav_dawrat_explore') },
+      ...(canAccessPage('dawrat_explore')
+        ? [{ to: exploreModalLink('dawrat', impersonateUid), label: str('layout.nav_dawrat_explore') }]
+        : []),
     ]
     if (!hidePlanNavigation) {
       items.push({ to: appLink('/app/plans'), label: str('layout.nav_plans') })
@@ -412,13 +418,13 @@ export default function DawratPage() {
       items.push({ to: appLink('/app/exams'), label: str('layout.nav_exams') })
     }
     if (canAccessPage('exams_explore')) {
-      items.push({ to: appLink('/app/exams/explore'), label: str('layout.nav_exams_explore') })
+      items.push({ to: exploreModalLink('exams', impersonateUid), label: str('layout.nav_exams_explore') })
     }
     if (canAccessPage('activities')) {
       items.push({ to: appLink('/app/activities'), label: str('layout.nav_activities') })
     }
     if (canAccessPage('activities_explore')) {
-      items.push({ to: appLink('/app/activities/explore'), label: str('layout.nav_activities_explore') })
+      items.push({ to: exploreModalLink('activities', impersonateUid), label: str('layout.nav_activities_explore') })
     }
     if (canAccessPage('leave_request')) {
       items.push({ to: appLink('/app/leave-request'), label: str('layout.nav_leave_request') })
@@ -430,7 +436,7 @@ export default function DawratPage() {
       items.push({ to: appLink('/app/settings'), label: str('layout.nav_settings') })
     }
     return items
-  }, [str, exploreHref, appLink, canAccessPage, hidePlanNavigation])
+  }, [str, impersonateUid, appLink, canAccessPage, hidePlanNavigation])
 
   return (
     <div className="rh-plans">
@@ -444,11 +450,19 @@ export default function DawratPage() {
             </p>
             <CrossNav items={crossItems} className="rh-plans__cross" />
           </div>
-          {!readOnly && can(PH, 'dawra_create') && (
+          {!readOnly && (can(PH, 'dawra_create') || canAccessPage('dawrat_explore')) && (
             <div className="rh-plans__hero-actions">
-              <Button type="button" variant="primary" className="rh-plans__add-btn" icon={Plus} onClick={openAdd}>
-                إضافة دورة
-              </Button>
+              {can(PH, 'dawra_create') ? (
+                <Button type="button" variant="primary" className="rh-plans__add-btn" icon={Plus} onClick={openAdd}>
+                  إضافة دورة
+                </Button>
+              ) : null}
+              <ExplorePublicTrigger
+                kind="dawrat"
+                label="استكشاف الدورات العامة"
+                open={exploreOpen}
+                onOpenChange={setExploreOpen}
+              />
             </div>
           )}
         </div>
@@ -473,14 +487,9 @@ export default function DawratPage() {
               انضمام
             </Button>
           </div>
-          <div className="rh-plans__join-explore">
-            <HapticLink className="ui-btn ui-btn--secondary rh-plans__explore-link" to={exploreHref}>
-              <RhIcon as={Compass} size={18} strokeWidth={RH_ICON_STROKE} />
-              استكشاف الدورات العامة
-            </HapticLink>
-          </div>
         </section>
       )}
+
 
       {saved.length > 0 ? (
         <section className="rh-plans__saved">
@@ -664,14 +673,16 @@ export default function DawratPage() {
               className={['rh-segment__btn', dawraVisibility === 'private' ? 'rh-segment__btn--active' : ''].join(' ')}
               onClick={() => setDawraVisibility('private')}
             >
-              خاصة
+              <span className="rh-segment__label">خاصة</span>
+              <span className="rh-segment__hint">الانضمام بالدعوة أو بمعرّف الدورة فقط</span>
             </button>
             <button
               type="button"
               className={['rh-segment__btn', dawraVisibility === 'public' ? 'rh-segment__btn--active' : ''].join(' ')}
               onClick={() => setDawraVisibility('public')}
             >
-              عامة
+              <span className="rh-segment__label">عامة</span>
+              <span className="rh-segment__hint">تظهر في استكشاف الدورات؛ الانضمام بمعرّف الدورة</span>
             </button>
           </div>
           <h3 className="rh-settings-card__title" style={{ marginTop: '1rem' }}>

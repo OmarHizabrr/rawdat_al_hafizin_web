@@ -1,7 +1,6 @@
 import {
   BookOpen,
   Check,
-  Compass,
   GraduationCap,
   Pencil,
   Plus,
@@ -25,6 +24,9 @@ import { useAuth } from '../context/useAuth.js'
 import { usePermissions } from '../context/usePermissions.js'
 import { useSiteContent } from '../context/useSiteContent.js'
 import { useHidePlanNavigation } from '../hooks/useHidePlanNavigation.js'
+import { useExploreUrlAutoOpen } from '../hooks/useExploreUrlAutoOpen.js'
+import { ExplorePublicTrigger } from '../components/explore/ExplorePublicTrigger.jsx'
+import { exploreModalLink } from '../utils/exploreModalLink.js'
 import { firestoreApi } from '../services/firestoreApi.js'
 import { subscribeAllUsers } from '../services/adminUsersService.js'
 import { HALAKA_MEMBER_ROLES } from '../utils/halakatStorage.js'
@@ -162,7 +164,8 @@ export default function ActivitiesPage() {
 
   const actingAsUser = Boolean(user?.uid && viewUserId && viewUserId !== user.uid)
   const readOnly = Boolean(actingAsUser && !isAdmin(user))
-  const exploreHref = appLink('/app/activities/explore')
+  const [exploreOpen, setExploreOpen] = useState(false)
+  useExploreUrlAutoOpen(PERMISSION_PAGE_IDS.activities_explore, setExploreOpen)
 
   const [saved, setSaved] = useState([])
   const [editorOpen, setEditorOpen] = useState(false)
@@ -455,13 +458,15 @@ export default function ActivitiesPage() {
       { to: appLink('/app'), label: str('layout.nav_home') },
       ...(hidePlanNavigation ? [] : [{ to: appLink('/app/plans'), label: str('layout.nav_plans') }]),
       ...(canAccessPage('halakat') ? [{ to: appLink('/app/halakat'), label: str('layout.nav_halakat') }] : []),
-      { to: exploreHref, label: str('layout.nav_activities_explore') },
+      ...(canAccessPage('activities_explore')
+        ? [{ to: exploreModalLink('activities', impersonateUid), label: str('layout.nav_activities_explore') }]
+        : []),
     ]
     if (canAccessPage('exams')) {
       items.push({ to: appLink('/app/exams'), label: str('layout.nav_exams') })
     }
     if (canAccessPage('exams_explore')) {
-      items.push({ to: appLink('/app/exams/explore'), label: str('layout.nav_exams_explore') })
+      items.push({ to: exploreModalLink('exams', impersonateUid), label: str('layout.nav_exams_explore') })
     }
     if (canAccessPage('dawrat')) {
       items.push({ to: appLink('/app/dawrat'), label: str('layout.nav_dawrat') })
@@ -473,7 +478,7 @@ export default function ActivitiesPage() {
       items.push({ to: appLink('/app/settings'), label: str('layout.nav_settings') })
     }
     return items
-  }, [str, exploreHref, appLink, canAccessPage, hidePlanNavigation])
+  }, [str, impersonateUid, appLink, canAccessPage, hidePlanNavigation])
 
   const printedAt = new Date().toLocaleString('ar-SA', { dateStyle: 'medium', timeStyle: 'short' })
   const printStamp = str('layout.print_doc_stamp', { date: printedAt, siteTitle: branding.siteTitle })
@@ -495,18 +500,28 @@ export default function ActivitiesPage() {
             </p>
             <CrossNav items={crossItems} className="rh-plans__cross" />
           </div>
-          <div className="rh-plans__hero-actions no-print">
-            {can(PA, 'activity_print') ? (
-              <Button type="button" variant="secondary" className="rh-plans__print-btn" icon={Printer} onClick={onPrint}>
-                {str('layout.print_btn')}
-              </Button>
-            ) : null}
-            {!readOnly && can(PA, 'activity_create') && (
-              <Button type="button" variant="primary" className="rh-plans__add-btn" icon={Plus} onClick={openAdd}>
-                {str('activities.btn_new_group')}
-              </Button>
-            )}
-          </div>
+          {(can(PA, 'activity_print') || (!readOnly && (can(PA, 'activity_create') || canAccessPage('activities_explore')))) && (
+            <div className="rh-plans__hero-actions no-print">
+              {can(PA, 'activity_print') ? (
+                <Button type="button" variant="secondary" className="rh-plans__print-btn" icon={Printer} onClick={onPrint}>
+                  {str('layout.print_btn')}
+                </Button>
+              ) : null}
+              {!readOnly && can(PA, 'activity_create') ? (
+                <Button type="button" variant="primary" className="rh-plans__add-btn" icon={Plus} onClick={openAdd}>
+                  {str('activities.btn_new_group')}
+                </Button>
+              ) : null}
+              {!readOnly ? (
+                <ExplorePublicTrigger
+                  kind="activities"
+                  label={str('activities.link_explore_public')}
+                  open={exploreOpen}
+                  onOpenChange={setExploreOpen}
+                />
+              ) : null}
+</div>
+          )}
         </div>
       </header>
 
@@ -530,14 +545,9 @@ export default function ActivitiesPage() {
               {str('activities.join_submit')}
             </Button>
           </div>
-          <div className="rh-plans__join-explore">
-            <HapticLink className="ui-btn ui-btn--secondary rh-plans__explore-link" to={exploreHref}>
-              <RhIcon as={Compass} size={18} strokeWidth={RH_ICON_STROKE} />
-              {str('activities.link_explore_public')}
-            </HapticLink>
-          </div>
         </section>
       )}
+
 
       <div className="rh-print-capture rh-activities__print-capture">
         <PrintDocumentChrome
@@ -837,6 +847,7 @@ export default function ActivitiesPage() {
               onClick={() => setActivityVisibility('private')}
             >
               <span className="rh-segment__label">{str('activities.visibility_private_btn')}</span>
+              <span className="rh-segment__hint">{str('activities.visibility_private_hint')}</span>
             </button>
             <button
               type="button"
@@ -844,6 +855,7 @@ export default function ActivitiesPage() {
               onClick={() => setActivityVisibility('public')}
             >
               <span className="rh-segment__label">{str('activities.visibility_public_btn')}</span>
+              <span className="rh-segment__hint">{str('activities.visibility_public_hint')}</span>
             </button>
           </div>
           <div className="rh-plans__editor-actions">

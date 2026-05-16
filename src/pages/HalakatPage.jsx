@@ -1,7 +1,6 @@
 import {
   BookOpen,
   CalendarPlus,
-  Compass,
   Eye,
   GraduationCap,
   Lock,
@@ -25,6 +24,9 @@ import { useAuth } from '../context/useAuth.js'
 import { usePermissions } from '../context/usePermissions.js'
 import { useSiteContent } from '../context/useSiteContent.js'
 import { useHidePlanNavigation } from '../hooks/useHidePlanNavigation.js'
+import { useExploreUrlAutoOpen } from '../hooks/useExploreUrlAutoOpen.js'
+import { ExplorePublicTrigger } from '../components/explore/ExplorePublicTrigger.jsx'
+import { exploreModalLink } from '../utils/exploreModalLink.js'
 import { firestoreApi } from '../services/firestoreApi.js'
 import { subscribeAllUsers } from '../services/adminUsersService.js'
 import { buildGroupReport } from '../services/reportsService.js'
@@ -197,7 +199,8 @@ export default function HalakatPage() {
   const actingAsUser = Boolean(user?.uid && viewUserId && viewUserId !== user.uid)
   const readOnly = Boolean(actingAsUser && !isAdmin(user))
 
-  const exploreHref = appLink('/app/halakat/explore')
+  const [exploreOpen, setExploreOpen] = useState(false)
+  useExploreUrlAutoOpen(PERMISSION_PAGE_IDS.halakat_explore, setExploreOpen)
 
   const [saved, setSaved] = useState([])
   const [editorOpen, setEditorOpen] = useState(false)
@@ -677,14 +680,16 @@ export default function HalakatPage() {
     const items = [
       { to: appLink('/app'), label: str('layout.nav_home') },
       ...(hidePlanNavigation ? [] : [{ to: appLink('/app/plans'), label: str('layout.nav_plans') }]),
-      { to: exploreHref, label: str('layout.nav_halakat_explore') },
+      ...(canAccessPage('halakat_explore')
+        ? [{ to: exploreModalLink('halakat', impersonateUid), label: str('layout.nav_halakat_explore') }]
+        : []),
     ]
     if (canAccessPage('remote_tasmee')) {
       items.push({ to: appLink('/app/remote-tasmee'), label: str('layout.nav_remote_tasmee') })
     }
     if (canAccessPage('remote_tasmee_explore')) {
       items.push({
-        to: appLink('/app/remote-tasmee/explore'),
+        to: exploreModalLink('remote_tasmee', impersonateUid),
         label: str('layout.nav_remote_tasmee_explore'),
       })
     }
@@ -692,13 +697,13 @@ export default function HalakatPage() {
       items.push({ to: appLink('/app/exams'), label: str('layout.nav_exams') })
     }
     if (canAccessPage('exams_explore')) {
-      items.push({ to: appLink('/app/exams/explore'), label: str('layout.nav_exams_explore') })
+      items.push({ to: exploreModalLink('exams', impersonateUid), label: str('layout.nav_exams_explore') })
     }
     if (canAccessPage('activities')) {
       items.push({ to: appLink('/app/activities'), label: str('layout.nav_activities') })
     }
     if (canAccessPage('activities_explore')) {
-      items.push({ to: appLink('/app/activities/explore'), label: str('layout.nav_activities_explore') })
+      items.push({ to: exploreModalLink('activities', impersonateUid), label: str('layout.nav_activities_explore') })
     }
     items.push({ to: appLink('/app/dawrat'), label: str('layout.nav_dawrat') })
     if (canAccessPage('leave_request')) {
@@ -709,7 +714,7 @@ export default function HalakatPage() {
     }
     items.push({ to: appLink('/app/settings'), label: str('layout.nav_settings') })
     return items
-  }, [str, exploreHref, appLink, canAccessPage, hidePlanNavigation])
+  }, [str, impersonateUid, appLink, canAccessPage, hidePlanNavigation])
 
   return (
     <div className="rh-plans rh-plans--halakat">
@@ -724,11 +729,19 @@ export default function HalakatPage() {
             </p>
             <CrossNav items={crossItems} className="rh-plans__cross" />
           </div>
-          {!readOnly && can(PH, 'halaka_create') && (
+          {!readOnly && (can(PH, 'halaka_create') || canAccessPage('halakat_explore')) && (
             <div className="rh-plans__hero-actions">
-              <Button type="button" variant="primary" className="rh-plans__add-btn" icon={Plus} onClick={openAdd}>
-                إضافة حلقة
-              </Button>
+              {can(PH, 'halaka_create') ? (
+                <Button type="button" variant="primary" className="rh-plans__add-btn" icon={Plus} onClick={openAdd}>
+                  إضافة حلقة
+                </Button>
+              ) : null}
+              <ExplorePublicTrigger
+                kind="halakat"
+                label="استكشاف الحلقات العامة"
+                open={exploreOpen}
+                onOpenChange={setExploreOpen}
+              />
             </div>
           )}
         </div>
@@ -753,12 +766,6 @@ export default function HalakatPage() {
             >
               انضمام
             </Button>
-          </div>
-          <div className="rh-plans__join-explore">
-            <HapticLink className="ui-btn ui-btn--secondary rh-plans__explore-link" to={exploreHref}>
-              <RhIcon as={Compass} size={18} strokeWidth={RH_ICON_STROKE} />
-              استكشاف الحلقات العامة
-            </HapticLink>
           </div>
         </section>
       )}
@@ -871,6 +878,7 @@ export default function HalakatPage() {
               onClick={() => setHalakaVisibility('private')}
             >
               <span className="rh-segment__label">خاصة</span>
+              <span className="rh-segment__hint">الانضمام بالدعوة أو بمعرّف الحلقة فقط</span>
             </button>
             <button
               type="button"
@@ -878,6 +886,7 @@ export default function HalakatPage() {
               onClick={() => setHalakaVisibility('public')}
             >
               <span className="rh-segment__label">عامة</span>
+              <span className="rh-segment__hint">تظهر في استكشاف الحلقات؛ الانضمام بمعرّف الحلقة</span>
             </button>
           </div>
           <p className="rh-plans__field-label">نوع الحلقة</p>

@@ -16,22 +16,17 @@ const LoginPage = lazy(() => import('./pages/LoginPage.jsx'))
 const FoundationPage = lazy(() => import('./pages/FoundationPage.jsx'))
 const AppHomePage = lazy(() => import('./pages/AppHomePage.jsx'))
 const WelcomePage = lazy(() => import('./pages/WelcomePage.jsx'))
-const ExplorePlansPage = lazy(() => import('./pages/ExplorePlansPage.jsx'))
 const PlansPage = lazy(() => import('./pages/PlansPage.jsx'))
-const ExploreHalakatPage = lazy(() => import('./pages/ExploreHalakatPage.jsx'))
 const HalakatPage = lazy(() => import('./pages/HalakatPage.jsx'))
 const HalakaSessionsPage = lazy(() => import('./pages/HalakaSessionsPage.jsx'))
 const HalakaSessionWorkspacePage = lazy(() => import('./pages/HalakaSessionWorkspacePage.jsx'))
 const RemoteTasmeePage = lazy(() => import('./pages/RemoteTasmeePage.jsx'))
-const ExploreRemoteTasmeePage = lazy(() => import('./pages/ExploreRemoteTasmeePage.jsx'))
 const RemoteTasmeeBroadcastPage = lazy(() => import('./pages/RemoteTasmeeBroadcastPage.jsx'))
 const ExamsPage = lazy(() => import('./pages/ExamsPage.jsx'))
-const ExploreExamsPage = lazy(() => import('./pages/ExploreExamsPage.jsx'))
-const ExploreDawratPage = lazy(() => import('./pages/ExploreDawratPage.jsx'))
 const DawratPage = lazy(() => import('./pages/DawratPage.jsx'))
 const AwradPage = lazy(() => import('./pages/AwradPage.jsx'))
 const ActivitiesPage = lazy(() => import('./pages/ActivitiesPage.jsx'))
-const ExploreActivitiesPage = lazy(() => import('./pages/ExploreActivitiesPage.jsx'))
+const ExploreRouteRedirect = lazy(() => import('./components/explore/ExploreRouteRedirect.jsx'))
 const ReportsPage = lazy(() => import('./pages/ReportsPage.jsx'))
 const SettingsPage = lazy(() => import('./pages/SettingsPage.jsx'))
 const ProfilePage = lazy(() => import('./pages/ProfilePage.jsx'))
@@ -111,9 +106,23 @@ export default function App() {
                   <Route path="/app" element={<MainLayout />}>
                     <Route index element={<PageGuard pageId="home"><AppHomePage /></PageGuard>} />
                     <Route path="welcome" element={<PageGuard pageId="welcome"><WelcomePage /></PageGuard>} />
-                    <Route path="plans/explore" element={<PageGuard pageId="plans_explore"><ExplorePlansPage /></PageGuard>} />
+                    <Route
+                      path="plans/explore"
+                      element={
+                        <PageGuard pageId="plans_explore">
+                          <ExploreRouteRedirect kind="plans" />
+                        </PageGuard>
+                      }
+                    />
                     <Route path="plans" element={<PageGuard pageId="plans"><PlansPage /></PageGuard>} />
-                    <Route path="halakat/explore" element={<PageGuard pageId="halakat_explore"><ExploreHalakatPage /></PageGuard>} />
+                    <Route
+                      path="halakat/explore"
+                      element={
+                        <PageGuard pageId="halakat_explore">
+                          <ExploreRouteRedirect kind="halakat" />
+                        </PageGuard>
+                      }
+                    />
                     <Route path="halakat" element={<PageGuard pageId="halakat"><HalakatPage /></PageGuard>} />
                     <Route path="halakat/:halakaId/sessions" element={<PageGuard pageId="halakat"><HalakaSessionsPage /></PageGuard>} />
                     <Route path="halakat/:halakaId/sessions/:sessionId" element={<PageGuard pageId="halakat"><HalakaSessionWorkspacePage /></PageGuard>} />
@@ -121,7 +130,7 @@ export default function App() {
                       path="remote-tasmee/explore"
                       element={
                         <PageGuard pageId="remote_tasmee_explore">
-                          <ExploreRemoteTasmeePage />
+                          <ExploreRouteRedirect kind="remote_tasmee" />
                         </PageGuard>
                       }
                     />
@@ -131,19 +140,26 @@ export default function App() {
                       path="exams/explore"
                       element={
                         <PageGuard pageId="exams_explore">
-                          <ExploreExamsPage />
+                          <ExploreRouteRedirect kind="exams" />
                         </PageGuard>
                       }
                     />
                     <Route path="exams" element={<PageGuard pageId="exams"><ExamsPage /></PageGuard>} />
-                    <Route path="dawrat/explore" element={<PageGuard pageId="dawrat_explore"><ExploreDawratPage /></PageGuard>} />
+                    <Route
+                      path="dawrat/explore"
+                      element={
+                        <PageGuard pageId="dawrat_explore">
+                          <ExploreRouteRedirect kind="dawrat" />
+                        </PageGuard>
+                      }
+                    />
                     <Route path="dawrat" element={<PageGuard pageId="dawrat"><DawratPage /></PageGuard>} />
                     <Route path="awrad" element={<PageGuard pageId="awrad"><AwradPage /></PageGuard>} />
                     <Route
                       path="activities/explore"
                       element={
                         <PageGuard pageId="activities_explore">
-                          <ExploreActivitiesPage />
+                          <ExploreRouteRedirect kind="activities" />
                         </PageGuard>
                       }
                     />

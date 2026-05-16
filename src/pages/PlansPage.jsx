@@ -1,6 +1,5 @@
 import {
   Bell,
-  Compass,
   Pencil,
   Plus,
   RotateCcw,
@@ -19,6 +18,9 @@ import { useSearchParams } from 'react-router-dom'
 import { VOLUMES, VOLUME_BY_ID } from '../data/volumes.js'
 import { useSiteContent } from '../context/useSiteContent.js'
 import { useHidePlanNavigation } from '../hooks/useHidePlanNavigation.js'
+import { useExploreUrlAutoOpen } from '../hooks/useExploreUrlAutoOpen.js'
+import { ExplorePublicTrigger } from '../components/explore/ExplorePublicTrigger.jsx'
+import { exploreModalLink } from '../utils/exploreModalLink.js'
 import { PERMISSION_PAGE_IDS } from '../config/permissionRegistry.js'
 import { isAdmin } from '../config/roles.js'
 import { useAuth } from '../context/useAuth.js'
@@ -150,10 +152,9 @@ export default function PlansPage() {
   const actingAsUser = Boolean(user?.uid && viewUserId && viewUserId !== user.uid)
   const readOnly = Boolean(actingAsUser && !isAdmin(user))
 
-  const explorePlansHref = useMemo(() => {
-    if (uidParam && isAdmin(user)) return `/app/plans/explore?uid=${encodeURIComponent(uidParam)}`
-    return '/app/plans/explore'
-  }, [uidParam, user])
+  const impersonateUid = uidParam && isAdmin(user) ? uidParam : ''
+  const [exploreOpen, setExploreOpen] = useState(false)
+  useExploreUrlAutoOpen(PERMISSION_PAGE_IDS.plans_explore, setExploreOpen)
   const halakatListHref = useMemo(() => {
     if (uidParam && isAdmin(user)) return `/app/halakat?uid=${encodeURIComponent(uidParam)}`
     return '/app/halakat'
@@ -789,8 +790,8 @@ export default function PlansPage() {
 
   const plansCrossItems = useMemo(() => {
     const base = [{ to: withUserCtx('/app'), label: str('layout.nav_home') }]
-    if (!hidePlanNavigation) {
-      base.push({ to: explorePlansHref, label: str('layout.nav_plans_explore') })
+    if (!hidePlanNavigation && canAccessPage('plans_explore')) {
+      base.push({ to: exploreModalLink('plans', impersonateUid), label: str('layout.nav_plans_explore') })
     }
     if (canAccessPage('halakat')) {
       base.push({ to: halakatListHref, label: str('layout.nav_halakat') })
@@ -802,13 +803,13 @@ export default function PlansPage() {
       base.push({ to: withUserCtx('/app/exams'), label: str('layout.nav_exams') })
     }
     if (canAccessPage('exams_explore')) {
-      base.push({ to: withUserCtx('/app/exams/explore'), label: str('layout.nav_exams_explore') })
+      base.push({ to: exploreModalLink('exams', impersonateUid), label: str('layout.nav_exams_explore') })
     }
     if (canAccessPage('activities')) {
       base.push({ to: withUserCtx('/app/activities'), label: str('layout.nav_activities') })
     }
     if (canAccessPage('activities_explore')) {
-      base.push({ to: withUserCtx('/app/activities/explore'), label: str('layout.nav_activities_explore') })
+      base.push({ to: exploreModalLink('activities', impersonateUid), label: str('layout.nav_activities_explore') })
     }
     base.push(
       { to: withUserCtx('/app/awrad'), label: str('layout.nav_awrad') },
@@ -826,7 +827,7 @@ export default function PlansPage() {
       base.push({ to: '/app/admin/users', label: str('layout.nav_users') })
     }
     return base
-  }, [user, str, explorePlansHref, halakatListHref, dawratListHref, canAccessPage, withUserCtx, hidePlanNavigation])
+  }, [user, str, impersonateUid, halakatListHref, dawratListHref, canAccessPage, withUserCtx, hidePlanNavigation])
 
   return (
     <div className="rh-plans">
@@ -868,11 +869,19 @@ export default function PlansPage() {
             )}
             <CrossNav items={plansCrossItems} className="rh-plans__cross" />
           </div>
-            {!readOnly && can(PP, 'plan_create') && (
+            {!readOnly && (can(PP, 'plan_create') || canAccessPage('plans_explore')) && (
             <div className="rh-plans__hero-actions">
-              <Button type="button" variant="primary" className="rh-plans__add-btn" icon={Plus} onClick={openAddModal}>
-                إضافة خطة
-              </Button>
+              {can(PP, 'plan_create') ? (
+                <Button type="button" variant="primary" className="rh-plans__add-btn" icon={Plus} onClick={openAddModal}>
+                  إضافة خطة
+                </Button>
+              ) : null}
+              <ExplorePublicTrigger
+                kind="plans"
+                label="استكشاف كل الخطط العامة"
+                open={exploreOpen}
+                onOpenChange={setExploreOpen}
+              />
             </div>
           )}
         </div>
@@ -904,12 +913,6 @@ export default function PlansPage() {
             >
               انضمام
             </Button>
-          </div>
-          <div className="rh-plans__join-explore">
-            <HapticLink className="ui-btn ui-btn--secondary rh-plans__explore-link" to={explorePlansHref}>
-              <RhIcon as={Compass} size={18} strokeWidth={RH_ICON_STROKE} />
-              استكشاف كل الخطط العامة
-            </HapticLink>
           </div>
         </section>
       )}
@@ -1097,7 +1100,7 @@ export default function PlansPage() {
             onClick={() => setPlanVisibility('public')}
           >
             <span className="rh-segment__label">عامة</span>
-            <span className="rh-segment__hint">أي مستخدم يستطيع الانضمام بمعرف الخطة</span>
+            <span className="rh-segment__hint">تظهر في استكشاف الخطط؛ الانضمام بمعرّف الخطة</span>
           </button>
         </div>
             </section>
@@ -1106,7 +1109,7 @@ export default function PlansPage() {
               <div className="rh-settings-card__head">
                 <h2 className="rh-settings-card__title">روابط وقنوات (اختياري)</h2>
                 <p className="rh-settings-card__subtitle">
-                  أضف روابط واتساب أو تيليجرام أو أي عنوان تسمّيه. تظهر بشكل مرتب على بطاقة الخطة وفي صفحة استكشاف الخطط
+                  أضف روابط واتساب أو تيليجرام أو أي عنوان تسمّيه. تظهر بشكل مرتب على بطاقة الخطة وفي نافذة استكشاف الخطط
                   العامة.
                 </p>
               </div>

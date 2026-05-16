@@ -24,20 +24,21 @@ import { RH_ICON_STROKE, RhIcon } from '../ui/RhIcon.jsx'
 
 function iconForPath(path) {
   const p = String(path || '').toLowerCase()
+  const isExplore = p.includes('explore=1') || p.includes('/explore')
   if (p === '/app' || p === '/app/') return Home
   if (p.includes('/admin')) return LayoutDashboard
-  if (p.includes('/plans/explore')) return Compass
+  if (isExplore && p.includes('/plans')) return Compass
   if (p.includes('/plans')) return ClipboardList
-  if (p.includes('/halakat/explore')) return Compass
+  if (isExplore && p.includes('/halakat')) return Compass
   if (p.includes('/halakat')) return UsersRound
-  if (p.includes('/remote-tasmee/explore')) return Compass
+  if (isExplore && p.includes('/remote-tasmee')) return Compass
   if (p.includes('/remote-tasmee')) return Video
-  if (p.includes('/exams/explore')) return Compass
+  if (isExplore && p.includes('/exams')) return Compass
   if (p.includes('/exams')) return ListChecks
-  if (p.includes('/dawrat/explore')) return Compass
+  if (isExplore && p.includes('/dawrat')) return Compass
   if (p.includes('/dawrat')) return GraduationCap
   if (p.includes('/awrad')) return NotebookPen
-  if (p.includes('/activities/explore')) return Compass
+  if (isExplore && p.includes('/activities')) return Compass
   if (p.includes('/activities')) return CalendarDays
   if (p.includes('/reports')) return FileText
   if (p.includes('/notifications')) return Bell

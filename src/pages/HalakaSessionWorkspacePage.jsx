@@ -22,6 +22,7 @@ import {
   upsertSessionAttendance,
 } from '../utils/halakatStorage.js'
 import { loadPlans } from '../utils/plansStorage.js'
+import { exploreModalLink } from '../utils/exploreModalLink.js'
 
 function roleCanWrite(role) {
   return role === HALAKA_MEMBER_ROLES.OWNER || role === HALAKA_MEMBER_ROLES.SUPERVISOR || role === HALAKA_MEMBER_ROLES.TEACHER
@@ -132,18 +133,20 @@ export default function HalakaSessionWorkspacePage() {
     { to: '/app', label: str('layout.nav_home') },
     { to: '/app/halakat', label: str('layout.nav_halakat') },
     { to: `/app/halakat/${halakaId}/sessions`, label: 'جلسات الحلقة' },
-    ...(canAccessPage('halakat_explore') ? [{ to: '/app/halakat/explore', label: str('layout.nav_halakat_explore') }] : []),
+    ...(canAccessPage('halakat_explore')
+      ? [{ to: exploreModalLink('halakat'), label: str('layout.nav_halakat_explore') }]
+      : []),
     ...(canAccessPage('remote_tasmee') ? [{ to: '/app/remote-tasmee', label: str('layout.nav_remote_tasmee') }] : []),
     ...(canAccessPage('remote_tasmee_explore')
-      ? [{ to: '/app/remote-tasmee/explore', label: str('layout.nav_remote_tasmee_explore') }]
+      ? [{ to: exploreModalLink('remote_tasmee'), label: str('layout.nav_remote_tasmee_explore') }]
       : []),
     ...(canAccessPage('exams') ? [{ to: '/app/exams', label: str('layout.nav_exams') }] : []),
     ...(canAccessPage('exams_explore')
-      ? [{ to: '/app/exams/explore', label: str('layout.nav_exams_explore') }]
+      ? [{ to: exploreModalLink('exams'), label: str('layout.nav_exams_explore') }]
       : []),
     ...(canAccessPage('activities') ? [{ to: '/app/activities', label: str('layout.nav_activities') }] : []),
     ...(canAccessPage('activities_explore')
-      ? [{ to: '/app/activities/explore', label: str('layout.nav_activities_explore') }]
+      ? [{ to: exploreModalLink('activities'), label: str('layout.nav_activities_explore') }]
       : []),
   ]
 
