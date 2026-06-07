@@ -52,11 +52,22 @@ export default function ReportPrintPage() {
   const [loaded, setLoaded] = useState(false)
 
   useEffect(() => {
-    const data = loadPrintPayload(payloadId)
-    setPayload(data)
-    setLoaded(true)
-    if (data?.documentTitle) {
-      document.title = data.documentTitle
+    let cancelled = false
+    const load = (attempt = 0) => {
+      const data = loadPrintPayload(payloadId)
+      if (data || attempt >= 4 || cancelled) {
+        if (!cancelled) {
+          setPayload(data)
+          setLoaded(true)
+          if (data?.documentTitle) document.title = data.documentTitle
+        }
+        return
+      }
+      window.setTimeout(() => load(attempt + 1), 120)
+    }
+    load()
+    return () => {
+      cancelled = true
     }
   }, [payloadId])
 

@@ -5,9 +5,37 @@ function storageKey(id) {
   return `${STORAGE_PREFIX}${id}`
 }
 
+function getStorage() {
+  if (typeof localStorage === 'undefined') return null
+  return localStorage
+}
+
 function randomId() {
   if (typeof crypto !== 'undefined' && crypto.randomUUID) return crypto.randomUUID()
   return `${Date.now()}-${Math.random().toString(36).slice(2, 11)}`
+}
+
+function purgeExpiredPrintPayloads(storage) {
+  if (!storage) return
+  const now = Date.now()
+  const keysToRemove = []
+  for (let i = 0; i < storage.length; i += 1) {
+    const key = storage.key(i)
+    if (!key?.startsWith(STORAGE_PREFIX)) continue
+    try {
+      const data = JSON.parse(storage.getItem(key) || '')
+      if (data?.storedAt && now - data.storedAt > MAX_AGE_MS) keysToRemove.push(key)
+    } catch {
+      keysToRemove.push(key)
+    }
+  }
+  for (const key of keysToRemove) {
+    try {
+      storage.removeItem(key)
+    } catch {
+      /* ignore */
+    }
+  }
 }
 
 /**
@@ -15,10 +43,12 @@ function randomId() {
  * @returns {string|null}
  */
 export function storePrintPayload(payload) {
-  if (typeof sessionStorage === 'undefined' || !payload) return null
+  const storage = getStorage()
+  if (!storage || !payload) return null
   const id = randomId()
   try {
-    sessionStorage.setItem(
+    purgeExpiredPrintPayloads(storage)
+    storage.setItem(
       storageKey(id),
       JSON.stringify({ ...payload, storedAt: Date.now() }),
     )
@@ -33,13 +63,14 @@ export function storePrintPayload(payload) {
  * @returns {object|null}
  */
 export function loadPrintPayload(id) {
-  if (typeof sessionStorage === 'undefined' || !id) return null
+  const storage = getStorage()
+  if (!storage || !id) return null
   try {
-    const raw = sessionStorage.getItem(storageKey(id))
+    const raw = storage.getItem(storageKey(id))
     if (!raw) return null
     const data = JSON.parse(raw)
     if (data.storedAt && Date.now() - data.storedAt > MAX_AGE_MS) {
-      sessionStorage.removeItem(storageKey(id))
+      storage.removeItem(storageKey(id))
       return null
     }
     return data
@@ -49,9 +80,10 @@ export function loadPrintPayload(id) {
 }
 
 export function removePrintPayload(id) {
-  if (typeof sessionStorage === 'undefined' || !id) return
+  const storage = getStorage()
+  if (!storage || !id) return
   try {
-    sessionStorage.removeItem(storageKey(id))
+    storage.removeItem(storageKey(id))
   } catch {
     /* ignore */
   }

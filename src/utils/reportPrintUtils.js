@@ -15,7 +15,7 @@ export function openReportPrintPage(payload, { autoPrint = true } = {}) {
   if (autoPrint) params.set('auto', '1')
 
   const url = `${window.location.origin}/app/reports/print?${params.toString()}`
-  const win = window.open(url, '_blank', 'noopener,noreferrer')
+  const win = window.open(url, '_blank')
   return Boolean(win)
 }
 
