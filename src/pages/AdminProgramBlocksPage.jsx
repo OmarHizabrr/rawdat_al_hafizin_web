@@ -84,7 +84,7 @@ export default function AdminProgramBlocksPage() {
         if (successMsg) toast.success(successMsg, 'تم')
         return true
       } catch {
-        toast.warning('تعذّر الحفظ. تحقق من صلاحيات المشرف وقواعد Firestore.', 'تنبيه')
+        toast.warning('تعذّر الحفظ. تحقق من صلاحيات المشرف والاتصال.', 'تنبيه')
         return false
       } finally {
         setSaveSubmitting(false)
@@ -202,7 +202,7 @@ export default function AdminProgramBlocksPage() {
         <h1 className="rh-admin-program-blocks__title">أقسام صفحة البداية</h1>
         <p className="rh-admin-program-blocks__desc">
           أضف ورتّب أقسام صفحة <strong>البداية</strong> والصفحة العامة: عنوان، أيقونة، ونوع المحتوى (نقاط أو فقرات أو
-          نص سردي). يُحفظ في <code className="rh-admin-program-blocks__code">site_config/main.programBlocks</code>.
+          نص سردي). التغييرات تظهر مباشرة للزوار.
           {!usingCustomBlocks ? (
             <>
               {' '}
@@ -359,7 +359,7 @@ export default function AdminProgramBlocksPage() {
             rows={8}
           />
           <NumberStepField
-            label="ترتيب الظهور (يبدأ من 0)"
+            label="ترتيب الظهور في الصفحة"
             value={draft.order}
             onChange={(n) => setDraft((d) => ({ ...d, order: n }))}
             min={0}

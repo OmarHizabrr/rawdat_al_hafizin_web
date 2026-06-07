@@ -2,6 +2,7 @@ import {
   ArrowDown,
   ArrowLeft,
   ArrowUp,
+  Eye,
   EyeOff,
   Pencil,
   Plus,
@@ -31,8 +32,10 @@ import {
   parseFieldOptionsText,
   sortApplicationFormFields,
   buildDefaultFormValues,
+  getFormCompletionStats,
 } from '../utils/applicationFormFields.js'
 import { ApplicationFormRenderer } from '../components/application/ApplicationFormRenderer.jsx'
+import { AdminAdvancedPanel } from '../components/admin/AdminAdvancedPanel.jsx'
 import { firestoreApi } from '../services/firestoreApi.js'
 import {
   Button,
@@ -93,6 +96,8 @@ export default function AdminApplicationFormPage() {
   const [deleteSubmitting, setDeleteSubmitting] = useState(false)
   const [seedSubmitting, setSeedSubmitting] = useState(false)
   const [reorderBusy, setReorderBusy] = useState(false)
+  const [formPreviewOpen, setFormPreviewOpen] = useState(false)
+  const [formPreviewValues, setFormPreviewValues] = useState({})
 
   useEffect(() => {
     document.title = `حقول طلب الالتحاق — ${branding.siteTitle}`
@@ -103,6 +108,13 @@ export default function AdminApplicationFormPage() {
   }, [applicationFormFields])
 
   const sorted = useMemo(() => sortApplicationFormFields(rows), [rows])
+
+  const previewFormFields = useMemo(() => sorted.filter((f) => f.enabled), [sorted])
+
+  const formPreviewCompletion = useMemo(
+    () => getFormCompletionStats(previewFormFields, formPreviewValues, user),
+    [previewFormFields, formPreviewValues, user],
+  )
 
   const fieldStats = useMemo(() => {
     const enabled = sorted.filter((r) => r.enabled)
@@ -230,6 +242,15 @@ export default function AdminApplicationFormPage() {
     await persistRows(next, row.enabled ? 'تم إخفاء الحقل.' : 'تم إظهار الحقل.')
   }
 
+  const openFormPreview = () => {
+    if (previewFormFields.length === 0) {
+      toast.info('لا توجد حقول ظاهرة للمعاينة. أضف حقلاً أو أظهر حقلاً مخفياً.', 'تنبيه')
+      return
+    }
+    setFormPreviewValues(buildDefaultFormValues(previewFormFields, user))
+    setFormPreviewOpen(true)
+  }
+
   const DraftTypeIcon = resolveApplicationFormFieldTypeIcon(draft.type)
   const showOptions = OPTION_TYPES.has(draft.type)
   const showNumberBounds = NUMBER_TYPES.has(draft.type)
@@ -270,6 +291,15 @@ export default function AdminApplicationFormPage() {
           </Button>
           <Button type="button" variant="secondary" icon={RefreshCw} loading={seedSubmitting} onClick={handleSeedDefaults}>
             استيراد الافتراضي
+          </Button>
+          <Button
+            type="button"
+            variant="secondary"
+            icon={Eye}
+            disabled={previewFormFields.length === 0}
+            onClick={openFormPreview}
+          >
+            معاينة الاستمارة
           </Button>
         </div>
         {sorted.length > 0 ? (
@@ -450,8 +480,7 @@ export default function AdminApplicationFormPage() {
             </label>
           ) : null}
 
-          <details className="rh-admin-app-form-fields__advanced">
-            <summary>إعدادات تقنية (للمشرف المتقدم)</summary>
+          <AdminAdvancedPanel>
             <TextField
               label="رمز الحقل الداخلي"
               value={draft.id}
@@ -459,7 +488,7 @@ export default function AdminApplicationFormPage() {
               hint="لا تغيّره بعد حفظ بيانات الطلاب إلا للضرورة."
               dir="ltr"
             />
-          </details>
+          </AdminAdvancedPanel>
           <div className="rh-admin-program-blocks__form-actions">
             <Button type="button" variant="primary" icon={Save} loading={saveSubmitting} onClick={() => void handleSaveDraft()}>
               حفظ
@@ -482,6 +511,50 @@ export default function AdminApplicationFormPage() {
               />
             </aside>
           ) : null}
+        </div>
+      </Modal>
+
+      <Modal
+        open={formPreviewOpen}
+        onClose={() => setFormPreviewOpen(false)}
+        title="معاينة استمارة طلب الالتحاق"
+        size="lg"
+        contentClassName="ui-modal__content--app-form-preview"
+      >
+        <div className="rh-admin-app-form-fields__preview-modal-body">
+          <p className="rh-admin-app-form-fields__preview-desc" style={{ marginTop: 0 }}>
+            هكذا تظهر الاستمارة للطالب. يمكنك تجربة الحقول؛ لن يُحفظ أي شيء من هذه المعاينة.
+          </p>
+          <div
+            className="rh-app-request__progress rh-admin-app-form-fields__preview-progress"
+            role="progressbar"
+            aria-valuenow={formPreviewCompletion.pct}
+            aria-valuemin={0}
+            aria-valuemax={100}
+            aria-label="نسبة اكتمال المعاينة"
+          >
+            <div className="rh-app-request__progress-head">
+              <span>اكتمال البيانات</span>
+              <strong>{formPreviewCompletion.pct}%</strong>
+            </div>
+            <div className="rh-app-request__progress-track">
+              <div className="rh-app-request__progress-fill" style={{ width: `${formPreviewCompletion.pct}%` }} />
+            </div>
+          </div>
+          <ApplicationFormRenderer
+            fields={previewFormFields}
+            values={formPreviewValues}
+            onChange={(key, value) => setFormPreviewValues((prev) => ({ ...prev, [key]: value }))}
+            user={user}
+          />
+        </div>
+        <div className="rh-admin-program-blocks__form-actions">
+          <HapticLink to="/app/application" className="ui-btn ui-btn--secondary">
+            فتح صفحة الطلب
+          </HapticLink>
+          <Button type="button" variant="ghost" icon={X} onClick={() => setFormPreviewOpen(false)}>
+            إغلاق
+          </Button>
         </div>
       </Modal>
 

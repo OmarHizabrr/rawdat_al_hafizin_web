@@ -28,6 +28,7 @@ import {
 import { messageForProfilePhotoError } from '../services/profilePhotoStorage.js'
 import { subscribePermissionProfiles } from '../services/permissionProfilesService.js'
 import { CrossNav } from '../components/CrossNav.jsx'
+import { AdminAdvancedPanel } from '../components/admin/AdminAdvancedPanel.jsx'
 import { ImagePickPreview } from '../components/ImagePickPreview.jsx'
 import { PeekButton } from '../components/PeekButton.jsx'
 import { Button, Modal, SearchField, TextField, useToast } from '../ui/index.js'
@@ -61,7 +62,7 @@ export default function AdminUsersPage() {
   useEffect(() => {
     if (!isAdmin(actor)) return
     const unsub = subscribeAllUsers(setUsers, () => {
-      toast.warning('تعذّر تحميل قائمة المستخدمين. تحقق من صلاحيات Firestore.', 'تنبيه')
+      toast.warning('تعذّر تحميل قائمة المستخدمين. تحقق من الصلاحيات والاتصال.', 'تنبيه')
     })
     return () => unsub()
     // eslint-disable-next-line react-hooks/exhaustive-deps -- الاشتراك مرة عند فتح الصفحة كأدمن
@@ -360,17 +361,15 @@ export default function AdminUsersPage() {
       <header className="rh-admin-users__hero card">
         <h1 className="rh-admin-users__title">إدارة المستخدمين</h1>
         <p className="rh-admin-users__desc">
-          عرض الحسابات، تغيير الدور (طالب / معلم / ادمن)، إيقاف الحساب، أو حذف بياناته من Firestore. عند تغيير الدور
-          يُحدَّث في مستند <code className="rh-admin-users__code">users</code> كلٌّ من <code className="rh-admin-users__code">role</code> و{' '}
-          <code className="rh-admin-users__code">permissionProfileId</code> تلقائياً: يُختار أول نوع صلاحيات مربوط بذلك
-          الدور من لوحة «أنواع المستخدمين». الدور «ادمن» يفرّغ <code className="rh-admin-users__code">permissionProfileId</code>.
-          يمكنك أيضاً ضبط نوع الصلاحيات يدوياً دون تغيير الدور؛ أي تغيير لاحق للدور يعيد الإسناد التلقائي. الحسابات
-          الجديدة تُنشأ بدور طالب وحقل <code className="rh-admin-users__code">starterAccess</code> حتى يروا صفحتي البداية
-          والإعدادات فقط إلى أن تُسنَد لهم صلاحيات أو يُختار «وصول كامل» من نوع الصلاحيات. يمكنك تعديل الاسم كنص ورفع
-          صورة للملف الشخصي إلى التخزين لأي مستخدم من زر «الاسم والصورة» — يُخزَّن في Firestore والتخزين ولا يغيّر حساب
-          Google. أيقونة المنزل
-          تفتح رئيسيته، وأيقونة العين صفحة خططه.
+          عرض الحسابات، تغيير الدور (طالب / معلم / ادمن)، إيقاف الحساب، أو حذف بياناته. يمكنك تعديل الاسم ورفع صورة
+          الملف الشخصي من زر «الاسم والصورة». أيقونة المنزل تفتح رئيسيته، وأيقونة العين صفحة خططه.
         </p>
+        <AdminAdvancedPanel summary="معلومات تقنية للمشرف">
+          <p className="rh-settings-footnote" style={{ margin: 0 }}>
+            عند تغيير الدور يُحدَّث تلقائياً نوع الصلاحيات المرتبط. الحسابات الجديدة تبدأ بدور طالب ووصول محدود حتى
+            تُسنَد لها صلاحيات أو يُختار «وصول كامل» من أنواع المستخدمين.
+          </p>
+        </AdminAdvancedPanel>
         <CrossNav items={adminCrossItems} className="rh-admin-users__cross" />
       </header>
 
@@ -378,7 +377,7 @@ export default function AdminUsersPage() {
         <div className="rh-admin-users__toolbar-grid">
           <SearchField
             label="بحث"
-            placeholder="اسم، بريد، أو معرّف…"
+            placeholder="اسم، بريد، أو رقم المستخدم…"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
           />
@@ -632,8 +631,7 @@ export default function AdminUsersPage() {
         showClose={!(displayModalUser && (busyUid === displayModalUser?.uid || displayModalBusyKind))}
       >
         <p className="rh-admin-users__profile-meta">
-          الاسم يُحدَّث في Firestore فقط. الصورة تُرفع إلى التخزين ثم يُحفظ الرابط في المستند. حساب Google يبقى كما هو؛
-          المستخدم يرى التغييرات داخل المنصة بعد التحديث.
+          الاسم يظهر داخل المنصة. الصورة تُرفع وتُحدَّث في الملف الشخصي. حساب Google يبقى كما هو.
         </p>
         <TextField
           label="الاسم المعروض"

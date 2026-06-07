@@ -3,6 +3,7 @@ import { HapticLink } from '../ui/HapticLink.jsx'
 import { useEffect, useMemo, useRef, useState } from 'react'
 
 import { ContactPhonesSection } from '../components/ContactPhonesSection.jsx'
+import { AdminAdvancedPanel } from '../components/admin/AdminAdvancedPanel.jsx'
 import { ImagePickPreview } from '../components/ImagePickPreview.jsx'
 import { CrossNav } from '../components/CrossNav.jsx'
 import { ThemeModePicker } from '../components/ThemeModePicker.jsx'
@@ -129,15 +130,12 @@ export default function SettingsPage() {
       if (res?.ok && res.token) {
         lastFcmTokenRef.current = res.token
         setPushTokenSaved(true)
-        toast.success(
-          'تم حفظ توكن الإشعارات في Firestore ضمن مستند المستخدم (الحقول pushToken و fcmToken).',
-          'تم',
-        )
+        toast.success('تم تفعيل إشعارات الهاتف على هذا الجهاز.', 'تم')
         return
       }
       if (res?.reason === 'MISSING_VAPID_KEY') {
         toast.warning(
-          'أضف مفتاح VAPID في إعدادات البناء: VITE_FIREBASE_VAPID_KEY (من Firebase Console → Cloud Messaging).',
+          'إشعارات الهاتف غير مفعّلة في هذا الإصدار من الموقع. تواصل مع إدارة المنصة.',
           'تنبيه',
         )
         return
@@ -150,9 +148,9 @@ export default function SettingsPage() {
         toast.warning('المتصفح لا يدعم إشعارات الدفع على هذا الجهاز.', 'تنبيه')
         return
       }
-      toast.warning('تعذّر الحصول على التوكن. جرّب من Chrome على الجوال أو بعد تثبيت التطبيق.', 'تنبيه')
+      toast.warning('تعذّر تفعيل إشعارات الهاتف. جرّب من Chrome على الجوال أو بعد تثبيت التطبيق.', 'تنبيه')
     } catch {
-      toast.warning('تعذّر حفظ التوكن. تحقق من الاتصال أو قواعد Firestore.', 'تنبيه')
+      toast.warning('تعذّر تفعيل إشعارات الهاتف. تحقق من الاتصال وحاول مرة أخرى.', 'تنبيه')
     } finally {
       setPushTokenSaving(false)
     }
@@ -161,14 +159,14 @@ export default function SettingsPage() {
   const onCopyFcmToken = async () => {
     const t = String(lastFcmTokenRef.current || '').trim()
     if (!t) {
-      toast.info('احفظ التوكن أولاً بالزر أعلاه.', 'تنبيه')
+      toast.info('فعّل إشعارات الهاتف أولاً بالزر أعلاه.', 'تنبيه')
       return
     }
     try {
       await navigator.clipboard.writeText(t)
-      toast.success('تم نسخ التوكن إلى الحافظة.', 'تم')
+      toast.success('تم النسخ.', 'تم')
     } catch {
-      toast.warning('تعذّر النسخ تلقائياً. انسخ يدوياً من Firestore من حقل pushToken أو fcmToken.', 'تنبيه')
+      toast.warning('تعذّر النسخ تلقائياً.', 'تنبيه')
     }
   }
 
@@ -397,20 +395,17 @@ export default function SettingsPage() {
 
       <section className="rh-settings-card">
         <div className="rh-settings-card__head">
-          <h2 className="rh-settings-card__title">توكن إشعارات الهاتف (FCM)</h2>
+          <h2 className="rh-settings-card__title">إشعارات الهاتف</h2>
           <p className="rh-settings-card__subtitle">
-            لإرسال إشعارات للهاتف بعد تثبيت المنصة، يُخزَّن توكن الجهاز في مستند المستخدم ضمن مجموعة Firestore{' '}
-            <code dir="ltr">users</code> في الحقلين <code dir="ltr">pushToken</code> و <code dir="ltr">fcmToken</code>{' '}
-            (نفس القيمة). هذا مستقل عن قسم «الإشعارات» أعلاه الذي يتحكم في التنبيهات داخل الصفحة فقط. يمكنك نسخ
-            التوكن من هنا أو من لوحة Firebase.
+            فعّل إشعارات الهاتف لتصلك التنبيهات حتى عند إغلاق المتصفح. هذا مستقل عن قسم «الإشعارات» أعلاه الذي
+            يتحكم في التنبيهات داخل الصفحة فقط.
           </p>
         </div>
         {canManagePushToken ? (
           user?.uid ? (
             <>
               <p className="rh-settings-footnote" style={{ marginTop: 0 }}>
-                اضغط الزر ثم وافق على إذن الإشعارات من المتصفح. يتطلب إعداد مفتاح{' '}
-                <code dir="ltr">VITE_FIREBASE_VAPID_KEY</code> في بيئة البناء.
+                اضغط الزر ثم وافق على إذن الإشعارات من المتصفح.
               </p>
               <div className="rh-settings-profile-form__actions" style={{ marginTop: 'var(--rh-space-3)' }}>
                 <Button
@@ -420,20 +415,24 @@ export default function SettingsPage() {
                   loading={pushTokenSaving}
                   onClick={() => void onSaveFcmTokenToUserDoc()}
                 >
-                  حفظ توكن هذا الجهاز في الحساب
+                  تفعيل إشعارات الهاتف
                 </Button>
-                {pushTokenSaved ? (
-                  <Button type="button" variant="ghost" onClick={() => void onCopyFcmToken()}>
-                    نسخ التوكن الكامل
-                  </Button>
-                ) : null}
               </div>
+              {pushTokenSaved ? (
+                <AdminAdvancedPanel summary="للمشرف المتقدم — نسخ رمز الجهاز">
+                  <div className="rh-settings-profile-form__actions" style={{ marginTop: 'var(--rh-space-2)' }}>
+                    <Button type="button" variant="ghost" onClick={() => void onCopyFcmToken()}>
+                      نسخ رمز الجهاز
+                    </Button>
+                  </div>
+                </AdminAdvancedPanel>
+              ) : null}
             </>
           ) : (
-            <p className="rh-settings-footnote">سجّل الدخول لحفظ توكن الإشعارات.</p>
+            <p className="rh-settings-footnote">سجّل الدخول لتفعيل إشعارات الهاتف.</p>
           )
         ) : (
-          <p className="rh-settings-footnote">إدارة توكن إشعارات الهاتف غير مفعّلة لصلاحيات حسابك.</p>
+          <p className="rh-settings-footnote">إدارة إشعارات الهاتف غير مفعّلة لصلاحيات حسابك.</p>
         )}
       </section>
 

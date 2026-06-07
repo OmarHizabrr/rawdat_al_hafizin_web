@@ -12,7 +12,7 @@ export function ServicePageImpersonationBanner({ actor, impersonateUid, hidePlan
   return (
     <div className="rh-service-page__impersonation-banner" role="status">
       <p className="rh-service-page__impersonation-p">
-        أنت تعمل <strong>نيابةً عن هذا المستخدم</strong> — المعرف:{' '}
+        أنت تعمل <strong>نيابةً عن هذا المستخدم</strong> — رقم المستخدم:{' '}
         <code className="rh-service-page__impersonation-code" dir="ltr">
           {uid}
         </code>

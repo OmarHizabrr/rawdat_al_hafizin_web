@@ -6,6 +6,8 @@ import { useAuth } from '../context/useAuth.js'
 import { useSiteContent } from '../context/useSiteContent.js'
 import { deletePlanType, savePlanType, seedDefaultPlanTypes, subscribePlanTypes } from '../services/siteConfigService.js'
 import { CrossNav } from '../components/CrossNav.jsx'
+import { AdminAdvancedPanel } from '../components/admin/AdminAdvancedPanel.jsx'
+import { slugFromAdminLabel } from '../utils/adminSlug.js'
 import { Button, Modal, NumberStepField, TextField, useToast } from '../ui/index.js'
 import { RhIcon, RH_ICON_STROKE } from '../ui/RhIcon.jsx'
 
@@ -31,7 +33,7 @@ export default function AdminPlanTypesPage() {
 
   useEffect(() => {
     const unsub = subscribePlanTypes(setRows, () => {
-      toast.warning('تعذّر تحميل أنواع الخطط. تحقق من قواعد Firestore.', 'تنبيه')
+      toast.warning('تعذّر تحميل أنواع الخطط. تحقق من الصلاحيات والاتصال.', 'تنبيه')
     })
     return () => unsub()
   }, [toast])
@@ -60,7 +62,7 @@ export default function AdminPlanTypesPage() {
     try {
       await savePlanType(user, {
         docId: editingId || undefined,
-        value,
+        value: editingId ? value : value.trim() || slugFromAdminLabel(label, 'plan'),
         label,
         hint,
         order,
@@ -69,7 +71,7 @@ export default function AdminPlanTypesPage() {
       setEditorOpen(false)
     } catch (e) {
       if (e?.message === 'INVALID_PLAN_TYPE_VALUE') {
-        toast.warning('المعرّف الداخلي يجب أن يحتوي أحرفاً إنجليزية صغيرة وأرقاماً وشرطة سفلية فقط.', 'تنبيه')
+        toast.warning('الرمز الداخلي يجب أن يحتوي حروفاً إنجليزية وأرقاماً وشرطة سفلية فقط.', 'تنبيه')
       } else {
         toast.warning('تعذّر الحفظ. تحقق من الصلاحيات.', 'تنبيه')
       }
@@ -99,7 +101,7 @@ export default function AdminPlanTypesPage() {
       await seedDefaultPlanTypes(user)
       toast.success('تمت مزامنة الأنواع الثلاثة الافتراضية (حفظ، مراجعة، قراءة).', 'تم')
     } catch {
-      toast.warning('تعذّر الكتابة إلى Firestore.', 'تنبيه')
+      toast.warning('تعذّر الحفظ. تحقق من الصلاحيات والاتصال.', 'تنبيه')
     } finally {
       setSeedSubmitting(false)
     }
@@ -123,8 +125,8 @@ export default function AdminPlanTypesPage() {
         </div>
         <h1 className="rh-admin-plan-types__title">أنواع الخطط</h1>
         <p className="rh-admin-plan-types__desc">
-          تُعرض هذه الأنواع في صفحة الخطط عند إنشاء خطة جديدة، وكشارة نوع الخطة في القائمة. المعرّف الداخلي (
-          <code className="rh-admin-dashboard__code">value</code>) يُخزَّن مع كل خطة؛ يُفضّل عدم تغييره بعد الاستخدام.
+          تُعرض هذه الأنواع عند إنشاء خطة جديدة وفي شارة نوع الخطة. يُفضّل عدم تغيير الرمز الداخلي بعد
+          استخدامه في خطط موجودة.
         </p>
         <div className="rh-admin-plan-types__toolbar">
           <Button type="button" variant="primary" icon={Plus} onClick={openAdd}>
@@ -143,8 +145,7 @@ export default function AdminPlanTypesPage() {
           <thead>
             <tr>
               <th>الترتيب</th>
-              <th>المعرّف</th>
-              <th>العنوان</th>
+              <th>الاسم الظاهر</th>
               <th>الوصف المختصر</th>
               <th />
             </tr>
@@ -152,8 +153,8 @@ export default function AdminPlanTypesPage() {
           <tbody>
             {sorted.length === 0 ? (
               <tr>
-                <td colSpan={5} className="rh-admin-plan-types__empty">
-                  لا توجد أنواع في Firestore بعد — ستُستخدم الأنواع الافتراضية في الواجهة حتى تضيف صفوفاً هنا أو تضغط
+                <td colSpan={4} className="rh-admin-plan-types__empty">
+                  لا توجد أنواع مخصّصة بعد — ستُستخدم الأنواع الافتراضية في الواجهة حتى تضيف أنواعاً أو تضغط
                   «مزامنة الأنواع الافتراضية».
                 </td>
               </tr>
@@ -161,9 +162,6 @@ export default function AdminPlanTypesPage() {
               sorted.map((r) => (
                 <tr key={r.id}>
                   <td>{r.order}</td>
-                  <td>
-                    <code>{r.value}</code>
-                  </td>
                   <td>{r.label}</td>
                   <td className="rh-admin-plan-types__hint">{r.hint || '—'}</td>
                   <td className="rh-admin-plan-types__actions">
@@ -190,16 +188,19 @@ export default function AdminPlanTypesPage() {
         closeOnEsc={!saveSubmitting}
         showClose={!saveSubmitting}
       >
-        <TextField
-          label="المعرّف الداخلي (value)"
-          hint="إنجليزي صغير، أرقام، _ فقط — يُفضّل عدم تغييره بعد الإنشاء."
-          value={value}
-          onChange={(e) => setValue(e.target.value)}
-          disabled={Boolean(editingId)}
-        />
-        <TextField label="العنوان المعروض" value={label} onChange={(e) => setLabel(e.target.value)} />
-        <TextField label="وصف قصير (اختياري)" value={hint} onChange={(e) => setHint(e.target.value)} />
-        <NumberStepField label="الترتيب" value={order} onChange={setOrder} min={0} max={999} step={1} />
+        <TextField label="الاسم الظاهر للطلاب" value={label} onChange={(e) => setLabel(e.target.value)} placeholder="مثال: خطة حفظ" />
+        <TextField label="وصف قصير (اختياري)" value={hint} onChange={(e) => setHint(e.target.value)} placeholder="يظهر تحت الاسم عند اختيار النوع" />
+        <NumberStepField label="ترتيب الظهور" value={order} onChange={setOrder} min={0} max={999} step={1} />
+        <AdminAdvancedPanel>
+          <TextField
+            label="الرمز الداخلي"
+            hint={editingId ? 'لا يُنصح بتغييره بعد إنشاء خطط بهذا النوع.' : 'يُولَّد تلقائياً من الاسم إن تُرك فارغاً.'}
+            value={value}
+            onChange={(e) => setValue(e.target.value)}
+            disabled={Boolean(editingId)}
+            dir="ltr"
+          />
+        </AdminAdvancedPanel>
         <div className="rh-admin-users__modal-actions">
           <Button type="button" variant="primary" icon={Save} loading={saveSubmitting} onClick={handleSave}>
             حفظ
@@ -219,7 +220,7 @@ export default function AdminPlanTypesPage() {
         closeOnEsc={!deleteSubmitting}
         showClose={!deleteSubmitting}
       >
-        <p className="rh-admin-users__warn">سيتم حذف النوع «{deleting?.label}» ({deleting?.value}). الخطط القديمة قد تعرض المعرّف الخام إن لم يعد مسجّلاً.</p>
+        <p className="rh-admin-users__warn">سيتم حذف النوع «{deleting?.label}». الخطط القديمة قد تظهر بدون اسم نوع إن لم يُعاد ربطها.</p>
         <div className="rh-admin-users__modal-actions">
           <Button type="button" variant="danger" icon={Trash2} loading={deleteSubmitting} onClick={handleDelete}>
             حذف

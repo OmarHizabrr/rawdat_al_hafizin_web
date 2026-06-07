@@ -69,10 +69,10 @@ export const EXPLORE_KIND_CONFIG = {
   plans: {
     permissionPageId: PERMISSION_PAGE_IDS.plans_explore,
     title: 'استكشاف الخطط العامة',
-    description: 'خطط معلنة كعامة. ابحث وفرز ثم انضم من البطاقة أو بمعرّف الخطة.',
-    searchHint: 'الاسم، المعرف، نوع الخطة، المجلدات، أو المنشئ',
-    joinByIdLabel: 'انضمام بمعرّف الخطة',
-    joinByIdPlaceholder: 'الصق معرف الخطة…',
+    description: 'خطط معلنة للجميع. ابحث ثم انضم من البطاقة أو بإدخال رمز الخطة.',
+    searchHint: 'الاسم، رمز الخطة، نوع الخطة، المجلدات، أو المنشئ',
+    joinByIdLabel: 'الانضمام برمز الخطة',
+    joinByIdPlaceholder: 'أدخل رمز الخطة هنا…',
     countLabel: (shown, total) =>
       shown === total ? `${total} خطة عامة` : `${shown} من ${total} خطة`,
     emptyNone: 'لا توجد خطط عامة بعد، أو لا تملك صلاحية قراءتها.',
@@ -89,17 +89,17 @@ export const EXPLORE_KIND_CONFIG = {
     joinErrorToast: (m, toast) => {
       if (m === 'PLAN_NOT_PUBLIC') toast.warning('هذه الخطة ليست عامة.', '')
       else if (m === 'ALREADY_MEMBER') toast.info('أنت مضاف مسبقاً.', '')
-      else if (m === 'PLAN_NOT_FOUND') toast.warning('لم يُعثر على خطة بهذا المعرف.', '')
+      else if (m === 'PLAN_NOT_FOUND') toast.warning('لم يُعثر على خطة بهذا الرمز.', '')
       else toast.warning('تعذر الانضمام.', '')
     },
   },
   halakat: {
     permissionPageId: PERMISSION_PAGE_IDS.halakat_explore,
     title: 'استكشاف الحلقات العامة',
-    description: 'حلقات معلنة كعامة. ابحث وفرز ثم انضم من البطاقة أو بمعرّف الحلقة.',
-    searchHint: 'الاسم، المعرف، المكان، أو المنشئ',
-    joinByIdLabel: 'انضمام بمعرّف الحلقة',
-    joinByIdPlaceholder: 'الصق معرف الحلقة…',
+    description: 'حلقات معلنة للجميع. ابحث ثم انضم من البطاقة أو بإدخال رمز الحلقة.',
+    searchHint: 'الاسم، رمز الحلقة، المكان، أو المنشئ',
+    joinByIdLabel: 'الانضمام برمز الحلقة',
+    joinByIdPlaceholder: 'أدخل رمز الحلقة هنا…',
     countLabel: (shown, total) =>
       shown === total ? `${total} حلقة عامة` : `${shown} من ${total} حلقة`,
     emptyNone: 'لا توجد حلقات عامة بعد، أو لا تملك صلاحية قراءتها.',
@@ -116,17 +116,17 @@ export const EXPLORE_KIND_CONFIG = {
     joinErrorToast: (m, toast) => {
       if (m === 'HALAKA_NOT_PUBLIC') toast.warning('هذه الحلقة ليست عامة.', '')
       else if (m === 'ALREADY_MEMBER') toast.info('أنت مضاف مسبقاً.', '')
-      else if (m === 'HALAKA_NOT_FOUND') toast.warning('لم يُعثر على حلقة بهذا المعرف.', '')
+      else if (m === 'HALAKA_NOT_FOUND') toast.warning('لم يُعثر على حلقة بهذا الرمز.', '')
       else toast.warning('تعذر الانضمام.', '')
     },
   },
   remote_tasmee: {
     permissionPageId: PERMISSION_PAGE_IDS.remote_tasmee_explore,
     title: 'استكشاف التسميع عن بعد العام',
-    description: 'بثوث معلنة كعامة. ابحث وفرز ثم انضم من البطاقة أو بمعرّف البث.',
-    searchHint: 'العنوان، المعرف، المنصة، أو المنشئ',
-    joinByIdLabel: 'انضمام بمعرّف البث',
-    joinByIdPlaceholder: 'الصق معرف البث…',
+    description: 'بثوث معلنة للجميع. ابحث ثم انضم من البطاقة أو بإدخال رمز البث.',
+    searchHint: 'العنوان، رمز البث، المنصة، أو المنشئ',
+    joinByIdLabel: 'الانضمام برمز البث',
+    joinByIdPlaceholder: 'أدخل رمز البث هنا…',
     countLabel: (shown, total) =>
       shown === total ? `${total} بث عام` : `${shown} من ${total} بث`,
     emptyNone: 'لا توجد بثوث عامة بعد، أو لا تملك صلاحية قراءتها.',
@@ -143,17 +143,17 @@ export const EXPLORE_KIND_CONFIG = {
     joinErrorToast: (m, toast) => {
       if (m === 'REMOTE_TASMEE_NOT_PUBLIC') toast.warning('هذا البث ليس عاماً.', '')
       else if (m === 'ALREADY_MEMBER') toast.info('أنت مضاف مسبقاً.', '')
-      else if (m === 'REMOTE_TASMEE_NOT_FOUND') toast.warning('لم يُعثر على بث بهذا المعرف.', '')
+      else if (m === 'REMOTE_TASMEE_NOT_FOUND') toast.warning('لم يُعثر على بث بهذا الرمز.', '')
       else toast.warning('تعذر الانضمام.', '')
     },
   },
   exams: {
     permissionPageId: PERMISSION_PAGE_IDS.exams_explore,
     title: 'استكشاف مجموعات الاختبار العامة',
-    description: 'مجموعات معلنة كعامة. ابحث وفرز ثم انضم من البطاقة أو بمعرّف المجموعة.',
-    searchHint: 'الاسم، المعرف، أو المنشئ',
-    joinByIdLabel: 'انضمام بمعرّف المجموعة',
-    joinByIdPlaceholder: 'الصق معرف المجموعة…',
+    description: 'مجموعات اختبار معلنة للجميع. ابحث ثم انضم من البطاقة أو بإدخال رمز المجموعة.',
+    searchHint: 'الاسم، رمز المجموعة، أو المنشئ',
+    joinByIdLabel: 'الانضمام برمز المجموعة',
+    joinByIdPlaceholder: 'أدخل رمز المجموعة هنا…',
     countLabel: (shown, total) =>
       shown === total ? `${total} مجموعة عامة` : `${shown} من ${total} مجموعة`,
     emptyNone: 'لا توجد مجموعات عامة بعد، أو لا تملك صلاحية قراءتها.',
@@ -170,17 +170,17 @@ export const EXPLORE_KIND_CONFIG = {
     joinErrorToast: (m, toast) => {
       if (m === 'EXAM_NOT_PUBLIC') toast.warning('هذه المجموعة ليست عامة.', '')
       else if (m === 'ALREADY_MEMBER') toast.info('أنت مضاف مسبقاً.', '')
-      else if (m === 'EXAM_NOT_FOUND') toast.warning('لم يُعثر على مجموعة بهذا المعرف.', '')
+      else if (m === 'EXAM_NOT_FOUND') toast.warning('لم يُعثر على مجموعة بهذا الرمز.', '')
       else toast.warning('تعذر الانضمام.', '')
     },
   },
   dawrat: {
     permissionPageId: PERMISSION_PAGE_IDS.dawrat_explore,
     title: 'استكشاف الدورات العامة',
-    description: 'دورات معلنة كعامة. ابحث وفرز ثم انضم من البطاقة أو بمعرّف الدورة.',
+    description: 'دورات معلنة للجميع. ابحث ثم انضم من البطاقة أو بإدخال رمز الدورة.',
     searchHint: 'العنوان، الوصف، التكلفة، أو المنشئ',
-    joinByIdLabel: 'انضمام بمعرّف الدورة',
-    joinByIdPlaceholder: 'الصق معرف الدورة…',
+    joinByIdLabel: 'الانضمام برمز الدورة',
+    joinByIdPlaceholder: 'أدخل رمز الدورة هنا…',
     countLabel: (shown, total) =>
       shown === total ? `${total} دورة عامة` : `${shown} من ${total} دورة`,
     emptyNone: 'لا توجد دورات عامة بعد، أو لا تملك صلاحية قراءتها.',
@@ -197,17 +197,17 @@ export const EXPLORE_KIND_CONFIG = {
     joinErrorToast: (m, toast) => {
       if (m === 'DAWRA_NOT_PUBLIC') toast.warning('هذه الدورة ليست عامة.', '')
       else if (m === 'ALREADY_MEMBER') toast.info('أنت مضاف مسبقاً.', '')
-      else if (m === 'DAWRA_NOT_FOUND') toast.warning('لم يُعثر على دورة بهذا المعرف.', '')
+      else if (m === 'DAWRA_NOT_FOUND') toast.warning('لم يُعثر على دورة بهذا الرمز.', '')
       else toast.warning('تعذر الانضمام.', '')
     },
   },
   activities: {
     permissionPageId: PERMISSION_PAGE_IDS.activities_explore,
     title: 'استكشاف الأنشطة العامة',
-    description: 'أنشطة معلنة كعامة. ابحث وفرز ثم انضم من البطاقة أو بمعرّف النشاط.',
+    description: 'أنشطة معلنة للجميع. ابحث ثم انضم من البطاقة أو بإدخال رمز النشاط.',
     searchHint: 'الاسم، المكان، الموعد، أو المنشئ',
-    joinByIdLabel: 'انضمام بمعرّف النشاط',
-    joinByIdPlaceholder: 'الصق معرف النشاط…',
+    joinByIdLabel: 'الانضمام برمز النشاط',
+    joinByIdPlaceholder: 'أدخل رمز النشاط هنا…',
     countLabel: (shown, total) =>
       shown === total ? `${total} نشاط عام` : `${shown} من ${total} نشاط`,
     emptyNone: 'لا توجد أنشطة عامة بعد، أو لا تملك صلاحية قراءتها.',

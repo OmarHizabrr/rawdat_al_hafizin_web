@@ -1,4 +1,5 @@
 import { RotateCcw, X } from 'lucide-react'
+import { AdminAdvancedPanel } from './admin/AdminAdvancedPanel.jsx'
 import { THEME_VAR_DEFAULTS } from '../data/brandingPresets.js'
 import {
   alphaPercentFromValue,
@@ -21,7 +22,8 @@ import { Button, TextField } from '../ui/index.js'
  */
 export function BrandingColorRow({ label, name, value, onChange, mode, useColorPicker = true, pickerMode = 'hex' }) {
   const fallbackProgram = THEME_VAR_DEFAULTS[name]?.[mode === 'dark' ? 'dark' : 'light'] ?? ''
-  const useAlphaPicker = pickerMode === 'alpha' || useColorPicker === false || isRgbaLikeValue(value) || isRgbaLikeValue(fallbackProgram)
+  const useAlphaPicker =
+    pickerMode === 'alpha' || useColorPicker === false || isRgbaLikeValue(value) || isRgbaLikeValue(fallbackProgram)
 
   if (useAlphaPicker) {
     const pickerHex = hexForColorInput(value, fallbackProgram)
@@ -31,9 +33,7 @@ export function BrandingColorRow({ label, name, value, onChange, mode, useColorP
     return (
       <div className="rh-admin-branding__color-field rh-admin-branding__color-field--alpha">
         <span className="rh-admin-branding__color-field-label">{label}</span>
-        <p className="rh-admin-branding__color-field-micro">
-          اختر لوناً ثم حرّك الشفافية — لا حاجة لكتابة أكواد تقنية.
-        </p>
+        <p className="rh-admin-branding__color-field-micro">اختر اللون ثم اضبط الشفافية بحركة بسيطة.</p>
         <div className="rh-admin-branding__alpha-picker">
           <div className="rh-admin-branding__alpha-picker-top">
             <input
@@ -99,18 +99,8 @@ export function BrandingColorRow({ label, name, value, onChange, mode, useColorP
           aria-label={label}
         />
         <div className="rh-admin-branding__alpha-preview" aria-hidden>
-          <span
-            className="rh-admin-branding__alpha-preview-fill"
-            style={{ background: value || pickerHex }}
-          />
+          <span className="rh-admin-branding__alpha-preview-fill" style={{ background: value || pickerHex }} />
         </div>
-        <TextField
-          label="قيمة اللون (للمحترفين)"
-          value={value || ''}
-          onChange={(e) => onChange(name, e.target.value)}
-          placeholder="#RRGGBB"
-          hint="اختياري — يمكن تعديل الكود يدوياً إن احتجت."
-        />
         <div className="rh-admin-branding__color-field-actions">
           <Button type="button" size="sm" variant="ghost" icon={X} onClick={() => onChange(name, '')}>
             مسح
@@ -126,6 +116,15 @@ export function BrandingColorRow({ label, name, value, onChange, mode, useColorP
           </Button>
         </div>
       </div>
+      <AdminAdvancedPanel summary="تعديل كود اللون يدوياً (اختياري)">
+        <TextField
+          label="كود اللون"
+          value={value || ''}
+          onChange={(e) => onChange(name, e.target.value)}
+          placeholder="#RRGGBB"
+          dir="ltr"
+        />
+      </AdminAdvancedPanel>
     </div>
   )
 }

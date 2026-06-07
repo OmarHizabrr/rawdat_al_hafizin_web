@@ -547,7 +547,7 @@ export default function HalakatPage() {
       const m = e?.message
       if (m === 'HALAKA_NOT_PUBLIC') toast.warning('الحلقة ليست عامة.', '')
       else if (m === 'ALREADY_MEMBER') toast.info('أنت مضاف مسبقاً.', '')
-      else if (m === 'HALAKA_NOT_FOUND') toast.warning('لم يُعثر على حلقة بهذا المعرف.', '')
+      else if (m === 'HALAKA_NOT_FOUND') toast.warning('لم يُعثر على حلقة بهذا الرمز.', '')
       else toast.warning('تعذّر الانضمام.', '')
     } finally {
       setJoinBusy(false)
@@ -814,7 +814,7 @@ export default function HalakatPage() {
                 </p>
                 {h.description && <p className="rh-plans__saved-desc">{h.description}</p>}
                 <p className="rh-plans__saved-meta">
-                  المعرف: <code className="rh-plans__plan-id">{h.id}</code>
+                  الرمز: <code className="rh-plans__plan-id">{h.id}</code>
                 </p>
                 <div className="rh-plans__saved-actions">
                   {canOpenSessions(h) && (
@@ -881,7 +881,7 @@ export default function HalakatPage() {
               onClick={() => setHalakaVisibility('private')}
             >
               <span className="rh-segment__label">خاصة</span>
-              <span className="rh-segment__hint">الانضمام بالدعوة أو بمعرّف الحلقة فقط</span>
+              <span className="rh-segment__hint">الانضمام بالدعوة أو بالرمز فقط</span>
             </button>
             <button
               type="button"
@@ -889,7 +889,7 @@ export default function HalakatPage() {
               onClick={() => setHalakaVisibility('public')}
             >
               <span className="rh-segment__label">عامة</span>
-              <span className="rh-segment__hint">تظهر في استكشاف الحلقات؛ الانضمام بمعرّف الحلقة</span>
+              <span className="rh-segment__hint">تظهر في استكشاف الحلقات؛ الانضمام بالرمز</span>
             </button>
           </div>
           <p className="rh-plans__field-label">نوع الحلقة</p>
@@ -1362,7 +1362,7 @@ export default function HalakatPage() {
       >
         <div className="rh-plan-members-modal__body">
           <p className="rh-plans__saved-meta">
-            المعرف: <code className="rh-plans__plan-id">{membersModal?.id}</code>
+            الرمز: <code className="rh-plans__plan-id">{membersModal?.id}</code>
           </p>
           {can(PH, 'halaka_member_add') && (
             <section className="rh-plan-members-modal__section">
@@ -1379,7 +1379,7 @@ export default function HalakatPage() {
               <ScrollArea className="rh-plan-members-picker" padded maxHeight="min(14rem, 36vh)">
                 {mergedDirectoryUsers.length === 0 ? (
                   <p className="rh-plan-members-picker__empty">
-                    جاري تحميل المستخدمين… إن بقيت فارغة فتحقق من صلاحيات قراءة مجموعة users في Firestore.
+                    جاري تحميل المستخدمين…
                   </p>
                 ) : filteredPickerUsers.length === 0 ? (
                   <p className="rh-plan-members-picker__empty">لا نتائج مطابقة للبحث.</p>

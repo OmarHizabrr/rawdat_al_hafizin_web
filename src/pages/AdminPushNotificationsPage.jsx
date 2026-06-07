@@ -3,6 +3,7 @@ import { HapticLink } from '../ui/HapticLink.jsx'
 import { useEffect, useMemo, useState } from 'react'
 
 import { CrossNav } from '../components/CrossNav.jsx'
+import { AdminAdvancedPanel } from '../components/admin/AdminAdvancedPanel.jsx'
 import { isAdmin } from '../config/roles.js'
 import { useAuth } from '../context/useAuth.js'
 import { useSiteContent } from '../context/useSiteContent.js'
@@ -42,7 +43,7 @@ export default function AdminPushNotificationsPage() {
       (err) => {
         console.error('[AdminPushNotifications] subscribeAllUsers failed', err)
         setRows([])
-        toast.warning('تعذّر تحميل المستخدمين. راجع الصلاحيات وقواعد Firestore.', 'تنبيه')
+        toast.warning('تعذّر تحميل المستخدمين. تحقق من الصلاحيات والاتصال.', 'تنبيه')
       },
     )
     return () => {
@@ -159,23 +160,22 @@ export default function AdminPushNotificationsPage() {
       <header className="rh-admin-users__hero card">
         <h1 className="rh-admin-users__title">إشعارات المستخدمين</h1>
         <p className="rh-admin-users__desc">
-          قائمة بجميع مستندات المستخدمين في Firestore. يمكنك إرسال إشعار داخلي لأي مستخدم؛ يُسجَّل التفصيل في
-          وحدة تحكم المتصفح (F12 → Console) عند النجاح أو الفشل.
+          أرسل إشعاراً لأي مستخدم في المنصة. يصل الإشعار داخل التطبيق، وإلى الهاتف إن كان المستخدم فعّل الإشعارات
+          مسبقاً.
         </p>
-        <p className="rh-settings-footnote" style={{ marginTop: '0.75rem', marginBottom: 0 }}>
-          شارة «تم حفظ توكن الدفع» تعني أن المستخدم فتح المنصة ووافق على إشعارات المتصفح وتم تخزين{' '}
-          <code dir="ltr">pushToken</code> / <code dir="ltr">fcmToken</code> في مستنده. إن ظهر للجميع «لم يُحفظ
-          بعد» فغالباً مفتاح <code dir="ltr">VITE_FIREBASE_VAPID_KEY</code> غير مضبوط في نشر الواجهة، أو لم يُمنح
-          إذن الإشعارات من المتصفح.
-        </p>
+        <AdminAdvancedPanel summary="معلومات تقنية للمشرف">
+          <p className="rh-settings-footnote" style={{ margin: 0 }}>
+            شارة «تم تفعيل إشعارات الهاتف» تعني أن المستخدم وافق على الإشعارات من المتصفح. إن ظهرت «لم تُفعَّل بعد»
+            للجميع، قد يلزم ضبط إعدادات النشر من قبل المطور (مفتاح Web Push في Firebase).
+          </p>
+        </AdminAdvancedPanel>
       </header>
 
       {!vapidConfigured ? (
         <section className="card" style={{ borderColor: 'var(--rh-warning-border, #c9a227)' }}>
           <p className="rh-settings-footnote" style={{ margin: 0 }}>
-            <strong>تنبيه للمشرف:</strong> مفتاح <code dir="ltr">VITE_FIREBASE_VAPID_KEY</code> غير موجود في هذا
-            البناء — لن يستطيع أي مستخدم حفظ توكن FCM حتى تُضيف المفتاح من Firebase Console (Cloud Messaging → Web Push
-            certificates) ثم تعيد نشر الموقع.
+            <strong>تنبيه:</strong> إشعارات الهاتف غير مفعّلة في هذا الإصدار من الموقع. تواصل مع مطور المنصة لضبط
+            إعدادات Firebase ثم إعادة النشر.
           </p>
         </section>
       ) : null}
@@ -185,7 +185,7 @@ export default function AdminPushNotificationsPage() {
       <section className="card rh-admin-users__toolbar">
         <SearchField
           label="بحث"
-          placeholder="ابحث بالاسم أو البريد أو معرف المستخدم…"
+            placeholder="ابحث بالاسم أو البريد أو رقم المستخدم…"
           value={q}
           onChange={(e) => setQ(e.target.value)}
           className="rh-admin-applications__search"
@@ -206,13 +206,15 @@ export default function AdminPushNotificationsPage() {
                 <strong className="rh-admin-users__name">{u.displayName || 'بدون اسم'}</strong>
                 <span className="rh-admin-users__email">{u.email || '—'}</span>
                 <span className="rh-plans__saved-badge">
-                  {hasDeviceToken(u) ? 'تم حفظ توكن الدفع' : 'لم يُحفظ توكن الدفع بعد'}
+                  {hasDeviceToken(u) ? 'إشعارات الهاتف مفعّلة' : 'إشعارات الهاتف غير مفعّلة'}
                 </span>
               </div>
             </div>
-            <p className="rh-settings-footnote" dir="ltr" style={{ marginTop: 0, wordBreak: 'break-all' }}>
-              <strong>uid:</strong> {u.uid}
-            </p>
+            <AdminAdvancedPanel summary="رقم المستخدم في النظام">
+              <p className="rh-settings-footnote" dir="ltr" style={{ margin: 0, wordBreak: 'break-all' }}>
+                {u.uid}
+              </p>
+            </AdminAdvancedPanel>
             <div className="rh-admin-users__row--actions">
               <Button type="button" size="sm" variant="primary" icon={Bell} onClick={() => openSend(u)}>
                 إرسال إشعار
@@ -243,7 +245,7 @@ export default function AdminPushNotificationsPage() {
         <TextField label="عنوان الإشعار" value={title} onChange={(e) => setTitle(e.target.value)} required />
         <TextAreaField label="نص الإشعار" value={body} onChange={(e) => setBody(e.target.value)} rows={5} required />
         <p className="rh-settings-footnote" style={{ marginTop: 0 }}>
-          يُحفظ في مجموعة إشعارات المستخدم داخل Firestore، ويُجهَّز إن أمكن إرسال دفع للهاتف عبر مجموعة pushQueue.
+          يُسجَّل الإشعار في حساب المستخدم، ويُرسل إلى هاتفه إن كانت الإشعارات مفعّلة.
         </p>
         <div className="rh-admin-users__modal-actions">
           <Button type="button" variant="primary" icon={Send} loading={sending} onClick={() => void onSend()}>

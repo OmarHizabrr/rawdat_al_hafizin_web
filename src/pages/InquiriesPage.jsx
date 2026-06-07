@@ -108,7 +108,7 @@ export default function InquiriesPage() {
       setMine,
       (err) => {
         logFirestoreIndexErrorIfAny(err, 'استفساراتي')
-        toast.warning('تعذّر تحميل استفساراتك. تحقق من الاتصال أو قواعد Firestore للفهرس المركّب.', 'تنبيه')
+        toast.warning('تعذّر تحميل استفساراتك. تحقق من الاتصال وحاول مرة أخرى.', 'تنبيه')
       },
     )
   }, [contextUid, toast])

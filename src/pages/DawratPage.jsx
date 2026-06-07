@@ -340,7 +340,7 @@ export default function DawratPage() {
       const m = e?.message
       if (m === 'DAWRA_NOT_PUBLIC') toast.warning('الدورة ليست عامة.', '')
       else if (m === 'ALREADY_MEMBER') toast.info('أنت مضاف مسبقاً.', '')
-      else if (m === 'DAWRA_NOT_FOUND') toast.warning('لم يُعثر على دورة بهذا المعرف.', '')
+      else if (m === 'DAWRA_NOT_FOUND') toast.warning('لم يُعثر على دورة بهذا الرمز.', '')
       else toast.warning('تعذّر الانضمام.', '')
     } finally {
       setJoinBusy(false)
@@ -597,7 +597,7 @@ export default function DawratPage() {
                     </div>
                   )}
                 <p className="rh-plans__saved-meta">
-                  المعرف: <code className="rh-plans__plan-id">{d.id}</code>
+                  الرمز: <code className="rh-plans__plan-id">{d.id}</code>
                 </p>
                 <div className="rh-plans__saved-actions">
                   {dawraCanManageMembers(d) && can(PH, 'dawra_card_members') && (
@@ -677,7 +677,7 @@ export default function DawratPage() {
               onClick={() => setDawraVisibility('private')}
             >
               <span className="rh-segment__label">خاصة</span>
-              <span className="rh-segment__hint">الانضمام بالدعوة أو بمعرّف الدورة فقط</span>
+              <span className="rh-segment__hint">الانضمام بالدعوة أو بالرمز فقط</span>
             </button>
             <button
               type="button"
@@ -685,7 +685,7 @@ export default function DawratPage() {
               onClick={() => setDawraVisibility('public')}
             >
               <span className="rh-segment__label">عامة</span>
-              <span className="rh-segment__hint">تظهر في استكشاف الدورات؛ الانضمام بمعرّف الدورة</span>
+              <span className="rh-segment__hint">تظهر في استكشاف الدورات؛ الانضمام بالرمز</span>
             </button>
           </div>
           <h3 className="rh-settings-card__title" style={{ marginTop: '1rem' }}>
@@ -839,7 +839,7 @@ export default function DawratPage() {
       >
         <div className="rh-plan-members-modal__body">
           <p className="rh-plans__saved-meta">
-            المعرف: <code className="rh-plans__plan-id">{membersModal?.id}</code>
+            الرمز: <code className="rh-plans__plan-id">{membersModal?.id}</code>
           </p>
           {can(PH, 'dawra_member_add') && (
             <section className="rh-plan-members-modal__section">
@@ -851,7 +851,7 @@ export default function DawratPage() {
               <ScrollArea className="rh-plan-members-picker" padded maxHeight="min(14rem, 36vh)">
                 {mergedDirectoryUsers.length === 0 ? (
                   <p className="rh-plan-members-picker__empty">
-                    جاري تحميل المستخدمين… إن بقيت فارغة فتحقق من صلاحيات قراءة مجموعة users في Firestore.
+                    جاري تحميل المستخدمين…
                   </p>
                 ) : filteredPickerUsers.length === 0 ? (
                   <p className="rh-plan-members-picker__empty">لا نتائج مطابقة للبحث.</p>

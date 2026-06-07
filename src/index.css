@@ -1958,6 +1958,25 @@ a.rh-sidebar__brand-link.rh-sidebar__brand-link--active {
   opacity: 0.95;
 }
 
+.ui-modal__content--app-form-preview {
+  max-height: min(92vh, 52rem);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.rh-admin-app-form-fields__preview-modal-body {
+  overflow-y: auto;
+  flex: 1;
+  min-height: 0;
+  max-height: min(72vh, 42rem);
+  padding-inline-end: var(--rh-space-1);
+}
+
+.rh-admin-app-form-fields__preview-progress {
+  margin-bottom: var(--rh-space-4);
+}
+
 .rh-app-request-actions .ui-btn {
   min-width: 11rem;
 }
@@ -8080,6 +8099,7 @@ a.rh-peek-btn {
   accent-color: var(--rh-primary);
 }
 
+.rh-admin-advanced-panel,
 .rh-admin-app-form-fields__advanced {
   margin-top: var(--rh-space-2);
   padding: var(--rh-space-3);
@@ -8088,6 +8108,7 @@ a.rh-peek-btn {
   background: color-mix(in srgb, var(--rh-surface) 94%, var(--rh-bg));
 }
 
+.rh-admin-advanced-panel summary,
 .rh-admin-app-form-fields__advanced summary {
   cursor: pointer;
   font-size: var(--rh-text-sm);
@@ -8096,10 +8117,12 @@ a.rh-peek-btn {
   list-style: none;
 }
 
+.rh-admin-advanced-panel summary::-webkit-details-marker,
 .rh-admin-app-form-fields__advanced summary::-webkit-details-marker {
   display: none;
 }
 
+.rh-admin-advanced-panel[open] summary,
 .rh-admin-app-form-fields__advanced[open] summary {
   margin-bottom: var(--rh-space-3);
   color: var(--rh-text);

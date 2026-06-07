@@ -8,7 +8,7 @@ export const VIEW_CREATOR_ACTION = 'view_creator'
 
 const VIEW_CREATOR_ACTION_DEF = {
   id: VIEW_CREATOR_ACTION,
-  label: 'إظهار منشئ/مالك العنصر (الاسم، الصورة، المعرف)',
+  label: 'إظهار منشئ/مالك العنصر (الاسم، الصورة، الرمز)',
 }
 
 export const PERMISSION_PAGE_IDS = {
@@ -69,7 +69,7 @@ export const PERMISSION_PAGES = [
     label: 'الخطط',
     actions: [
       { id: 'plan_create', label: 'إضافة خطة' },
-      { id: 'plan_join_public', label: 'الانضمام لخطة عامة بمعرّف' },
+      { id: 'plan_join_public', label: 'الانضمام لخطة عامة بالرمز' },
       { id: 'plan_card_set_home', label: 'بطاقة: جعل الخطة افتراضية للرئيسية' },
       { id: 'plan_card_members', label: 'بطاقة: إدارة الأعضاء' },
       { id: 'plan_card_edit', label: 'بطاقة: تعديل الخطة' },
@@ -85,7 +85,7 @@ export const PERMISSION_PAGES = [
     path: '/app/plans/explore',
     label: 'استكشاف الخطط العامة (نافذة منبثقة)',
     actions: [
-      { id: 'explore_join_by_id', label: 'انضمام بمعرّف الخطة' },
+      { id: 'explore_join_by_id', label: 'انضمام بالرمز الخطة' },
       { id: 'explore_join_card', label: 'زر الانضمام على البطاقة' },
       VIEW_CREATOR_ACTION_DEF,
     ],
@@ -96,7 +96,7 @@ export const PERMISSION_PAGES = [
     label: 'الحلقات',
     actions: [
       { id: 'halaka_create', label: 'إضافة حلقة' },
-      { id: 'halaka_join_public', label: 'الانضمام لحلقة عامة بمعرّف' },
+      { id: 'halaka_join_public', label: 'الانضمام لحلقة عامة بالرمز' },
       { id: 'halaka_card_members', label: 'بطاقة: إدارة الأعضاء' },
       { id: 'halaka_card_sessions', label: 'بطاقة: فتح جلسات الحلقة' },
       { id: 'halaka_card_edit', label: 'بطاقة: تعديل الحلقة' },
@@ -112,7 +112,7 @@ export const PERMISSION_PAGES = [
     path: '/app/halakat/explore',
     label: 'استكشاف الحلقات العامة (نافذة منبثقة)',
     actions: [
-      { id: 'explore_join_by_id', label: 'انضمام بمعرّف الحلقة' },
+      { id: 'explore_join_by_id', label: 'انضمام بالرمز الحلقة' },
       { id: 'explore_join_card', label: 'زر الانضمام على البطاقة' },
       VIEW_CREATOR_ACTION_DEF,
     ],
@@ -123,7 +123,7 @@ export const PERMISSION_PAGES = [
     label: 'التسميع عن بعد',
     actions: [
       { id: 'remote_tasmee_create', label: 'إضافة بث / جلسة عن بعد' },
-      { id: 'remote_tasmee_join_public', label: 'الانضمام لبث عام بمعرّف' },
+      { id: 'remote_tasmee_join_public', label: 'الانضمام لبث عام بالرمز' },
       { id: 'remote_tasmee_card_open_page', label: 'بطاقة: فتح صفحة البث' },
       { id: 'remote_tasmee_card_members', label: 'بطاقة: إدارة الأعضاء' },
       { id: 'remote_tasmee_card_edit', label: 'بطاقة: تعديل البث' },
@@ -139,7 +139,7 @@ export const PERMISSION_PAGES = [
     path: '/app/remote-tasmee/explore',
     label: 'استكشاف التسميع عن بعد العام (نافذة منبثقة)',
     actions: [
-      { id: 'explore_join_by_id', label: 'انضمام بمعرّف البث' },
+      { id: 'explore_join_by_id', label: 'انضمام بالرمز البث' },
       { id: 'explore_join_card', label: 'زر الانضمام على البطاقة' },
       VIEW_CREATOR_ACTION_DEF,
     ],
@@ -150,7 +150,7 @@ export const PERMISSION_PAGES = [
     label: 'الاختبار',
     actions: [
       { id: 'exam_create', label: 'إضافة مجموعة اختبار' },
-      { id: 'exam_join_public', label: 'الانضمام لمجموعة عامة بمعرّف' },
+      { id: 'exam_join_public', label: 'الانضمام لمجموعة عامة بالرمز' },
       { id: 'exam_card_remote_tasmee', label: 'بطاقة: زر بث التسميع المرتبط بالاختبار' },
       { id: 'exam_card_members', label: 'بطاقة: إدارة الأعضاء' },
       { id: 'exam_card_edit', label: 'بطاقة: تعديل' },
@@ -167,7 +167,7 @@ export const PERMISSION_PAGES = [
     path: '/app/exams/explore',
     label: 'استكشاف الاختبارات العامة (نافذة منبثقة)',
     actions: [
-      { id: 'explore_join_by_id', label: 'انضمام بمعرّف' },
+      { id: 'explore_join_by_id', label: 'انضمام بالرمز' },
       { id: 'explore_join_card', label: 'زر الانضمام على البطاقة' },
       VIEW_CREATOR_ACTION_DEF,
     ],
@@ -178,7 +178,7 @@ export const PERMISSION_PAGES = [
     label: 'الدورات',
     actions: [
       { id: 'dawra_create', label: 'إضافة دورة' },
-      { id: 'dawra_join_public', label: 'الانضمام لدورة عامة بمعرّف' },
+      { id: 'dawra_join_public', label: 'الانضمام لدورة عامة بالرمز' },
       { id: 'dawra_card_members', label: 'بطاقة: إدارة الأعضاء' },
       { id: 'dawra_card_edit', label: 'بطاقة: تعديل الدورة' },
       { id: 'dawra_card_delete_leave', label: 'بطاقة: حذف الدورة / مغادرة الدورة' },
@@ -194,7 +194,7 @@ export const PERMISSION_PAGES = [
     path: '/app/dawrat/explore',
     label: 'استكشاف الدورات العامة (نافذة منبثقة)',
     actions: [
-      { id: 'explore_join_by_id', label: 'انضمام بمعرّف الدورة' },
+      { id: 'explore_join_by_id', label: 'انضمام بالرمز الدورة' },
       { id: 'explore_join_card', label: 'زر الانضمام على البطاقة' },
       VIEW_CREATOR_ACTION_DEF,
     ],
@@ -215,7 +215,7 @@ export const PERMISSION_PAGES = [
     label: 'الأنشطة',
     actions: [
       { id: 'activity_create', label: 'إضافة مجموعة نشاط' },
-      { id: 'activity_join_public', label: 'الانضمام لنشاط عام بمعرّف' },
+      { id: 'activity_join_public', label: 'الانضمام لنشاط عام بالرمز' },
       { id: 'activity_print', label: 'الأنشطة: زر الطباعة' },
       { id: 'activity_card_members', label: 'بطاقة: إدارة الأعضاء' },
       { id: 'activity_card_edit', label: 'بطاقة: تعديل' },
@@ -232,7 +232,7 @@ export const PERMISSION_PAGES = [
     path: '/app/activities/explore',
     label: 'استكشاف الأنشطة العامة (نافذة منبثقة)',
     actions: [
-      { id: 'explore_join_by_id', label: 'انضمام بمعرّف' },
+      { id: 'explore_join_by_id', label: 'انضمام بالرمز' },
       { id: 'explore_join_card', label: 'زر الانضمام على البطاقة' },
       VIEW_CREATOR_ACTION_DEF,
     ],

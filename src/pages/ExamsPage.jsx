@@ -431,7 +431,7 @@ export default function ExamsPage() {
       const m = e?.message
       if (m === 'EXAM_NOT_PUBLIC') toast.warning('المجموعة ليست عامة.', '')
       else if (m === 'ALREADY_MEMBER') toast.info('أنت مضاف مسبقاً.', '')
-      else if (m === 'EXAM_NOT_FOUND') toast.warning('لم يُعثر على مجموعة بهذا المعرف.', '')
+      else if (m === 'EXAM_NOT_FOUND') toast.warning('لم يُعثر على مجموعة بهذا الرمز.', '')
       else toast.warning('تعذّر الانضمام.', '')
     } finally {
       setJoinBusy(false)
@@ -496,7 +496,7 @@ export default function ExamsPage() {
         <section className="rh-settings-card rh-plans__join-card">
           <div className="rh-settings-card__head">
             <h2 className="rh-settings-card__title">الانضمام لمجموعة عامة</h2>
-            <p className="rh-settings-card__subtitle">أدخل المعرف إن كانت المجموعة معروضة كعامة.</p>
+            <p className="rh-settings-card__subtitle">أدخل الرمز إن كانت المجموعة معروضة كعامة.</p>
           </div>
           <div className="rh-plans__join-row">
             <TextField label="معرف المجموعة" value={joinId} onChange={(e) => setJoinId(e.target.value)} />
@@ -631,7 +631,7 @@ export default function ExamsPage() {
                     </div>
                   )}
                 <p className="rh-plans__saved-meta">
-                  المعرف: <code className="rh-plans__plan-id">{ex.id}</code>
+                  الرمز: <code className="rh-plans__plan-id">{ex.id}</code>
                 </p>
                 <div className="rh-plans__saved-actions">
                   {examCanEdit(ex) &&
@@ -794,7 +794,7 @@ export default function ExamsPage() {
               onClick={() => setExamVisibility('private')}
             >
               <span className="rh-segment__label">خاصة</span>
-              <span className="rh-segment__hint">الانضمام بالدعوة أو بمعرّف المجموعة فقط</span>
+              <span className="rh-segment__hint">الانضمام بالدعوة أو بالرمز فقط</span>
             </button>
             <button
               type="button"
@@ -802,7 +802,7 @@ export default function ExamsPage() {
               onClick={() => setExamVisibility('public')}
             >
               <span className="rh-segment__label">عامة</span>
-              <span className="rh-segment__hint">تظهر في استكشاف الاختبارات؛ الانضمام بمعرّف المجموعة</span>
+              <span className="rh-segment__hint">تظهر في استكشاف الاختبارات؛ الانضمام بالرمز</span>
             </button>
           </div>
           <div className="rh-plans__editor-actions">
@@ -869,7 +869,7 @@ export default function ExamsPage() {
       >
         <div className="rh-plan-members-modal__body">
           <p className="rh-plans__saved-meta">
-            المعرف: <code className="rh-plans__plan-id">{membersModal?.id}</code>
+            الرمز: <code className="rh-plans__plan-id">{membersModal?.id}</code>
           </p>
           {membersModal
             ? (() => {

@@ -288,7 +288,7 @@ export default function AdminJoinGroupDetailsPage() {
         <div className="rh-admin-applications__toolbar">
           <SearchField
             label="بحث بالأعضاء"
-            placeholder="ابحث بالاسم أو البريد أو UID..."
+            placeholder="ابحث بالاسم أو البريد أو رقم المستخدم…"
             value={memberSearch}
             onChange={(e) => setMemberSearch(e.target.value)}
             className="rh-admin-applications__search"

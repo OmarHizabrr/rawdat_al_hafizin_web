@@ -11,6 +11,7 @@ import {
   subscribePermissionProfiles,
 } from '../services/permissionProfilesService.js'
 import { CrossNav } from '../components/CrossNav.jsx'
+import { AdminAdvancedPanel } from '../components/admin/AdminAdvancedPanel.jsx'
 import { Button, Modal, TextField, useToast } from '../ui/index.js'
 import { RhIcon, RH_ICON_STROKE } from '../ui/RhIcon.jsx'
 
@@ -41,7 +42,7 @@ export default function AdminUserTypesPage() {
   useEffect(() => {
     if (!isAdmin(user)) return undefined
     const unsub = subscribePermissionProfiles(setList, () => {
-      toast.warning('تعذّر تحميل أنواع المستخدمين. تحقق من قواعد Firestore لمجموعة permission_profiles.', 'تنبيه')
+      toast.warning('تعذّر تحميل أنواع المستخدمين. تحقق من الصلاحيات والاتصال.', 'تنبيه')
     })
     return () => unsub()
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -179,15 +180,15 @@ export default function AdminUserTypesPage() {
       <header className="rh-admin-users__hero card">
         <h1 className="rh-admin-users__title">أنواع المستخدمين والصلاحيات</h1>
         <p className="rh-admin-users__desc">
-          أنشئ أنواعاً مثل «طالب» أو «معلم»، وحدد الصفحات الظاهرة في القائمة، ثم فعّل أزرار الإضافة والتعديل والحذف
-          وغيرها لكل صفحة. يمكن ربط كل نوع بدور المنصة (طالب/معلم): عند تغيير حقل{' '}
-          <code className="rh-admin-users__code">role</code> في مستند <code className="rh-admin-users__code">users</code>{' '}
-          يُحدَّث <code className="rh-admin-users__code">permissionProfileId</code> تلقائياً لأول نوع مطابق لذلك الدور (حسب
-          الاسم إن وُجد أكثر من نوع). عند قبول طلب الالتحاق يُطبَّق نفس الإسناد للطالب ويُلغى وضع الدخول الأولي حتى تظهر
-          الصفحات التي حفظتها هنا لا القائمة الافتراضية للمستخدم الجديد. المستخدمون بدون إسناد أو بدون نوع مطابق يحصلون على
-          وصول كامل كالسابق. تأكد من قواعد Firestore لمجموعة{' '}
-          <code className="rh-admin-users__code">permission_profiles</code>.
+          أنشئ أنواعاً مثل «طالب» أو «معلم»، وحدد الصفحات الظاهرة في القائمة، ثم فعّل الأزرار والإجراءات لكل صفحة. عند
+          قبول طلب الالتحاق يُطبَّق النوع المختار للطالب الجديد.
         </p>
+        <AdminAdvancedPanel summary="معلومات تقنية للمشرف">
+          <p className="rh-settings-footnote" style={{ margin: 0 }}>
+            يمكن ربط كل نوع بدور المنصة؛ عند تغيير دور المستخدم يُحدَّث نوع الصلاحيات تلقائياً. المستخدمون بدون إسناد
+            يحصلون على وصول كامل كالسابق.
+          </p>
+        </AdminAdvancedPanel>
         <CrossNav items={adminCrossItems} className="rh-admin-users__cross" />
       </header>
 
@@ -270,7 +271,9 @@ export default function AdminUserTypesPage() {
                   </label>
                 </div>
                 <span className="rh-admin-user-types__id">
-                  المعرّف: <code className="rh-admin-users__code">{selectedId}</code>
+                  <AdminAdvancedPanel summary="رمز النوع في النظام">
+                    <code className="rh-admin-users__code">{selectedId}</code>
+                  </AdminAdvancedPanel>
                 </span>
               </div>
 
@@ -358,7 +361,7 @@ export default function AdminUserTypesPage() {
         showClose={!busyDelete}
       >
         <p className="rh-admin-users__warn">
-          حذف «{deleteTarget?.name || deleteTarget?.id}» قد يترك مستخدمين بمعرّف نوع غير موجود. عدِل إسنادهم من صفحة
+          حذف «{deleteTarget?.name || deleteTarget?.id}» قد يترك مستخدمين بنوع غير مسجّل. عدِل إسنادهم من صفحة
           المستخدمين.
         </p>
         <div className="rh-admin-users__modal-actions">

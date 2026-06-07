@@ -752,7 +752,7 @@ export default function PlansPage() {
       const m = e?.message
       if (m === 'PLAN_NOT_PUBLIC') toast.warning('هذه الخطة ليست عامة — تحتاج دعوة من المشرف.', '')
       else if (m === 'ALREADY_MEMBER') toast.info('أنت مضاف لهذه الخطة مسبقاً.', '')
-      else if (m === 'PLAN_NOT_FOUND') toast.warning('لم يُعثر على خطة بهذا المعرف.', '')
+      else if (m === 'PLAN_NOT_FOUND') toast.warning('لم يُعثر على خطة بهذا الرمز.', '')
       else toast.warning('تعذر الانضمام.', '')
     } finally {
       setJoinPlanSubmitting(false)
@@ -954,7 +954,7 @@ export default function PlansPage() {
                   />
                 </div>
                 <p className="rh-plans__saved-meta">
-                  معرف الخطة: <code className="rh-plans__plan-id">{p.id}</code>
+                  رمز الخطة: <code className="rh-plans__plan-id">{p.id}</code>
                 </p>
                 <p className="rh-plans__saved-meta">
                   {p.totalTargetPages} صفحة — ورد {p.dailyPages} ص/يوم
@@ -1100,7 +1100,7 @@ export default function PlansPage() {
             onClick={() => setPlanVisibility('public')}
           >
             <span className="rh-segment__label">عامة</span>
-            <span className="rh-segment__hint">تظهر في استكشاف الخطط؛ الانضمام بمعرّف الخطة</span>
+            <span className="rh-segment__hint">تظهر في استكشاف الخطط؛ الانضمام بالرمز</span>
           </button>
         </div>
             </section>
@@ -1572,26 +1572,26 @@ export default function PlansPage() {
       >
         <div className="rh-plan-members-modal__body">
         <p className="rh-plans__saved-meta rh-plan-members-modal__plan-id">
-          معرف الخطة: <code className="rh-plans__plan-id">{membersModalPlan?.id}</code>
+          رمز الخطة: <code className="rh-plans__plan-id">{membersModalPlan?.id}</code>
         </p>
 
         {can(PP, 'plan_member_add') && (
         <section className="rh-plan-members-modal__section">
           <h3 className="rh-plan-members-modal__heading">إضافة من المستخدمين</h3>
           <p className="rh-plan-members-modal__hint">
-            ابحث بالاسم أو البريد أو المعرف. تُدمج قائمة المستخدمين مع حسابك الحالي وجميع أعضاء الخطة المعروضين (بمن فيهم
+            ابحث بالاسم أو البريد أو رقم المستخدم. تُدمج قائمة المستخدمين مع حسابك الحالي وجميع أعضاء الخطة المعروضين (بمن فيهم
             مديرو النظام) حتى لا يغيب أحد عن القائمة بسبب تأخر التحميل أو صلاحيات القراءة.
           </p>
           <SearchField
             label="بحث في المستخدمين"
-            placeholder="اسم، بريد، معرّف…"
+            placeholder="اسم، بريد، رقم المستخدم…"
             value={memberPickerQuery}
             onChange={(e) => setMemberPickerQuery(e.target.value)}
           />
           <ScrollArea className="rh-plan-members-picker" padded maxHeight="min(14rem, 36vh)">
             {mergedDirectoryUsers.length === 0 ? (
               <p className="rh-plan-members-picker__empty">
-                جاري تحميل قائمة المستخدمين… إن بقيت فارغة فقد لا تملك صلاحية قراءة مجموعة المستخدمين في Firestore.
+                جاري تحميل قائمة المستخدمين…
               </p>
             ) : filteredPickerUsers.length === 0 ? (
               <p className="rh-plan-members-picker__empty">لا نتائج مطابقة للبحث.</p>

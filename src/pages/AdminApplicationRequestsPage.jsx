@@ -165,7 +165,7 @@ export default function AdminApplicationRequestsPage() {
       toast.success('تم حذف سجل طلب الالتحاق نهائياً.', 'تم')
       setDeleteTarget(null)
     } catch {
-      toast.warning('تعذّر حذف الطلب. تحقق من صلاحياتك أو قواعد Firestore.', 'تنبيه')
+      toast.warning('تعذّر حذف الطلب. تحقق من صلاحياتك والاتصال.', 'تنبيه')
     } finally {
       setBusyId('')
     }

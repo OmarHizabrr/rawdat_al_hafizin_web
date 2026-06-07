@@ -223,7 +223,7 @@ export function ExplorePublicItemCard({
   const idLine = (
     <p className="rh-plans__saved-meta">
       <span className="rh-explore-plans__label">
-        {kind === 'activities' ? str('activities.explore.meta_id') : 'المعرف:'}
+        {kind === 'activities' ? str('activities.explore.meta_id') : 'الرمز:'}
       </span>{' '}
       <code className="rh-plans__plan-id">{p.id}</code>
     </p>

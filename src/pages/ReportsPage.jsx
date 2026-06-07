@@ -503,7 +503,7 @@ export default function ReportsPage() {
       for (const m of reportData.members || []) {
         const baseMemberRow = {
           القسم: 'الأعضاء',
-          المعرّف: m.userId,
+          رقم_المستخدم: m.userId,
           الاسم: m.displayName || '',
           البريد: m.email || '',
           الدور: roleLabelAr(m.role),
@@ -526,7 +526,7 @@ export default function ReportsPage() {
         for (const s of reportData.sessions || []) {
           rows.push({
             القسم: 'جلسات الحلقة',
-            المعرّف: s.id,
+            الرمز: s.id,
             الاسم: s.title || '',
             startedAt: s.startedAt || '',
             endedAt: s.endedAt || '',
@@ -971,7 +971,7 @@ export default function ReportsPage() {
           <SectionTable
             title="الإشعارات"
             columns={[
-              { key: 'id', label: 'المعرّف' },
+              { key: 'id', label: 'الرمز' },
               { key: 'title', label: 'العنوان' },
               { key: 'notificationType', label: 'النوع' },
               { key: 'createdAt', label: 'التاريخ' },
@@ -1220,7 +1220,7 @@ export default function ReportsPage() {
               <SectionTable
                 title="جلسات الحلقة"
                 columns={[
-                  { key: 'id', label: 'المعرّف' },
+                  { key: 'id', label: 'الرمز' },
                   { key: 'title', label: 'العنوان' },
                   { key: 'startedAt', label: 'البداية' },
                   { key: 'endedAt', label: 'النهاية' },

@@ -4,6 +4,7 @@ import { useEffect } from 'react'
 
 import { useSiteContent } from '../context/useSiteContent.js'
 import { CrossNav } from '../components/CrossNav.jsx'
+import { AdminAdvancedPanel } from '../components/admin/AdminAdvancedPanel.jsx'
 import { RhIcon, RH_ICON_STROKE } from '../ui/RhIcon.jsx'
 
 const tiles = [
@@ -89,11 +90,13 @@ export default function AdminDashboardPage() {
         <div>
           <h1 className="rh-admin-dashboard__title">لوحة التحكم</h1>
           <p className="rh-admin-dashboard__desc">
-            اختر أحد الأقسام أدناه لإدارة إعدادات الموقع. تتطلّب التعديلات صلاحية مشرف وقواعد Firestore تسمح بالقراءة/الكتابة
-            على المجموعات <code className="rh-admin-dashboard__code">plan_types</code> و{' '}
-            <code className="rh-admin-dashboard__code">site_config</code> و{' '}
-            <code className="rh-admin-dashboard__code">permission_profiles</code>.
+            اختر أحد الأقسام أدناه لإدارة إعدادات الموقع والمنصة. تحتاج صلاحية مشرف لحفظ التغييرات.
           </p>
+          <AdminAdvancedPanel summary="معلومات تقنية للمشرف" className="rh-admin-dashboard__advanced">
+            <p className="rh-settings-footnote" style={{ margin: 0 }}>
+              التعديلات تُحفظ في قاعدة البيانات (مجموعات: أنواع الخطط، إعدادات الموقع، صلاحيات المستخدمين).
+            </p>
+          </AdminAdvancedPanel>
         </div>
       </header>
 

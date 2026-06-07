@@ -7,6 +7,7 @@ import { useAuth } from '../context/useAuth.js'
 import { useSiteContent } from '../context/useSiteContent.js'
 import { patchSiteStrings } from '../services/siteConfigService.js'
 import { CrossNav } from '../components/CrossNav.jsx'
+import { AdminAdvancedPanel } from '../components/admin/AdminAdvancedPanel.jsx'
 import { Button, SearchField, TextAreaField, useToast } from '../ui/index.js'
 import { RhIcon, RH_ICON_STROKE } from '../ui/RhIcon.jsx'
 
@@ -92,11 +93,10 @@ export default function AdminSiteCopyPage() {
         </div>
         <h1 className="rh-admin-copy__title">النصوص الثابتة</h1>
         <p className="rh-admin-copy__desc">
-          المفتاح ثابت في البرنامج؛ عدّل القيمة المعروضة فقط. لإعادة الافتراضي احذف محتوى الحقل واحفظ، أو اضبطه ليطابق
-          النص الافتراضي المعروض أسفل الحقل.
+          عدّل النصوص الظاهرة في المنصة والصفحة العامة. لإعادة الافتراضي اضغط «ملء الافتراضي» أو امسح الحقل واحفظ.
         </p>
         <div className="rh-admin-copy__toolbar">
-          <SearchField label="بحث" placeholder="مفتاح، عنوان المجموعة، أو جزء من النص…" value={query} onChange={(e) => setQuery(e.target.value)} />
+          <SearchField label="بحث" placeholder="ابحث باسم النص أو المجموعة…" value={query} onChange={(e) => setQuery(e.target.value)} />
         </div>
       </header>
 
@@ -109,11 +109,13 @@ export default function AdminSiteCopyPage() {
             {entries.map((e) => (
               <div key={e.key} className="rh-admin-copy__row">
                 <div className="rh-admin-copy__meta">
-                  <code className="rh-admin-copy__key">{e.key}</code>
                   <span className="rh-admin-copy__label">{e.label}</span>
                   <p className="rh-admin-copy__default">
-                    <strong>الافتراضي:</strong> {e.defaultValue}
+                    <strong>النص الافتراضي:</strong> {e.defaultValue}
                   </p>
+                  <AdminAdvancedPanel summary="رمز النص في النظام">
+                    <code className="rh-admin-copy__key">{e.key}</code>
+                  </AdminAdvancedPanel>
                 </div>
                 <TextAreaField
                   label="القيمة الحالية"

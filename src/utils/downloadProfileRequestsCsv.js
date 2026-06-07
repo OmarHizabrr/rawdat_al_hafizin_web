@@ -26,7 +26,7 @@ export function downloadProfileRequestsCsv(rows, fields = []) {
     return { ok: false, reason: 'empty' }
   }
 
-  const metaHeaders = ['معرّف المستخدم', 'البريد', 'الحالة', 'ملاحظة المراجعة', 'تاريخ التقديم', 'تاريخ المراجعة']
+  const metaHeaders = ['رقم المستخدم', 'البريد', 'الحالة', 'ملاحظة المراجعة', 'تاريخ التقديم', 'تاريخ المراجعة']
   const fieldHeaders = fields.map((f) => f.label)
   const headers = [...metaHeaders.slice(0, 1), ...fieldHeaders, ...metaHeaders.slice(1)]
 

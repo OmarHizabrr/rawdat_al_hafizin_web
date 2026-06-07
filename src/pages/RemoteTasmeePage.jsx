@@ -484,7 +484,7 @@ export default function RemoteTasmeePage() {
       const m = e?.message
       if (m === 'REMOTE_TASMEE_NOT_PUBLIC') toast.warning('البث ليس عاماً.', '')
       else if (m === 'ALREADY_MEMBER') toast.info('أنت مضاف مسبقاً.', '')
-      else if (m === 'REMOTE_TASMEE_NOT_FOUND') toast.warning('لم يُعثر على بث بهذا المعرف.', '')
+      else if (m === 'REMOTE_TASMEE_NOT_FOUND') toast.warning('لم يُعثر على بث بهذا الرمز.', '')
       else toast.warning('تعذّر الانضمام.', '')
     } finally {
       setJoinBusy(false)
@@ -619,7 +619,7 @@ export default function RemoteTasmeePage() {
                   </p>
                 ) : null}
                 <p className="rh-plans__saved-meta">
-                  المعرف: <code className="rh-plans__plan-id">{b.id}</code>
+                  الرمز: <code className="rh-plans__plan-id">{b.id}</code>
                 </p>
                 <div className="rh-plans__saved-actions">
                   {can(PH, 'remote_tasmee_card_open_page') ? (
@@ -789,7 +789,7 @@ export default function RemoteTasmeePage() {
               onClick={() => setRemoteVisibility('public')}
             >
               <span className="rh-segment__label">عام</span>
-              <span className="rh-segment__hint">يظهر في استكشاف البث؛ الانضمام بمعرّف البث</span>
+              <span className="rh-segment__hint">يظهر في استكشاف البث؛ الانضمام بالرمز</span>
             </button>
           </div>
           <div className="rh-plans__editor-actions">
@@ -857,7 +857,7 @@ export default function RemoteTasmeePage() {
       >
         <div className="rh-plan-members-modal__body">
           <p className="rh-plans__saved-meta">
-            المعرف: <code className="rh-plans__plan-id">{membersModal?.id}</code>
+            الرمز: <code className="rh-plans__plan-id">{membersModal?.id}</code>
           </p>
           {can(PH, 'remote_tasmee_member_add') && (
             <section className="rh-plan-members-modal__section">
