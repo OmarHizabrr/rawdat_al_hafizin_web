@@ -15,6 +15,8 @@ import {
   X,
 } from 'lucide-react'
 import { HapticLink } from '../ui/HapticLink.jsx'
+import { MemberProgressTools } from '../components/MemberProgressSnippet.jsx'
+import { useMemberProgressSummaries } from '../hooks/useMemberProgressSummaries.js'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useLocation, useSearchParams } from 'react-router-dom'
 import { CrossNav } from '../components/CrossNav.jsx'
@@ -555,6 +557,15 @@ export default function HalakatPage() {
   }
 
   const memberUidSet = useMemo(() => new Set(membersList.map((r) => r.userId)), [membersList])
+
+  const studentMemberUids = useMemo(
+    () => membersList.map((r) => r.userId).filter(Boolean),
+    [membersList],
+  )
+  const { byUid: memberProgressByUid, loading: memberProgressLoading } = useMemberProgressSummaries(
+    studentMemberUids,
+    Boolean(membersModal?.id),
+  )
 
   const memberDirectoryExtras = useMemo(() => {
     const out = []
@@ -1456,9 +1467,11 @@ export default function HalakatPage() {
                           </div>
                         )}
                         <div className="rh-members-chat__actions">
-                          <HapticLink to={memberAppLink('/app/reports', row.userId)} className="ui-btn ui-btn--ghost ui-btn--sm">
-                            تقارير
-                          </HapticLink>
+                          <MemberProgressTools
+                            userId={row.userId}
+                            summary={memberProgressByUid[row.userId]}
+                            loading={memberProgressLoading && !memberProgressByUid[row.userId]}
+                          />
                           <HapticLink to={memberAppLink('/app/plans', row.userId)} className="ui-btn ui-btn--ghost ui-btn--sm">
                             الخطط
                           </HapticLink>

@@ -74,6 +74,8 @@ import { RhIcon, RH_ICON_STROKE } from '../ui/RhIcon.jsx'
 import { CrossNav } from '../components/CrossNav.jsx'
 import { HiddenPlanUiNotice } from '../components/HiddenPlanUiNotice.jsx'
 import { PeekButton } from '../components/PeekButton.jsx'
+import { MemberProgressTools } from '../components/MemberProgressSnippet.jsx'
+import { useMemberProgressSummaries } from '../hooks/useMemberProgressSummaries.js'
 import { PlanResourceLinksBlock } from '../components/PlanResourceLinksBlock.jsx'
 
 const WEEKDAYS = [
@@ -637,6 +639,19 @@ export default function PlansPage() {
   const memberUidSet = useMemo(
     () => new Set(planMembersList.map((r) => r.userId).filter(Boolean)),
     [planMembersList],
+  )
+
+  const studentMemberUids = useMemo(
+    () =>
+      planMembersList
+        .filter((r) => r.role === PLAN_MEMBER_ROLES.MEMBER)
+        .map((r) => r.userId)
+        .filter(Boolean),
+    [planMembersList],
+  )
+  const { byUid: memberProgressByUid, loading: memberProgressLoading } = useMemberProgressSummaries(
+    studentMemberUids,
+    Boolean(membersModalPlan?.id),
   )
 
   const memberDirectoryExtras = useMemo(() => {
@@ -1662,6 +1677,13 @@ export default function PlansPage() {
                       </div>
                       <span className="rh-members-chat__sub">{row.email || row.userId}</span>
                     </div>
+                    {row.role === PLAN_MEMBER_ROLES.MEMBER ? (
+                      <MemberProgressTools
+                        userId={row.userId}
+                        summary={memberProgressByUid[row.userId]}
+                        loading={memberProgressLoading && !memberProgressByUid[row.userId]}
+                      />
+                    ) : null}
                     {!isOwnerRow && (can(PP, 'plan_member_promote') || can(PP, 'plan_member_remove')) && (
                       <div className="rh-members-chat__actions">
                         {can(PP, 'plan_member_promote') && (

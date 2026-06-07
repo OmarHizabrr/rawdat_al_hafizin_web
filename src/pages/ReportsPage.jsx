@@ -14,6 +14,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useRef, use
 import { useLocation, useNavigate } from 'react-router-dom'
 import { CrossNav } from '../components/CrossNav.jsx'
 import { PrintDocumentChrome } from '../components/PrintDocumentChrome.jsx'
+import { HapticLink } from '../ui/HapticLink.jsx'
 import { PERMISSION_PAGE_IDS } from '../config/permissionRegistry.js'
 import { useAuth } from '../context/useAuth.js'
 import { usePermissions } from '../context/usePermissions.js'
@@ -40,6 +41,7 @@ import {
 } from '../utils/hijriDates.js'
 import { elementToPdfBlob, shareOrDownloadPdf } from '../utils/reportPdf.js'
 import { buildStandaloneReportPrintHtml } from '../utils/reportPrintDocumentHtml.js'
+import { studentProgressLink } from '../utils/studentProgressLink.js'
 import { Button, RhDatePickerField, SearchableSelect, useToast } from '../ui/index.js'
 import { RH_ICON_STROKE, RhIcon } from '../ui/RhIcon.jsx'
 
@@ -239,6 +241,8 @@ export default function ReportsPage() {
   const { search } = useLocation()
   const hidePlanNavigation = useHidePlanNavigation()
   const didHydrateFromQueryRef = useRef(false)
+  const prevKindRef = useRef(null)
+  const autoBuiltFromQueryRef = useRef(false)
 
   const [kind, setKind] = useState('student')
   const [entityId, setEntityId] = useState('')
@@ -307,7 +311,10 @@ export default function ReportsPage() {
     let cancelled = false
     setLoadingEntities(true)
     setEntities([])
-    setEntityId('')
+    if (prevKindRef.current !== null && prevKindRef.current !== kind) {
+      setEntityId('')
+    }
+    prevKindRef.current = kind
     const run = async () => {
       try {
         if (kind === 'student') {
@@ -417,6 +424,32 @@ export default function ReportsPage() {
       setLoadingReport(false)
     }
   }
+
+  useEffect(() => {
+    if (!didHydrateFromQueryRef.current || autoBuiltFromQueryRef.current) return
+    if (loadingEntities || loadingReport) return
+    const params = new URLSearchParams(search)
+    const kindParam = String(params.get('reportKind') || '').trim()
+    const entityParam = String(params.get('reportEntity') || '').trim()
+    if (!entityParam || kindParam !== kind) return
+    if (!canRunForKind(kind) || isRangeInvalid) return
+    if (!entityOptions.some((o) => o.value === entityParam)) return
+    if (entityId !== entityParam) {
+      setEntityId(entityParam)
+      return
+    }
+    autoBuiltFromQueryRef.current = true
+    build()
+  }, [
+    entityId,
+    kind,
+    loadingEntities,
+    loadingReport,
+    entityOptions,
+    search,
+    canRunForKind,
+    isRangeInvalid,
+  ])
 
   const onPrint = () => {
     if (!canPrint) return
@@ -779,6 +812,12 @@ export default function ReportsPage() {
         </div>
         {isRangeInvalid && <p className="rh-reports__range-error">{str('reports.range_invalid_hint')}</p>}
         <div className="rh-reports__filters-actions">
+          {kind === 'student' && entityId ? (
+            <HapticLink to={appLink(studentProgressLink(entityId))} className="ui-btn ui-btn--secondary ui-btn--sm">
+              <RhIcon as={Eye} size={16} strokeWidth={RH_ICON_STROKE} />
+              تقرير الإنجاز السريع
+            </HapticLink>
+          ) : null}
           <Button type="button" variant="ghost" icon={FilterX} onClick={clearFilters}>
             {str('reports.btn_clear_filters')}
           </Button>

@@ -11,6 +11,8 @@ import { useSiteContent } from '../context/useSiteContent.js'
 import { useHidePlanNavigation } from '../hooks/useHidePlanNavigation.js'
 import { useExploreUrlAutoOpen } from '../hooks/useExploreUrlAutoOpen.js'
 import { ExplorePublicTrigger } from '../components/explore/ExplorePublicTrigger.jsx'
+import { MemberProgressTools } from '../components/MemberProgressSnippet.jsx'
+import { useMemberProgressSummaries } from '../hooks/useMemberProgressSummaries.js'
 import { exploreModalLink } from '../utils/exploreModalLink.js'
 import { firestoreApi } from '../services/firestoreApi.js'
 import { subscribeAllUsers } from '../services/adminUsersService.js'
@@ -348,6 +350,19 @@ export default function DawratPage() {
   }
 
   const memberUidSet = useMemo(() => new Set(membersList.map((r) => r.userId)), [membersList])
+
+  const studentMemberUids = useMemo(
+    () =>
+      membersList
+        .filter((r) => r.role === DAWRA_MEMBER_ROLES.MEMBER)
+        .map((r) => r.userId)
+        .filter(Boolean),
+    [membersList],
+  )
+  const { byUid: memberProgressByUid, loading: memberProgressLoading } = useMemberProgressSummaries(
+    studentMemberUids,
+    Boolean(membersModal?.id),
+  )
 
   const memberDirectoryExtras = useMemo(() => {
     const out = []
@@ -911,6 +926,13 @@ export default function DawratPage() {
                           </p>
                         )}
                       </div>
+                      {row.role === DAWRA_MEMBER_ROLES.MEMBER ? (
+                        <MemberProgressTools
+                          userId={row.userId}
+                          summary={memberProgressByUid[row.userId]}
+                          loading={memberProgressLoading && !memberProgressByUid[row.userId]}
+                        />
+                      ) : null}
                       {!isOwner && (
                         <div className="rh-members-chat__actions">
                           {can(PH, 'dawra_member_promote') && (

@@ -31,6 +31,7 @@ import { CrossNav } from '../components/CrossNav.jsx'
 import { AdminAdvancedPanel } from '../components/admin/AdminAdvancedPanel.jsx'
 import { ImagePickPreview } from '../components/ImagePickPreview.jsx'
 import { PeekButton } from '../components/PeekButton.jsx'
+import { studentProgressLink } from '../utils/studentProgressLink.js'
 import { Button, Modal, SearchField, TextField, useToast } from '../ui/index.js'
 import { RhIcon, RH_ICON_STROKE } from '../ui/RhIcon.jsx'
 
@@ -535,8 +536,8 @@ export default function AdminUsersPage() {
                   </HapticLink>
                   <PeekButton
                     className="rh-admin-users__peek-user"
-                    title="فتح صفحة خطط المستخدم"
-                    to={`/app/plans?uid=${encodeURIComponent(u.uid)}`}
+                    title="تقرير إنجاز الطالب — أنجز / بقي"
+                    to={studentProgressLink(u.uid)}
                   />
                 </div>
               </div>
