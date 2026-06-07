@@ -1,11 +1,33 @@
-import { ArrowLeft, Eraser, Layers, LayoutTemplate, Menu, MousePointerClick, Palette, Plus, RotateCcw, Save, Sparkles, Sun, Moon, Trash2, Type, X } from 'lucide-react'
+import {
+  ArrowLeft,
+  ChevronDown,
+  Eraser,
+  Layers,
+  LayoutTemplate,
+  Menu,
+  MousePointerClick,
+  Palette,
+  Phone,
+  Plus,
+  RotateCcw,
+  Save,
+  Sparkles,
+  Sun,
+  Moon,
+  Trash2,
+  Type,
+  X,
+} from 'lucide-react'
 import { HapticLink } from '../ui/HapticLink.jsx'
 import { startTransition, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 
+import { BrandingColorPackages } from '../components/BrandingColorPackages.jsx'
 import { BrandingColorRow } from '../components/BrandingColorRow.jsx'
+import { BrandingContactPreview } from '../components/BrandingContactPreview.jsx'
+import { BrandingIdentityPreview } from '../components/BrandingIdentityPreview.jsx'
 import { BrandingLivePreview } from '../components/BrandingLivePreview.jsx'
 import { SITE_DESCRIPTION, SITE_NAME, SITE_OG_IMAGE_PATH, SITE_TITLE } from '../config/site.js'
-import { BRANDING_COLOR_PRESETS } from '../data/brandingPresets.js'
+import { BRANDING_COLOR_PRESETS, detectMatchingPresetId } from '../data/brandingPresets.js'
 import { BRANDING_THEME_GROUP_HINTS, BRANDING_THEME_GROUPS } from '../data/brandingThemeFields.js'
 import { useAuth } from '../context/useAuth.js'
 import { useSiteContent } from '../context/useSiteContent.js'
@@ -23,6 +45,12 @@ function cloneThemeMap(map) {
   return { ...map }
 }
 
+const PAGE_TABS = [
+  { id: 'identity', label: 'تسمية الموقع', icon: Type },
+  { id: 'colors', label: 'ألوان الموقع', icon: Palette },
+  { id: 'contact', label: 'أرقام التواصل', icon: Phone },
+]
+
 const GROUP_ICONS = {
   core: Palette,
   surfaces: Layers,
@@ -31,6 +59,16 @@ const GROUP_ICONS = {
   nav: Menu,
   hero: LayoutTemplate,
   semantic: Sparkles,
+}
+
+const GROUP_PREVIEW_FOCUS = {
+  core: 'buttons',
+  surfaces: 'text',
+  text: 'text',
+  buttons: 'buttons',
+  nav: 'nav',
+  hero: 'hero',
+  semantic: 'semantic',
 }
 
 function scrollToBrandingGroup(mode, groupId) {
@@ -45,6 +83,7 @@ export default function AdminBrandingPage() {
   const { branding, contactPhones } = useSiteContent()
   const { resolved: appColorScheme } = useTheme()
   const toast = useToast()
+  const [activeTab, setActiveTab] = useState('identity')
   const [siteName, setSiteName] = useState(branding.siteName)
   const [siteTitle, setSiteTitle] = useState(branding.siteTitle)
   const [siteDescription, setSiteDescription] = useState(branding.siteDescription)
@@ -53,19 +92,20 @@ export default function AdminBrandingPage() {
   const [themeLight, setThemeLight] = useState(() => cloneThemeMap(branding.themeLight))
   const [themeDark, setThemeDark] = useState(() => cloneThemeMap(branding.themeDark))
   const [resetAllOpen, setResetAllOpen] = useState(false)
-  const [lightSelectKey, setLightSelectKey] = useState(0)
-  const [darkSelectKey, setDarkSelectKey] = useState(0)
   const [previewMode, setPreviewMode] = useState(() => (appColorScheme === 'dark' ? 'dark' : 'light'))
   const [colorEditMode, setColorEditMode] = useState(() => (appColorScheme === 'dark' ? 'dark' : 'light'))
+  const [showAdvancedColors, setShowAdvancedColors] = useState(false)
+  const [previewFocusGroup, setPreviewFocusGroup] = useState(null)
   const [saveSubmitting, setSaveSubmitting] = useState(false)
   const [contactPhonesDraft, setContactPhonesDraft] = useState([])
   const logoUrlInputRef = useRef(null)
   const ogImageInputRef = useRef(null)
 
   const previewLogoSrc = useMemo(() => sanitizeImageUrl(logoUrl) || '/logo.png', [logoUrl])
+  const selectedPackageId = useMemo(() => detectMatchingPresetId(themeLight, themeDark), [themeLight, themeDark])
 
   useEffect(() => {
-    document.title = `هوية الموقع — ${branding.siteTitle}`
+    document.title = `إعدادات الموقع — ${branding.siteTitle}`
   }, [branding.siteTitle])
 
   useEffect(() => {
@@ -109,23 +149,16 @@ export default function AdminBrandingPage() {
     })
   }, [])
 
-  const applyLightPreset = useCallback((id) => {
+  const applyPackage = useCallback((id) => {
     if (!id) return
-    const p = BRANDING_COLOR_PRESETS.find((x) => x.id === id)
-    if (p) {
-      setThemeLight({ ...p.light })
-      setLightSelectKey((k) => k + 1)
-    }
-  }, [])
-
-  const applyDarkPreset = useCallback((id) => {
-    if (!id) return
-    const p = BRANDING_COLOR_PRESETS.find((x) => x.id === id)
-    if (p) {
-      setThemeDark({ ...p.dark })
-      setDarkSelectKey((k) => k + 1)
-    }
-  }, [])
+    const preset = BRANDING_COLOR_PRESETS.find((x) => x.id === id)
+    if (!preset) return
+    setThemeLight({ ...preset.light })
+    setThemeDark({ ...preset.dark })
+    setShowAdvancedColors(false)
+    setPreviewFocusGroup(null)
+    toast.info(`تم تطبيق حزمة «${preset.name}» على الوضعين الفاتح والداكن.`, '')
+  }, [toast])
 
   const resetEntireFormToProgramDefaults = useCallback(() => {
     setSiteName(SITE_NAME)
@@ -135,8 +168,7 @@ export default function AdminBrandingPage() {
     setLogoUrl('')
     setThemeLight({})
     setThemeDark({})
-    setLightSelectKey((k) => k + 1)
-    setDarkSelectKey((k) => k + 1)
+    setShowAdvancedColors(false)
     setResetAllOpen(false)
     toast.info('تمت إعادة النموذج للقيم الافتراضية. اضغط «حفظ التغييرات» لإرسالها إلى السحابة.', '')
   }, [toast])
@@ -155,7 +187,7 @@ export default function AdminBrandingPage() {
         themeDark,
       })
       await saveContactPhones(user, contactPhonesDraft)
-      toast.success('تم حفظ هوية الموقع وأرقام التواصل.', 'تم')
+      toast.success('تم حفظ إعدادات الموقع.', 'تم')
     } catch {
       toast.warning('تعذّر الحفظ.', 'تنبيه')
     } finally {
@@ -170,8 +202,14 @@ export default function AdminBrandingPage() {
 
   const colorMap = colorEditMode === 'dark' ? themeDark : themeLight
   const setColorVar = colorEditMode === 'dark' ? setDarkVar : setLightVar
-  const onColorPreset = colorEditMode === 'dark' ? applyDarkPreset : applyLightPreset
-  const colorSelectKey = colorEditMode === 'dark' ? darkSelectKey : lightSelectKey
+
+  const onGroupJump = useCallback(
+    (groupId) => {
+      scrollToBrandingGroup(colorEditMode, groupId)
+      setPreviewFocusGroup(GROUP_PREVIEW_FOCUS[groupId] || null)
+    },
+    [colorEditMode],
+  )
 
   const crossItems = [
     { to: '/app/admin', label: 'لوحة التحكم' },
@@ -181,13 +219,8 @@ export default function AdminBrandingPage() {
     { to: '/app/settings', label: 'الإعدادات' },
   ]
 
-  const renderThemePanel = () => (
-    <section className="rh-admin-branding__theme-panel card">
-      <h2 className="rh-admin-branding__step-title">٢ — ألوان الموقع</h2>
-      <p className="rh-admin-branding__step-desc">
-        اختر الوضع الفاتح أو الداكن، ثم عدّل المجموعة المناسبة. المعاينة على اليمين تتحدّث مباشرة.
-      </p>
-
+  const renderAdvancedColors = () => (
+    <div className="rh-admin-branding__advanced-colors">
       <div className="rh-admin-branding__mode-tabs" role="tablist" aria-label="وضع تعديل الألوان">
         <button
           type="button"
@@ -215,26 +248,6 @@ export default function AdminBrandingPage() {
         </button>
       </div>
 
-      <div className="rh-admin-branding__preset-block">
-        <label className="rh-admin-branding__preset-label" htmlFor={`preset-${colorEditMode}`}>
-          تعبئة سريعة بمجموعة ألوان جاهزة
-        </label>
-        <select
-          key={colorSelectKey}
-          id={`preset-${colorEditMode}`}
-          className="rh-admin-branding__preset-select"
-          defaultValue=""
-          onChange={(e) => onColorPreset(e.target.value)}
-        >
-          <option value="">— اختر مجموعة —</option>
-          {BRANDING_COLOR_PRESETS.map((p) => (
-            <option key={p.id} value={p.id}>
-              {p.name}
-            </option>
-          ))}
-        </select>
-      </div>
-
       <div className="rh-admin-branding__group-jump" aria-label="انتقال سريع لمجموعات الألوان">
         {BRANDING_THEME_GROUPS.map((group) => {
           const GroupIcon = GROUP_ICONS[group.id] || Palette
@@ -243,7 +256,7 @@ export default function AdminBrandingPage() {
               key={group.id}
               type="button"
               className="rh-admin-branding__group-jump-btn"
-              onClick={() => scrollToBrandingGroup(colorEditMode, group.id)}
+              onClick={() => onGroupJump(group.id)}
             >
               <RhIcon as={GroupIcon} size={14} strokeWidth={RH_ICON_STROKE} aria-hidden />
               {group.label}
@@ -260,7 +273,6 @@ export default function AdminBrandingPage() {
             key={group.id}
             id={`branding-group-${colorEditMode}-${group.id}`}
             className="rh-admin-branding__details"
-            open={['text', 'buttons', 'nav'].includes(group.id)}
           >
             <summary className="rh-admin-branding__details-summary">
               <span className="rh-admin-branding__details-summary-inner">
@@ -290,7 +302,16 @@ export default function AdminBrandingPage() {
           </details>
         )
       })}
-    </section>
+
+      <div className="rh-admin-branding__theme-actions rh-admin-branding__theme-actions--inline">
+        <Button type="button" variant="secondary" icon={Eraser} onClick={() => setThemeLight({})}>
+          مسح ألوان الوضع الفاتح
+        </Button>
+        <Button type="button" variant="secondary" icon={Eraser} onClick={() => setThemeDark({})}>
+          مسح ألوان الوضع الداكن
+        </Button>
+      </div>
+    </div>
   )
 
   return (
@@ -301,10 +322,10 @@ export default function AdminBrandingPage() {
             <RhIcon as={ArrowLeft} size={18} strokeWidth={RH_ICON_STROKE} /> لوحة التحكم
           </HapticLink>
         </div>
-        <h1 className="rh-admin-branding__title">هوية الموقع والألوان</h1>
+        <h1 className="rh-admin-branding__title">إعدادات الموقع</h1>
         <p className="rh-admin-branding__desc">
-          خطوات بسيطة: النصوص والشعار أولاً، ثم ألوان النصوص والعناوين والروابط، والأزرار، والقائمة الجانبية مع
-          أيقوناتها — للوضع الفاتح والداكن. استخدم القوائم الجاهزة أو منتقي الألوان، ثم احفظ.
+          كل قسم منفصل لتسهيل الإدارة: تسمية الموقع والشعار في تبويب، وألوان الموقع في تبويب آخر (حزم جاهزة)، وأرقام
+          التواصل في تبويب ثالث. المعاينة الحية تظهر في كل قسم.
         </p>
       </header>
 
@@ -321,148 +342,212 @@ export default function AdminBrandingPage() {
           disabled={saveSubmitting}
           onClick={() => setResetAllOpen(true)}
         >
-          إعادة الوضع الافتراضي (النموذج)
+          إعادة الوضع الافتراضي
         </Button>
       </div>
 
-      <div className="rh-admin-branding__split">
-        <div className="rh-admin-branding__col-main">
-      <section className="rh-admin-branding__form card">
-        <h2 className="rh-admin-branding__step-title">١ — اسم الموقع والشعار</h2>
-        <p className="rh-admin-branding__step-desc">يظهر الاسم والعنوان في التبويبات والواجهة؛ الشعار يظهر في القائمة الجانبية وصفحة الدخول والصفحة العامة.</p>
-        <TextField label="اسم الموقع القصير" hint="مثال: روضة الحافظين" value={siteName} onChange={(e) => setSiteName(e.target.value)} />
-        <TextField
-          label="عنوان الموقع في المتصفح"
-          hint="يُضاف بعد اسم كل صفحة، مثل: «الرئيسية — …»"
-          value={siteTitle}
-          onChange={(e) => setSiteTitle(e.target.value)}
-        />
-        <TextAreaField label="وصف الموقع" value={siteDescription} onChange={(e) => setSiteDescription(e.target.value)} rows={4} />
-        <TextField
-          ref={logoUrlInputRef}
-          label="رابط صورة الشعار"
-          hint="الصق رابطاً يبدأ بـ https، أو اكتب مساراً يبدأ بـ / مثل /logo.png"
-          value={logoUrl}
-          onChange={(e) => setLogoUrl(e.target.value)}
-        />
-        <ImagePickPreview
-          pickMode="url"
-          label="معاينة الشعار"
-          hint="معاينة للرابط أو المسار أعلاه. × يمسح الحقل فيعود الشعار الافتراضي عند الحفظ إن لم تُدخل رابطاً. اضغط على المعاينة للتركيز في الحقل."
-          remoteUrl={logoUrl}
-          onClearRemote={() => setLogoUrl('')}
-          onHitClick={() => logoUrlInputRef.current?.focus()}
-          disabled={saveSubmitting}
-          busy={saveSubmitting}
-        />
-        <TextField
-          ref={ogImageInputRef}
-          label="صورة المشاركة (عند نشر الرابط)"
-          hint="رابط https كامل أو مسار من موقعك مثل /logo.png"
-          value={ogImagePath}
-          onChange={(e) => setOgImagePath(e.target.value)}
-        />
-        <ImagePickPreview
-          pickMode="url"
-          compact
-          label="معاينة صورة المشاركة"
-          hint="× يمسح الرابط من الحقل. اضغط على المعاينة للتركيز في الحقل وتعديل الرابط."
-          remoteUrl={ogImagePath}
-          onClearRemote={() => setOgImagePath('')}
-          onHitClick={() => ogImageInputRef.current?.focus()}
-          disabled={saveSubmitting}
-          busy={saveSubmitting}
-        />
-      </section>
+      <nav className="rh-admin-branding__page-tabs card" aria-label="أقسام إعدادات الموقع">
+        {PAGE_TABS.map((tab) => {
+          const TabIcon = tab.icon
+          return (
+            <button
+              key={tab.id}
+              type="button"
+              className={['rh-admin-branding__page-tab', activeTab === tab.id ? 'rh-admin-branding__page-tab--active' : '']
+                .filter(Boolean)
+                .join(' ')}
+              aria-current={activeTab === tab.id ? 'page' : undefined}
+              onClick={() => setActiveTab(tab.id)}
+            >
+              <RhIcon as={TabIcon} size={18} strokeWidth={RH_ICON_STROKE} aria-hidden />
+              {tab.label}
+            </button>
+          )
+        })}
+      </nav>
 
-      <section className="rh-admin-branding__form card">
-        <h2 className="rh-admin-branding__step-title">أرقام التواصل العامة</h2>
-        <p className="rh-admin-branding__step-desc">
-          تظهر في الإعدادات وفي صفحتي «طلب إجازة» و«الشهادات». أدخل رقماً للجوال (واتساب ورسائل نصية) و/أو تيليجرام
-          (اسم مستخدم أو رقم دولي). يكفي أحدهما لحفظ الصف؛ يمكن الجمع بينهما لنفس الجهة.
-        </p>
-        <ul className="rh-admin-contact-phones-edit">
-          {contactPhonesDraft.map((row) => (
-            <li key={row.id} className="rh-admin-contact-phones-edit__row">
-              <TextField
-                label="التسمية (اختياري)"
-                hint="مثال: شؤون الطلاب"
-                value={row.label}
-                onChange={(e) => {
-                  const v = e.target.value
-                  setContactPhonesDraft((prev) => prev.map((r) => (r.id === row.id ? { ...r, label: v } : r)))
-                }}
-              />
-              <TextField
-                label="رقم الجوال (اختياري)"
-                hint="للواتساب والرسائل النصية — مثال: 0501234567 أو +966501234567"
-                value={row.phone}
-                onChange={(e) => {
-                  const v = e.target.value
-                  setContactPhonesDraft((prev) => prev.map((r) => (r.id === row.id ? { ...r, phone: v } : r)))
-                }}
-                dir="ltr"
-              />
-              <TextField
-                label="تيليجرام (اختياري)"
-                hint="اسم المستخدم بدون @ أو رقم بصيغة دولية — مثال: rawdah_support أو +966501234567"
-                value={row.telegram ?? ''}
-                onChange={(e) => {
-                  const v = e.target.value
-                  setContactPhonesDraft((prev) => prev.map((r) => (r.id === row.id ? { ...r, telegram: v } : r)))
-                }}
-                dir="ltr"
-              />
-              <Button
-                type="button"
-                variant="ghost"
-                icon={Trash2}
-                onClick={() => setContactPhonesDraft((prev) => prev.filter((r) => r.id !== row.id))}
-              >
-                حذف
-              </Button>
-            </li>
-          ))}
-        </ul>
-        <Button
-          type="button"
-          variant="secondary"
-          icon={Plus}
-          onClick={() =>
-            setContactPhonesDraft((prev) => [
-              ...prev,
-              { id: firestoreApi.getNewId('cphone'), label: '', phone: '', telegram: '' },
-            ])
-          }
-        >
-          إضافة رقم
-        </Button>
-      </section>
+      {activeTab === 'identity' ? (
+        <section className="rh-admin-branding__form card">
+          <h2 className="rh-admin-branding__step-title">تسمية الموقع والشعار</h2>
+          <p className="rh-admin-branding__step-desc">
+            الاسم والعنوان والوصف والشعار — منفصل تماماً عن الألوان. يظهر في التبويبات والقائمة والصفحة العامة.
+          </p>
 
-      {renderThemePanel()}
-
-      <section className="rh-admin-branding__theme-actions card">
-        <Button type="button" variant="secondary" icon={Eraser} onClick={() => setThemeLight({})}>
-          مسح كل ألوان الوضع الفاتح
-        </Button>
-        <Button type="button" variant="secondary" icon={Eraser} onClick={() => setThemeDark({})}>
-          مسح كل ألوان الوضع الداكن
-        </Button>
-      </section>
-        </div>
-
-        <aside className="rh-admin-branding__aside-preview">
-          <BrandingLivePreview
-            previewMode={previewMode}
-            onPreviewMode={setPreviewMode}
-            themeLight={themeLight}
-            themeDark={themeDark}
+          <BrandingIdentityPreview
             siteName={siteName}
             siteTitle={siteTitle}
+            siteDescription={siteDescription}
             logoSrc={previewLogoSrc}
           />
-        </aside>
-      </div>
+
+          <TextField label="اسم الموقع القصير" hint="مثال: روضة الحافظين" value={siteName} onChange={(e) => setSiteName(e.target.value)} />
+          <TextField
+            label="عنوان الموقع في المتصفح"
+            hint="يُضاف بعد اسم كل صفحة، مثل: «الرئيسية — …»"
+            value={siteTitle}
+            onChange={(e) => setSiteTitle(e.target.value)}
+          />
+          <TextAreaField label="وصف الموقع" value={siteDescription} onChange={(e) => setSiteDescription(e.target.value)} rows={4} />
+          <TextField
+            ref={logoUrlInputRef}
+            label="رابط صورة الشعار"
+            hint="الصق رابطاً يبدأ بـ https، أو اكتب مساراً يبدأ بـ / مثل /logo.png"
+            value={logoUrl}
+            onChange={(e) => setLogoUrl(e.target.value)}
+          />
+          <ImagePickPreview
+            pickMode="url"
+            label="معاينة الشعار"
+            hint="معاينة للرابط أو المسار أعلاه. × يمسح الحقل فيعود الشعار الافتراضي عند الحفظ إن لم تُدخل رابطاً."
+            remoteUrl={logoUrl}
+            onClearRemote={() => setLogoUrl('')}
+            onHitClick={() => logoUrlInputRef.current?.focus()}
+            disabled={saveSubmitting}
+            busy={saveSubmitting}
+          />
+          <TextField
+            ref={ogImageInputRef}
+            label="صورة المشاركة (عند نشر الرابط)"
+            hint="رابط https كامل أو مسار من موقعك مثل /logo.png"
+            value={ogImagePath}
+            onChange={(e) => setOgImagePath(e.target.value)}
+          />
+          <ImagePickPreview
+            pickMode="url"
+            compact
+            label="معاينة صورة المشاركة"
+            hint="× يمسح الرابط من الحقل."
+            remoteUrl={ogImagePath}
+            onClearRemote={() => setOgImagePath('')}
+            onHitClick={() => ogImageInputRef.current?.focus()}
+            disabled={saveSubmitting}
+            busy={saveSubmitting}
+          />
+        </section>
+      ) : null}
+
+      {activeTab === 'colors' ? (
+        <div className="rh-admin-branding__split">
+          <div className="rh-admin-branding__col-main">
+            <section className="rh-admin-branding__theme-panel card">
+              <h2 className="rh-admin-branding__step-title">ألوان الموقع</h2>
+              <p className="rh-admin-branding__step-desc">
+                اختر حزمة ألوان جاهزة — تُطبَّق على الوضع الفاتح والداكن معاً. المعاينة على اليمين تتحدّث فوراً.
+              </p>
+
+              <BrandingColorPackages
+                selectedId={selectedPackageId}
+                onSelect={applyPackage}
+                previewMode={previewMode}
+              />
+
+              {selectedPackageId ? (
+                <p className="rh-admin-branding__package-note">
+                  الحزمة النشطة:{' '}
+                  <strong>{BRANDING_COLOR_PRESETS.find((p) => p.id === selectedPackageId)?.name || 'مخصّصة'}</strong>
+                </p>
+              ) : (
+                <p className="rh-admin-branding__package-note rh-admin-branding__package-note--custom">
+                  الألوان الحالية مخصّصة أو جزئية — اختر حزمة أو عدّل يدوياً.
+                </p>
+              )}
+
+              <details
+                className="rh-admin-branding__advanced-toggle"
+                open={showAdvancedColors}
+                onToggle={(e) => setShowAdvancedColors(e.currentTarget.open)}
+              >
+                <summary className="rh-admin-branding__advanced-toggle-summary">
+                  <RhIcon as={ChevronDown} size={18} strokeWidth={RH_ICON_STROKE} aria-hidden />
+                  تعديل ألوان يدوياً (متقدم)
+                </summary>
+                {showAdvancedColors ? renderAdvancedColors() : null}
+              </details>
+            </section>
+          </div>
+
+          <aside className="rh-admin-branding__aside-preview">
+            <BrandingLivePreview
+              previewMode={previewMode}
+              onPreviewMode={setPreviewMode}
+              themeLight={themeLight}
+              themeDark={themeDark}
+              siteName={siteName}
+              siteTitle={siteTitle}
+              logoSrc={previewLogoSrc}
+              focusGroup={previewFocusGroup}
+            />
+          </aside>
+        </div>
+      ) : null}
+
+      {activeTab === 'contact' ? (
+        <section className="rh-admin-branding__form card">
+          <h2 className="rh-admin-branding__step-title">أرقام التواصل العامة</h2>
+          <p className="rh-admin-branding__step-desc">
+            تظهر في الإعدادات وفي صفحتي «طلب إجازة» و«الشهادات». أدخل رقماً للجوال و/أو تيليجرام.
+          </p>
+
+          <BrandingContactPreview rows={contactPhonesDraft} />
+
+          <ul className="rh-admin-contact-phones-edit">
+            {contactPhonesDraft.map((row) => (
+              <li key={row.id} className="rh-admin-contact-phones-edit__row">
+                <TextField
+                  label="التسمية (اختياري)"
+                  hint="مثال: شؤون الطلاب"
+                  value={row.label}
+                  onChange={(e) => {
+                    const v = e.target.value
+                    setContactPhonesDraft((prev) => prev.map((r) => (r.id === row.id ? { ...r, label: v } : r)))
+                  }}
+                />
+                <TextField
+                  label="رقم الجوال (اختياري)"
+                  hint="مثال: 0501234567 أو +966501234567"
+                  value={row.phone}
+                  onChange={(e) => {
+                    const v = e.target.value
+                    setContactPhonesDraft((prev) => prev.map((r) => (r.id === row.id ? { ...r, phone: v } : r)))
+                  }}
+                  dir="ltr"
+                />
+                <TextField
+                  label="تيليجرام (اختياري)"
+                  hint="اسم المستخدم بدون @ أو رقم بصيغة دولية"
+                  value={row.telegram ?? ''}
+                  onChange={(e) => {
+                    const v = e.target.value
+                    setContactPhonesDraft((prev) => prev.map((r) => (r.id === row.id ? { ...r, telegram: v } : r)))
+                  }}
+                  dir="ltr"
+                />
+                <Button
+                  type="button"
+                  variant="ghost"
+                  icon={Trash2}
+                  onClick={() => setContactPhonesDraft((prev) => prev.filter((r) => r.id !== row.id))}
+                >
+                  حذف
+                </Button>
+              </li>
+            ))}
+          </ul>
+          <Button
+            type="button"
+            variant="secondary"
+            icon={Plus}
+            onClick={() =>
+              setContactPhonesDraft((prev) => [
+                ...prev,
+                { id: firestoreApi.getNewId('cphone'), label: '', phone: '', telegram: '' },
+              ])
+            }
+          >
+            إضافة رقم
+          </Button>
+        </section>
+      ) : null}
 
       <Modal open={resetAllOpen} title="إعادة الوضع الافتراضي؟" onClose={() => setResetAllOpen(false)} size="sm">
         <p className="rh-admin-users__warn">

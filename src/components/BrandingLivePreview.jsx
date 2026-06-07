@@ -1,22 +1,47 @@
 import { BookOpen, Home, Settings } from 'lucide-react'
+import { useEffect, useRef } from 'react'
 
 import { buildPreviewDomStyle } from '../data/brandingPresets.js'
 import { RhIcon, RH_ICON_STROKE } from '../ui/RhIcon.jsx'
 
 /**
  * معاينة حية للهوية (مسودة النموذج فقط — لا تُحفظ حتى تضغط حفظ).
+ * @param {string} [focusGroup] — تمييز/تمرير لمجموعة: hero | text | buttons | nav | semantic
  */
-export function BrandingLivePreview({ previewMode, onPreviewMode, themeLight, themeDark, siteName, siteTitle, logoSrc }) {
+export function BrandingLivePreview({
+  previewMode,
+  onPreviewMode,
+  themeLight,
+  themeDark,
+  siteName,
+  siteTitle,
+  logoSrc,
+  focusGroup = null,
+  compact = false,
+}) {
+  const scrollRootRef = useRef(null)
   const draft = previewMode === 'dark' ? themeDark : themeLight
   const style = buildPreviewDomStyle(draft, previewMode)
   const title = siteTitle == null ? '' : String(siteTitle)
   const titleShort = title.length > 72 ? `${title.slice(0, 72)}…` : title
 
+  useEffect(() => {
+    if (!focusGroup || !scrollRootRef.current) return
+    const timer = window.setTimeout(() => {
+      const el = scrollRootRef.current?.querySelector(`[data-preview-group="${focusGroup}"]`)
+      el?.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
+    }, 100)
+    return () => window.clearTimeout(timer)
+  }, [focusGroup, previewMode])
+
+  const groupClass = (id) =>
+    ['rh-live-preview__block', focusGroup === id ? 'rh-live-preview__block--focus' : ''].filter(Boolean).join(' ')
+
   return (
-    <div className="rh-live-preview card" style={style}>
+    <div className={['rh-live-preview card', compact ? 'rh-live-preview--compact' : ''].filter(Boolean).join(' ')} style={style}>
       <div className="rh-live-preview__head">
-        <h3 className="rh-live-preview__title">معاينة حية</h3>
-        <p className="rh-live-preview__subtitle">تنعكس تعديلاتك فوراً — اختر الوضع:</p>
+        <h3 className="rh-live-preview__title">معاينة الألوان</h3>
+        <p className="rh-live-preview__subtitle">تنعكس حزمة الألوان فوراً — اختر الوضع:</p>
         <div className="rh-live-preview__mode" role="group" aria-label="وضع المعاينة">
           <button
             type="button"
@@ -39,9 +64,9 @@ export function BrandingLivePreview({ previewMode, onPreviewMode, themeLight, th
         </div>
       </div>
 
-      <div className="rh-live-preview__scroll rh-themed-scroll">
+      <div ref={scrollRootRef} className="rh-live-preview__scroll rh-themed-scroll">
         <div className="rh-live-preview__page">
-          <header className="hero rh-live-preview__hero">
+          <header className={['hero rh-live-preview__hero', groupClass('hero')].join(' ')} data-preview-group="hero">
             <div className="hero-inner">
               <img className="logo" src={logoSrc} alt="" width={72} height={72} />
               <p className="eyebrow">سطر تعريفي (مثال)</p>
@@ -54,7 +79,10 @@ export function BrandingLivePreview({ previewMode, onPreviewMode, themeLight, th
           </header>
 
           <main className="content rh-live-preview__content">
-            <section className="card rh-live-preview__sample-card">
+            <section
+              className={['card rh-live-preview__sample-card', groupClass('text')].join(' ')}
+              data-preview-group="text"
+            >
               <h2 className="rh-live-preview__heading">بطاقة داخل المنصة</h2>
               <p className="lead">نص رئيسي في الفقرات والبطاقات.</p>
               <p className="rh-live-preview__muted">نص ثانوي — مثل التلميحات تحت الحقول.</p>
@@ -70,13 +98,19 @@ export function BrandingLivePreview({ previewMode, onPreviewMode, themeLight, th
               </div>
             </section>
 
-            <div className="ui-field rh-live-preview__field">
+            <div
+              className={['ui-field rh-live-preview__field', groupClass('text')].join(' ')}
+              data-preview-group="text"
+            >
               <span className="ui-field__label">حقل نموذجي</span>
               <div className="rh-live-preview__fake-input">نص توضيحي داخل الحقل…</div>
               <p className="ui-field__hint">تلميح تحت الحقل.</p>
             </div>
 
-            <div className="rh-live-preview__mock-app">
+            <div
+              className={['rh-live-preview__mock-app', groupClass('nav')].join(' ')}
+              data-preview-group="nav"
+            >
               <aside className="rh-live-preview__mock-side" aria-hidden>
                 <div className="rh-live-preview__mock-brand">
                   <img src={logoSrc} alt="" width={28} height={28} className="rh-live-preview__mock-logo" />
@@ -105,7 +139,10 @@ export function BrandingLivePreview({ previewMode, onPreviewMode, themeLight, th
               </aside>
               <div className="rh-live-preview__mock-main">
                 <div className="rh-live-preview__mock-topbar">شريط علوي</div>
-                <div className="rh-live-preview__mock-card">
+                <div
+                  className={['rh-live-preview__mock-card', groupClass('buttons')].join(' ')}
+                  data-preview-group="buttons"
+                >
                   <strong className="rh-live-preview__heading">محتوى الصفحة</strong>
                   <p className="rh-live-preview__muted">أزرار حقيقية كما في الموقع:</p>
                   <div className="rh-live-preview__mock-btns">
@@ -124,6 +161,16 @@ export function BrandingLivePreview({ previewMode, onPreviewMode, themeLight, th
                   </div>
                 </div>
               </div>
+            </div>
+
+            <div
+              className={['rh-live-preview__semantic-row', groupClass('semantic')].join(' ')}
+              data-preview-group="semantic"
+              aria-hidden
+            >
+              <span className="rh-live-preview__chip rh-live-preview__chip--success">نجاح</span>
+              <span className="rh-live-preview__chip rh-live-preview__chip--warning">تحذير</span>
+              <span className="rh-live-preview__chip rh-live-preview__chip--danger">خطر</span>
             </div>
           </main>
         </div>

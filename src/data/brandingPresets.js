@@ -182,7 +182,7 @@ export const BRANDING_COLOR_PRESETS = [
   },
   {
     id: 'warm',
-    name: 'دافئ (ترابي)',
+    name: 'دافئ ترابي',
     light: {
       ...buildDefaultThemeMap('light'),
       '--rh-primary': '#5d4037',
@@ -218,3 +218,35 @@ export const BRANDING_COLOR_PRESETS = [
     },
   },
 ]
+
+const PRESET_SWATCH_KEYS = ['--rh-primary', '--rh-bg', '--rh-surface', '--rh-accent', '--rh-btn-primary-bg']
+const PRESET_MATCH_KEYS = ['--rh-primary', '--rh-bg', '--rh-surface', '--rh-accent']
+
+/** قيمة متغير من مسودة المستخدم أو الافتراضي */
+export function resolveThemeVar(map, name, mode) {
+  const raw = map?.[name]
+  if (raw != null && String(raw).trim()) return String(raw).trim()
+  return THEME_VAR_DEFAULTS[name]?.[mode === 'dark' ? 'dark' : 'light'] ?? '#888888'
+}
+
+/** ألوان العرض في بطاقة حزمة الألوان */
+export function getPresetDisplaySwatches(preset, mode = 'light') {
+  const side = mode === 'dark' ? 'dark' : 'light'
+  const themeMap = preset[side]
+  return PRESET_SWATCH_KEYS.map((key) => resolveThemeVar(themeMap, key, side))
+}
+
+/** يطابق الحزمة الجاهزة إن كانت الألوان الرئيسية مطابقة */
+export function detectMatchingPresetId(themeLight, themeDark) {
+  for (const preset of BRANDING_COLOR_PRESETS) {
+    const matches = PRESET_MATCH_KEYS.every((key) => {
+      const lv = resolveThemeVar(themeLight, key, 'light')
+      const dv = resolveThemeVar(themeDark, key, 'dark')
+      const pl = resolveThemeVar(preset.light, key, 'light')
+      const pd = resolveThemeVar(preset.dark, key, 'dark')
+      return lv === pl && dv === pd
+    })
+    if (matches) return preset.id
+  }
+  return ''
+}
