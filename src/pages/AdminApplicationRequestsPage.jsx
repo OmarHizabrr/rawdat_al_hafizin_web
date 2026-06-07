@@ -1,11 +1,11 @@
-import { CheckCircle2, Download, Pencil, Save, Trash2, X, XCircle } from 'lucide-react'
+import { CheckCircle2, ClipboardList, Download, Pencil, Save, Trash2, X, XCircle } from 'lucide-react'
 import { HapticLink } from '../ui/HapticLink.jsx'
 import { useEffect, useMemo, useState } from 'react'
 
 import { CrossNav } from '../components/CrossNav.jsx'
+import { ApplicationFormDisplay } from '../components/application/ApplicationFormDisplay.jsx'
+import { ApplicationFormRenderer } from '../components/application/ApplicationFormRenderer.jsx'
 import { useAuth } from '../context/useAuth.js'
-import { COUNTRY_DIAL_OPTIONS_AR, COUNTRY_OPTIONS_AR } from '../data/countriesAr.js'
-import { getQuranMemorizedJuzOptions } from '../data/quranJuzOptionsAr.js'
 import { useSiteContent } from '../context/useSiteContent.js'
 import {
   adminUpdateProfileRequestFields,
@@ -14,17 +14,19 @@ import {
   reviewProfileRequest,
   subscribeAllProfileRequests,
 } from '../services/profileRequestService.js'
+import {
+  buildSubmissionPayload,
+  mergeFormValuesFromRow,
+  rowSearchHaystack,
+  validateApplicationForm,
+} from '../utils/applicationFormFields.js'
 import { downloadProfileRequestsCsv } from '../utils/downloadProfileRequestsCsv.js'
-import { Button, Modal, NumberStepField, SearchField, SearchableSelect, TextAreaField, TextField, useToast } from '../ui/index.js'
-
-const GENDER_OPTIONS = [
-  { value: 'male', label: 'ذكر' },
-  { value: 'female', label: 'أنثى' },
-]
+import { Button, Modal, TextAreaField, SearchField, useToast } from '../ui/index.js'
+import { RhIcon, RH_ICON_STROKE } from '../ui/RhIcon.jsx'
 
 export default function AdminApplicationRequestsPage() {
   const { user } = useAuth()
-  const { branding } = useSiteContent()
+  const { branding, applicationFormFields } = useSiteContent()
   const toast = useToast()
   const [rows, setRows] = useState([])
   const [q, setQ] = useState('')
@@ -53,8 +55,6 @@ export default function AdminApplicationRequestsPage() {
     return () => unsub()
   }, [])
 
-  const quranJuzAdminOptions = useMemo(() => getQuranMemorizedJuzOptions({ includeZero: true }), [])
-
   const statusCounts = useMemo(() => {
     const out = {
       [PROFILE_REQUEST_STATUS.PENDING]: 0,
@@ -79,11 +79,7 @@ export default function AdminApplicationRequestsPage() {
     ))
     const searchMatched = !s
       ? statusMatched
-      : statusMatched.filter((r) => {
-      const hay =
-        `${r.fullName} ${r.email} ${r.phone} ${r.nationality} ${r.city} ${r.occupation} ${r.userId}`.toLowerCase()
-      return hay.includes(s)
-    })
+      : statusMatched.filter((r) => rowSearchHaystack(r, applicationFormFields).includes(s))
     if (statusFilter !== 'all') return searchMatched
     const weight = {
       [PROFILE_REQUEST_STATUS.PENDING]: 0,
@@ -98,7 +94,7 @@ export default function AdminApplicationRequestsPage() {
       const tb = Date.parse(String(b?.submittedAt || '')) || 0
       return tb - ta
     })
-  }, [rows, q, statusFilter])
+  }, [rows, q, statusFilter, applicationFormFields])
 
   const onApprove = async () => {
     if (!user?.uid || !approvingRow?.userId) return
@@ -125,7 +121,7 @@ export default function AdminApplicationRequestsPage() {
   }
 
   const onSaveCsv = () => {
-    const res = downloadProfileRequestsCsv(filtered)
+    const res = downloadProfileRequestsCsv(filtered, applicationFormFields)
     if (!res.ok && res.reason === 'empty') {
       toast.info('لا توجد طلبات في القائمة الحالية للتصدير.', 'تنبيه')
       return
@@ -137,35 +133,20 @@ export default function AdminApplicationRequestsPage() {
 
   const openEdit = (row) => {
     setEditingRow(row)
-    setEditForm({
-      fullName: row?.fullName || '',
-      phone: row?.phone || '',
-      phoneCountry: row?.phoneCountry || 'SA',
-      phoneDialCode: row?.phoneDialCode || '+966',
-      nationality: row?.nationality || '',
-      permanentResidence: row?.permanentResidence || '',
-      city: row?.city || '',
-      age: Number(row?.age) || 18,
-      gender: row?.gender === 'female' ? 'female' : row?.gender === 'male' ? 'male' : '',
-      educationLevel: row?.educationLevel || '',
-      occupation: row?.occupation || '',
-      quranMemorizedJuz: Math.max(0, Math.min(30, Number(row?.quranMemorizedJuz) || 0)),
-    })
+    setEditForm(mergeFormValuesFromRow(row, applicationFormFields))
   }
 
   const onSaveEdit = async () => {
     if (!user?.uid || !editingRow?.userId || !editForm) return
-    if (!String(editForm.fullName || '').trim()) {
-      toast.warning('الاسم مطلوب.', 'تنبيه')
-      return
-    }
-    if (editForm.gender !== 'male' && editForm.gender !== 'female') {
-      toast.warning('حدد الجنس بشكل صحيح (ذكر/أنثى).', 'تنبيه')
+    const validation = validateApplicationForm(applicationFormFields, editForm)
+    if (!validation.ok) {
+      toast.warning(validation.message, 'تنبيه')
       return
     }
     setBusyId(editingRow.userId)
     try {
-      await adminUpdateProfileRequestFields(user, editingRow.userId, editForm)
+      const payload = buildSubmissionPayload(applicationFormFields, editForm)
+      await adminUpdateProfileRequestFields(user, editingRow.userId, payload)
       toast.success('تم تحديث بيانات الطلب.', 'تم')
       setEditingRow(null)
       setEditForm(null)
@@ -223,6 +204,7 @@ export default function AdminApplicationRequestsPage() {
 
   const crossItems = [
     { to: '/app/admin', label: 'لوحة التحكم' },
+    { to: '/app/admin/application-form', label: 'حقول الاستمارة' },
     { to: '/app/admin/users', label: 'المستخدمون' },
     { to: '/app', label: 'الرئيسية' },
   ]
@@ -304,7 +286,12 @@ export default function AdminApplicationRequestsPage() {
             </button>
           </div>
           <div className="rh-admin-applications__save">
-            <Button
+            <div className="rh-admin-applications__save-actions">
+              <HapticLink to="/app/admin/application-form" className="ui-btn ui-btn--secondary">
+                <RhIcon as={ClipboardList} size={18} strokeWidth={RH_ICON_STROKE} aria-hidden />
+                إعداد حقول الاستمارة
+              </HapticLink>
+              <Button
               type="button"
               variant="secondary"
               icon={Download}
@@ -314,6 +301,7 @@ export default function AdminApplicationRequestsPage() {
             >
               حفظ الطلبات (Excel / CSV)
             </Button>
+            </div>
             <p className="rh-admin-applications__save-hint">
               {q.trim() ? 'سيتم تصدير النتائج المطابقة للبحث فقط.' : 'سيتم تصدير جميع الطلبات.'}
             </p>
@@ -341,16 +329,8 @@ export default function AdminApplicationRequestsPage() {
               </div>
             </div>
 
-            <div className="rh-admin-users__row">
-              <span><strong>رقم الهاتف:</strong> {r.phone || '—'}</span>
-              <span><strong>الجنسية:</strong> {r.nationality || '—'}</span>
-              <span><strong>الإقامة الدائمة:</strong> {r.permanentResidence || '—'}</span>
-              <span><strong>المدينة/المحافظة:</strong> {r.city || '—'}</span>
-              <span><strong>العمر:</strong> {r.age || '—'}</span>
-              <span><strong>الجنس:</strong> {r.gender === 'female' ? 'أنثى' : 'ذكر'}</span>
-              <span><strong>المستوى التعليمي:</strong> {r.educationLevel || '—'}</span>
-              <span><strong>الوظيفة:</strong> {r.occupation || '—'}</span>
-              <span><strong>الحفظ:</strong> {r.quranMemorizedJuz || 0} / 30 جزء</span>
+            <div className="rh-admin-users__row rh-admin-users__row--form-data">
+              <ApplicationFormDisplay row={r} fields={applicationFormFields} />
             </div>
 
             <div className="rh-admin-users__row--actions">
@@ -465,95 +445,12 @@ export default function AdminApplicationRequestsPage() {
         size="lg"
       >
         {editForm ? (
-          <>
-            <TextField
-              label="الاسم الرباعي"
-              value={editForm.fullName}
-              onChange={(e) => setEditForm((prev) => ({ ...prev, fullName: e.target.value }))}
-              required
-            />
-            <SearchableSelect
-              label="مفتاح الدولة"
-              options={COUNTRY_DIAL_OPTIONS_AR}
-              value={editForm.phoneCountry}
-              onChange={(v) => {
-                const selected = COUNTRY_DIAL_OPTIONS_AR.find((opt) => opt.value === v)
-                setEditForm((prev) => ({
-                  ...prev,
-                  phoneCountry: v,
-                  phoneDialCode: selected?.dialCode || '',
-                }))
-              }}
-              placeholder="اختر الدولة ومفتاحها"
-              searchPlaceholder="ابحث عن الدولة..."
-            />
-            <TextField
-              label="رقم الهاتف"
-              value={editForm.phone}
-              onChange={(e) => setEditForm((prev) => ({ ...prev, phone: e.target.value }))}
-              placeholder="مثال: +9665xxxxxxx"
-            />
-            <SearchableSelect
-              label="الجنسية"
-              options={COUNTRY_OPTIONS_AR}
-              value={editForm.nationality}
-              onChange={(v) => setEditForm((prev) => ({ ...prev, nationality: v }))}
-              placeholder="اختر الجنسية"
-              searchPlaceholder="ابحث عن دولة..."
-            />
-            <TextField
-              label="مكان الإقامة الدائم"
-              value={editForm.permanentResidence}
-              onChange={(e) => setEditForm((prev) => ({ ...prev, permanentResidence: e.target.value }))}
-            />
-            <TextField
-              label="المدينة/المحافظة"
-              value={editForm.city}
-              onChange={(e) => setEditForm((prev) => ({ ...prev, city: e.target.value }))}
-            />
-            <NumberStepField
-              label="العمر"
-              value={editForm.age}
-              min={7}
-              max={150}
-              onChange={(v) => setEditForm((prev) => ({ ...prev, age: v }))}
-            />
-            <SearchableSelect
-              label="الجنس"
-              required
-              options={GENDER_OPTIONS}
-              value={editForm.gender}
-              onChange={(v) => setEditForm((prev) => ({ ...prev, gender: v }))}
-              placeholder="— اختر الجنس —"
-              searchPlaceholder="ابحث..."
-            />
-            <TextField
-              label="المستوى التعليمي"
-              value={editForm.educationLevel}
-              onChange={(e) => setEditForm((prev) => ({ ...prev, educationLevel: e.target.value }))}
-            />
-            <TextField
-              label="الوظيفة"
-              value={editForm.occupation}
-              onChange={(e) => setEditForm((prev) => ({ ...prev, occupation: e.target.value }))}
-            />
-            <SearchableSelect
-              className="rh-quran-juz-select"
-              label="مقدار الحفظ (عدد الأجزاء)"
-              hint="قائمة الأجزاء الثلاثين مع مدى كل جزء في المصحف وعدد السور التي يمر بها."
-              options={quranJuzAdminOptions}
-              value={
-                Number.isFinite(Number(editForm.quranMemorizedJuz)) &&
-                Number(editForm.quranMemorizedJuz) >= 0 &&
-                Number(editForm.quranMemorizedJuz) <= 30
-                  ? Number(editForm.quranMemorizedJuz)
-                  : 0
-              }
-              onChange={(v) => setEditForm((prev) => ({ ...prev, quranMemorizedJuz: v }))}
-              placeholder="اختر عدد الأجزاء"
-              searchPlaceholder="بحث برقم الجزء أو السورة…"
-            />
-          </>
+          <ApplicationFormRenderer
+            fields={applicationFormFields}
+            values={editForm}
+            onChange={(fieldId, value) => setEditForm((prev) => ({ ...prev, [fieldId]: value }))}
+            quranIncludeZero
+          />
         ) : null}
         <div className="rh-admin-users__modal-actions">
           <Button type="button" variant="primary" icon={Save} loading={busyId === editingRow?.userId} onClick={onSaveEdit}>

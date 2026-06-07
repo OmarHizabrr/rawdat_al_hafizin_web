@@ -14,7 +14,7 @@ import { HapticLink } from '../ui/HapticLink.jsx'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 
 import { CrossNav } from '../components/CrossNav.jsx'
-import { PROGRAM_BLOCK_CONTENT_MODES, programBlockContentModeHint, programBlockContentModeLabel } from '../data/programBlockContentModes.js'
+import { PROGRAM_BLOCK_CONTENT_MODE_OPTIONS, programBlockContentModeHint, programBlockContentModeLabel, resolveProgramBlockContentModeIcon } from '../data/programBlockContentModes.js'
 import { PROGRAM_BLOCK_ICON_OPTIONS, resolveProgramBlockIcon } from '../data/programBlockIcons.js'
 import { useAuth } from '../context/useAuth.js'
 import { useSiteContent } from '../context/useSiteContent.js'
@@ -284,7 +284,19 @@ export default function AdminProgramBlocksPage() {
                         <strong>{row.title}</strong>
                       </div>
                     </td>
-                    <td>{programBlockContentModeLabel(row.contentMode)}</td>
+                    <td>
+                      <div className="rh-admin-program-blocks__title-cell">
+                        {(() => {
+                          const ModeIcon = resolveProgramBlockContentModeIcon(row.contentMode)
+                          return (
+                            <span className="rh-admin-program-blocks__row-icon rh-admin-program-blocks__row-icon--mode" aria-hidden>
+                              <RhIcon as={ModeIcon} size={16} strokeWidth={RH_ICON_STROKE} />
+                            </span>
+                          )
+                        })()}
+                        <span>{programBlockContentModeLabel(row.contentMode)}</span>
+                      </div>
+                    </td>
                     <td>{row.enabled ? 'ظاهر' : 'مخفي'}</td>
                     <td>
                       <div className="rh-admin-program-blocks__actions">
@@ -326,6 +338,7 @@ export default function AdminProgramBlocksPage() {
             value={draft.icon}
             onChange={(v) => setDraft((d) => ({ ...d, icon: v }))}
             options={PROGRAM_BLOCK_ICON_OPTIONS}
+            searchPlaceholder="ابحث عن أيقونة…"
           />
           <div className="rh-admin-program-blocks__icon-preview" aria-hidden>
             <RhIcon as={DraftIcon} size={28} strokeWidth={RH_ICON_STROKE} />
@@ -335,7 +348,8 @@ export default function AdminProgramBlocksPage() {
             label="نوع المحتوى"
             value={draft.contentMode}
             onChange={(v) => setDraft((d) => ({ ...d, contentMode: v }))}
-            options={PROGRAM_BLOCK_CONTENT_MODES.map((m) => ({ value: m.value, label: m.label }))}
+            options={PROGRAM_BLOCK_CONTENT_MODE_OPTIONS}
+            searchPlaceholder="ابحث عن نوع المحتوى…"
           />
           <TextAreaField
             label="المحتوى"

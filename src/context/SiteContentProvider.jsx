@@ -8,6 +8,7 @@ import {
   subscribeSiteConfig,
 } from '../services/siteConfigService.js'
 import { resolveProgramBlocks } from '../utils/programBlocks.js'
+import { resolveApplicationFormFields } from '../utils/applicationFormFields.js'
 import { useTheme } from '../theme/useTheme.js'
 import { normalizeContactPhones } from '../utils/contactPhones.js'
 import { sanitizeCssColor, sanitizeImageUrl } from '../utils/brandingAssets.js'
@@ -121,6 +122,16 @@ export function SiteContentProvider({ children }) {
     [configData?.programBlocks],
   )
 
+  const applicationFormFields = useMemo(
+    () => resolveApplicationFormFields(configData?.applicationFormFields),
+    [configData?.applicationFormFields],
+  )
+
+  const hasCustomApplicationFormFields = useMemo(
+    () => Array.isArray(configData?.applicationFormFields) && configData.applicationFormFields.length > 0,
+    [configData?.applicationFormFields],
+  )
+
   const typeLabel = useCallback(
     (value) => planTypes.find((t) => t.value === value)?.label ?? value,
     [planTypes],
@@ -135,12 +146,14 @@ export function SiteContentProvider({ children }) {
       mergedStrings,
       programBlocks,
       hasCustomProgramBlocks,
+      applicationFormFields,
+      hasCustomApplicationFormFields,
       str,
       typeLabel,
       loadError,
       registryDefaults,
     }),
-    [planTypes, planTypeRows, branding, contactPhones, mergedStrings, programBlocks, hasCustomProgramBlocks, str, typeLabel, loadError],
+    [planTypes, planTypeRows, branding, contactPhones, mergedStrings, programBlocks, hasCustomProgramBlocks, applicationFormFields, hasCustomApplicationFormFields, str, typeLabel, loadError],
   )
 
   return <SiteContentContext.Provider value={value}>{children}</SiteContentContext.Provider>

@@ -1,4 +1,4 @@
-import { Bell, BookOpen, FileText, LayoutDashboard, Palette, Shapes, Shield, UserCheck, Users } from 'lucide-react'
+import { Bell, BookOpen, ClipboardList, FileText, LayoutDashboard, Palette, Shapes, Shield, UserCheck, Users } from 'lucide-react'
 import { HapticLink } from '../ui/HapticLink.jsx'
 import { useEffect } from 'react'
 
@@ -54,6 +54,12 @@ const tiles = [
     title: 'طلبات الالتحاق',
     desc: 'مراجعة بيانات طلاب الالتحاق، ثم القبول أو الرفض في أي وقت.',
     Icon: UserCheck,
+  },
+  {
+    to: '/app/admin/application-form',
+    title: 'حقول استمارة الالتحاق',
+    desc: 'إضافة وترتيب حقول طلب الالتحاق: النوع، الإلزام، الخيارات، والظهور في الاستمارة والتصدير.',
+    Icon: ClipboardList,
   },
 ]
 

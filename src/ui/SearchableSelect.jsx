@@ -227,15 +227,22 @@ export function SearchableSelect({
         disabled={disabled}
         onClick={toggleOpen}
       >
-        <span
-          className={[
-            'ui-select__trigger-text',
-            !selected ? 'ui-select__trigger-text--placeholder' : '',
-          ]
-            .filter(Boolean)
-            .join(' ')}
-        >
-          {selected ? displayTriggerText : placeholder}
+        <span className="ui-select__trigger-inner">
+          {selected?.Icon ? (
+            <span className="ui-select__option-icon" aria-hidden>
+              <RhIcon as={selected.Icon} size={18} strokeWidth={RH_ICON_STROKE} />
+            </span>
+          ) : null}
+          <span
+            className={[
+              'ui-select__trigger-text',
+              !selected ? 'ui-select__trigger-text--placeholder' : '',
+            ]
+              .filter(Boolean)
+              .join(' ')}
+          >
+            {selected ? displayTriggerText : placeholder}
+          </span>
         </span>
         <span className="ui-select__chevron" aria-hidden>
           <RhIcon as={ChevronDown} size={20} strokeWidth={RH_ICON_STROKE} />
@@ -286,6 +293,7 @@ export function SearchableSelect({
                       aria-selected={opt.value === value}
                       className={[
                         'ui-select__option',
+                        opt.Icon || opt.detail ? 'ui-select__option--with-meta' : '',
                         opt.detail ? 'ui-select__option--stacked' : '',
                         i === effectiveHighlight ? 'ui-select__option--highlight' : '',
                         opt.value === value ? 'ui-select__option--selected' : '',
@@ -295,12 +303,19 @@ export function SearchableSelect({
                       onMouseEnter={() => setHighlight(i)}
                       onClick={() => commit(opt)}
                     >
-                      <span className="ui-select__option-label">{opt.label}</span>
-                      {opt.detail ? (
-                        <span className="ui-select__option-detail" dir="rtl">
-                          {opt.detail}
+                      {opt.Icon ? (
+                        <span className="ui-select__option-icon" aria-hidden>
+                          <RhIcon as={opt.Icon} size={18} strokeWidth={RH_ICON_STROKE} />
                         </span>
                       ) : null}
+                      <span className="ui-select__option-body">
+                        <span className="ui-select__option-label">{opt.label}</span>
+                        {opt.detail ? (
+                          <span className="ui-select__option-detail" dir="rtl">
+                            {opt.detail}
+                          </span>
+                        ) : null}
+                      </span>
                     </button>
                   </li>
                 ))

@@ -1,4 +1,5 @@
 import { useMemo } from 'react'
+import { ProgramBlockContent } from './ProgramBlockContent.jsx'
 import { resolveProgramBlockIcon } from '../data/programBlockIcons.js'
 import { useSiteContent } from '../context/useSiteContent.js'
 import { programBlockToViewModel } from '../utils/programBlocks.js'
@@ -26,19 +27,7 @@ export function ProgramSections({ className = '' }) {
               </span>
               {s.title}
             </h2>
-            {s.mode === 'lead' && s.lead ? <p className="lead">{s.lead}</p> : null}
-            {s.mode === 'message' && s.lead ? <p className="lead emphasis">{s.lead}</p> : null}
-            {s.mode === 'paragraphs' &&
-              s.paragraphs?.map((p, i) => (
-                <p key={`${s.id}-p-${i}`}>{p}</p>
-              ))}
-            {s.mode === 'list' && s.list?.length > 0 ? (
-              <ul>
-                {s.list.map((item, i) => (
-                  <li key={`${s.id}-li-${i}`}>{item}</li>
-                ))}
-              </ul>
-            ) : null}
+            <ProgramBlockContent section={s} />
           </section>
         )
       })}

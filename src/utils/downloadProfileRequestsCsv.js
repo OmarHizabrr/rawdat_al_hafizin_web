@@ -1,4 +1,5 @@
 import { PROFILE_REQUEST_STATUS } from '../services/profileRequestService.js'
+import { formatFieldDisplayValue, mergeFormValuesFromRow } from './applicationFormFields.js'
 
 function statusAr(status) {
   if (status === PROFILE_REQUEST_STATUS.APPROVED) return 'مقبول'
@@ -17,50 +18,27 @@ function escapeSemicolonField(value) {
 
 /**
  * @param {Array<Record<string, unknown>>} rows
+ * @param {Array<{ id: string, label: string, type: string, options?: Array<{ value: string, label: string }> }>} [fields]
  * @returns {{ ok: boolean, reason?: string }}
  */
-export function downloadProfileRequestsCsv(rows) {
+export function downloadProfileRequestsCsv(rows, fields = []) {
   if (!Array.isArray(rows) || rows.length === 0) {
     return { ok: false, reason: 'empty' }
   }
 
-  const headers = [
-    'معرّف المستخدم',
-    'الاسم',
-    'البريد',
-    'رقم الجوال',
-    'مفتاح الدولة',
-    'الجنسية',
-    'الإقامة الدائمة',
-    'المدينة',
-    'العمر',
-    'الجنس',
-    'المستوى التعليمي',
-    'الوظيفة',
-    'الحفظ (أجزاء)',
-    'الحالة',
-    'ملاحظة المراجعة',
-    'تاريخ التقديم',
-    'تاريخ المراجعة',
-  ]
+  const metaHeaders = ['معرّف المستخدم', 'البريد', 'الحالة', 'ملاحظة المراجعة', 'تاريخ التقديم', 'تاريخ المراجعة']
+  const fieldHeaders = fields.map((f) => f.label)
+  const headers = [...metaHeaders.slice(0, 1), ...fieldHeaders, ...metaHeaders.slice(1)]
 
   const lines = [headers.map(escapeSemicolonField).join(';')]
 
   for (const r of rows) {
+    const values = mergeFormValuesFromRow(r, fields)
+    const fieldCells = fields.map((f) => formatFieldDisplayValue(f, values[f.id]))
     const cells = [
       r.userId,
-      r.fullName,
+      ...fieldCells,
       r.email,
-      r.phone,
-      r.phoneDialCode || r.phoneCountry || '',
-      r.nationality,
-      r.permanentResidence,
-      r.city,
-      r.age,
-      r.gender === 'female' ? 'أنثى' : 'ذكر',
-      r.educationLevel,
-      r.occupation,
-      r.quranMemorizedJuz,
       statusAr(r.status),
       r.statusMessage,
       r.submittedAt || '',

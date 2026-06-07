@@ -38,6 +38,7 @@ function normalizeProfileRequestRow(userId, raw = {}) {
     reviewerName: String(raw.reviewerName || '').trim(),
     photoURL: String(raw.photoURL || raw.createdByImageUrl || '').trim(),
     displayName: String(raw.displayName || raw.createdByName || '').trim(),
+    formValues: raw.formValues && typeof raw.formValues === 'object' ? raw.formValues : {},
   }
 }
 
@@ -88,58 +89,52 @@ async function notifyAdminsOfNewApplicationRequest(applicantUser, { fullName = '
 export async function upsertMyProfileRequest(user, payload) {
   const userId = user?.uid
   if (!userId) return
-  const genderNorm = payload?.gender === 'female' ? 'female' : payload?.gender === 'male' ? 'male' : ''
-  if (!genderNorm) {
-    const e = new Error('GENDER_REQUIRED')
-    e.code = 'GENDER_REQUIRED'
-    throw e
-  }
-  const juz = Math.max(0, Math.min(30, Number(payload?.quranMemorizedJuz) || 0))
-  if (juz < 30) {
-    const e = new Error('QURAN_MEMORIZATION_REQUIREMENT_NOT_MET')
-    e.code = 'QURAN_MEMORIZATION_REQUIREMENT_NOT_MET'
-    throw e
-  }
 
+  const genderNorm = payload?.gender === 'female' ? 'female' : payload?.gender === 'male' ? 'male' : ''
   const ref = firestoreApi.getUserProfileRequestDoc(userId)
   const submittedAt = new Date().toISOString()
   const fullName = String(payload?.fullName || '').trim()
 
+  const data = {
+    userId,
+    fullName,
+    phone: String(payload?.phone || '').trim(),
+    phoneCountry: String(payload?.phoneCountry || '').trim(),
+    phoneDialCode: String(payload?.phoneDialCode || '').trim(),
+    nationality: String(payload?.nationality || '').trim(),
+    permanentResidence: String(payload?.permanentResidence || '').trim(),
+    city: String(payload?.city || '').trim(),
+    age: Math.max(7, Math.min(150, Number(payload?.age) || 7)),
+    email: String(user?.email || payload?.email || '').trim(),
+    educationLevel: String(payload?.educationLevel || '').trim(),
+    occupation: String(payload?.occupation || '').trim(),
+    quranMemorizedJuz: Math.max(0, Math.min(30, Number(payload?.quranMemorizedJuz) || 0)),
+    photoURL: String(user?.photoURL || '').trim(),
+    displayName: String(user?.displayName || '').trim(),
+    formValues: payload?.formValues && typeof payload.formValues === 'object' ? payload.formValues : {},
+    status: PROFILE_REQUEST_STATUS.PENDING,
+    statusMessage: '',
+    submittedAt,
+    reviewedAt: null,
+    reviewerUid: '',
+    reviewerName: '',
+  }
+  if (genderNorm) data.gender = genderNorm
+
   await firestoreApi.setData({
     docRef: ref,
-    data: {
-      userId,
-      fullName,
-      phone: String(payload?.phone || '').trim(),
-      phoneCountry: String(payload?.phoneCountry || '').trim(),
-      phoneDialCode: String(payload?.phoneDialCode || '').trim(),
-      nationality: String(payload?.nationality || '').trim(),
-      permanentResidence: String(payload?.permanentResidence || '').trim(),
-      city: String(payload?.city || '').trim(),
-      age: Math.max(7, Math.min(150, Number(payload?.age) || 7)),
-      email: String(user?.email || payload?.email || '').trim(),
-      gender: genderNorm,
-      educationLevel: String(payload?.educationLevel || '').trim(),
-      occupation: String(payload?.occupation || '').trim(),
-      quranMemorizedJuz: juz,
-      photoURL: String(user?.photoURL || '').trim(),
-      displayName: String(user?.displayName || '').trim(),
-      status: PROFILE_REQUEST_STATUS.PENDING,
-      statusMessage: '',
-      submittedAt,
-      reviewedAt: null,
-      reviewerUid: '',
-      reviewerName: '',
-    },
+    data,
     merge: true,
     userData: user || {},
   })
 
-  await firestoreApi.updateData({
-    docRef: firestoreApi.getUserDoc(userId),
-    data: { gender: genderNorm },
-    userData: user || {},
-  })
+  if (genderNorm) {
+    await firestoreApi.updateData({
+      docRef: firestoreApi.getUserDoc(userId),
+      data: { gender: genderNorm },
+      userData: user || {},
+    })
+  }
 
   try {
     await notifyAdminsOfNewApplicationRequest(user, { fullName, submittedAt })
@@ -160,14 +155,15 @@ export async function adminUpdateProfileRequestFields(actorUser, targetUserId, p
     permanentResidence: String(payload?.permanentResidence || '').trim(),
     city: String(payload?.city || '').trim(),
     age: Math.max(7, Math.min(150, Number(payload?.age) || 7)),
-    gender: nextGender || null,
     educationLevel: String(payload?.educationLevel || '').trim(),
     occupation: String(payload?.occupation || '').trim(),
     quranMemorizedJuz: Math.max(0, Math.min(30, Number(payload?.quranMemorizedJuz) || 0)),
+    formValues: payload?.formValues && typeof payload.formValues === 'object' ? payload.formValues : {},
     reviewedAt: new Date().toISOString(),
     reviewerUid: actorUser.uid,
     reviewerName: String(actorUser.displayName || actorUser.email || '').trim(),
   }
+  if (nextGender) data.gender = nextGender
   await firestoreApi.updateData({
     docRef: firestoreApi.getUserProfileRequestDoc(targetUserId),
     data,

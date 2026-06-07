@@ -3,119 +3,33 @@ import { HapticLink } from '../ui/HapticLink.jsx'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/useAuth.js'
 import { useSiteContent } from '../context/useSiteContent.js'
-import { isValidPhoneNumber, parsePhoneNumberFromString } from 'libphonenumber-js/min'
-import { COUNTRY_DIAL_OPTIONS_AR, COUNTRY_OPTIONS_AR } from '../data/countriesAr.js'
-import { getQuranMemorizedJuzOptions } from '../data/quranJuzOptionsAr.js'
 import {
   loadMyProfileRequest,
   PROFILE_REQUEST_STATUS,
   subscribeMyProfileRequest,
   upsertMyProfileRequest,
 } from '../services/profileRequestService.js'
+import { ApplicationFormRenderer } from '../components/application/ApplicationFormRenderer.jsx'
+import {
+  buildDefaultFormValues,
+  buildSubmissionPayload,
+  getFormCompletionStats,
+  mergeFormValuesFromRow,
+  validateApplicationForm,
+} from '../utils/applicationFormFields.js'
 import { Check, Send } from 'lucide-react'
-import { Button, Modal, NumberStepField, SearchableSelect, TextField, useToast } from '../ui/index.js'
+import { Button, Modal, useToast } from '../ui/index.js'
 import {
   clearApplicationReviewSessionFlag,
   hasApplicationReviewSessionFlag,
 } from '../utils/applicationReviewSession.js'
 
-const GENDER_OPTIONS = [
-  { value: 'male', label: 'ذكر' },
-  { value: 'female', label: 'أنثى' },
-]
-
-const EDUCATION_OPTIONS = [
-  { value: 'أمي', label: 'أمي' },
-  { value: 'يقرأ ويكتب', label: 'يقرأ ويكتب' },
-  { value: 'روضة', label: 'روضة' },
-  { value: 'ابتدائي', label: 'ابتدائي' },
-  { value: 'إعدادي', label: 'إعدادي' },
-  { value: 'ثانوي', label: 'ثانوي' },
-  { value: 'دبلوم', label: 'دبلوم' },
-  { value: 'جامعي', label: 'جامعي' },
-  { value: 'ماجستير', label: 'ماجستير' },
-  { value: 'دكتوراه', label: 'دكتوراه' },
-  { value: 'دراسات عليا', label: 'دراسات عليا' },
-  { value: 'أخرى', label: 'أخرى' },
-]
-
-function dialCodeForRegion(regionCode) {
-  return COUNTRY_DIAL_OPTIONS_AR.find((o) => o.value === regionCode)?.dialCode || ''
-}
-
-function clampAge(age) {
-  const n = Number(age)
-  if (!Number.isFinite(n)) return 18
-  return Math.max(7, Math.min(150, n))
-}
-
-/**
- * تجهيز حقول الهاتف للعرض: أرقام وطنية + دولة/مفتاح (أي سجل قديم بصيغة دولية كاملة).
- */
-function phoneDisplayFieldsFromRow(d) {
-  if (!d) return {}
-  const raw = String(d.phone || '').trim()
-  const regionFromRow =
-    d.phoneCountry && COUNTRY_DIAL_OPTIONS_AR.some((o) => o.value === d.phoneCountry) ? d.phoneCountry : 'SA'
-
-  if (!raw) {
-    return {
-      phone: '',
-      phoneCountry: regionFromRow,
-      phoneDialCode: dialCodeForRegion(regionFromRow) || '+966',
-    }
-  }
-
-  const intl = parsePhoneNumberFromString(raw)
-  if (intl) {
-    return {
-      phone: String(intl.nationalNumber).replace(/\D/g, '').slice(0, 15),
-      phoneCountry: intl.country || regionFromRow,
-      phoneDialCode: `+${intl.countryCallingCode}`,
-    }
-  }
-
-  const local = parsePhoneNumberFromString(raw, regionFromRow)
-  if (local) {
-    return {
-      phone: String(local.nationalNumber).replace(/\D/g, '').slice(0, 15),
-      phoneCountry: local.country || regionFromRow,
-      phoneDialCode: `+${local.countryCallingCode}`,
-    }
-  }
-
-  const opt = COUNTRY_DIAL_OPTIONS_AR.find((o) => o.value === d.phoneCountry)
-  return {
-    phone: raw.replace(/\D/g, '').replace(/^0+/, '').slice(0, 15),
-    phoneCountry: regionFromRow,
-    phoneDialCode: opt?.dialCode || d.phoneDialCode || dialCodeForRegion(regionFromRow) || '+966',
-  }
-}
-
-function defaultForm(user) {
-  return {
-    fullName: String(user?.displayName || '').trim(),
-    phone: '',
-    phoneCountry: 'SA',
-    phoneDialCode: '+966',
-    nationality: '',
-    permanentResidence: '',
-    city: '',
-    age: 18,
-    email: String(user?.email || '').trim(),
-    gender: '',
-    educationLevel: '',
-    occupation: '',
-    quranMemorizedJuz: 30,
-  }
-}
-
 export default function ApplicationRequestPage() {
   const { user } = useAuth()
-  const { branding } = useSiteContent()
+  const { branding, applicationFormFields } = useSiteContent()
   const toast = useToast()
   const navigate = useNavigate()
-  const [form, setForm] = useState(() => defaultForm(user))
+  const [formValues, setFormValues] = useState(() => buildDefaultFormValues(applicationFormFields, user))
   const [row, setRow] = useState(null)
   const [submitting, setSubmitting] = useState(false)
   const [showRejectedModal, setShowRejectedModal] = useState(false)
@@ -131,25 +45,14 @@ export default function ApplicationRequestPage() {
     loadMyProfileRequest(user.uid).then((d) => {
       if (mounted && d) {
         setRow(d)
-        setForm(() => {
-          const next = { ...defaultForm(user), ...d, email: user.email || d.email || '', ...phoneDisplayFieldsFromRow(d) }
-          return { ...next, age: clampAge(d.age) }
-        })
+        setFormValues(mergeFormValuesFromRow(d, applicationFormFields, user))
       }
     })
     const unsub = subscribeMyProfileRequest(
       user.uid,
       (d) => {
         setRow(d)
-        if (d) {
-          setForm((prev) => ({
-            ...prev,
-            ...d,
-            email: user.email || d.email || '',
-            ...phoneDisplayFieldsFromRow(d),
-            age: clampAge(d.age),
-          }))
-        }
+        if (d) setFormValues(mergeFormValuesFromRow(d, applicationFormFields, user))
       },
       () => {},
     )
@@ -157,7 +60,11 @@ export default function ApplicationRequestPage() {
       mounted = false
       unsub()
     }
-  }, [user?.uid, user?.email, user?.displayName]) // eslint-disable-line react-hooks/exhaustive-deps -- الاشتراك مرتبط بتحديد المستخدم عبر uid
+  }, [user?.uid, user?.email, user?.displayName, applicationFormFields]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => {
+    setFormValues((prev) => ({ ...buildDefaultFormValues(applicationFormFields, user), ...prev }))
+  }, [applicationFormFields, user])
 
   useEffect(() => {
     if (row?.status === PROFILE_REQUEST_STATUS.REJECTED) setShowRejectedModal(true)
@@ -177,66 +84,35 @@ export default function ApplicationRequestPage() {
     [user?.profileRequestStatus],
   )
 
-  const quranJuzOptions = useMemo(() => getQuranMemorizedJuzOptions({ includeZero: false }), [])
+  const completion = useMemo(
+    () => getFormCompletionStats(applicationFormFields, formValues, user),
+    [applicationFormFields, formValues, user],
+  )
 
-  const quranJuzSelectValue = useMemo(() => {
-    const n = Number(form.quranMemorizedJuz)
-    if (Number.isFinite(n) && n >= 1 && n <= 30) return n
-    return 30
-  }, [form.quranMemorizedJuz])
+  const statusChipClass = useMemo(() => {
+    if (row?.status === PROFILE_REQUEST_STATUS.APPROVED) return 'rh-app-request__status--approved'
+    if (row?.status === PROFILE_REQUEST_STATUS.REJECTED) return 'rh-app-request__status--rejected'
+    if (row?.status === PROFILE_REQUEST_STATUS.PENDING) return 'rh-app-request__status--pending'
+    return 'rh-app-request__status--draft'
+  }, [row?.status])
 
-  const onChange = (key, value) => setForm((prev) => ({ ...prev, [key]: value }))
+  const onChange = (key, value) => setFormValues((prev) => ({ ...prev, [key]: value }))
 
   const onSubmit = async () => {
     if (!user?.uid) return
-    const selectedPhoneCountry = COUNTRY_DIAL_OPTIONS_AR.find((opt) => opt.value === form.phoneCountry) || null
-    const rawPhone = String(form.phone || '').replace(/\D/g, '').trim()
-
-    if (!selectedPhoneCountry) {
-      toast.warning('يرجى اختيار مفتاح الدولة لرقم الهاتف.', 'تنبيه')
-      return
-    }
-    if (!rawPhone) {
-      toast.warning('رقم الهاتف حقل إجباري.', 'تنبيه')
-      return
-    }
-    if (rawPhone.length < 6) {
-      toast.warning('رقم الهاتف قصير جداً. أدخل الرقم كاملاً دون مفتاح الدولة (أو مع + والصيغة الدولية).', 'تنبيه')
-      return
-    }
-
-    const localPhone = rawPhone.replace(/^0+/, '')
-    const normalizedPhone = `${selectedPhoneCountry.dialCode}${localPhone}`
-
-    if (!isValidPhoneNumber(normalizedPhone)) {
-      toast.warning('رقم الهاتف غير مكتمل أو غير صالح. تحقق من المفتاح والرقم.', 'تنبيه')
-      return
-    }
-
-    if (!String(form.occupation || '').trim()) {
-      toast.warning('يرجى إدخال الوظيفة (حقل إجباري).', 'تنبيه')
-      return
-    }
-    if (form.gender !== 'male' && form.gender !== 'female') {
-      toast.warning('يرجى تحديد الجنس قبل إرسال الطلب.', 'تنبيه')
-      return
-    }
-
-    if (Number(form.quranMemorizedJuz) < 30) {
-      toast.info(
-        'نعتذر، الشرط الحالي للقبول هو إتمام حفظ 30 جزءاً. نرحب بك دائماً بعد إتمام الشرط، ونسعد بتقديم الدعم لك.',
-        'تنبيه لطيف',
-      )
+    const validation = validateApplicationForm(applicationFormFields, formValues, user)
+    if (!validation.ok) {
+      if (validation.code === 'QURAN_MEMORIZATION_REQUIREMENT_NOT_MET') {
+        toast.info(validation.message, 'تنبيه لطيف')
+      } else {
+        toast.warning(validation.message, 'تنبيه')
+      }
       return
     }
     setSubmitting(true)
     try {
-      await upsertMyProfileRequest(user, {
-        ...form,
-        phone: normalizedPhone,
-        phoneCountry: selectedPhoneCountry.value,
-        phoneDialCode: selectedPhoneCountry.dialCode,
-      })
+      const payload = buildSubmissionPayload(applicationFormFields, formValues, user)
+      await upsertMyProfileRequest(user, payload)
       setSubmitSuccess(true)
       toast.success('تم إرسال طلبك بنجاح، وسيتم مراجعته قريباً بإذن الله.', 'تم')
     } catch (e) {
@@ -281,9 +157,15 @@ export default function ApplicationRequestPage() {
         <header className="rh-settings-header rh-app-request-header">
           <h1 className="rh-settings-title">طلب الالتحاق</h1>
           <p className="rh-settings-desc">
-          نرجو تعبئة البيانات التالية بدقة. بعد الإرسال سيظهر الطلب في صفحة الطلبات لدى الإدارة للمراجعة.
+            نرجو تعبئة البيانات التالية بدقة. بعد الإرسال سيظهر الطلب في صفحة الطلبات لدى الإدارة للمراجعة.
           </p>
-          <p className="rh-settings-footnote">حالة الطلب الحالية: <strong>{statusLabel}</strong></p>
+          <div className="rh-app-request__meta">
+            <span className={['rh-app-request__status', statusChipClass].join(' ')}>{statusLabel}</span>
+            <span className="rh-app-request__field-count">
+              {applicationFormFields.length} حقل
+              {completion.requiredTotal ? ` · ${completion.requiredFilled}/${completion.requiredTotal} إلزامي` : ''}
+            </span>
+          </div>
         </header>
 
         {row?.status === PROFILE_REQUEST_STATUS.APPROVED ? (
@@ -315,80 +197,21 @@ export default function ApplicationRequestPage() {
         ) : null}
 
         <section className="rh-settings-card rh-app-request-form">
-          <TextField label="الاسم الرباعي" value={form.fullName} onChange={(e) => onChange('fullName', e.target.value)} />
-          <SearchableSelect
-            label="مفتاح الدولة"
-            required
-            options={COUNTRY_DIAL_OPTIONS_AR}
-            value={form.phoneCountry}
-            onChange={(v) => {
-              const selected = COUNTRY_DIAL_OPTIONS_AR.find((opt) => opt.value === v)
-              onChange('phoneCountry', v)
-              onChange('phoneDialCode', selected?.dialCode || '')
-            }}
-            placeholder="اختر الدولة ومفتاحها"
-            searchPlaceholder="ابحث عن الدولة..."
-          />
-          <TextField
-            label="رقم الهاتف (بدون مفتاح الدولة)"
-            required
-            type="tel"
-            inputMode="numeric"
-            autoComplete="tel-national"
-            dir="ltr"
-            value={form.phone}
-            onChange={(e) => onChange('phone', e.target.value.replace(/\D/g, '').slice(0, 15))}
-            hint={form.phoneDialCode ? `سيتم الحفظ: ${form.phoneDialCode} ثم رقمك` : 'اختر مفتاح الدولة أولاً'}
-          />
-          <SearchableSelect
-            label="الجنسية"
-            options={COUNTRY_OPTIONS_AR}
-            value={form.nationality}
-            onChange={(v) => onChange('nationality', v)}
-            placeholder="اختر الجنسية"
-            searchPlaceholder="ابحث عن دولة..."
-          />
-          <TextField
-            label="مكان الإقامة الدائم"
-            value={form.permanentResidence}
-            onChange={(e) => onChange('permanentResidence', e.target.value)}
-          />
-          <TextField label="المحافظة أو المدينة" value={form.city} onChange={(e) => onChange('city', e.target.value)} />
-          <NumberStepField label="العمر" value={form.age} onChange={(v) => onChange('age', v)} min={7} max={150} />
-          <TextField label="البريد الإلكتروني" value={user?.email || form.email} disabled />
-          <SearchableSelect
-            label="الجنس"
-            required
-            options={GENDER_OPTIONS}
-            value={form.gender}
-            onChange={(v) => onChange('gender', v)}
-            placeholder="— اختر الجنس —"
-            searchPlaceholder="ابحث..."
-          />
-          <SearchableSelect
-            label="المستوى التعليمي"
-            options={EDUCATION_OPTIONS}
-            value={form.educationLevel}
-            onChange={(v) => onChange('educationLevel', v)}
-            placeholder="اختر المستوى"
-            searchPlaceholder="ابحث..."
-          />
-          <TextField
-            label="الوظيفة"
-            required
-            value={form.occupation}
-            onChange={(e) => onChange('occupation', e.target.value)}
-            placeholder="مثال: طالب — موظف — معلم..."
-          />
-          <SearchableSelect
-            className="rh-quran-juz-select"
-            label="مقدار حفظ القرآن (عدد الأجزاء)"
-            hint="اختر آخر جزء أنجزته حفظاً. القائمة تعرض مدى كل جزء في المصحف وعدد السور التي يمر بها. يشترط حالياً حفظ 30 جزءاً لقبول الطلب."
-            options={quranJuzOptions}
-            value={quranJuzSelectValue}
-            onChange={(v) => onChange('quranMemorizedJuz', v)}
-            placeholder="اختر عدد الأجزاء"
-            searchPlaceholder="ابحث برقم الجزء أو اسم السورة…"
+          <div className="rh-app-request__progress" role="progressbar" aria-valuenow={completion.pct} aria-valuemin={0} aria-valuemax={100} aria-label="نسبة اكتمال الاستمارة">
+            <div className="rh-app-request__progress-head">
+              <span>اكتمال البيانات</span>
+              <strong>{completion.pct}%</strong>
+            </div>
+            <div className="rh-app-request__progress-track">
+              <div className="rh-app-request__progress-fill" style={{ width: `${completion.pct}%` }} />
+            </div>
+          </div>
+
+          <ApplicationFormRenderer
+            fields={applicationFormFields}
+            values={formValues}
+            onChange={onChange}
+            user={user}
           />
 
           <div className="rh-settings-profile-form__actions rh-app-request-actions">

@@ -3,6 +3,7 @@ import { DEFAULT_PLAN_TYPES } from '../data/defaultPlanTypes.js'
 import { SITE_DESCRIPTION, SITE_NAME, SITE_OG_IMAGE_PATH, SITE_TITLE } from '../config/site.js'
 import { normalizeContactPhones } from '../utils/contactPhones.js'
 import { normalizeProgramBlock, sortProgramBlocks } from '../utils/programBlocks.js'
+import { normalizeApplicationFormField, sortApplicationFormFields } from '../utils/applicationFormFields.js'
 import { sanitizeCssColor, sanitizeImageUrl } from '../utils/brandingAssets.js'
 import { firestoreApi } from './firestoreApi.js'
 
@@ -150,6 +151,34 @@ export async function saveContactPhones(actor, phones) {
   await firestoreApi.setData({
     docRef: ref,
     data: { contactPhones: rows.length ? rows : null },
+    merge: true,
+    userData: actor ?? {},
+  })
+}
+
+export async function saveApplicationFormFields(actor, fields) {
+  const ref = firestoreApi.getSiteConfigDoc()
+  const normalized = sortApplicationFormFields(
+    (Array.isArray(fields) ? fields : []).map((f, i) => normalizeApplicationFormField(f, i)),
+  ).map((f) => ({
+    id: f.id,
+    label: f.label,
+    type: f.type,
+    required: Boolean(f.required),
+    order: f.order,
+    enabled: f.enabled !== false,
+    legacyKey: f.legacyKey || '',
+    hint: f.hint || '',
+    placeholder: f.placeholder || '',
+    options: f.options || [],
+    min: f.min,
+    max: f.max,
+    bindUserEmail: Boolean(f.bindUserEmail),
+    minQuranJuz: f.minQuranJuz,
+  }))
+  await firestoreApi.setData({
+    docRef: ref,
+    data: { applicationFormFields: normalized.length ? normalized : null },
     merge: true,
     userData: actor ?? {},
   })

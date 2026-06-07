@@ -1,6 +1,5 @@
+import { PROGRAM_BLOCK_CONTENT_MODE_VALUES } from '../data/programBlockContentModes.js'
 import { buildDefaultStringsMap } from '../data/siteStringRegistry.js'
-
-const VALID_MODES = new Set(['lead', 'message', 'list', 'paragraphs'])
 
 function lines(text) {
   return String(text || '')
@@ -11,7 +10,45 @@ function lines(text) {
 
 function normalizeMode(raw) {
   const m = String(raw || '').trim()
-  return VALID_MODES.has(m) ? m : 'lead'
+  return PROGRAM_BLOCK_CONTENT_MODE_VALUES.has(m) ? m : 'lead'
+}
+
+function parseDefinitions(body) {
+  return lines(body).map((line) => {
+    const sep = line.match(/^([^:|]+)[:|]\s*(.+)$/)
+    if (sep) return { term: sep[1].trim(), definition: sep[2].trim() }
+    return { term: '', definition: line }
+  })
+}
+
+function parseLinks(body) {
+  return lines(body)
+    .map((line) => {
+      const pipe = line.match(/^([^|]+)\|\s*(.+)$/)
+      if (pipe) return { label: pipe[1].trim(), href: pipe[2].trim() }
+      const dash = line.match(/^([^-]+)\s+-\s+(.+)$/)
+      if (dash) return { label: dash[1].trim(), href: dash[2].trim() }
+      return null
+    })
+    .filter(Boolean)
+}
+
+function parseCards(body) {
+  return String(body || '')
+    .split(/\n\s*\n/)
+    .map((chunk) => {
+      const chunkLines = lines(chunk)
+      if (!chunkLines.length) return null
+      const first = chunkLines[0]
+      const titleMatch = first.match(/^(.+):\s*$/)
+      const title = titleMatch ? titleMatch[1].trim() : first
+      const bodyLines = titleMatch ? chunkLines.slice(1) : chunkLines.slice(1)
+      return {
+        title,
+        body: bodyLines.join('\n').trim(),
+      }
+    })
+    .filter((c) => c && c.title)
 }
 
 /** يُطبَّق على مستند واحد من Firestore */
@@ -121,18 +158,33 @@ export function resolveProgramBlocks(rawBlocks, strFn) {
   return buildProgramBlocksFromStrings(strFn)
 }
 
-/** يحوّل body إلى بنية العرض في ProgramSections */
+/** يحوّل body إلى بنية العرض في ProgramBlockContent */
 export function programBlockToViewModel(block) {
   const body = String(block.body || '').trim()
   const mode = normalizeMode(block.contentMode)
-  if (mode === 'list') {
-    return { ...block, mode, list: lines(body) }
-  }
+  const base = { ...block, mode }
+
   if (mode === 'paragraphs') {
-    return { ...block, mode, paragraphs: lines(body) }
+    return { ...base, paragraphs: lines(body) }
   }
-  if (mode === 'message') {
-    return { ...block, mode, lead: body }
+  if (mode === 'list' || mode === 'numbered' || mode === 'checklist' || mode === 'steps' || mode === 'highlights') {
+    return { ...base, items: lines(body) }
   }
-  return { ...block, mode: 'lead', lead: body }
+  if (mode === 'definition') {
+    return { ...base, definitions: parseDefinitions(body) }
+  }
+  if (mode === 'links') {
+    return { ...base, links: parseLinks(body) }
+  }
+  if (mode === 'cards') {
+    return { ...base, cards: parseCards(body) }
+  }
+  if (mode === 'badges') {
+    return { ...base, badges: lines(body) }
+  }
+  if (mode === 'text') {
+    const paras = lines(body)
+    return { ...base, paragraphs: paras.length > 1 ? paras : null, text: body }
+  }
+  return { ...base, text: body }
 }
