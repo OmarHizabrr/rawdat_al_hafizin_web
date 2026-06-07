@@ -396,6 +396,7 @@ export async function buildStudentReport(user, range = {}) {
     firestoreApi.getDocuments(firestoreApi.getUserNotificationsCollection(uid)),
   ])
 
+  const planNameById = new Map(plans.map((p) => [String(p.id), String(p.name || '').trim() || 'خطة']))
   const awrad = maybeFilterByRange(awradDocs, (r) => r.recordedAt || r.updatedAt || r.createdAt, range)
   const notifications = maybeFilterByRange(
     notificationsDocs.map((d) => ({ id: d.id, ...d.data() })),
@@ -480,7 +481,10 @@ export async function buildStudentReport(user, range = {}) {
     entity: user,
     modules: { plans, halakat, exams, activities, dawrat, remoteTasmee },
     studentRows,
-    awrad: sortByRecent(awrad, (r) => pickFirstDate(r.recordedAt, r.updatedAt, r.createdAt)),
+    awrad: sortByRecent(awrad, (r) => pickFirstDate(r.recordedAt, r.updatedAt, r.createdAt)).map((r) => ({
+      ...r,
+      planName: planNameById.get(String(r.planId || '')) || '—',
+    })),
     notifications: sortByRecent(notifications, (r) => pickFirstDate(r.createdAt, r.updatedAt)),
     summary: {
       plans: plans.length,
@@ -620,6 +624,9 @@ export async function buildGroupReport(kind, entityId, range = {}) {
     membersLoaderByKind(kind)?.(id),
   ])
   if (!entity) return null
+  const ownerUid = String(entity.ownerUid || '').trim()
+  const ownerNameMap = ownerUid ? await loadUserNamesByIds([ownerUid]) : new Map()
+  const ownerName = ownerNameMap.get(ownerUid) || ''
   const baseDetails = {
     id,
     name: entity.name || entity.title || entity.subject || entity.meetingCode || '',
@@ -631,7 +638,7 @@ export async function buildGroupReport(kind, entityId, range = {}) {
       entity.dawraVisibility ||
       entity.remoteTasmeeVisibility ||
       '',
-    ownerUid: entity.ownerUid || '',
+    ownerName,
     createdAt: pickFirstDate(entity.createdAt, entity.createTimes),
     updatedAt: pickFirstDate(entity.updatedAt, entity.updatedTimes),
   }
@@ -655,6 +662,24 @@ export async function buildGroupReport(kind, entityId, range = {}) {
       (a) => pickFirstDate(a.updatedAt, a.recordedAt, a.createdAt),
     )
     const pagesTotal = attendanceRows.reduce((sum, r) => sum + Math.max(0, Number(r.pagesCount) || 0), 0)
+    const sessionTitleMap = new Map(
+      sessions.map((s) => [String(s.id), String(s.title || '').trim() || 'جلسة']),
+    )
+    const memberNameMap = new Map(
+      (members || []).map((m) => [String(m.userId || '').trim(), String(m.displayName || '').trim()]),
+    )
+    const extraUserIds = attendanceRows
+      .map((a) => String(a.userId || '').trim())
+      .filter((uid) => uid && !memberNameMap.has(uid))
+    const userNameMap = await loadUserNamesByIds([...memberNameMap.keys(), ...extraUserIds])
+    const enrichedAttendanceRows = attendanceRows.map((a) => {
+      const uid = String(a.userId || '').trim()
+      return {
+        ...a,
+        userName: memberNameMap.get(uid) || userNameMap.get(uid) || 'عضو',
+        sessionTitle: sessionTitleMap.get(String(a.sessionId || '')) || 'جلسة',
+      }
+    })
     const memberDetails = await Promise.all(
       (members || []).map(async (m) => {
         const memberUid = String(m.userId || '').trim()
@@ -667,7 +692,7 @@ export async function buildGroupReport(kind, entityId, range = {}) {
           loadUserMembershipRows(memberUid, 'remote_tasmee'),
           loadAwrad(memberUid),
         ])
-        const memberAttendanceInHalaka = attendanceRows.filter((a) => String(a.userId || '') === memberUid)
+        const memberAttendanceInHalaka = enrichedAttendanceRows.filter((a) => String(a.userId || '') === memberUid)
         const awradInRange = maybeFilterByRange(mAwrad, (r) => r.recordedAt || r.updatedAt || r.createdAt, range)
         return {
           userId: memberUid,
@@ -709,11 +734,11 @@ export async function buildGroupReport(kind, entityId, range = {}) {
           (asMs(b.latestAttendanceAt) - asMs(a.latestAttendanceAt)),
       ),
       sessions,
-      attendanceRows,
+      attendanceRows: enrichedAttendanceRows,
       summary: {
         members: (members || []).length,
         sessions: sessions.length,
-        attendance: attendanceRows.length,
+        attendance: enrichedAttendanceRows.length,
         pagesTotal,
       },
     }

@@ -10,14 +10,62 @@ function cellValue(value) {
   return String(value)
 }
 
-function PrintSection({ section }) {
+function PrintMetaGrid({ items }) {
+  if (!items?.length) return null
+  return (
+    <dl className="rh-report-print__meta-grid">
+      {items.map((item, index) => (
+        <div key={`${item.label}-${index}`} className="rh-report-print__meta-item">
+          <dt className="rh-report-print__meta-label">{item.label}</dt>
+          <dd className="rh-report-print__meta-value">{cellValue(item.value)}</dd>
+        </div>
+      ))}
+    </dl>
+  )
+}
+
+function PrintExecutiveSummary({ summary }) {
+  if (!summary?.paragraphs?.length && !summary?.highlights?.length) return null
+  return (
+    <section className="rh-report-print__executive">
+      <h2 className="rh-report-print__executive-title">الملخص التنفيذي</h2>
+      {summary.paragraphs?.length ? (
+        <div className="rh-report-print__executive-body">
+          {summary.paragraphs.map((p, i) => (
+            <p key={i} className="rh-report-print__executive-p">
+              {p}
+            </p>
+          ))}
+        </div>
+      ) : null}
+      {summary.highlights?.length ? (
+        <ul className="rh-report-print__executive-highlights">
+          {summary.highlights.map((h, i) => (
+            <li key={`${h.label}-${i}`} className="rh-report-print__executive-highlight">
+              <span>{h.label}</span>
+              <strong>{cellValue(h.value)}</strong>
+            </li>
+          ))}
+        </ul>
+      ) : null}
+    </section>
+  )
+}
+
+function PrintSection({ section, index }) {
   const columns = section?.columns || []
   const rows = section?.rows || []
   if (!columns.length || !rows.length) return null
 
   return (
     <section className="rh-report-print__section">
-      <h2 className="rh-report-print__section-title">{section.title || ''}</h2>
+      <div className="rh-report-print__section-head">
+        <h2 className="rh-report-print__section-title">
+          <span className="rh-report-print__section-num">{index + 1}</span>
+          {section.title || ''}
+        </h2>
+        <span className="rh-report-print__section-count">{rows.length} سجل</span>
+      </div>
       <div className="rh-report-print__table-wrap">
         <table className="rh-report-print__table">
           <thead>
@@ -86,6 +134,18 @@ export default function ReportPrintPage() {
 
   const kpis = useMemo(() => (payload?.kpis || []).filter((k) => k?.label), [payload?.kpis])
 
+  const headerMeta = useMemo(() => {
+    if (payload?.headerMeta?.length) return payload.headerMeta
+    if (payload?.headerLines?.length) {
+      return payload.headerLines.map((line) => {
+        const idx = String(line).indexOf(':')
+        if (idx < 0) return { label: 'معلومة', value: line }
+        return { label: String(line).slice(0, idx).trim(), value: String(line).slice(idx + 1).trim() }
+      })
+    }
+    return []
+  }, [payload?.headerMeta, payload?.headerLines])
+
   const onPrint = useCallback(() => {
     window.print()
   }, [])
@@ -103,7 +163,11 @@ export default function ReportPrintPage() {
     )
   }
 
-  if (!payload || (!sections.length && !kpis.length)) {
+  const hasSummary = Boolean(
+    payload?.executiveSummary?.paragraphs?.length || payload?.executiveSummary?.highlights?.length,
+  )
+
+  if (!payload || (!sections.length && !kpis.length && !hasSummary)) {
     return (
       <div className="rh-report-print">
         <div className="rh-report-print__error">
@@ -118,8 +182,8 @@ export default function ReportPrintPage() {
   }
 
   const brandTitle = payload.brandTitle || branding.siteTitle
-  const headerLines = payload.headerLines || []
   const footerLine = payload.footerLine || ''
+  const logoSrc = branding.logoSrc
 
   return (
     <div className="rh-report-print">
@@ -139,34 +203,44 @@ export default function ReportPrintPage() {
 
       <div className="rh-report-print__stage">
         <article className="rh-report-print__paper">
-          <header>
-            {brandTitle ? <div className="rh-report-print__brand">{brandTitle}</div> : null}
-            <h1 className="rh-report-print__title">{payload.documentTitle}</h1>
-            {headerLines.length ? (
-              <div className="rh-report-print__meta">
-                {headerLines.map((line, index) => (
-                  <div key={index} className="rh-report-print__meta-row">
-                    {line}
+          <header className="rh-report-print__doc-header">
+            <div className="rh-report-print__doc-header-band">
+              {logoSrc ? (
+                <img src={logoSrc} alt="" className="rh-report-print__logo" />
+              ) : null}
+              <div className="rh-report-print__doc-header-text">
+                {brandTitle ? <div className="rh-report-print__brand">{brandTitle}</div> : null}
+                <h1 className="rh-report-print__title">{payload.documentTitle}</h1>
+              </div>
+              <div className="rh-report-print__doc-badge">تقرير رسمي</div>
+            </div>
+            {headerMeta.length ? <PrintMetaGrid items={headerMeta} /> : null}
+          </header>
+
+          <PrintExecutiveSummary summary={payload.executiveSummary} />
+
+          {kpis.length ? (
+            <div className="rh-report-print__kpis-block">
+              <h2 className="rh-report-print__kpis-heading">المؤشرات الرئيسية</h2>
+              <div className="rh-report-print__kpis">
+                {kpis.map((kpi, index) => (
+                  <div key={`${kpi.label}-${index}`} className="rh-report-print__kpi">
+                    <strong>{cellValue(kpi.value)}</strong>
+                    <span>{kpi.label}</span>
                   </div>
                 ))}
               </div>
-            ) : null}
-          </header>
-
-          {kpis.length ? (
-            <div className="rh-report-print__kpis">
-              {kpis.map((kpi, index) => (
-                <div key={`${kpi.label}-${index}`} className="rh-report-print__kpi">
-                  <strong>{cellValue(kpi.value)}</strong>
-                  <span>{kpi.label}</span>
-                </div>
-              ))}
             </div>
           ) : null}
 
-          {sections.map((section, index) => (
-            <PrintSection key={`${section.title}-${index}`} section={section} />
-          ))}
+          {sections.length ? (
+            <div className="rh-report-print__sections-block">
+              <h2 className="rh-report-print__sections-heading">التفاصيل والجداول</h2>
+              {sections.map((section, index) => (
+                <PrintSection key={`${section.title}-${index}`} section={section} index={index} />
+              ))}
+            </div>
+          ) : null}
 
           {footerLine ? <footer className="rh-report-print__footer">{footerLine}</footer> : null}
         </article>

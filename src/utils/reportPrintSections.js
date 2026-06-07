@@ -1,7 +1,24 @@
 /** أقسام قابلة للطباعة من بيانات التقرير */
 
-function mapRoleRows(rows, roleLabelAr) {
-  return (rows || []).map((r) => ({ ...r, role: roleLabelAr(r.role) }))
+import {
+  entityDetailsColumnsForKind,
+  formatEntityDetailsForReport,
+  reportAttendanceStatusLabel,
+  reportMediaTypeLabel,
+  reportNotificationTypeLabel,
+  reportPersonLabel,
+  reportProviderLabel,
+  reportSessionStatusLabel,
+  reportVisibilityLabel,
+} from './reportDisplayLabels.js'
+
+function mapRoleRows(rows, roleLabelAr, fmt) {
+  return (rows || []).map((r) => ({
+    name: r.name || '—',
+    role: roleLabelAr(r.role),
+    visibilityLabel: reportVisibilityLabel(r.visibility),
+    joinedAt: fmt ? fmt(r.joinedAt) : r.joinedAt || '—',
+  }))
 }
 
 export function collectPrintSectionsFromReport(reportData, helpers = {}) {
@@ -18,20 +35,20 @@ export function collectPrintSectionsFromReport(reportData, helpers = {}) {
       columns: [
         { key: 'name', label: 'الاسم' },
         { key: 'role', label: 'الدور' },
-        { key: 'visibility', label: 'الظهور' },
+        { key: 'visibilityLabel', label: 'الظهور' },
         { key: 'joinedAt', label: 'تاريخ الانضمام' },
       ],
-      rows: mapRoleRows(reportData.studentRows?.plans, role),
+      rows: mapRoleRows(reportData.studentRows?.plans, role, fmt),
     })
     sections.push({
       title: 'الحلقات',
       columns: [
         { key: 'name', label: 'الاسم' },
         { key: 'role', label: 'الدور' },
-        { key: 'visibility', label: 'الظهور' },
+        { key: 'visibilityLabel', label: 'الظهور' },
         { key: 'joinedAt', label: 'تاريخ الانضمام' },
       ],
-      rows: mapRoleRows(reportData.studentRows?.halakat, role),
+      rows: mapRoleRows(reportData.studentRows?.halakat, role, fmt),
     })
     sections.push({
       title: 'الأنشطة',
@@ -55,12 +72,13 @@ export function collectPrintSectionsFromReport(reportData, helpers = {}) {
       columns: [
         { key: 'name', label: 'الاسم' },
         { key: 'role', label: 'الدور' },
-        { key: 'visibility', label: 'الظهور' },
+        { key: 'visibilityLabel', label: 'الظهور' },
         { key: 'examSelfReportSummary', label: 'الإنجاز المُبلَغ' },
       ],
       rows: (reportData.studentRows?.exams || []).map((r) => ({
-        ...r,
+        name: r.name || '—',
         role: role(r.role),
+        visibilityLabel: reportVisibilityLabel(r.visibility),
         examSelfReportSummary: examSummary(r),
       })),
     })
@@ -86,20 +104,27 @@ export function collectPrintSectionsFromReport(reportData, helpers = {}) {
       columns: [
         { key: 'name', label: 'الاسم' },
         { key: 'role', label: 'الدور' },
-        { key: 'provider', label: 'المزوّد' },
-        { key: 'mediaType', label: 'النوع' },
+        { key: 'providerLabel', label: 'المزوّد' },
+        { key: 'mediaTypeLabel', label: 'النوع' },
       ],
-      rows: mapRoleRows(reportData.studentRows?.remoteTasmee, role),
+      rows: (reportData.studentRows?.remoteTasmee || []).map((r) => ({
+        name: r.name || '—',
+        role: role(r.role),
+        providerLabel: reportProviderLabel(r.provider),
+        mediaTypeLabel: reportMediaTypeLabel(r.mediaType),
+      })),
     })
     sections.push({
       title: 'الأوراد',
       columns: [
+        { key: 'planName', label: 'الخطة' },
         { key: 'recordedAt', label: 'تاريخ الورد' },
         { key: 'pagesCount', label: 'عدد الصفحات' },
         { key: 'fromPage', label: 'من صفحة' },
         { key: 'toPage', label: 'إلى صفحة' },
       ],
       rows: (reportData.awrad || []).map((r) => ({
+        planName: r.planName || '—',
         recordedAt: fmt(r.recordedAt),
         pagesCount: r.pagesCount ?? 0,
         fromPage: r.fromPage ?? '—',
@@ -109,16 +134,14 @@ export function collectPrintSectionsFromReport(reportData, helpers = {}) {
     sections.push({
       title: 'الإشعارات',
       columns: [
-        { key: 'id', label: 'الرمز' },
         { key: 'title', label: 'العنوان' },
-        { key: 'notificationType', label: 'النوع' },
+        { key: 'notificationTypeLabel', label: 'النوع' },
         { key: 'createdAt', label: 'التاريخ' },
         { key: 'isRead', label: 'مقروء' },
       ],
       rows: (reportData.notifications || []).map((r) => ({
-        id: r.id,
-        title: r.title || '',
-        notificationType: r.notificationType || '',
+        title: r.title || '—',
+        notificationTypeLabel: reportNotificationTypeLabel(r.notificationType),
         createdAt: fmt(r.createdAt),
         isRead: r.isRead ? 'نعم' : 'لا',
       })),
@@ -132,9 +155,13 @@ export function collectPrintSectionsFromReport(reportData, helpers = {}) {
       columns: [
         { key: 'name', label: 'الاسم' },
         { key: 'role', label: 'الدور' },
-        { key: 'visibility', label: 'الظهور' },
+        { key: 'visibilityLabel', label: 'الظهور' },
       ],
-      rows: mapRoleRows(reportData.teacherRows?.halakat, role),
+      rows: (reportData.teacherRows?.halakat || []).map((r) => ({
+        name: r.name || '—',
+        role: role(r.role),
+        visibilityLabel: reportVisibilityLabel(r.visibility),
+      })),
     })
     sections.push({
       title: 'ارتباطات المعلم',
@@ -142,7 +169,7 @@ export function collectPrintSectionsFromReport(reportData, helpers = {}) {
         { key: 'section', label: 'القسم' },
         { key: 'name', label: 'الاسم' },
         { key: 'role', label: 'الدور' },
-        { key: 'visibility', label: 'الظهور' },
+        { key: 'visibilityLabel', label: 'الظهور' },
         { key: 'learnerContribution', label: 'مساهمة / إنجاز' },
       ],
       rows: [
@@ -150,35 +177,35 @@ export function collectPrintSectionsFromReport(reportData, helpers = {}) {
           section: 'الخطط',
           name: r.name,
           role: role(r.role),
-          visibility: r.visibility || '',
+          visibilityLabel: reportVisibilityLabel(r.visibility),
           learnerContribution: '—',
         })),
         ...(reportData.teacherRows?.activities || []).map((r) => ({
           section: 'الأنشطة',
           name: r.name,
           role: role(r.role),
-          visibility: r.visibility || '',
+          visibilityLabel: reportVisibilityLabel(r.visibility),
           learnerContribution: (r.memberContributionText || '').trim() || '—',
         })),
         ...(reportData.teacherRows?.exams || []).map((r) => ({
           section: 'الاختبارات',
           name: r.name,
           role: role(r.role),
-          visibility: r.visibility || '',
+          visibilityLabel: reportVisibilityLabel(r.visibility),
           learnerContribution: examSummary(r),
         })),
         ...(reportData.teacherRows?.dawrat || []).map((r) => ({
           section: 'الدورات',
           name: r.name,
           role: role(r.role),
-          visibility: r.visibility || '',
+          visibilityLabel: reportVisibilityLabel(r.visibility),
           learnerContribution: (r.memberContributionText || '').trim() || '—',
         })),
         ...(reportData.teacherRows?.remoteTasmee || []).map((r) => ({
           section: 'التسميع عن بعد',
           name: r.name,
           role: role(r.role),
-          visibility: r.visibility || '',
+          visibilityLabel: reportVisibilityLabel(r.visibility),
           learnerContribution: '—',
         })),
       ],
@@ -195,20 +222,20 @@ export function collectPrintSectionsFromReport(reportData, helpers = {}) {
         title: s.title || '',
         startedAt: fmt(s.startedAt),
         endedAt: fmt(s.endedAt),
-        status: s.status || '',
+        status: reportSessionStatusLabel(s.status),
       })),
     })
     sections.push({
       title: 'سجلات الحضور',
       columns: [
-        { key: 'userName', label: 'المستخدم' },
-        { key: 'attendanceStatus', label: 'الحضور' },
+        { key: 'userName', label: 'الطالب' },
+        { key: 'attendanceStatusLabel', label: 'الحضور' },
         { key: 'pagesCount', label: 'الصفحات' },
         { key: 'updatedAt', label: 'آخر تحديث' },
       ],
       rows: (reportData.attendanceRecorded || []).map((a) => ({
-        userName: a.userName || a.userId || '',
-        attendanceStatus: a.attendanceStatus || '',
+        userName: reportPersonLabel(a.userName, a.userId),
+        attendanceStatusLabel: reportAttendanceStatusLabel(a.attendanceStatus),
         pagesCount: a.pagesCount ?? 0,
         updatedAt: fmt(a.updatedAt),
       })),
@@ -216,13 +243,13 @@ export function collectPrintSectionsFromReport(reportData, helpers = {}) {
     sections.push({
       title: 'ملخص حسب الطالب',
       columns: [
-        { key: 'userName', label: 'المستخدم' },
+        { key: 'userName', label: 'الطالب' },
         { key: 'recordsCount', label: 'عدد التسجيلات' },
         { key: 'pagesTotal', label: 'إجمالي الصفحات' },
         { key: 'latestUpdatedAt', label: 'آخر تحديث' },
       ],
       rows: (reportData.attendanceByStudent || []).map((r) => ({
-        userName: r.userName || r.userId || '',
+        userName: reportPersonLabel(r.userName, r.userId),
         recordsCount: r.recordsCount ?? 0,
         pagesTotal: r.pagesTotal ?? 0,
         latestUpdatedAt: fmt(r.latestUpdatedAt),
@@ -234,26 +261,12 @@ export function collectPrintSectionsFromReport(reportData, helpers = {}) {
   const details = reportData.entityDetails || {}
   sections.push({
     title: 'تفاصيل الكيان',
-    columns: [
-      { key: 'name', label: 'الاسم' },
-      { key: 'visibility', label: 'الظهور' },
-      ...(showEntityOwner ? [{ key: 'ownerUid', label: 'المالك' }] : []),
-      { key: 'createdAt', label: 'الإنشاء' },
-      { key: 'updatedAt', label: 'آخر تحديث' },
-      { key: 'startAt', label: 'البداية' },
-      { key: 'endAt', label: 'النهاية' },
-      { key: 'location', label: 'الموقع/الرابط' },
-      { key: 'provider', label: 'المزود' },
-      { key: 'mediaType', label: 'النوع' },
-    ],
+    columns: entityDetailsColumnsForKind(reportData.kind, showEntityOwner),
     rows: [
-      {
-        ...details,
-        createdAt: fmt(details.createdAt),
-        updatedAt: fmt(details.updatedAt),
-        startAt: fmt(details.startAt),
-        endAt: fmt(details.endAt),
-      },
+      formatEntityDetailsForReport(details, reportData.kind, {
+        ownerName: showEntityOwner ? details.ownerName || '—' : '',
+        formatDate: fmt,
+      }),
     ],
   })
 
@@ -277,7 +290,7 @@ export function collectPrintSectionsFromReport(reportData, helpers = {}) {
         : []),
     ],
     rows: (reportData.members || []).map((m) => ({
-      displayName: m.displayName || m.userId,
+      displayName: reportPersonLabel(m.displayName, m.userId),
       role: role(m.role),
       email: m.email || '',
       learnerNote:
@@ -302,6 +315,7 @@ export function collectPrintSectionsFromReport(reportData, helpers = {}) {
       ],
       rows: reportData.memberDetails.map((r) => ({
         ...r,
+        displayName: reportPersonLabel(r.displayName, r.userId),
         role: role(r.role),
         latestAwradAt: fmt(r.latestAwradAt),
       })),
@@ -320,6 +334,7 @@ export function collectPrintSectionsFromReport(reportData, helpers = {}) {
       ],
       rows: reportData.memberDetails.map((r) => ({
         ...r,
+        displayName: reportPersonLabel(r.displayName, r.userId),
         role: role(r.role),
         hasContributionLabel: r.hasContribution ? 'نعم' : 'لا',
         contributionUpdatedAt: fmt(r.contributionUpdatedAt),
@@ -339,6 +354,7 @@ export function collectPrintSectionsFromReport(reportData, helpers = {}) {
       ],
       rows: reportData.memberDetails.map((r) => ({
         ...r,
+        displayName: reportPersonLabel(r.displayName, r.userId),
         role: role(r.role),
         examStatusLabel: examSummary(r),
         examNotes: (r.examSelfReportNotes || '').trim() || '—',
@@ -359,6 +375,7 @@ export function collectPrintSectionsFromReport(reportData, helpers = {}) {
       ],
       rows: reportData.memberDetails.map((r) => ({
         ...r,
+        displayName: reportPersonLabel(r.displayName, r.userId),
         role: role(r.role),
         hasContributionLabel: r.hasContribution ? 'نعم' : 'لا',
         contributionUpdatedAt: fmt(r.contributionUpdatedAt),
@@ -377,6 +394,7 @@ export function collectPrintSectionsFromReport(reportData, helpers = {}) {
       ],
       rows: reportData.memberDetails.map((r) => ({
         ...r,
+        displayName: reportPersonLabel(r.displayName, r.userId),
         role: role(r.role),
         joinedAt: fmt(r.joinedAt),
       })),
@@ -397,6 +415,7 @@ export function collectPrintSectionsFromReport(reportData, helpers = {}) {
       ],
       rows: reportData.memberDetails.map((r) => ({
         ...r,
+        displayName: reportPersonLabel(r.displayName, r.userId),
         role: role(r.role),
         latestAwradAt: fmt(r.latestAwradAt),
         latestAttendanceAt: fmt(r.latestAttendanceAt),
@@ -414,23 +433,27 @@ export function collectPrintSectionsFromReport(reportData, helpers = {}) {
         title: s.title || '',
         startedAt: fmt(s.startedAt),
         endedAt: fmt(s.endedAt),
-        status: s.status || '',
+        status: reportSessionStatusLabel(s.status),
       })),
     })
     sections.push({
       title: 'حضور الحلقة',
       columns: [
-        { key: 'userId', label: 'المستخدم' },
-        { key: 'sessionId', label: 'الجلسة' },
-        { key: 'attendanceStatus', label: 'الحضور' },
+        { key: 'userName', label: 'العضو' },
+        { key: 'sessionTitle', label: 'الجلسة' },
+        { key: 'attendanceStatusLabel', label: 'الحضور' },
         { key: 'pagesCount', label: 'الصفحات' },
+        { key: 'fromPage', label: 'من' },
+        { key: 'toPage', label: 'إلى' },
         { key: 'updatedAt', label: 'التحديث' },
       ],
       rows: (reportData.attendanceRows || []).map((a) => ({
-        userId: a.userId || '',
-        sessionId: a.sessionId || '',
-        attendanceStatus: a.attendanceStatus || '',
+        userName: reportPersonLabel(a.userName, a.userId),
+        sessionTitle: a.sessionTitle || 'جلسة',
+        attendanceStatusLabel: reportAttendanceStatusLabel(a.attendanceStatus),
         pagesCount: a.pagesCount ?? 0,
+        fromPage: a.fromPage ?? '—',
+        toPage: a.toPage ?? '—',
         updatedAt: fmt(a.updatedAt),
       })),
     })
@@ -465,8 +488,11 @@ export function collectPrintKpisFromReport(reportData, labels = {}) {
       { label: L.halakat, value: s.halakat ?? 0 },
       { label: L.activities, value: s.activities ?? 0 },
       { label: L.exams, value: s.exams ?? 0 },
+      { label: labels.dawrat || 'الدورات', value: s.dawrat ?? 0 },
+      { label: labels.remoteTasmee || 'التسميع عن بُعد', value: s.remoteTasmee ?? 0 },
       { label: L.awrad, value: s.awrad ?? 0 },
       { label: L.pages, value: s.totalPages ?? 0 },
+      { label: labels.notifications || 'الإشعارات', value: s.notifications ?? 0 },
     ]
   }
 
@@ -474,7 +500,10 @@ export function collectPrintKpisFromReport(reportData, labels = {}) {
     return [
       { label: L.halakat, value: s.halakat ?? 0 },
       { label: L.plans, value: s.plans ?? 0 },
+      { label: L.activities, value: s.activities ?? 0 },
       { label: L.exams, value: s.exams ?? 0 },
+      { label: labels.dawrat || 'الدورات', value: s.dawrat ?? 0 },
+      { label: labels.remoteTasmee || 'التسميع عن بُعد', value: s.remoteTasmee ?? 0 },
       { label: L.sessions, value: s.sessions ?? 0 },
       { label: L.studentsRecorded, value: s.studentsRecorded ?? 0 },
       { label: L.pagesRecorded, value: s.pagesRecorded ?? 0 },

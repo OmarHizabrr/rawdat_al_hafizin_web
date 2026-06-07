@@ -19,14 +19,30 @@ export function openReportPrintPage(payload, { autoPrint = true } = {}) {
   return Boolean(win)
 }
 
-export function buildPrintHeaderLines(printContext) {
-  const headerLines = []
-  if (printContext?.reportTypeLabel) headerLines.push(`نوع التقرير: ${printContext.reportTypeLabel}`)
-  if (printContext?.entityName) headerLines.push(`الكيان: ${printContext.entityName}`)
-  if (printContext?.fromYmd || printContext?.toYmd) {
-    headerLines.push(`الفترة (تقويم أم القرى): ${printContext.fromYmd || '—'} → ${printContext.toYmd || '—'}`)
+export function buildPrintHeaderMeta(printContext) {
+  const issuedAt =
+    printContext?.issuedAt ||
+    new Date().toLocaleString('ar-SA', { dateStyle: 'medium', timeStyle: 'short' })
+  const meta = []
+  if (printContext?.reportTypeLabel) {
+    meta.push({ label: 'نوع التقرير', value: printContext.reportTypeLabel })
   }
-  return headerLines
+  if (printContext?.entityName) {
+    meta.push({ label: 'الكيان', value: printContext.entityName })
+  }
+  if (printContext?.fromYmd || printContext?.toYmd) {
+    meta.push({
+      label: 'الفترة (أم القرى)',
+      value: `${printContext.fromYmd || '—'} ← ${printContext.toYmd || '—'}`,
+    })
+  }
+  meta.push({ label: 'تاريخ الإصدار', value: issuedAt })
+  return meta
+}
+
+/** @deprecated استخدم buildPrintHeaderMeta */
+export function buildPrintHeaderLines(printContext) {
+  return buildPrintHeaderMeta(printContext).map((m) => `${m.label}: ${m.value}`)
 }
 
 export function buildPrintFooterLine(printContext) {
@@ -40,19 +56,26 @@ export function buildPrintFooterLine(printContext) {
  * @param {{ label: string, value: string|number }[]} [p.kpis]
  * @param {{ title: string, columns: { key: string, label: string }[], rows: Record<string, unknown>[] }[]} p.sections
  * @param {object} [p.printContext]
+ * @param {{ paragraphs?: string[], highlights?: { label: string, value: string|number }[] }} [p.executiveSummary]
  * @param {{ autoPrint?: boolean }} [options]
  */
-export function printMultiSectionReport({ documentTitle, sections, kpis, printContext }, options) {
+export function printMultiSectionReport(
+  { documentTitle, sections, kpis, printContext, executiveSummary },
+  options,
+) {
   const printable = (sections || []).filter((s) => s?.rows?.length)
   const hasKpis = Boolean(kpis?.length)
-  if (!printable.length && !hasKpis) return false
+  const hasSummary = Boolean(executiveSummary?.paragraphs?.length || executiveSummary?.highlights?.length)
+  if (!printable.length && !hasKpis && !hasSummary) return false
 
   return openReportPrintPage(
     {
       documentTitle,
       brandTitle: printContext?.siteTitle,
+      headerMeta: buildPrintHeaderMeta(printContext),
       headerLines: buildPrintHeaderLines(printContext),
       footerLine: buildPrintFooterLine(printContext),
+      executiveSummary: executiveSummary || null,
       kpis: kpis || [],
       sections: printable,
     },
@@ -75,8 +98,10 @@ export function printSingleTable({ title, columns, rows, printContext }, options
     {
       documentTitle: title,
       brandTitle: printContext?.siteTitle,
+      headerMeta: buildPrintHeaderMeta(printContext),
       headerLines: buildPrintHeaderLines(printContext),
       footerLine: buildPrintFooterLine(printContext),
+      executiveSummary: null,
       kpis: [],
       sections: [{ title, columns, rows }],
     },
