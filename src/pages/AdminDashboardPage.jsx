@@ -1,4 +1,4 @@
-import { Bell, FileText, LayoutDashboard, Palette, Shapes, Shield, UserCheck, Users } from 'lucide-react'
+import { Bell, BookOpen, FileText, LayoutDashboard, Palette, Shapes, Shield, UserCheck, Users } from 'lucide-react'
 import { HapticLink } from '../ui/HapticLink.jsx'
 import { useEffect } from 'react'
 
@@ -24,6 +24,12 @@ const tiles = [
     title: 'النصوص الثابتة',
     desc: 'تعديل النصوص المعروضة في القائمة، الصفحة العامة، وأقسام البرنامج.',
     Icon: FileText,
+  },
+  {
+    to: '/app/admin/program-blocks',
+    title: 'أقسام صفحة البداية',
+    desc: 'إضافة وترتيب أقسام التعريف بالبرنامج: عنوان، أيقونة، نقاط أو فقرات سردية.',
+    Icon: BookOpen,
   },
   {
     to: '/app/admin/branding',

@@ -7,6 +7,7 @@ import {
   subscribePlanTypes,
   subscribeSiteConfig,
 } from '../services/siteConfigService.js'
+import { resolveProgramBlocks } from '../utils/programBlocks.js'
 import { useTheme } from '../theme/useTheme.js'
 import { normalizeContactPhones } from '../utils/contactPhones.js'
 import { sanitizeCssColor, sanitizeImageUrl } from '../utils/brandingAssets.js'
@@ -110,6 +111,16 @@ export function SiteContentProvider({ children }) {
     [mergedStrings, branding.siteName, branding.siteTitle],
   )
 
+  const programBlocks = useMemo(
+    () => resolveProgramBlocks(configData?.programBlocks, str),
+    [configData?.programBlocks, str],
+  )
+
+  const hasCustomProgramBlocks = useMemo(
+    () => Array.isArray(configData?.programBlocks) && configData.programBlocks.length > 0,
+    [configData?.programBlocks],
+  )
+
   const typeLabel = useCallback(
     (value) => planTypes.find((t) => t.value === value)?.label ?? value,
     [planTypes],
@@ -122,12 +133,14 @@ export function SiteContentProvider({ children }) {
       branding,
       contactPhones,
       mergedStrings,
+      programBlocks,
+      hasCustomProgramBlocks,
       str,
       typeLabel,
       loadError,
       registryDefaults,
     }),
-    [planTypes, planTypeRows, branding, contactPhones, mergedStrings, str, typeLabel, loadError],
+    [planTypes, planTypeRows, branding, contactPhones, mergedStrings, programBlocks, hasCustomProgramBlocks, str, typeLabel, loadError],
   )
 
   return <SiteContentContext.Provider value={value}>{children}</SiteContentContext.Provider>
