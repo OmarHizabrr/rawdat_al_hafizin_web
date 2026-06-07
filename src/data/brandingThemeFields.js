@@ -9,7 +9,7 @@ export const BRANDING_THEME_GROUPS = [
     vars: [
       { name: '--rh-primary', label: 'لون أساسي' },
       { name: '--rh-primary-hover', label: 'أساسي عند المرور' },
-      { name: '--rh-primary-muted', label: 'أساسي خافت (شفافية فوق الخلفية)', useColorPicker: false },
+      { name: '--rh-primary-muted', label: 'لمسة خفيفة من اللون الأساسي (شفاف)', pickerMode: 'alpha' },
       { name: '--rh-on-primary', label: 'نص فوق الأساسي' },
       { name: '--rh-accent', label: 'تمييز / ذهبي' },
     ],
@@ -49,13 +49,13 @@ export const BRANDING_THEME_GROUPS = [
     label: 'حالات (نجاح / تحذير / خطر)',
     vars: [
       { name: '--rh-success', label: 'نجاح' },
-      { name: '--rh-success-bg', label: 'خلفية نجاح' },
+      { name: '--rh-success-bg', label: 'خلفية نجاح', pickerMode: 'alpha' },
       { name: '--rh-warning', label: 'تحذير' },
-      { name: '--rh-warning-bg', label: 'خلفية تحذير' },
+      { name: '--rh-warning-bg', label: 'خلفية تحذير', pickerMode: 'alpha' },
       { name: '--rh-danger', label: 'خطر' },
-      { name: '--rh-danger-bg', label: 'خلفية خطر' },
+      { name: '--rh-danger-bg', label: 'خلفية خطر', pickerMode: 'alpha' },
       { name: '--rh-info', label: 'معلومة' },
-      { name: '--rh-info-bg', label: 'خلفية معلومة' },
+      { name: '--rh-info-bg', label: 'خلفية معلومة', pickerMode: 'alpha' },
     ],
   },
 ]

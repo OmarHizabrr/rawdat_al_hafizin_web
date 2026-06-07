@@ -21,6 +21,7 @@ import {
   resolveApplicationFormFieldTypeIcon,
 } from '../data/applicationFormFieldTypes.js'
 import { DEFAULT_APPLICATION_FORM_FIELDS } from '../data/defaultApplicationFormFields.js'
+import { APPLICATION_FORM_LEGACY_KEY_OPTIONS } from '../data/applicationFormLegacyKeys.js'
 import { useAuth } from '../context/useAuth.js'
 import { useSiteContent } from '../context/useSiteContent.js'
 import { saveApplicationFormFields } from '../services/siteConfigService.js'
@@ -46,6 +47,16 @@ import { RhIcon, RH_ICON_STROKE } from '../ui/RhIcon.jsx'
 
 const OPTION_TYPES = new Set(['select', 'multi_select', 'radio', 'checkbox_group'])
 const NUMBER_TYPES = new Set(['number', 'quran_juz'])
+const PLACEHOLDER_TYPES = new Set(['text', 'textarea', 'url', 'select', 'multi_select', 'quran_juz'])
+
+const PLACEHOLDER_EXAMPLES = {
+  text: 'مثال: أدخل اسمك الرباعي',
+  textarea: 'اكتب تفاصيلك هنا…',
+  url: 'https://example.com',
+  select: 'اختر من القائمة…',
+  multi_select: 'اختر واحداً أو أكثر…',
+  quran_juz: 'اختر عدد الأجزاء',
+}
 
 function emptyField(order = 0) {
   return normalizeApplicationFormField(
@@ -151,7 +162,7 @@ export default function AdminApplicationFormPage() {
   const handleSaveDraft = async () => {
     const id = String(draft.id || '').trim()
     if (!/^[a-z][a-z0-9_]*$/i.test(id)) {
-      toast.warning('معرّف الحقل: أحرف إنجليزية وأرقام وشرطة سفلية فقط (مثل: fullName).', 'تنبيه')
+      toast.warning('رمز الحقل الداخلي غير صالح. استخدم حروفاً إنجليزية وأرقاماً فقط.', 'تنبيه')
       return
     }
     if (!String(draft.label || '').trim()) {
@@ -223,6 +234,8 @@ export default function AdminApplicationFormPage() {
   const showOptions = OPTION_TYPES.has(draft.type)
   const showNumberBounds = NUMBER_TYPES.has(draft.type)
   const showMinQuran = draft.type === 'quran_juz'
+  const showPlaceholder = PLACEHOLDER_TYPES.has(draft.type)
+  const placeholderExample = PLACEHOLDER_EXAMPLES[draft.type] || 'نص يظهر داخل الحقل قبل الكتابة'
 
   const crossItems = [
     { to: '/app/admin', label: 'لوحة التحكم' },
@@ -241,9 +254,8 @@ export default function AdminApplicationFormPage() {
         </div>
         <h1 className="rh-admin-program-blocks__title">حقول استمارة طلب الالتحاق</h1>
         <p className="rh-admin-program-blocks__desc">
-          أضف ورتّب حقول صفحة <strong>/app/application</strong>: نوع الحقل، إلزامي أو اختياري، خيارات القائمة/الراديو،
-          وحدود الأرقام. يُحفظ في{' '}
-          <code className="rh-admin-program-blocks__code">site_config/main.applicationFormFields</code>.
+          أضف ورتّب حقول صفحة طلب الالتحاق: نوع الحقل، إلزامي أو اختياري، وخيارات القوائم. التغييرات تظهر مباشرة
+          للطلاب وللفريق عند مراجعة الطلبات.
           {!hasCustomApplicationFormFields ? (
             <> حالياً تُستخدم <strong>الحقول الافتراضية</strong> — اضغط «استيراد الافتراضي» للتخصيص.</>
           ) : null}
@@ -358,23 +370,18 @@ export default function AdminApplicationFormPage() {
         <div className="rh-admin-app-form-fields__editor">
           <div className="rh-admin-program-blocks__form rh-admin-app-form-fields__editor-form">
           <TextField
-            label="معرّف الحقل (بالإنجليزية)"
-            value={draft.id}
-            onChange={(e) => setDraft((d) => ({ ...d, id: e.target.value.replace(/\s/g, '_') }))}
-            hint="مثل: fullName أو custom_field_1 — لا يتغيّر بعد حفظ بيانات الطلاب عليه."
-            dir="ltr"
-          />
-          <TextField
-            label="التسمية الظاهرة للمستخدم"
+            label="اسم الحقل كما يظهر للطالب"
             value={draft.label}
             onChange={(e) => setDraft((d) => ({ ...d, label: e.target.value }))}
             required
+            placeholder="مثال: الوظيفة الحالية"
           />
           <SearchableSelect
             label="نوع الحقل"
             value={draft.type}
             onChange={(v) => setDraft((d) => ({ ...d, type: v }))}
             options={APPLICATION_FORM_FIELD_TYPE_OPTIONS}
+            placeholder="اختر نوع الحقل"
             searchPlaceholder="ابحث عن نوع…"
           />
           <div className="rh-admin-program-blocks__icon-preview" aria-hidden>
@@ -382,22 +389,28 @@ export default function AdminApplicationFormPage() {
             <span>{applicationFormFieldTypeHint(draft.type)}</span>
           </div>
           <TextField
-            label="نص مساعد (اختياري)"
+            label="شرح إضافي تحت الحقل (اختياري)"
             value={draft.hint}
             onChange={(e) => setDraft((d) => ({ ...d, hint: e.target.value }))}
+            placeholder="مثال: اختر آخر جزء أنجزته حفظاً"
           />
-          <TextField
-            label="Placeholder (اختياري)"
-            value={draft.placeholder}
-            onChange={(e) => setDraft((d) => ({ ...d, placeholder: e.target.value }))}
-          />
+          {showPlaceholder ? (
+            <TextField
+              label="نص توضيحي داخل الحقل (اختياري)"
+              value={draft.placeholder}
+              onChange={(e) => setDraft((d) => ({ ...d, placeholder: e.target.value }))}
+              placeholder={placeholderExample}
+              hint="يظهر بلون خافت داخل الحقل قبل أن يكتب الطالب."
+            />
+          ) : null}
           {showOptions ? (
             <TextAreaField
-              label="خيارات القائمة / الراديو / المربعات"
-              hint="سطر لكل خيار: value|التسمية العربية"
+              label="خيارات الاختيار"
+              hint="كل سطر = خيار واحد. يمكنك كتابة الاسم فقط، أو: القيمة|الاسم الظاهر"
               value={optionsText}
               onChange={(e) => setOptionsText(e.target.value)}
               rows={6}
+              placeholder={'ذكر\nأنثى\nأو: أمي|لا أقرأ ولا أكتب'}
             />
           ) : null}
           {showNumberBounds ? (
@@ -416,24 +429,37 @@ export default function AdminApplicationFormPage() {
               onChange={(v) => setDraft((d) => ({ ...d, minQuranJuz: v }))}
             />
           ) : null}
-          <TextField
-            label="مفتاح legacy (اختياري)"
-            value={draft.legacyKey}
-            onChange={(e) => setDraft((d) => ({ ...d, legacyKey: e.target.value }))}
-            hint="لربط حقل مخصص بعمود قديم: fullName, phone, gender…"
-            dir="ltr"
+          <SearchableSelect
+            label="ربط ببيانات النظام (اختياري)"
+            value={draft.legacyKey || ''}
+            onChange={(v) => setDraft((d) => ({ ...d, legacyKey: v || '' }))}
+            options={APPLICATION_FORM_LEGACY_KEY_OPTIONS}
+            placeholder="اختر إن كان يطابق حقلاً قديماً"
+            searchPlaceholder="ابحث عن اسم الحقل…"
+            hint="يساعد على ظهور البيانات في التقارير والتصدير. اختر «لا ربط» للحقول الجديدة."
           />
-          <NumberStepField label="ترتيب الظهور" value={draft.order} min={0} max={999} onChange={(v) => setDraft((d) => ({ ...d, order: v }))} />
-          <label className="rh-app-form__checkbox-item">
+          <NumberStepField label="ترتيب الظهور في الاستمارة" value={draft.order} min={0} max={999} onChange={(v) => setDraft((d) => ({ ...d, order: v }))} />
+          <label className="rh-app-form__checkbox-item rh-admin-app-form-fields__check-row">
             <input type="checkbox" checked={draft.required} onChange={(e) => setDraft((d) => ({ ...d, required: e.target.checked }))} />
-            <span>حقل إلزامي</span>
+            <span>حقل إلزامي — لا يُرسل الطلب بدونه</span>
           </label>
           {draft.type === 'email' ? (
-            <label className="rh-app-form__checkbox-item">
+            <label className="rh-app-form__checkbox-item rh-admin-app-form-fields__check-row">
               <input type="checkbox" checked={draft.bindUserEmail} onChange={(e) => setDraft((d) => ({ ...d, bindUserEmail: e.target.checked }))} />
-              <span>ربط ببريد حساب Google (للقراءة فقط)</span>
+              <span>أخذ البريد من حساب Google (للقراءة فقط)</span>
             </label>
           ) : null}
+
+          <details className="rh-admin-app-form-fields__advanced">
+            <summary>إعدادات تقنية (للمشرف المتقدم)</summary>
+            <TextField
+              label="رمز الحقل الداخلي"
+              value={draft.id}
+              onChange={(e) => setDraft((d) => ({ ...d, id: e.target.value.replace(/\s/g, '_') }))}
+              hint="لا تغيّره بعد حفظ بيانات الطلاب إلا للضرورة."
+              dir="ltr"
+            />
+          </details>
           <div className="rh-admin-program-blocks__form-actions">
             <Button type="button" variant="primary" icon={Save} loading={saveSubmitting} onClick={() => void handleSaveDraft()}>
               حفظ

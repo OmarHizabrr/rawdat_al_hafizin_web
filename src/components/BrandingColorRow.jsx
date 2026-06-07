@@ -1,20 +1,13 @@
 import { RotateCcw, X } from 'lucide-react'
 import { THEME_VAR_DEFAULTS } from '../data/brandingPresets.js'
+import {
+  alphaPercentFromValue,
+  hexForColorInput,
+  isRgbaLikeValue,
+  normalizeHex6,
+  rgbaFromHexAlpha,
+} from '../utils/colorFormat.js'
 import { Button, TextField } from '../ui/index.js'
-
-function normalizeHex6(v) {
-  const s = String(v ?? '').trim()
-  if (/^#[0-9a-f]{6}$/i.test(s)) return s.toLowerCase()
-  if (/^#[0-9a-f]{3}$/i.test(s)) {
-    const x = s.slice(1)
-    return `#${x[0]}${x[0]}${x[1]}${x[1]}${x[2]}${x[2]}`.toLowerCase()
-  }
-  return ''
-}
-
-function hexForPicker(value, fallback) {
-  return normalizeHex6(value) || normalizeHex6(fallback) || '#888888'
-}
 
 /**
  * @param {object} props
@@ -24,27 +17,56 @@ function hexForPicker(value, fallback) {
  * @param {(name: string, next: string) => void} props.onChange
  * @param {'light' | 'dark'} props.mode
  * @param {boolean} [props.useColorPicker]
+ * @param {'hex' | 'alpha'} [props.pickerMode]
  */
-export function BrandingColorRow({ label, name, value, onChange, mode, useColorPicker = true }) {
+export function BrandingColorRow({ label, name, value, onChange, mode, useColorPicker = true, pickerMode = 'hex' }) {
   const fallbackProgram = THEME_VAR_DEFAULTS[name]?.[mode === 'dark' ? 'dark' : 'light'] ?? ''
+  const useAlphaPicker = pickerMode === 'alpha' || useColorPicker === false || isRgbaLikeValue(value) || isRgbaLikeValue(fallbackProgram)
 
-  if (!useColorPicker) {
+  if (useAlphaPicker) {
+    const pickerHex = hexForColorInput(value, fallbackProgram)
+    const alphaPct = alphaPercentFromValue(value, alphaPercentFromValue(fallbackProgram, 20) / 100)
+    const previewColor = rgbaFromHexAlpha(pickerHex, alphaPct / 100) || value || fallbackProgram
+
     return (
-      <div className="rh-admin-branding__color-field">
+      <div className="rh-admin-branding__color-field rh-admin-branding__color-field--alpha">
         <span className="rh-admin-branding__color-field-label">{label}</span>
         <p className="rh-admin-branding__color-field-micro">
-          هذا اللون شفاف — اكتب بصيغة rgba أو rgb، أو استخدم «القيمة المقترحة».
+          اختر لوناً ثم حرّك الشفافية — لا حاجة لكتابة أكواد تقنية.
         </p>
-        <div className="rh-admin-branding__color-field-row rh-admin-branding__color-field-row--stack">
-          <TextField
-            label="القيمة"
-            value={value || ''}
-            onChange={(e) => onChange(name, e.target.value)}
-            placeholder="مثال: rgba(27, 67, 50, 0.1)"
-          />
+        <div className="rh-admin-branding__alpha-picker">
+          <div className="rh-admin-branding__alpha-picker-top">
+            <input
+              type="color"
+              className="rh-admin-branding__color-native"
+              value={pickerHex}
+              onChange={(e) => onChange(name, rgbaFromHexAlpha(e.target.value, alphaPct / 100))}
+              title="اختر اللون"
+              aria-label={`لون ${label}`}
+            />
+            <div className="rh-admin-branding__alpha-preview" aria-hidden>
+              <span className="rh-admin-branding__alpha-preview-fill" style={{ background: previewColor }} />
+            </div>
+            <div className="rh-admin-branding__alpha-slider-wrap">
+              <label className="rh-admin-branding__alpha-slider-label" htmlFor={`${name}-alpha`}>
+                الشفافية
+                <strong>{alphaPct}%</strong>
+              </label>
+              <input
+                id={`${name}-alpha`}
+                type="range"
+                className="rh-admin-branding__alpha-slider"
+                min={0}
+                max={100}
+                step={1}
+                value={alphaPct}
+                onChange={(e) => onChange(name, rgbaFromHexAlpha(pickerHex, Number(e.target.value) / 100))}
+              />
+            </div>
+          </div>
           <div className="rh-admin-branding__color-field-actions">
             <Button type="button" size="sm" variant="ghost" icon={X} onClick={() => onChange(name, '')}>
-              مسح
+              مسح (الافتراضي)
             </Button>
             <Button
               type="button"
@@ -53,7 +75,7 @@ export function BrandingColorRow({ label, name, value, onChange, mode, useColorP
               icon={RotateCcw}
               onClick={() => onChange(name, fallbackProgram)}
             >
-              القيمة المقترحة
+              استعادة المقترح
             </Button>
           </div>
         </div>
@@ -61,11 +83,12 @@ export function BrandingColorRow({ label, name, value, onChange, mode, useColorP
     )
   }
 
-  const pickerHex = hexForPicker(value, fallbackProgram)
+  const pickerHex = hexForColorInput(value, fallbackProgram)
 
   return (
     <div className="rh-admin-branding__color-field">
       <span className="rh-admin-branding__color-field-label">{label}</span>
+      <p className="rh-admin-branding__color-field-micro">اضغط المربّع الملون لاختيار اللون.</p>
       <div className="rh-admin-branding__color-field-row">
         <input
           type="color"
@@ -75,12 +98,18 @@ export function BrandingColorRow({ label, name, value, onChange, mode, useColorP
           title="اختر لوناً"
           aria-label={label}
         />
+        <div className="rh-admin-branding__alpha-preview" aria-hidden>
+          <span
+            className="rh-admin-branding__alpha-preview-fill"
+            style={{ background: value || pickerHex }}
+          />
+        </div>
         <TextField
-          label="كود اللون"
+          label="قيمة اللون (للمحترفين)"
           value={value || ''}
           onChange={(e) => onChange(name, e.target.value)}
           placeholder="#RRGGBB"
-          hint="يمكنك لصق rgba أيضاً؛ عندها يُعطّل المربّع أعلاه تلقائياً حتى تعدّل النص."
+          hint="اختياري — يمكن تعديل الكود يدوياً إن احتجت."
         />
         <div className="rh-admin-branding__color-field-actions">
           <Button type="button" size="sm" variant="ghost" icon={X} onClick={() => onChange(name, '')}>

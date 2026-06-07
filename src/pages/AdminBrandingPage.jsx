@@ -182,7 +182,7 @@ export default function AdminBrandingPage() {
         <details key={group.id} className="rh-admin-branding__details" open={group.id === 'core'}>
           <summary className="rh-admin-branding__details-summary">{group.label}</summary>
           <div className="rh-admin-branding__color-fields">
-            {group.vars.map(({ name, label: vlabel, useColorPicker }) => (
+            {group.vars.map(({ name, label: vlabel, useColorPicker, pickerMode }) => (
               <BrandingColorRow
                 key={name}
                 label={vlabel}
@@ -191,6 +191,7 @@ export default function AdminBrandingPage() {
                 onChange={setVar}
                 mode={mode}
                 useColorPicker={useColorPicker !== false}
+                pickerMode={pickerMode || 'hex'}
               />
             ))}
           </div>
