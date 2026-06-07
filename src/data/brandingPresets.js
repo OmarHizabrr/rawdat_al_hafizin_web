@@ -15,8 +15,11 @@ export const THEME_VAR_DEFAULTS = {
   '--rh-border': { light: '#e8eaed', dark: '#3c4043' },
   '--rh-border-strong': { light: '#dadce0', dark: '#5f6368' },
   '--rh-text': { light: '#202124', dark: '#e8eaed' },
+  '--rh-text-heading': { light: '#202124', dark: '#e8eaed' },
   '--rh-text-muted': { light: '#5f6368', dark: '#bdc1c6' },
   '--rh-text-placeholder': { light: '#80868b', dark: '#9aa0a6' },
+  '--rh-text-link': { light: '#1b4332', dark: '#81c995' },
+  '--rh-text-link-hover': { light: '#2d6a4f', dark: '#a5d6a7' },
   '--rh-forest-900': { light: '#1b4332', dark: '#1b4332' },
   '--rh-forest-800': { light: '#2d6a4f', dark: '#2d6a4f' },
   '--rh-forest-600': { light: '#40916c', dark: '#40916c' },
@@ -28,6 +31,20 @@ export const THEME_VAR_DEFAULTS = {
   '--rh-danger-bg': { light: '#fce8e6', dark: '#3c1f1e' },
   '--rh-info': { light: '#1a73e8', dark: '#8ab4f8' },
   '--rh-info-bg': { light: '#e8f0fe', dark: '#1a2c4e' },
+  '--rh-btn-primary-bg': { light: '#1b4332', dark: '#81c995' },
+  '--rh-btn-primary-bg-hover': { light: '#2d6a4f', dark: '#a5d6a7' },
+  '--rh-btn-primary-text': { light: '#f8fff9', dark: '#0d1f17' },
+  '--rh-btn-secondary-bg': { light: '#ffffff', dark: '#1e1f20' },
+  '--rh-btn-secondary-text': { light: '#1b4332', dark: '#81c995' },
+  '--rh-btn-secondary-border': { light: '#e8eaed', dark: '#3c4043' },
+  '--rh-btn-ghost-text': { light: '#1b4332', dark: '#81c995' },
+  '--rh-btn-danger-bg': { light: '#b42318', dark: '#f28b82' },
+  '--rh-btn-danger-text': { light: '#ffffff', dark: '#ffffff' },
+  '--rh-nav-text': { light: '#5f6368', dark: '#c9cdd2' },
+  '--rh-nav-text-hover': { light: '#202124', dark: '#e8eaed' },
+  '--rh-nav-active-text': { light: '#1b4332', dark: '#a5d6a7' },
+  '--rh-nav-hover-bg': { light: 'rgba(27, 67, 50, 0.06)', dark: 'rgba(129, 201, 149, 0.12)' },
+  '--rh-nav-active-bg': { light: 'rgba(27, 67, 50, 0.1)', dark: 'rgba(129, 201, 149, 0.16)' },
 }
 
 /** يبني خريطة كاملة لأحد الوضعين من THEME_VAR_DEFAULTS */
@@ -64,6 +81,12 @@ export function buildPreviewDomStyle(draft, mode) {
   style['--muted'] = m['--rh-text-muted']
   style['--border'] = m['--rh-border']
   style['--surface'] = m['--rh-surface']
+  style['--rh-text-heading'] = m['--rh-text-heading']
+  style['--rh-text-link'] = m['--rh-text-link']
+  style['--rh-btn-primary-bg'] = m['--rh-btn-primary-bg']
+  style['--rh-btn-primary-text'] = m['--rh-btn-primary-text']
+  style['--rh-nav-text'] = m['--rh-nav-text']
+  style['--rh-nav-active-text'] = m['--rh-nav-active-text']
   style['--font'] = `'Noto Sans Arabic', system-ui, sans-serif`
   style['--max'] = '520px'
   return style

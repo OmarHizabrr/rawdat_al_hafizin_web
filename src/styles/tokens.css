@@ -27,6 +27,9 @@ html {
   --rh-text: #202124;
   --rh-text-muted: #5f6368;
   --rh-text-placeholder: #80868b;
+  --rh-text-heading: var(--rh-text);
+  --rh-text-link: var(--rh-primary);
+  --rh-text-link-hover: var(--rh-primary-hover);
 
   --rh-primary: var(--rh-forest-900);
   --rh-primary-hover: var(--rh-forest-800);
@@ -44,6 +47,26 @@ html {
   --rh-danger-bg: #fce8e6;
   --rh-info: #1a73e8;
   --rh-info-bg: #e8f0fe;
+
+  /* أزرار — تُدار من «هوية الموقع» */
+  --rh-btn-primary-bg: var(--rh-primary);
+  --rh-btn-primary-bg-hover: var(--rh-primary-hover);
+  --rh-btn-primary-text: var(--rh-on-primary);
+  --rh-btn-secondary-bg: color-mix(in srgb, var(--rh-surface) 92%, var(--rh-bg));
+  --rh-btn-secondary-text: var(--rh-primary);
+  --rh-btn-secondary-border: var(--rh-border);
+  --rh-btn-secondary-bg-hover: color-mix(in srgb, var(--rh-primary-muted) 52%, var(--rh-surface));
+  --rh-btn-ghost-text: var(--rh-primary);
+  --rh-btn-ghost-bg-hover: var(--rh-primary-muted);
+  --rh-btn-danger-bg: var(--rh-danger);
+  --rh-btn-danger-text: #ffffff;
+
+  /* القائمة الجانبية والأيقونات مع النص */
+  --rh-nav-text: var(--rh-text-muted);
+  --rh-nav-text-hover: var(--rh-text);
+  --rh-nav-active-text: var(--rh-primary);
+  --rh-nav-active-bg: color-mix(in srgb, var(--rh-primary-muted) 88%, var(--rh-surface));
+  --rh-nav-hover-bg: color-mix(in srgb, var(--rh-primary-muted) 45%, var(--rh-surface));
 
   /* تمييز اختيار واضح في الوضع النهاري (مثل لوحات الإدارة العالمية) */
   --rh-select-tint: color-mix(in srgb, var(--rh-forest-600) 14%, var(--rh-surface));
@@ -117,6 +140,9 @@ html[data-theme='dark'] {
   --rh-text: #e8eaed;
   --rh-text-muted: #c7ccd1;
   --rh-text-placeholder: #9aa0a6;
+  --rh-text-heading: var(--rh-text);
+  --rh-text-link: var(--rh-primary);
+  --rh-text-link-hover: var(--rh-primary-hover);
 
   --rh-primary: #81c995;
   --rh-primary-hover: #a5d6a7;
@@ -131,6 +157,24 @@ html[data-theme='dark'] {
   --rh-danger-bg: #3c1f1e;
   --rh-info: #8ab4f8;
   --rh-info-bg: #1a2c4e;
+
+  --rh-btn-primary-bg: var(--rh-primary);
+  --rh-btn-primary-bg-hover: var(--rh-primary-hover);
+  --rh-btn-primary-text: var(--rh-on-primary);
+  --rh-btn-secondary-bg: color-mix(in srgb, var(--rh-surface) 92%, var(--rh-bg));
+  --rh-btn-secondary-text: var(--rh-primary);
+  --rh-btn-secondary-border: var(--rh-border);
+  --rh-btn-secondary-bg-hover: color-mix(in srgb, var(--rh-primary-muted) 52%, var(--rh-surface));
+  --rh-btn-ghost-text: var(--rh-primary);
+  --rh-btn-ghost-bg-hover: var(--rh-primary-muted);
+  --rh-btn-danger-bg: var(--rh-danger);
+  --rh-btn-danger-text: #ffffff;
+
+  --rh-nav-text: color-mix(in srgb, var(--rh-text-muted) 90%, var(--rh-text) 10%);
+  --rh-nav-text-hover: var(--rh-text);
+  --rh-nav-active-text: var(--rh-primary-hover);
+  --rh-nav-active-bg: color-mix(in srgb, var(--rh-primary-muted) 68%, var(--rh-surface-elevated));
+  --rh-nav-hover-bg: color-mix(in srgb, var(--rh-primary-muted) 52%, var(--rh-surface));
 
   --rh-focus-ring: 0 0 0 2px color-mix(in srgb, var(--rh-primary) 75%, transparent),
     0 0 0 4px color-mix(in srgb, var(--rh-primary) 28%, transparent);

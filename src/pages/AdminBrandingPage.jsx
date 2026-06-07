@@ -179,7 +179,7 @@ export default function AdminBrandingPage() {
       </div>
 
       {BRANDING_THEME_GROUPS.map((group) => (
-        <details key={group.id} className="rh-admin-branding__details" open={group.id === 'core'}>
+        <details key={group.id} className="rh-admin-branding__details" open={['text', 'buttons', 'nav'].includes(group.id)}>
           <summary className="rh-admin-branding__details-summary">{group.label}</summary>
           <div className="rh-admin-branding__color-fields">
             {group.vars.map(({ name, label: vlabel, useColorPicker, pickerMode }) => (
@@ -210,8 +210,8 @@ export default function AdminBrandingPage() {
         </div>
         <h1 className="rh-admin-branding__title">هوية الموقع</h1>
         <p className="rh-admin-branding__desc">
-          خطوات بسيطة: النصوص والشعار وأرقام التواصل العامة أولاً، ثم ألوان الوضع الفاتح والداكن عبر قائمة جاهزة أو منتقي الألوان.
-          لا حاجة لفهم أسماء المتغيرات التقنية — استخدم القوائم والألوان. احفظ في النهاية، أو استعد الافتراضي ثم احفظ.
+          خطوات بسيطة: النصوص والشعار أولاً، ثم ألوان النصوص والعناوين والروابط، والأزرار، والقائمة الجانبية مع
+          أيقوناتها — للوضع الفاتح والداكن. استخدم القوائم الجاهزة أو منتقي الألوان، ثم احفظ.
         </p>
       </header>
 
@@ -348,7 +348,7 @@ export default function AdminBrandingPage() {
 
       {renderThemePanel(
         '٢ — ألوان الوضع الفاتح',
-        'اختر مجموعة جاهزة من القائمة، أو افتح كل مجموعة وعدّل اللون بالمربّع أو بالكود. «مسح» يعيد اللون للتصميم الافتراضي.',
+        'عدّل النصوص والأزرار والقائمة الجانبية والأيقونات. افتح كل مجموعة واختر اللون — «مسح» يعيد الافتراضي.',
         themeLight,
         setLightVar,
         'light',

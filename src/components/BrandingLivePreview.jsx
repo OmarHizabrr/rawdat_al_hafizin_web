@@ -59,9 +59,14 @@ export function BrandingLivePreview({ previewMode, onPreviewMode, themeLight, th
 
           <main className="content rh-live-preview__content">
             <section className="card">
-              <h2>بطاقة داخل المنصة</h2>
-              <p className="lead">هذا النص يوضّح لون النص الرئيسي والثانوي في البطاقات.</p>
+              <h2 style={{ color: 'var(--rh-text-heading)' }}>بطاقة داخل المنصة</h2>
+              <p className="lead">هذا النص يوضّح لون النص الرئيسي في البطاقات.</p>
               <p style={{ color: 'var(--rh-text-muted)', fontSize: '0.9rem' }}>نص ثانوي — مثل التلميحات في النماذج.</p>
+              <p style={{ fontSize: '0.85rem', marginTop: '0.5rem' }}>
+                <a href="#preview" style={{ color: 'var(--rh-text-link)' }} onClick={(e) => e.preventDefault()}>
+                  رابط داخل النص (مثال)
+                </a>
+              </p>
             </section>
 
             <div className="rh-live-preview__mock-app">
@@ -71,9 +76,15 @@ export function BrandingLivePreview({ previewMode, onPreviewMode, themeLight, th
                   <span className="rh-live-preview__mock-site">{siteName.trim() || 'الموقع'}</span>
                 </div>
                 <div className="rh-live-preview__mock-nav">
-                  <span className="rh-live-preview__mock-link rh-live-preview__mock-link--on">الرئيسية</span>
-                  <span className="rh-live-preview__mock-link">الخطط</span>
-                  <span className="rh-live-preview__mock-link">الإعدادات</span>
+                  <span className="rh-live-preview__mock-link rh-live-preview__mock-link--on">
+                    <span aria-hidden>◆ </span>الرئيسية
+                  </span>
+                  <span className="rh-live-preview__mock-link">
+                    <span aria-hidden>◇ </span>الخطط
+                  </span>
+                  <span className="rh-live-preview__mock-link">
+                    <span aria-hidden>◇ </span>الإعدادات
+                  </span>
                 </div>
               </aside>
               <div className="rh-live-preview__mock-main">
@@ -87,6 +98,12 @@ export function BrandingLivePreview({ previewMode, onPreviewMode, themeLight, th
                     </button>
                     <button type="button" className="rh-live-preview__btn rh-live-preview__btn--secondary">
                       ثانوي
+                    </button>
+                    <button type="button" className="rh-live-preview__btn rh-live-preview__btn--ghost">
+                      شفاف
+                    </button>
+                    <button type="button" className="rh-live-preview__btn rh-live-preview__btn--danger">
+                      خطر
                     </button>
                   </div>
                 </div>

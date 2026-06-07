@@ -229,21 +229,6 @@
 /* ==========================================================================
    6) Dark contrast
    ========================================================================== */
-html[data-theme='dark'] .rh-nav-link {
-  color: color-mix(in srgb, var(--rh-text-muted) 90%, var(--rh-text) 10%);
-}
-
-html[data-theme='dark'] .rh-nav-link:hover {
-  background: color-mix(in srgb, var(--rh-primary-muted) 52%, var(--rh-surface));
-  color: var(--rh-text);
-}
-
-html[data-theme='dark'] .rh-nav-link--active {
-  background: color-mix(in srgb, var(--rh-primary-muted) 68%, var(--rh-surface-elevated));
-  color: var(--rh-primary-hover);
-  border: 1px solid color-mix(in srgb, var(--rh-primary) 34%, transparent);
-}
-
 html[data-theme='dark'] .rh-topbar__home-link:hover {
   background: color-mix(in srgb, var(--rh-primary) 20%, transparent);
 }

@@ -85,10 +85,10 @@
 .ui-btn--primary {
   background: linear-gradient(
     180deg,
-    color-mix(in srgb, var(--rh-primary) 88%, #ffffff 12%) 0%,
-    var(--rh-primary) 100%
+    color-mix(in srgb, var(--rh-btn-primary-bg) 88%, #ffffff 12%) 0%,
+    var(--rh-btn-primary-bg) 100%
   );
-  color: var(--rh-on-primary);
+  color: var(--rh-btn-primary-text);
   box-shadow:
     0 1px 0 rgba(0, 0, 0, 0.04),
     var(--rh-shadow-sm);
@@ -97,44 +97,44 @@
 .ui-btn--primary:hover:not(:disabled) {
   background: linear-gradient(
     180deg,
-    color-mix(in srgb, var(--rh-primary-hover) 88%, #ffffff 12%) 0%,
-    var(--rh-primary-hover) 100%
+    color-mix(in srgb, var(--rh-btn-primary-bg-hover) 88%, #ffffff 12%) 0%,
+    var(--rh-btn-primary-bg-hover) 100%
   );
   transform: translateY(-1px);
 }
 
 .ui-btn--secondary {
-  background: color-mix(in srgb, var(--rh-surface) 92%, var(--rh-bg));
-  color: var(--rh-primary);
-  border-color: var(--rh-border);
+  background: var(--rh-btn-secondary-bg);
+  color: var(--rh-btn-secondary-text);
+  border-color: var(--rh-btn-secondary-border);
   box-shadow:
     0 1px 0 rgba(0, 0, 0, 0.03),
     var(--rh-shadow-sm);
 }
 
 .ui-btn--secondary:hover:not(:disabled) {
-  background: color-mix(in srgb, var(--rh-primary-muted) 52%, var(--rh-surface));
-  border-color: var(--rh-primary);
+  background: var(--rh-btn-secondary-bg-hover);
+  border-color: var(--rh-btn-secondary-text);
   transform: translateY(-1px);
 }
 
 .ui-btn--ghost {
   background: transparent;
-  color: var(--rh-primary);
+  color: var(--rh-btn-ghost-text);
 }
 
 .ui-btn--ghost:hover:not(:disabled) {
-  background: var(--rh-primary-muted);
+  background: var(--rh-btn-ghost-bg-hover);
   transform: translateY(-1px);
 }
 
 .ui-btn--danger {
   background: linear-gradient(
     180deg,
-    color-mix(in srgb, var(--rh-danger) 90%, #ffffff 10%) 0%,
-    var(--rh-danger) 100%
+    color-mix(in srgb, var(--rh-btn-danger-bg) 90%, #ffffff 10%) 0%,
+    var(--rh-btn-danger-bg) 100%
   );
-  color: #fff;
+  color: var(--rh-btn-danger-text);
 }
 
 .ui-btn--danger:hover:not(:disabled) {
@@ -152,7 +152,7 @@
 .ui-field__label {
   font-size: var(--rh-text-sm);
   font-weight: 700;
-  color: var(--rh-text);
+  color: var(--rh-text-heading);
 }
 
 .ui-field__required {

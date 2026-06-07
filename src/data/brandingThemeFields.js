@@ -28,11 +28,40 @@ export const BRANDING_THEME_GROUPS = [
   },
   {
     id: 'text',
-    label: 'النصوص',
+    label: 'النصوص والعناوين والروابط',
     vars: [
-      { name: '--rh-text', label: 'نص رئيسي' },
-      { name: '--rh-text-muted', label: 'نص ثانوي' },
+      { name: '--rh-text', label: 'نص رئيسي (فقرات وجسم الصفحة)' },
+      { name: '--rh-text-heading', label: 'عناوين الصفحات والحقول' },
+      { name: '--rh-text-muted', label: 'نص ثانوي وتلميحات' },
       { name: '--rh-text-placeholder', label: 'نص توضيحي داخل الحقول' },
+      { name: '--rh-text-link', label: 'روابط داخل النص' },
+      { name: '--rh-text-link-hover', label: 'روابط — عند المرور' },
+    ],
+  },
+  {
+    id: 'buttons',
+    label: 'الأزرار',
+    vars: [
+      { name: '--rh-btn-primary-bg', label: 'زر أساسي — خلفية' },
+      { name: '--rh-btn-primary-bg-hover', label: 'زر أساسي — خلفية عند المرور' },
+      { name: '--rh-btn-primary-text', label: 'زر أساسي — نص وأيقونة' },
+      { name: '--rh-btn-secondary-bg', label: 'زر ثانوي — خلفية' },
+      { name: '--rh-btn-secondary-text', label: 'زر ثانوي — نص وأيقونة' },
+      { name: '--rh-btn-secondary-border', label: 'زر ثانوي — حد' },
+      { name: '--rh-btn-ghost-text', label: 'زر شفاف — نص وأيقونة' },
+      { name: '--rh-btn-danger-bg', label: 'زر خطر — خلفية' },
+      { name: '--rh-btn-danger-text', label: 'زر خطر — نص وأيقونة' },
+    ],
+  },
+  {
+    id: 'nav',
+    label: 'القائمة الجانبية والأيقونات مع النص',
+    vars: [
+      { name: '--rh-nav-text', label: 'عنصر عادي — نص وأيقونة' },
+      { name: '--rh-nav-text-hover', label: 'عند المرور — نص وأيقونة' },
+      { name: '--rh-nav-active-text', label: 'الصفحة الحالية — نص وأيقونة' },
+      { name: '--rh-nav-hover-bg', label: 'خلفية عند المرور (شفاف)', pickerMode: 'alpha' },
+      { name: '--rh-nav-active-bg', label: 'خلفية الصفحة الحالية (شفاف)', pickerMode: 'alpha' },
     ],
   },
   {
