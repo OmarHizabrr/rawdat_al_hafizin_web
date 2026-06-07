@@ -82,6 +82,73 @@ function membersLoaderByKind(kind) {
   return null
 }
 
+function buildSimpleMemberDetails(kind, members) {
+  const list = members || []
+  if (kind === 'activity' || kind === 'dawra') {
+    return list
+      .map((m) => {
+        const contribution = String(m.memberContributionText || '').trim()
+        return {
+          userId: String(m.userId || '').trim(),
+          displayName: m.displayName || m.userId,
+          email: m.email || '',
+          role: m.role || '',
+          hasContribution: Boolean(contribution),
+          contribution: contribution || '—',
+          contributionUpdatedAt: m.memberContributionUpdatedAt || '',
+        }
+      })
+      .sort((a, b) => Number(b.hasContribution) - Number(a.hasContribution))
+  }
+  if (kind === 'exam') {
+    return list
+      .map((m) => ({
+        userId: String(m.userId || '').trim(),
+        displayName: m.displayName || m.userId,
+        email: m.email || '',
+        role: m.role || '',
+        examSelfReportStatus: String(m.examSelfReportStatus || '').trim(),
+        examSelfReportNotes: String(m.examSelfReportNotes || '').trim(),
+        examSelfReportUpdatedAt: m.examSelfReportUpdatedAt || '',
+        isComplete: String(m.examSelfReportStatus || '').trim() === 'completed',
+      }))
+      .sort((a, b) => Number(b.isComplete) - Number(a.isComplete))
+  }
+  if (kind === 'remote_tasmee') {
+    return list
+      .map((m) => ({
+        userId: String(m.userId || '').trim(),
+        displayName: m.displayName || m.userId,
+        email: m.email || '',
+        role: m.role || '',
+        joinedAt: pickFirstDate(m.joinedAt, m.createdAt, m.updatedAt),
+      }))
+      .sort((a, b) => asMs(b.joinedAt) - asMs(a.joinedAt))
+  }
+  return []
+}
+
+function buildGroupSummary(kind, members, memberDetails) {
+  const count = (members || []).length
+  if (kind === 'activity' || kind === 'dawra') {
+    const withContribution = (memberDetails || []).filter((r) => r.hasContribution).length
+    return {
+      members: count,
+      withContribution,
+      withoutContribution: Math.max(0, count - withContribution),
+    }
+  }
+  if (kind === 'exam') {
+    const examsCompleted = (memberDetails || []).filter((r) => r.isComplete).length
+    return {
+      members: count,
+      examsCompleted,
+      examsPending: Math.max(0, count - examsCompleted),
+    }
+  }
+  return { members: count }
+}
+
 export async function listEntitiesByKind(kind) {
   let docs = []
   if (kind === 'halaka') docs = await firestoreApi.getDocuments(firestoreApi.getHalakatCollection())
@@ -712,6 +779,7 @@ export async function buildGroupReport(kind, entityId, range = {}) {
     }
   }
 
+  const memberDetails = buildSimpleMemberDetails(kind, members || [])
   return {
     kind,
     entity: { id, ...entity },
@@ -724,8 +792,7 @@ export async function buildGroupReport(kind, entityId, range = {}) {
       mediaType: entity.mediaType || '',
     },
     members: members || [],
-    summary: {
-      members: (members || []).length,
-    },
+    memberDetails,
+    summary: buildGroupSummary(kind, members || [], memberDetails),
   }
 }

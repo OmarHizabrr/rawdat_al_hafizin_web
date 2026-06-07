@@ -1,0 +1,319 @@
+/* صفحة طباعة التقارير — مستند مستقل HTML+CSS */
+
+.rh-report-print {
+  min-height: 100vh;
+  margin: 0;
+  padding: 0;
+  background: #e8eaed;
+  color: #111;
+  font-family: Tahoma, 'Segoe UI', Arial, sans-serif;
+  direction: rtl;
+}
+
+.rh-report-print__toolbar {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding: 10px 16px;
+  background: #1a1a1a;
+  color: #f5f5f5;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.18);
+}
+
+.rh-report-print__toolbar-title {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.rh-report-print__toolbar-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.rh-report-print__btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.08);
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+  text-decoration: none;
+}
+
+.rh-report-print__btn:hover {
+  background: rgba(255, 255, 255, 0.16);
+}
+
+.rh-report-print__btn--primary {
+  background: #2563eb;
+  border-color: #2563eb;
+}
+
+.rh-report-print__btn--primary:hover {
+  background: #1d4ed8;
+}
+
+.rh-report-print__stage {
+  padding: 24px 16px 40px;
+  display: flex;
+  justify-content: center;
+}
+
+.rh-report-print__paper {
+  width: 100%;
+  max-width: 210mm;
+  min-height: 297mm;
+  padding: 14mm 12mm 18mm;
+  background: #fff;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.12);
+  box-sizing: border-box;
+}
+
+.rh-report-print__brand {
+  font-size: 11px;
+  letter-spacing: 0.03em;
+  color: #555;
+  margin-bottom: 6px;
+}
+
+.rh-report-print__title {
+  margin: 0 0 10px;
+  font-size: 20px;
+  font-weight: 700;
+  line-height: 1.35;
+  color: #000;
+}
+
+.rh-report-print__meta {
+  display: grid;
+  gap: 4px;
+  margin-bottom: 14px;
+  padding-bottom: 12px;
+  border-bottom: 2px solid #222;
+  font-size: 11.5px;
+  line-height: 1.6;
+  color: #333;
+}
+
+.rh-report-print__meta-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+}
+
+.rh-report-print__meta-label {
+  color: #666;
+  font-weight: 600;
+}
+
+.rh-report-print__kpis {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.rh-report-print__kpi {
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  padding: 8px 10px;
+  text-align: center;
+  background: #fafafa;
+}
+
+.rh-report-print__kpi strong {
+  display: block;
+  font-size: 17px;
+  line-height: 1.2;
+  color: #000;
+}
+
+.rh-report-print__kpi span {
+  display: block;
+  margin-top: 3px;
+  font-size: 10px;
+  color: #555;
+}
+
+.rh-report-print__section {
+  margin-top: 18px;
+  break-inside: auto;
+  page-break-inside: auto;
+}
+
+.rh-report-print__section-title {
+  margin: 0 0 8px;
+  padding: 6px 10px;
+  font-size: 14px;
+  font-weight: 700;
+  color: #000;
+  background: #f0f0f0;
+  border-right: 4px solid #333;
+  break-after: avoid;
+  page-break-after: avoid;
+}
+
+.rh-report-print__table-wrap {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.rh-report-print__table {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: auto;
+  font-size: 11.5px;
+}
+
+.rh-report-print__table th,
+.rh-report-print__table td {
+  border: 1px solid #bbb;
+  padding: 6px 7px;
+  text-align: right;
+  vertical-align: top;
+  word-wrap: break-word;
+  overflow-wrap: anywhere;
+  white-space: normal;
+  hyphens: auto;
+}
+
+.rh-report-print__table th {
+  background: #ececec;
+  font-weight: 700;
+  color: #111;
+}
+
+.rh-report-print__table tbody tr:nth-child(even) td {
+  background: #fafafa;
+}
+
+.rh-report-print__empty {
+  margin: 0;
+  padding: 12px;
+  font-size: 12px;
+  color: #666;
+  border: 1px dashed #ccc;
+  text-align: center;
+}
+
+.rh-report-print__footer {
+  margin-top: 20px;
+  padding-top: 10px;
+  border-top: 1px solid #aaa;
+  font-size: 10px;
+  color: #555;
+  text-align: center;
+}
+
+.rh-report-print__error {
+  max-width: 480px;
+  margin: 48px auto;
+  padding: 24px;
+  text-align: center;
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+}
+
+.rh-report-print__error h1 {
+  margin: 0 0 8px;
+  font-size: 18px;
+}
+
+.rh-report-print__error p {
+  margin: 0 0 16px;
+  color: #555;
+  font-size: 14px;
+}
+
+@media print {
+  @page {
+    size: A4 portrait;
+    margin: 12mm 10mm 16mm;
+  }
+
+  .rh-report-print {
+    background: #fff !important;
+  }
+
+  .rh-report-print__toolbar,
+  .no-print {
+    display: none !important;
+  }
+
+  .rh-report-print__stage {
+    padding: 0 !important;
+    display: block !important;
+  }
+
+  .rh-report-print__paper {
+    max-width: none !important;
+    width: auto !important;
+    min-height: 0 !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    box-shadow: none !important;
+  }
+
+  .rh-report-print__table-wrap {
+    overflow: visible !important;
+  }
+
+  .rh-report-print__table {
+    font-size: 9.5px;
+    table-layout: fixed;
+  }
+
+  .rh-report-print__table th,
+  .rh-report-print__table td {
+    padding: 4px 5px;
+  }
+
+  .rh-report-print__kpi {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  .rh-report-print__section-title {
+    break-after: avoid;
+    page-break-after: avoid;
+  }
+
+  .rh-report-print__table thead {
+    display: table-header-group;
+  }
+
+  .rh-report-print__table tr {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  .rh-report-print__table tbody tr:nth-child(even) td {
+    background: #f7f7f7 !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  .rh-report-print__table th {
+    background: #e8e8e8 !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  .rh-report-print__kpi {
+    background: #f5f5f5 !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+}

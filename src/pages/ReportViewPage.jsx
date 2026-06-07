@@ -48,7 +48,7 @@ import {
   parseHijriYmdString,
 } from '../utils/hijriDates.js'
 import { elementToPdfBlob, shareOrDownloadPdf } from '../utils/reportPdf.js'
-import { collectPrintSectionsFromReport } from '../utils/reportPrintSections.js'
+import { collectPrintKpisFromReport, collectPrintSectionsFromReport } from '../utils/reportPrintSections.js'
 import { printMultiSectionReport, printSingleTable as printSingleTableDoc } from '../utils/reportPrintUtils.js'
 import { studentProgressLink } from '../utils/studentProgressLink.js'
 import { Button, RhDatePickerField, SearchableSelect, useToast } from '../ui/index.js'
@@ -457,9 +457,21 @@ export default function ReportViewPage() {
       formatExamSelfReportSummary,
       showEntityOwner,
     })
+    const kpis = collectPrintKpisFromReport(reportData, {
+      plans: str('layout.nav_plans'),
+      halakat: str('layout.nav_halakat'),
+      activities: str('layout.nav_activities'),
+      exams: str('layout.nav_exams'),
+      awrad: str('layout.nav_awrad'),
+      pages: str('reports.kpi_pages'),
+      members: str('reports.kpi_members'),
+      sessions: str('reports.kpi_sessions'),
+      attendance: str('reports.kpi_attendance'),
+    })
     const ok = printMultiSectionReport({
       documentTitle: str('reports.print_title'),
       sections,
+      kpis,
       printContext: sectionPrintContext,
     })
     if (!ok) toast.warning('تعذّر فتح نافذة الطباعة. تحقّق من حظر النوافذ المنبثقة.', '')
@@ -713,7 +725,14 @@ export default function ReportViewPage() {
     if (reportData.kind === 'teacher') return TEACHER_TABS
     return GROUP_TABS.filter((t) => {
       if (t.id === 'sessions' || t.id === 'attendance') return reportData.kind === 'halaka'
-      if (t.id === 'progress') return reportData.kind === 'plan' || reportData.kind === 'halaka'
+      if (t.id === 'progress') {
+        return (
+          reportData.kind === 'plan' ||
+          reportData.kind === 'halaka' ||
+          (['activity', 'exam', 'dawra', 'remote_tasmee'].includes(reportData.kind) &&
+            reportData.memberDetails?.length)
+        )
+      }
       return true
     })
   }, [reportData])
@@ -1221,6 +1240,18 @@ export default function ReportViewPage() {
                 <div className="card rh-reports__kpi"><strong>{reportData.summary.awradRecords ?? 0}</strong><span>سجلات الأوراد</span></div>
               </>
             )}
+            {(reportData.kind === 'activity' || reportData.kind === 'dawra') && (
+              <>
+                <div className="card rh-reports__kpi"><strong>{reportData.summary.withContribution ?? 0}</strong><span>سجّلوا إنجازاً</span></div>
+                <div className="card rh-reports__kpi"><strong>{reportData.summary.withoutContribution ?? 0}</strong><span>لم يسجّلوا بعد</span></div>
+              </>
+            )}
+            {reportData.kind === 'exam' && (
+              <>
+                <div className="card rh-reports__kpi"><strong>{reportData.summary.examsCompleted ?? 0}</strong><span>أتمّوا الاختبار</span></div>
+                <div className="card rh-reports__kpi"><strong>{reportData.summary.examsPending ?? 0}</strong><span>لم يُتمّ بعد</span></div>
+              </>
+            )}
           </ReportKpiGrid>
           <SectionTable
             title="تفاصيل الكيان"
@@ -1306,6 +1337,81 @@ export default function ReportViewPage() {
                 ...r,
                 role: roleLabelAr(r.role),
                 latestAwradAt: formatArDateTime(r.latestAwradAt),
+              }))}
+            />
+          )}
+          {reportData.kind === 'activity' && (
+            <SectionTable
+              title="إنجاز الأعضاء في النشاط"
+              tabId="progress"
+              columns={[
+                { key: 'displayName', label: 'الاسم' },
+                { key: 'role', label: 'الدور' },
+                { key: 'hasContributionLabel', label: 'سجّل إنجازاً؟' },
+                { key: 'contribution', label: 'المساهمة' },
+                { key: 'contributionUpdatedAt', label: 'آخر تحديث' },
+              ]}
+              rows={(reportData.memberDetails || []).map((r) => ({
+                ...r,
+                role: roleLabelAr(r.role),
+                hasContributionLabel: r.hasContribution ? 'نعم' : 'لا',
+                contributionUpdatedAt: formatArDateTime(r.contributionUpdatedAt),
+              }))}
+            />
+          )}
+          {reportData.kind === 'exam' && (
+            <SectionTable
+              title="إنجاز الأعضاء في الاختبار"
+              tabId="progress"
+              columns={[
+                { key: 'displayName', label: 'الاسم' },
+                { key: 'role', label: 'الدور' },
+                { key: 'examStatusLabel', label: 'الحالة' },
+                { key: 'examNotes', label: 'ملاحظات' },
+                { key: 'examUpdatedAt', label: 'آخر تحديث' },
+              ]}
+              rows={(reportData.memberDetails || []).map((r) => ({
+                ...r,
+                role: roleLabelAr(r.role),
+                examStatusLabel: formatExamSelfReportSummary(r),
+                examNotes: (r.examSelfReportNotes || '').trim() || '—',
+                examUpdatedAt: formatArDateTime(r.examSelfReportUpdatedAt),
+              }))}
+            />
+          )}
+          {reportData.kind === 'dawra' && (
+            <SectionTable
+              title="إنجاز الأعضاء في الدورة"
+              tabId="progress"
+              columns={[
+                { key: 'displayName', label: 'الاسم' },
+                { key: 'role', label: 'الدور' },
+                { key: 'hasContributionLabel', label: 'سجّل إنجازاً؟' },
+                { key: 'contribution', label: 'المساهمة' },
+                { key: 'contributionUpdatedAt', label: 'آخر تحديث' },
+              ]}
+              rows={(reportData.memberDetails || []).map((r) => ({
+                ...r,
+                role: roleLabelAr(r.role),
+                hasContributionLabel: r.hasContribution ? 'نعم' : 'لا',
+                contributionUpdatedAt: formatArDateTime(r.contributionUpdatedAt),
+              }))}
+            />
+          )}
+          {reportData.kind === 'remote_tasmee' && (
+            <SectionTable
+              title="تفاصيل أعضاء البث"
+              tabId="progress"
+              columns={[
+                { key: 'displayName', label: 'الاسم' },
+                { key: 'role', label: 'الدور' },
+                { key: 'email', label: 'البريد' },
+                { key: 'joinedAt', label: 'تاريخ الانضمام' },
+              ]}
+              rows={(reportData.memberDetails || []).map((r) => ({
+                ...r,
+                role: roleLabelAr(r.role),
+                joinedAt: formatArDateTime(r.joinedAt),
               }))}
             />
           )}

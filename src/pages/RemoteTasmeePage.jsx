@@ -29,6 +29,7 @@ import { useSiteContent } from '../context/useSiteContent.js'
 import { useHidePlanNavigation } from '../hooks/useHidePlanNavigation.js'
 import { useExploreUrlAutoOpen } from '../hooks/useExploreUrlAutoOpen.js'
 import { ExplorePublicTrigger } from '../components/explore/ExplorePublicTrigger.jsx'
+import { ReportQuickLink } from '../components/ReportQuickLink.jsx'
 import { exploreModalLink } from '../utils/exploreModalLink.js'
 import { firestoreApi } from '../services/firestoreApi.js'
 import { subscribeAllUsers } from '../services/adminUsersService.js'
@@ -858,6 +859,11 @@ export default function RemoteTasmeePage() {
         <div className="rh-plan-members-modal__body">
           <p className="rh-plans__saved-meta">
             الرمز: <code className="rh-plans__plan-id">{membersModal?.id}</code>
+            {membersModal?.id ? (
+              <span className="rh-plan-members-modal__report-link">
+                <ReportQuickLink kind="remote_tasmee" entityId={membersModal.id} label="تقرير البث الشامل" />
+              </span>
+            ) : null}
           </p>
           {can(PH, 'remote_tasmee_member_add') && (
             <section className="rh-plan-members-modal__section">

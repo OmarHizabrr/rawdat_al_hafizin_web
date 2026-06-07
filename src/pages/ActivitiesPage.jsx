@@ -28,6 +28,7 @@ import { useExploreUrlAutoOpen } from '../hooks/useExploreUrlAutoOpen.js'
 import { ExplorePublicTrigger } from '../components/explore/ExplorePublicTrigger.jsx'
 import { MemberProgressTools } from '../components/MemberProgressSnippet.jsx'
 import { ReportQuickLink } from '../components/ReportQuickLink.jsx'
+import { printMultiSectionReport } from '../utils/reportPrintUtils.js'
 import { useMemberProgressSummaries } from '../hooks/useMemberProgressSummaries.js'
 import { exploreModalLink } from '../utils/exploreModalLink.js'
 import { firestoreApi } from '../services/firestoreApi.js'
@@ -149,9 +150,6 @@ export default function ActivitiesPage() {
     [str],
   )
   const toast = useToast()
-  const onPrint = useCallback(() => {
-    if (typeof window !== 'undefined') window.print()
-  }, [])
   const { search } = useLocation()
   const [searchParams] = useSearchParams()
   const uidParam = searchParams.get('uid')?.trim() || ''
@@ -502,6 +500,50 @@ export default function ActivitiesPage() {
     siteTitle: branding.siteTitle,
     date: printedAt,
   })
+
+  const onPrint = useCallback(() => {
+    if (!saved.length) {
+      toast.info('لا توجد أنشطة للطباعة.', 'تنبيه')
+      return
+    }
+    const ok = printMultiSectionReport({
+      documentTitle: readOnly ? str('activities.hero_title_readonly') : str('activities.hero_title'),
+      kpis: [{ label: 'عدد الأنشطة', value: saved.length }],
+      sections: [
+        {
+          title: str('activities.section_yours'),
+          columns: [
+            { key: 'name', label: 'الاسم' },
+            { key: 'visibility', label: 'الظهور' },
+            { key: 'role', label: 'الدور' },
+            { key: 'kind', label: 'النوع' },
+            { key: 'format', label: 'الشكل' },
+            { key: 'startAt', label: 'البداية' },
+            { key: 'endAt', label: 'النهاية' },
+            { key: 'location', label: 'الموقع' },
+            { key: 'contribution', label: 'المساهمة' },
+          ],
+          rows: saved.map((row) => ({
+            name: row.name || '—',
+            visibility:
+              row.activityVisibility === 'public' ? str('activities.badge_public') : str('activities.badge_private'),
+            role: roleLabel(row.activityRole),
+            kind: activityKindLabel(row.activityKind),
+            format: activityFormatLabel(row.activityFormat, 'short'),
+            startAt: row.startAt ? formatActivityDateTimeAr(row.startAt) : '—',
+            endAt: row.endAt ? formatActivityDateTimeAr(row.endAt) : '—',
+            location: row.location || '—',
+            contribution: (row.memberContributionText || '').trim() || '—',
+          })),
+        },
+      ],
+      printContext: {
+        siteTitle: branding.siteTitle,
+        reportTypeLabel: 'قائمة الأنشطة',
+      },
+    })
+    if (!ok) toast.warning('تعذّر فتح صفحة الطباعة. تحقّق من حظر النوافذ المنبثقة.', 'تنبيه')
+  }, [saved, readOnly, str, roleLabel, branding.siteTitle, toast])
 
   return (
     <div className="rh-plans rh-activities-page">

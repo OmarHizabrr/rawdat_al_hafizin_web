@@ -308,6 +308,81 @@ export function collectPrintSectionsFromReport(reportData, helpers = {}) {
     })
   }
 
+  if (reportData.kind === 'activity' && reportData.memberDetails?.length) {
+    sections.push({
+      title: 'إنجاز الأعضاء في النشاط',
+      columns: [
+        { key: 'displayName', label: 'الاسم' },
+        { key: 'role', label: 'الدور' },
+        { key: 'hasContributionLabel', label: 'سجّل إنجازاً؟' },
+        { key: 'contribution', label: 'المساهمة' },
+        { key: 'contributionUpdatedAt', label: 'آخر تحديث' },
+      ],
+      rows: reportData.memberDetails.map((r) => ({
+        ...r,
+        role: role(r.role),
+        hasContributionLabel: r.hasContribution ? 'نعم' : 'لا',
+        contributionUpdatedAt: fmt(r.contributionUpdatedAt),
+      })),
+    })
+  }
+
+  if (reportData.kind === 'exam' && reportData.memberDetails?.length) {
+    sections.push({
+      title: 'إنجاز الأعضاء في الاختبار',
+      columns: [
+        { key: 'displayName', label: 'الاسم' },
+        { key: 'role', label: 'الدور' },
+        { key: 'examStatusLabel', label: 'الحالة' },
+        { key: 'examNotes', label: 'ملاحظات' },
+        { key: 'examUpdatedAt', label: 'آخر تحديث' },
+      ],
+      rows: reportData.memberDetails.map((r) => ({
+        ...r,
+        role: role(r.role),
+        examStatusLabel: examSummary(r),
+        examNotes: (r.examSelfReportNotes || '').trim() || '—',
+        examUpdatedAt: fmt(r.examSelfReportUpdatedAt),
+      })),
+    })
+  }
+
+  if (reportData.kind === 'dawra' && reportData.memberDetails?.length) {
+    sections.push({
+      title: 'إنجاز الأعضاء في الدورة',
+      columns: [
+        { key: 'displayName', label: 'الاسم' },
+        { key: 'role', label: 'الدور' },
+        { key: 'hasContributionLabel', label: 'سجّل إنجازاً؟' },
+        { key: 'contribution', label: 'المساهمة' },
+        { key: 'contributionUpdatedAt', label: 'آخر تحديث' },
+      ],
+      rows: reportData.memberDetails.map((r) => ({
+        ...r,
+        role: role(r.role),
+        hasContributionLabel: r.hasContribution ? 'نعم' : 'لا',
+        contributionUpdatedAt: fmt(r.contributionUpdatedAt),
+      })),
+    })
+  }
+
+  if (reportData.kind === 'remote_tasmee' && reportData.memberDetails?.length) {
+    sections.push({
+      title: 'تفاصيل أعضاء البث',
+      columns: [
+        { key: 'displayName', label: 'الاسم' },
+        { key: 'role', label: 'الدور' },
+        { key: 'email', label: 'البريد' },
+        { key: 'joinedAt', label: 'تاريخ الانضمام' },
+      ],
+      rows: reportData.memberDetails.map((r) => ({
+        ...r,
+        role: role(r.role),
+        joinedAt: fmt(r.joinedAt),
+      })),
+    })
+  }
+
   if (reportData.kind === 'halaka' && reportData.memberDetails?.length) {
     sections.push({
       title: 'تفاصيل أعضاء الحلقة',
@@ -362,4 +437,83 @@ export function collectPrintSectionsFromReport(reportData, helpers = {}) {
   }
 
   return sections.filter((s) => s.rows?.length)
+}
+
+/** مؤشرات مختصرة تُعرض أعلى مستند الطباعة */
+export function collectPrintKpisFromReport(reportData, labels = {}) {
+  if (!reportData?.summary) return []
+  const s = reportData.summary
+  const L = {
+    plans: labels.plans || 'الخطط',
+    halakat: labels.halakat || 'الحلقات',
+    activities: labels.activities || 'الأنشطة',
+    exams: labels.exams || 'الاختبارات',
+    awrad: labels.awrad || 'الأوراد',
+    pages: labels.pages || 'الصفحات',
+    members: labels.members || 'الأعضاء',
+    sessions: labels.sessions || 'الجلسات',
+    attendance: labels.attendance || 'الحضور',
+    avgProgress: labels.avgProgress || 'متوسط الإنجاز',
+    awradRecords: labels.awradRecords || 'سجلات الأوراد',
+    studentsRecorded: labels.studentsRecorded || 'طلاب مسجّلون',
+    pagesRecorded: labels.pagesRecorded || 'صفحات مسجّلة',
+  }
+
+  if (reportData.kind === 'student') {
+    return [
+      { label: L.plans, value: s.plans ?? 0 },
+      { label: L.halakat, value: s.halakat ?? 0 },
+      { label: L.activities, value: s.activities ?? 0 },
+      { label: L.exams, value: s.exams ?? 0 },
+      { label: L.awrad, value: s.awrad ?? 0 },
+      { label: L.pages, value: s.totalPages ?? 0 },
+    ]
+  }
+
+  if (reportData.kind === 'teacher') {
+    return [
+      { label: L.halakat, value: s.halakat ?? 0 },
+      { label: L.plans, value: s.plans ?? 0 },
+      { label: L.exams, value: s.exams ?? 0 },
+      { label: L.sessions, value: s.sessions ?? 0 },
+      { label: L.studentsRecorded, value: s.studentsRecorded ?? 0 },
+      { label: L.pagesRecorded, value: s.pagesRecorded ?? 0 },
+    ]
+  }
+
+  if (reportData.kind === 'plan') {
+    return [
+      { label: L.members, value: s.members ?? 0 },
+      { label: L.avgProgress, value: `${s.avgProgress ?? 0}%` },
+      { label: L.pages, value: s.pagesTotal ?? 0 },
+      { label: L.awradRecords, value: s.awradRecords ?? 0 },
+    ]
+  }
+
+  if (reportData.kind === 'halaka') {
+    return [
+      { label: L.members, value: s.members ?? 0 },
+      { label: L.sessions, value: s.sessions ?? 0 },
+      { label: L.attendance, value: s.attendance ?? 0 },
+      { label: L.pages, value: s.pagesTotal ?? 0 },
+    ]
+  }
+
+  if (reportData.kind === 'activity' || reportData.kind === 'dawra') {
+    return [
+      { label: L.members, value: s.members ?? 0 },
+      { label: 'سجّلوا إنجازاً', value: s.withContribution ?? 0 },
+      { label: 'لم يسجّلوا', value: s.withoutContribution ?? 0 },
+    ]
+  }
+
+  if (reportData.kind === 'exam') {
+    return [
+      { label: L.members, value: s.members ?? 0 },
+      { label: 'أتمّوا الاختبار', value: s.examsCompleted ?? 0 },
+      { label: 'لم يُتمّ بعد', value: s.examsPending ?? 0 },
+    ]
+  }
+
+  return [{ label: L.members, value: s.members ?? 0 }]
 }

@@ -29,6 +29,7 @@ const ActivitiesPage = lazy(() => import('./pages/ActivitiesPage.jsx'))
 const ExploreRouteRedirect = lazy(() => import('./components/explore/ExploreRouteRedirect.jsx'))
 const ReportsHubPage = lazy(() => import('./pages/ReportsHubPage.jsx'))
 const ReportViewPage = lazy(() => import('./pages/ReportViewPage.jsx'))
+const ReportPrintPage = lazy(() => import('./pages/ReportPrintPage.jsx'))
 const StudentProgressPage = lazy(() => import('./pages/StudentProgressPage.jsx'))
 const SettingsPage = lazy(() => import('./pages/SettingsPage.jsx'))
 const ProfilePage = lazy(() => import('./pages/ProfilePage.jsx'))
@@ -107,6 +108,14 @@ export default function App() {
                 />
                 <Route element={<ProtectedRoute />}>
                   <Route path="/app/application" element={<ApplicationRequestPage />} />
+                  <Route
+                    path="/app/reports/print"
+                    element={
+                      <Suspense fallback={<FullPageLazyFallback />}>
+                        <ReportPrintPage />
+                      </Suspense>
+                    }
+                  />
                   <Route path="/app" element={<MainLayout />}>
                     <Route index element={<PageGuard pageId="home"><AppHomePage /></PageGuard>} />
                     <Route path="welcome" element={<PageGuard pageId="welcome"><WelcomePage /></PageGuard>} />

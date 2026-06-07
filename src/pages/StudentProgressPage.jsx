@@ -158,7 +158,30 @@ export default function StudentProgressPage() {
   const onPrint = useCallback(() => {
     if (!report) return
     const studentName = report.student?.displayName || targetUid
-    const sections = []
+    const sections = [
+      {
+        title: 'ملخص الإنجاز',
+        columns: [
+          { key: 'metric', label: 'المؤشر' },
+          { key: 'value', label: 'القيمة' },
+        ],
+        rows: [
+          { metric: 'متوسط إنجاز الخطط', value: `${report.summary.plansAvgPercent}%` },
+          {
+            metric: 'صفحات أنجزها / الهدف',
+            value: `${report.summary.plansPagesDone} / ${report.summary.plansPagesTarget}`,
+          },
+          {
+            metric: 'أنشطة سجّل فيها إنجازاً',
+            value: `${report.summary.activitiesWithContribution} / ${report.summary.activitiesCount}`,
+          },
+          {
+            metric: 'اختبارات أتمّها',
+            value: `${report.summary.examsCompleted} / ${report.summary.examsCount}`,
+          },
+        ],
+      },
+    ]
     if (report.plans.length) {
       sections.push({
         title: 'الخطط',
@@ -208,15 +231,32 @@ export default function StudentProgressPage() {
         })),
       })
     }
-    printMultiSectionReport({
+    const kpis = [
+      { label: 'متوسط إنجاز الخطط', value: `${report.summary.plansAvgPercent}%` },
+      {
+        label: 'صفحات أنجزها / الهدف',
+        value: `${report.summary.plansPagesDone} / ${report.summary.plansPagesTarget}`,
+      },
+      {
+        label: 'أنشطة سجّل فيها إنجازاً',
+        value: `${report.summary.activitiesWithContribution} / ${report.summary.activitiesCount}`,
+      },
+      {
+        label: 'اختبارات أتمّها',
+        value: `${report.summary.examsCompleted} / ${report.summary.examsCount}`,
+      },
+    ]
+    const ok = printMultiSectionReport({
       documentTitle: viewingOther ? `إنجاز ${studentName}` : 'تقرير إنجازي',
       sections,
+      kpis,
       printContext: {
         siteTitle: branding.siteTitle,
         entityName: studentName,
         reportTypeLabel: viewingOther ? 'تقرير إنجاز الطالب' : 'تقرير إنجازي',
       },
     })
+    if (!ok) toast.warning('تعذّر فتح صفحة الطباعة. تحقّق من حظر النوافذ المنبثقة.', 'تنبيه')
   }, [report, targetUid, viewingOther, branding.siteTitle])
 
   const crossItems = useMemo(
