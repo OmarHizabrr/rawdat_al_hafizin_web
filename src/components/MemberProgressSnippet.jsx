@@ -1,4 +1,5 @@
 import { MemberProgressPeek } from './MemberProgressPeek.jsx'
+import { ReportQuickLink } from './ReportQuickLink.jsx'
 
 /**
  * سطر مختصر: أنجز / بقي / أنشطة / اختبارات.
@@ -46,6 +47,7 @@ export function MemberProgressTools({ userId, summary, loading }) {
     <div className="rh-member-progress-tools">
       <MemberProgressSnippet summary={summary} loading={loading} />
       <MemberProgressPeek userId={userId} />
+      <ReportQuickLink kind="student" entityId={userId} label="تقرير شامل" iconOnly title="التقرير الشامل — كل الأقسام" />
     </div>
   )
 }

@@ -27,7 +27,8 @@ const DawratPage = lazy(() => import('./pages/DawratPage.jsx'))
 const AwradPage = lazy(() => import('./pages/AwradPage.jsx'))
 const ActivitiesPage = lazy(() => import('./pages/ActivitiesPage.jsx'))
 const ExploreRouteRedirect = lazy(() => import('./components/explore/ExploreRouteRedirect.jsx'))
-const ReportsPage = lazy(() => import('./pages/ReportsPage.jsx'))
+const ReportsHubPage = lazy(() => import('./pages/ReportsHubPage.jsx'))
+const ReportViewPage = lazy(() => import('./pages/ReportViewPage.jsx'))
 const StudentProgressPage = lazy(() => import('./pages/StudentProgressPage.jsx'))
 const SettingsPage = lazy(() => import('./pages/SettingsPage.jsx'))
 const ProfilePage = lazy(() => import('./pages/ProfilePage.jsx'))
@@ -167,7 +168,8 @@ export default function App() {
                       }
                     />
                     <Route path="activities" element={<PageGuard pageId="activities"><ActivitiesPage /></PageGuard>} />
-                    <Route path="reports" element={<PageGuard pageId="reports"><ReportsPage /></PageGuard>} />
+                    <Route path="reports" element={<PageGuard pageId="reports"><ReportsHubPage /></PageGuard>} />
+                    <Route path="reports/view" element={<PageGuard pageId="reports"><ReportViewPage /></PageGuard>} />
                     <Route path="student-progress" element={<StudentProgressPage />} />
                     <Route path="foundation" element={<PageGuard pageId="foundation"><FoundationPage /></PageGuard>} />
                     <Route

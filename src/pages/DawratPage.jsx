@@ -12,6 +12,7 @@ import { useHidePlanNavigation } from '../hooks/useHidePlanNavigation.js'
 import { useExploreUrlAutoOpen } from '../hooks/useExploreUrlAutoOpen.js'
 import { ExplorePublicTrigger } from '../components/explore/ExplorePublicTrigger.jsx'
 import { MemberProgressTools } from '../components/MemberProgressSnippet.jsx'
+import { ReportQuickLink } from '../components/ReportQuickLink.jsx'
 import { useMemberProgressSummaries } from '../hooks/useMemberProgressSummaries.js'
 import { exploreModalLink } from '../utils/exploreModalLink.js'
 import { firestoreApi } from '../services/firestoreApi.js'
@@ -855,6 +856,11 @@ export default function DawratPage() {
         <div className="rh-plan-members-modal__body">
           <p className="rh-plans__saved-meta">
             الرمز: <code className="rh-plans__plan-id">{membersModal?.id}</code>
+            {membersModal?.id ? (
+              <span className="rh-plan-members-modal__report-link">
+                <ReportQuickLink kind="dawra" entityId={membersModal.id} label="تقرير الدورة الشامل" />
+              </span>
+            ) : null}
           </p>
           {can(PH, 'dawra_member_add') && (
             <section className="rh-plan-members-modal__section">

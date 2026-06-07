@@ -77,6 +77,7 @@ import { PeekButton } from '../components/PeekButton.jsx'
 import { MemberProgressTools } from '../components/MemberProgressSnippet.jsx'
 import { useMemberProgressSummaries } from '../hooks/useMemberProgressSummaries.js'
 import { PlanResourceLinksBlock } from '../components/PlanResourceLinksBlock.jsx'
+import { ReportQuickLink } from '../components/ReportQuickLink.jsx'
 
 const WEEKDAYS = [
   { d: 0, label: 'الأحد' },
@@ -1588,6 +1589,11 @@ export default function PlansPage() {
         <div className="rh-plan-members-modal__body">
         <p className="rh-plans__saved-meta rh-plan-members-modal__plan-id">
           رمز الخطة: <code className="rh-plans__plan-id">{membersModalPlan?.id}</code>
+          {membersModalPlan?.id ? (
+            <span className="rh-plan-members-modal__report-link">
+              <ReportQuickLink kind="plan" entityId={membersModalPlan.id} label="تقرير الخطة الشامل" />
+            </span>
+          ) : null}
         </p>
 
         {can(PP, 'plan_member_add') && (

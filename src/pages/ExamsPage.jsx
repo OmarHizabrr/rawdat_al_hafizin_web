@@ -26,6 +26,7 @@ import { useHidePlanNavigation } from '../hooks/useHidePlanNavigation.js'
 import { useExploreUrlAutoOpen } from '../hooks/useExploreUrlAutoOpen.js'
 import { ExplorePublicTrigger } from '../components/explore/ExplorePublicTrigger.jsx'
 import { MemberProgressTools } from '../components/MemberProgressSnippet.jsx'
+import { ReportQuickLink } from '../components/ReportQuickLink.jsx'
 import { useMemberProgressSummaries } from '../hooks/useMemberProgressSummaries.js'
 import { exploreModalLink } from '../utils/exploreModalLink.js'
 import { firestoreApi } from '../services/firestoreApi.js'
@@ -885,6 +886,11 @@ export default function ExamsPage() {
         <div className="rh-plan-members-modal__body">
           <p className="rh-plans__saved-meta">
             الرمز: <code className="rh-plans__plan-id">{membersModal?.id}</code>
+            {membersModal?.id ? (
+              <span className="rh-plan-members-modal__report-link">
+                <ReportQuickLink kind="exam" entityId={membersModal.id} label="تقرير الاختبار الشامل" />
+              </span>
+            ) : null}
           </p>
           {membersModal
             ? (() => {

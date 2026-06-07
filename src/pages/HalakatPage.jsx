@@ -16,6 +16,7 @@ import {
 } from 'lucide-react'
 import { HapticLink } from '../ui/HapticLink.jsx'
 import { MemberProgressTools } from '../components/MemberProgressSnippet.jsx'
+import { ReportQuickLink } from '../components/ReportQuickLink.jsx'
 import { useMemberProgressSummaries } from '../hooks/useMemberProgressSummaries.js'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useLocation, useSearchParams } from 'react-router-dom'
@@ -1374,6 +1375,11 @@ export default function HalakatPage() {
         <div className="rh-plan-members-modal__body">
           <p className="rh-plans__saved-meta">
             الرمز: <code className="rh-plans__plan-id">{membersModal?.id}</code>
+            {membersModal?.id ? (
+              <span className="rh-plan-members-modal__report-link">
+                <ReportQuickLink kind="halaka" entityId={membersModal.id} label="تقرير الحلقة الشامل" />
+              </span>
+            ) : null}
           </p>
           {can(PH, 'halaka_member_add') && (
             <section className="rh-plan-members-modal__section">

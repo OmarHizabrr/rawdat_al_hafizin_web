@@ -11507,3 +11507,117 @@ a.rh-peek-btn {
     text-align: center;
   }
 }
+
+/* مركز التقارير */
+.rh-reports-hub__heading {
+  margin: 0 0 var(--rh-space-3);
+  font-size: var(--rh-text-lg);
+  color: var(--rh-text-heading);
+}
+
+.rh-reports-hub__cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: var(--rh-space-3);
+}
+
+.rh-reports-hub__card {
+  display: grid;
+  gap: var(--rh-space-2);
+  padding: var(--rh-space-4);
+  text-align: start;
+  border: 1px solid color-mix(in srgb, var(--rh-border) 85%, transparent);
+  background: color-mix(in srgb, var(--rh-surface) 88%, var(--rh-bg));
+  cursor: pointer;
+  font: inherit;
+  color: inherit;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.rh-reports-hub__card:hover,
+.rh-reports-hub__card--active {
+  border-color: var(--rh-primary);
+  box-shadow: var(--rh-shadow-sm);
+}
+
+.rh-reports-hub__card--active {
+  background: color-mix(in srgb, var(--rh-primary-muted) 45%, var(--rh-surface));
+}
+
+.rh-reports-hub__card strong {
+  font-size: var(--rh-text-base);
+}
+
+.rh-reports-hub__card span {
+  font-size: var(--rh-text-xs);
+  color: var(--rh-text-muted);
+  line-height: 1.5;
+}
+
+.rh-reports-hub__configure {
+  margin-top: var(--rh-space-2);
+}
+
+.rh-reports-hub__shortcut {
+  padding: var(--rh-space-4);
+  display: grid;
+  gap: var(--rh-space-2);
+}
+
+.rh-plan-members-modal__report-link {
+  display: block;
+  margin-top: var(--rh-space-2);
+}
+
+.rh-member-progress-tools .rh-peek-btn {
+  flex-shrink: 0;
+}
+
+.rh-reports-view__tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--rh-space-2);
+  padding: var(--rh-space-2);
+}
+
+.rh-reports-view__tab {
+  min-height: 2.5rem;
+  padding: 0 var(--rh-space-3);
+  border-radius: var(--rh-radius-md);
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--rh-text-muted);
+  font: inherit;
+  font-weight: 700;
+  font-size: var(--rh-text-sm);
+  cursor: pointer;
+}
+
+.rh-reports-view__tab--active {
+  background: color-mix(in srgb, var(--rh-primary-muted) 65%, var(--rh-surface));
+  border-color: color-mix(in srgb, var(--rh-primary) 35%, var(--rh-border));
+  color: var(--rh-primary);
+}
+
+@media screen {
+  .rh-print-capture.rh-print-capture--export .rh-print-doc__header,
+  .rh-print-capture.rh-print-capture--export .rh-print-doc__footer {
+    display: block !important;
+  }
+}
+
+@media print {
+  .rh-admin-plan-types__table-wrap {
+    overflow: visible !important;
+  }
+
+  .rh-admin-plan-types__table th {
+    position: static !important;
+  }
+
+  .rh-reports__table td,
+  .rh-reports__table th {
+    white-space: normal !important;
+    word-break: break-word;
+  }
+}

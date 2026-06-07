@@ -39,7 +39,55 @@ export function reportPrintDocumentStyles() {
     th, td { border: 1px solid #bbb; padding: 7px 8px; text-align: right; font-size: 12px; }
     th { background: #f0f0f0; font-weight: 600; }
     h2 { font-size: 15px; margin: 0 0 10px; font-weight: 700; }
+    .rh-print-doc__section { margin-top: 18px; page-break-inside: avoid; }
+    .rh-print-doc__section h2 { page-break-after: avoid; }
+    table { page-break-inside: auto; }
+    tr { page-break-inside: avoid; page-break-after: auto; }
   `
+}
+
+/**
+ * @param {object} p
+ * @param {string} p.documentTitle
+ * @param {string} [p.brandTitle]
+ * @param {string[]} [p.headerLines]
+ * @param {{ title: string, columns: { key: string, label: string }[], rows: Record<string, unknown>[] }[]} p.sections
+ * @param {string} [p.footerLine]
+ */
+export function buildMultiSectionReportPrintHtml({
+  documentTitle,
+  brandTitle,
+  headerLines = [],
+  sections = [],
+  footerLine,
+}) {
+  const metaHtml = headerLines.map((l) => `<div>${escapeHtml(l)}</div>`).join('')
+  const brand = brandTitle ? `<div class="rh-print-doc__brand">${escapeHtml(brandTitle)}</div>` : ''
+  const foot = footerLine ? `<div class="rh-print-doc__footer">${escapeHtml(footerLine)}</div>` : ''
+
+  const sectionsHtml = (sections || [])
+    .filter((s) => s?.rows?.length)
+    .map((section) => {
+      const head = (section.columns || []).map((c) => `<th>${escapeHtml(c.label || '')}</th>`).join('')
+      const body = (section.rows || [])
+        .map((row) => {
+          const cells = (section.columns || [])
+            .map((c) => `<td>${escapeHtml(row?.[c.key] ?? '—')}</td>`)
+            .join('')
+          return `<tr>${cells}</tr>`
+        })
+        .join('')
+      return `<section class="rh-print-doc__section"><h2>${escapeHtml(section.title || '')}</h2><table><thead><tr>${head}</tr></thead><tbody>${body}</tbody></table></section>`
+    })
+    .join('')
+
+  return `<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"/><title>${escapeHtml(
+    documentTitle,
+  )}</title><style>${reportPrintDocumentStyles()}</style></head><body>
+  <div class="rh-print-doc__header">${brand}<h1 class="rh-print-doc__h1">${escapeHtml(documentTitle)}</h1><div class="rh-print-doc__meta">${metaHtml}</div></div>
+  ${sectionsHtml}
+  ${foot}
+  </body></html>`
 }
 
 /**

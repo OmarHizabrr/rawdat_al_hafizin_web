@@ -9,6 +9,7 @@ import {
   GraduationCap,
   Layers,
   LayoutDashboard,
+  Printer,
   RefreshCw,
   Target,
 } from 'lucide-react'
@@ -16,9 +17,11 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useLocation, useSearchParams } from 'react-router-dom'
 import { CrossNav } from '../components/CrossNav.jsx'
 import { PERMISSION_PAGE_IDS } from '../config/permissionRegistry.js'
+import { reportViewPath } from '../config/reportKinds.js'
 import { isAdmin } from '../config/roles.js'
 import { useAuth } from '../context/useAuth.js'
 import { usePermissions } from '../context/usePermissions.js'
+import { printMultiSectionReport } from '../utils/reportPrintUtils.js'
 import { useSiteContent } from '../context/useSiteContent.js'
 import { useHidePlanNavigation } from '../hooks/useHidePlanNavigation.js'
 import { buildStudentProgressReport } from '../services/studentProgressService.js'
@@ -152,6 +155,70 @@ export default function StudentProgressPage() {
     setReloadTick((tick) => tick + 1)
   }, [])
 
+  const onPrint = useCallback(() => {
+    if (!report) return
+    const studentName = report.student?.displayName || targetUid
+    const sections = []
+    if (report.plans.length) {
+      sections.push({
+        title: 'الخطط',
+        columns: [
+          { key: 'name', label: 'الاسم' },
+          { key: 'progressPercent', label: 'الإنجاز %' },
+          { key: 'achievedPages', label: 'أنجز (ص)' },
+          { key: 'remainingPages', label: 'بقي (ص)' },
+          { key: 'targetPages', label: 'الهدف (ص)' },
+        ],
+        rows: report.plans.map((p) => ({
+          name: p.name,
+          progressPercent: `${Math.round(p.progressPercent || 0)}%`,
+          achievedPages: p.achievedPages,
+          remainingPages: p.remainingPages,
+          targetPages: p.targetPages,
+        })),
+      })
+    }
+    if (report.activities.length) {
+      sections.push({
+        title: 'الأنشطة',
+        columns: [
+          { key: 'name', label: 'الاسم' },
+          { key: 'status', label: 'الحالة' },
+          { key: 'contribution', label: 'المساهمة' },
+        ],
+        rows: report.activities.map((a) => ({
+          name: a.name,
+          status: a.hasContribution ? 'سجّل إنجازاً' : 'لم يُسجّل',
+          contribution: a.contribution || '—',
+        })),
+      })
+    }
+    if (report.exams.length) {
+      sections.push({
+        title: 'الاختبارات',
+        columns: [
+          { key: 'name', label: 'الاسم' },
+          { key: 'statusLabel', label: 'الحالة' },
+          { key: 'notes', label: 'ملاحظات' },
+        ],
+        rows: report.exams.map((e) => ({
+          name: e.name,
+          statusLabel: e.statusLabel,
+          notes: e.notes || '—',
+        })),
+      })
+    }
+    printMultiSectionReport({
+      documentTitle: viewingOther ? `إنجاز ${studentName}` : 'تقرير إنجازي',
+      sections,
+      printContext: {
+        siteTitle: branding.siteTitle,
+        entityName: studentName,
+        reportTypeLabel: viewingOther ? 'تقرير إنجاز الطالب' : 'تقرير إنجازي',
+      },
+    })
+  }, [report, targetUid, viewingOther, branding.siteTitle])
+
   const crossItems = useMemo(
     () => [
       { to: appLink('/app'), label: str('layout.nav_home') },
@@ -215,6 +282,17 @@ export default function StudentProgressPage() {
             className="rh-student-progress__refresh"
           >
             تحديث
+          </Button>
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            icon={Printer}
+            disabled={loading || !report}
+            onClick={onPrint}
+            className="rh-student-progress__refresh"
+          >
+            طباعة
           </Button>
         </div>
 
@@ -488,7 +566,7 @@ export default function StudentProgressPage() {
         <footer className="rh-student-progress__footer card">
           <p>تريد تقريراً مفصّلاً بفلاتر زمنية وجداول؟</p>
           <HapticLink
-            to={appLink(`/app/reports?reportKind=student&reportEntity=${encodeURIComponent(targetUid)}`)}
+            to={appLink(reportViewPath({ kind: 'student', entityId: targetUid }))}
             className="ui-btn ui-btn--secondary ui-btn--sm"
           >
             <RhIcon as={FileText} size={16} strokeWidth={RH_ICON_STROKE} />

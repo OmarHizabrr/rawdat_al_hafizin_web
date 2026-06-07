@@ -31,6 +31,7 @@ import { CrossNav } from '../components/CrossNav.jsx'
 import { AdminAdvancedPanel } from '../components/admin/AdminAdvancedPanel.jsx'
 import { ImagePickPreview } from '../components/ImagePickPreview.jsx'
 import { PeekButton } from '../components/PeekButton.jsx'
+import { ReportQuickLink } from '../components/ReportQuickLink.jsx'
 import { studentProgressLink } from '../utils/studentProgressLink.js'
 import { Button, Modal, SearchField, TextField, useToast } from '../ui/index.js'
 import { RhIcon, RH_ICON_STROKE } from '../ui/RhIcon.jsx'
@@ -539,6 +540,7 @@ export default function AdminUsersPage() {
                     title="تقرير إنجاز الطالب — أنجز / بقي"
                     to={studentProgressLink(u.uid)}
                   />
+                  <ReportQuickLink kind="student" entityId={u.uid} iconOnly title="التقرير الشامل" className="rh-peek-btn" />
                 </div>
               </div>
 

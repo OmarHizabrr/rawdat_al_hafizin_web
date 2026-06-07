@@ -1,20 +1,28 @@
 import { CalendarDate } from '@internationalized/date'
 import {
+  ArrowLeft,
   Calendar,
   Download,
   Eye,
   FileText,
-  Filter,
   FilterX,
   Link2,
   Printer,
+  RefreshCw,
   Share2,
 } from 'lucide-react'
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { CrossNav } from '../components/CrossNav.jsx'
 import { PrintDocumentChrome } from '../components/PrintDocumentChrome.jsx'
+import { ReportQuickLink } from '../components/ReportQuickLink.jsx'
 import { HapticLink } from '../ui/HapticLink.jsx'
+import {
+  REPORT_KIND_OPTIONS,
+  REPORT_KIND_PERMISSION,
+  REPORT_RANGE_PRESETS,
+  reportViewPath,
+} from '../config/reportKinds.js'
 import { PERMISSION_PAGE_IDS } from '../config/permissionRegistry.js'
 import { useAuth } from '../context/useAuth.js'
 import { usePermissions } from '../context/usePermissions.js'
@@ -40,33 +48,46 @@ import {
   parseHijriYmdString,
 } from '../utils/hijriDates.js'
 import { elementToPdfBlob, shareOrDownloadPdf } from '../utils/reportPdf.js'
-import { buildStandaloneReportPrintHtml } from '../utils/reportPrintDocumentHtml.js'
+import { collectPrintSectionsFromReport } from '../utils/reportPrintSections.js'
+import { printMultiSectionReport, printSingleTable as printSingleTableDoc } from '../utils/reportPrintUtils.js'
 import { studentProgressLink } from '../utils/studentProgressLink.js'
 import { Button, RhDatePickerField, SearchableSelect, useToast } from '../ui/index.js'
 import { RH_ICON_STROKE, RhIcon } from '../ui/RhIcon.jsx'
 
 const PAGE_ID = PERMISSION_PAGE_IDS.reports
 
-const REPORT_KIND_OPTIONS = [
-  { value: 'student', label: 'تقرير طالب' },
-  { value: 'teacher', label: 'تقرير معلم' },
-  { value: 'halaka', label: 'تقرير حلقة' },
-  { value: 'plan', label: 'تقرير خطة' },
-  { value: 'activity', label: 'تقرير نشاط' },
-  { value: 'exam', label: 'تقرير اختبار' },
-  { value: 'dawra', label: 'تقرير دورة' },
-  { value: 'remote_tasmee', label: 'تقرير تسميع عن بُعد' },
+const STUDENT_TABS = [
+  { id: 'all', label: 'الكل' },
+  { id: 'plans', label: 'الخطط' },
+  { id: 'halakat', label: 'الحلقات' },
+  { id: 'activities', label: 'الأنشطة' },
+  { id: 'exams', label: 'الاختبارات' },
+  { id: 'dawrat', label: 'الدورات' },
+  { id: 'remote', label: 'التسميع' },
+  { id: 'awrad', label: 'الأوراد' },
+  { id: 'notifications', label: 'الإشعارات' },
 ]
 
-const RANGE_PRESETS = [
-  { value: 'today' },
-  { value: 'week' },
-  { value: 'month' },
-  { value: 'all' },
+const TEACHER_TABS = [
+  { id: 'all', label: 'الكل' },
+  { id: 'halakat', label: 'الحلقات' },
+  { id: 'memberships', label: 'الارتباطات' },
+  { id: 'sessions', label: 'الجلسات' },
+  { id: 'attendance', label: 'الحضور' },
+]
+
+const GROUP_TABS = [
+  { id: 'all', label: 'الكل' },
+  { id: 'details', label: 'التفاصيل' },
+  { id: 'members', label: 'الأعضاء' },
+  { id: 'progress', label: 'الإنجاز' },
+  { id: 'sessions', label: 'الجلسات' },
+  { id: 'attendance', label: 'الحضور' },
 ]
 
 /** سياق للطباعة الموحّدة داخل أقسام التقرير */
 const ReportPrintContext = createContext(null)
+const ReportTabContext = createContext({ activeTab: 'all' })
 
 /** يتوافق مع حالات تسجيل الإنجاز في صفحة الاختبارات */
 const EXAM_SELF_REPORT_LABELS_AR = {
@@ -134,35 +155,11 @@ function roleLabelAr(role) {
 }
 
 function printSingleTable(title, columns, rows, printContext) {
-  if (!rows?.length) return
-  const headerLines = []
-  if (printContext?.reportTypeLabel) headerLines.push(`نوع التقرير: ${printContext.reportTypeLabel}`)
-  if (printContext?.entityName) headerLines.push(`الكيان: ${printContext.entityName}`)
-  if (printContext?.fromYmd || printContext?.toYmd) {
-    headerLines.push(
-      `الفترة (تقويم أم القرى): ${printContext.fromYmd || '—'} → ${printContext.toYmd || '—'}`,
-    )
-  }
-  const footerLine = printContext?.siteTitle
-    ? `${printContext.siteTitle} · ${new Date().toLocaleString('ar-SA', { dateStyle: 'medium', timeStyle: 'short' })}`
-    : new Date().toLocaleString('ar-SA', { dateStyle: 'medium', timeStyle: 'short' })
+  printSingleTableDoc({ title, columns, rows, printContext })
+}
 
-  const html = buildStandaloneReportPrintHtml({
-    documentTitle: title,
-    brandTitle: printContext?.siteTitle,
-    headerLines,
-    tableTitle: title,
-    columns,
-    rows,
-    footerLine,
-  })
-  const win = window.open('', '_blank', 'noopener,noreferrer,width=1200,height=900')
-  if (!win) return
-  win.document.open()
-  win.document.write(html)
-  win.document.close()
-  win.focus()
-  win.print()
+function tabVisible(activeTab, tabId) {
+  return activeTab === 'all' || activeTab === tabId
 }
 
 function downloadSingleTableCsv(title, columns, rows) {
@@ -181,10 +178,18 @@ function downloadSingleTableCsv(title, columns, rows) {
   downloadCsvFile(csvRows, `report-table-${safeTitle || 'table'}-${stamp}.csv`)
 }
 
-function SectionTable({ title, columns, rows, actions, printContext: printContextProp }) {
+function ReportKpiGrid({ children }) {
+  const { activeTab } = useContext(ReportTabContext)
+  if (!tabVisible(activeTab, 'all')) return null
+  return <div className="rh-reports__kpis">{children}</div>
+}
+
+function SectionTable({ title, columns, rows, actions, printContext: printContextProp, tabId = 'all' }) {
   const ctxPrint = useContext(ReportPrintContext)
   const printContext = printContextProp ?? ctxPrint
+  const { activeTab } = useContext(ReportTabContext)
   if (!rows?.length) return null
+  if (!tabVisible(activeTab, tabId)) return null
   return (
     <div className="rh-settings-card rh-reports__section">
       <div className="rh-settings-card__head">
@@ -232,7 +237,7 @@ function SectionTable({ title, columns, rows, actions, printContext: printContex
   )
 }
 
-export default function ReportsPage() {
+export default function ReportViewPage() {
   const { user } = useAuth()
   const { can, canAccessPage } = usePermissions()
   const { str, branding } = useSiteContent()
@@ -253,22 +258,14 @@ export default function ReportsPage() {
   const [loadingEntities, setLoadingEntities] = useState(false)
   const [loadingReport, setLoadingReport] = useState(false)
   const [reportData, setReportData] = useState(null)
+  const [activeTab, setActiveTab] = useState('all')
   const reportCaptureRef = useRef(null)
 
   const canPrint = can(PAGE_ID, 'reports_print')
   const canExportCsv = can(PAGE_ID, 'reports_export_csv')
   const showEntityOwner = canViewCreator(can, PAGE_ID)
   const canRunForKind = useCallback(
-    (k) => {
-      if (k === 'student') return can(PAGE_ID, 'student_report')
-      if (k === 'teacher') return can(PAGE_ID, 'teacher_report')
-      if (k === 'halaka') return can(PAGE_ID, 'halaka_report')
-      if (k === 'plan') return can(PAGE_ID, 'plan_report')
-      if (k === 'activity') return can(PAGE_ID, 'activity_report')
-      if (k === 'exam') return can(PAGE_ID, 'exam_report')
-      if (k === 'dawra') return can(PAGE_ID, 'dawra_report')
-      return can(PAGE_ID, 'remote_tasmee_report')
-    },
+    (k) => Boolean(can(PAGE_ID, REPORT_KIND_PERMISSION[k])),
     [can],
   )
 
@@ -384,7 +381,7 @@ export default function ReportsPage() {
     const nextSearch = params.toString()
     const currentSearch = String(search || '').replace(/^\?/, '')
     if (nextSearch === currentSearch) return
-    navigate({ search: nextSearch ? `?${nextSearch}` : '' }, { replace: true })
+    navigate({ pathname: '/app/reports/view', search: nextSearch ? `?${nextSearch}` : '' }, { replace: true })
   }, [kind, entityId, fromDate, toDate, rangePreset, search, navigate])
 
   const appLink = useCallback(
@@ -418,6 +415,7 @@ export default function ReportsPage() {
             ? await buildTeacherReport(entities.find((u) => (u.uid || u.id) === entityId), range)
             : await buildGroupReport(kind, entityId, range)
       setReportData(result)
+      setActiveTab('all')
     } catch {
       toast.warning(str('reports.toast_failed'))
     } finally {
@@ -452,8 +450,19 @@ export default function ReportsPage() {
   ])
 
   const onPrint = () => {
-    if (!canPrint) return
-    if (typeof window !== 'undefined') window.print()
+    if (!canPrint || !reportData) return
+    const sections = collectPrintSectionsFromReport(reportData, {
+      formatArDateTime,
+      roleLabelAr,
+      formatExamSelfReportSummary,
+      showEntityOwner,
+    })
+    const ok = printMultiSectionReport({
+      documentTitle: str('reports.print_title'),
+      sections,
+      printContext: sectionPrintContext,
+    })
+    if (!ok) toast.warning('تعذّر فتح نافذة الطباعة. تحقّق من حظر النوافذ المنبثقة.', '')
   }
 
   const onExportCsv = () => {
@@ -698,15 +707,29 @@ export default function ReportsPage() {
     [appLink, hidePlanNavigation],
   )
 
+  const reportTabs = useMemo(() => {
+    if (!reportData) return []
+    if (reportData.kind === 'student') return STUDENT_TABS
+    if (reportData.kind === 'teacher') return TEACHER_TABS
+    return GROUP_TABS.filter((t) => {
+      if (t.id === 'sessions' || t.id === 'attendance') return reportData.kind === 'halaka'
+      if (t.id === 'progress') return reportData.kind === 'plan' || reportData.kind === 'halaka'
+      return true
+    })
+  }, [reportData])
+
   const onSharePdf = async () => {
     if (!canPrint || !reportData || !reportCaptureRef.current) return
     try {
       toast.info(str('reports.toast_pdf_generating'))
+      reportCaptureRef.current.classList.add('rh-print-capture--export')
       const blob = await elementToPdfBlob(reportCaptureRef.current)
       await shareOrDownloadPdf(blob, `report-${kind}-${entityId}.pdf`)
       toast.success(str('reports.toast_pdf_done'))
     } catch {
       toast.warning(str('reports.toast_pdf_failed'))
+    } finally {
+      reportCaptureRef.current?.classList.remove('rh-print-capture--export')
     }
   }
 
@@ -717,10 +740,16 @@ export default function ReportsPage() {
   return (
     <div className="rh-plans rh-reports">
       <header className="rh-plans__hero no-print">
+        <HapticLink to={appLink('/app/reports')} className="rh-student-progress__back">
+          <RhIcon as={ArrowLeft} size={18} strokeWidth={RH_ICON_STROKE} /> مركز التقارير
+        </HapticLink>
         <div className="rh-plans__hero-head">
           <div>
-            <h1 className="rh-plans__title">{str('reports.hero_title')}</h1>
-            <p className="rh-plans__desc">{str('reports.hero_desc')}</p>
+            <h1 className="rh-plans__title">
+              {REPORT_KIND_OPTIONS.find((k) => k.value === kind)?.label || str('reports.hero_title')}
+              {selectedEntityName ? `: ${selectedEntityName}` : ''}
+            </h1>
+            <p className="rh-plans__desc">تقرير شامل بكل الأقسام — استخدم التبويبات للتصفية أو اطبع التقرير كاملاً.</p>
             <CrossNav items={crossItems} className="rh-plans__cross" />
           </div>
           <div className="rh-plans__hero-actions">
@@ -739,6 +768,9 @@ export default function ReportsPage() {
             <Button type="button" variant="secondary" icon={Printer} onClick={onPrint} disabled={!canPrint || !reportData}>
               {str('reports.btn_print')}
             </Button>
+            <Button type="button" variant="secondary" icon={RefreshCw} onClick={build} disabled={!canBuild} loading={loadingReport}>
+              تحديث
+            </Button>
             <Button
               type="button"
               variant="secondary"
@@ -754,9 +786,7 @@ export default function ReportsPage() {
 
       <section className="rh-settings-card rh-reports__filters no-print">
         <div className="rh-settings-card__head">
-          <h2 className="rh-settings-card__title">
-            <RhIcon as={Filter} size={18} strokeWidth={RH_ICON_STROKE} /> {str('reports.filters_title')}
-          </h2>
+          <h2 className="rh-settings-card__title">{str('reports.filters_title')}</h2>
         </div>
         <div className="rh-reports__filters-grid">
           <SearchableSelect
@@ -797,7 +827,7 @@ export default function ReportsPage() {
           />
         </div>
         <div className="rh-reports__range-presets">
-          {RANGE_PRESETS.map((preset) => (
+          {REPORT_RANGE_PRESETS.map((preset) => (
             <Button
               key={preset.value}
               type="button"
@@ -818,6 +848,9 @@ export default function ReportsPage() {
               تقرير الإنجاز السريع
             </HapticLink>
           ) : null}
+          {entityId ? (
+            <ReportQuickLink kind={kind} entityId={entityId} label="فتح في مركز التقارير" />
+          ) : null}
           <Button type="button" variant="ghost" icon={FilterX} onClick={clearFilters}>
             {str('reports.btn_clear_filters')}
           </Button>
@@ -830,6 +863,26 @@ export default function ReportsPage() {
       {!reportData ? (
         <p className="rh-plans__empty">{str('reports.empty')}</p>
       ) : (
+        <ReportTabContext.Provider value={{ activeTab }}>
+          {reportTabs.length > 1 ? (
+            <nav className="rh-reports-view__tabs card no-print" aria-label="أقسام التقرير">
+              {reportTabs.map((tab) => (
+                <button
+                  key={tab.id}
+                  type="button"
+                  className={[
+                    'rh-reports-view__tab',
+                    activeTab === tab.id ? 'rh-reports-view__tab--active' : '',
+                  ]
+                    .filter(Boolean)
+                    .join(' ')}
+                  onClick={() => setActiveTab(tab.id)}
+                >
+                  {tab.label}
+                </button>
+              ))}
+            </nav>
+          ) : null}
         <ReportPrintContext.Provider value={sectionPrintContext}>
           <div ref={reportCaptureRef} className="rh-print-capture rh-reports__print-capture">
             <PrintDocumentChrome
@@ -852,16 +905,17 @@ export default function ReportsPage() {
             >
             {reportData.kind === 'student' ? (
         <section className="rh-reports__result">
-          <div className="rh-reports__kpis">
+          <ReportKpiGrid>
             <div className="card rh-reports__kpi"><strong>{reportData.summary.plans}</strong><span>{str('layout.nav_plans')}</span></div>
             <div className="card rh-reports__kpi"><strong>{reportData.summary.halakat}</strong><span>{str('layout.nav_halakat')}</span></div>
             <div className="card rh-reports__kpi"><strong>{reportData.summary.activities}</strong><span>{str('layout.nav_activities')}</span></div>
             <div className="card rh-reports__kpi"><strong>{reportData.summary.exams}</strong><span>{str('layout.nav_exams')}</span></div>
             <div className="card rh-reports__kpi"><strong>{reportData.summary.awrad}</strong><span>{str('layout.nav_awrad')}</span></div>
             <div className="card rh-reports__kpi"><strong>{reportData.summary.totalPages}</strong><span>{str('reports.kpi_pages')}</span></div>
-          </div>
+          </ReportKpiGrid>
           <SectionTable
             title="الخطط"
+            tabId="plans"
             columns={[
               { key: 'name', label: 'الاسم' },
               { key: 'role', label: 'الدور' },
@@ -881,6 +935,7 @@ export default function ReportsPage() {
           />
           <SectionTable
             title="الحلقات"
+            tabId="halakat"
             columns={[
               { key: 'name', label: 'الاسم' },
               { key: 'role', label: 'الدور' },
@@ -900,6 +955,7 @@ export default function ReportsPage() {
           />
           <SectionTable
             title="الأنشطة"
+            tabId="activities"
             columns={[
               { key: 'name', label: 'الاسم' },
               { key: 'role', label: 'الدور' },
@@ -926,6 +982,7 @@ export default function ReportsPage() {
           />
           <SectionTable
             title="الاختبارات"
+            tabId="exams"
             columns={[
               { key: 'name', label: 'الاسم' },
               { key: 'role', label: 'الدور' },
@@ -949,6 +1006,7 @@ export default function ReportsPage() {
           />
           <SectionTable
             title="الدورات"
+            tabId="dawrat"
             columns={[
               { key: 'name', label: 'الاسم' },
               { key: 'role', label: 'الدور' },
@@ -975,6 +1033,7 @@ export default function ReportsPage() {
           />
           <SectionTable
             title="التسميع عن بعد"
+            tabId="remote"
             columns={[
               { key: 'name', label: 'الاسم' },
               { key: 'role', label: 'الدور' },
@@ -994,6 +1053,7 @@ export default function ReportsPage() {
           />
           <SectionTable
             title="الأوراد"
+            tabId="awrad"
             columns={[
               { key: 'recordedAt', label: 'تاريخ الورد' },
               { key: 'pagesCount', label: 'عدد الصفحات' },
@@ -1009,6 +1069,7 @@ export default function ReportsPage() {
           />
           <SectionTable
             title="الإشعارات"
+            tabId="notifications"
             columns={[
               { key: 'id', label: 'الرمز' },
               { key: 'title', label: 'العنوان' },
@@ -1027,7 +1088,7 @@ export default function ReportsPage() {
         </section>
       ) : reportData.kind === 'teacher' ? (
         <section className="rh-reports__result">
-          <div className="rh-reports__kpis">
+          <ReportKpiGrid>
             <div className="card rh-reports__kpi"><strong>{reportData.summary.halakat}</strong><span>{str('layout.nav_halakat')}</span></div>
             <div className="card rh-reports__kpi"><strong>{reportData.summary.plans}</strong><span>{str('layout.nav_plans')}</span></div>
             <div className="card rh-reports__kpi"><strong>{reportData.summary.exams}</strong><span>{str('layout.nav_exams')}</span></div>
@@ -1035,9 +1096,10 @@ export default function ReportsPage() {
             <div className="card rh-reports__kpi"><strong>{reportData.summary.attendanceRecorded}</strong><span>تسجيلات حضور</span></div>
             <div className="card rh-reports__kpi"><strong>{reportData.summary.studentsRecorded}</strong><span>طلاب تم تسجيلهم</span></div>
             <div className="card rh-reports__kpi"><strong>{reportData.summary.pagesRecorded}</strong><span>{str('reports.kpi_pages')}</span></div>
-          </div>
+          </ReportKpiGrid>
           <SectionTable
             title="حلقات المعلم"
+            tabId="halakat"
             columns={[
               { key: 'name', label: 'الاسم' },
               { key: 'role', label: 'الدور' },
@@ -1052,6 +1114,7 @@ export default function ReportsPage() {
           />
           <SectionTable
             title="باقي ارتباطات المعلم"
+            tabId="memberships"
             columns={[
               { key: 'section', label: 'القسم' },
               { key: 'name', label: 'الاسم' },
@@ -1094,6 +1157,7 @@ export default function ReportsPage() {
           />
           <SectionTable
             title="جلسات سجّلها المعلم"
+            tabId="sessions"
             columns={[
               { key: 'title', label: 'العنوان' },
               { key: 'startedAt', label: 'البداية' },
@@ -1109,6 +1173,7 @@ export default function ReportsPage() {
           />
           <SectionTable
             title="سجلات الحضور التي أدخلها المعلم"
+            tabId="attendance"
             columns={[
               { key: 'userName', label: 'المستخدم' },
               { key: 'attendanceStatus', label: 'الحضور' },
@@ -1124,6 +1189,7 @@ export default function ReportsPage() {
           />
           <SectionTable
             title="ملخص تسجيلات المعلم حسب كل طالب"
+            tabId="attendance"
             columns={[
               { key: 'userName', label: 'المستخدم' },
               { key: 'recordsCount', label: 'عدد التسجيلات' },
@@ -1139,7 +1205,7 @@ export default function ReportsPage() {
         </section>
       ) : (
         <section className="rh-reports__result">
-          <div className="rh-reports__kpis">
+          <ReportKpiGrid>
             <div className="card rh-reports__kpi"><strong>{reportData.summary.members}</strong><span>{str('reports.kpi_members')}</span></div>
             {reportData.kind === 'halaka' && (
               <>
@@ -1148,9 +1214,17 @@ export default function ReportsPage() {
                 <div className="card rh-reports__kpi"><strong>{reportData.summary.pagesTotal}</strong><span>{str('reports.kpi_pages')}</span></div>
               </>
             )}
-          </div>
+            {reportData.kind === 'plan' && (
+              <>
+                <div className="card rh-reports__kpi"><strong>{reportData.summary.avgProgress ?? 0}%</strong><span>متوسط إنجاز الأعضاء</span></div>
+                <div className="card rh-reports__kpi"><strong>{reportData.summary.pagesTotal ?? 0}</strong><span>{str('reports.kpi_pages')}</span></div>
+                <div className="card rh-reports__kpi"><strong>{reportData.summary.awradRecords ?? 0}</strong><span>سجلات الأوراد</span></div>
+              </>
+            )}
+          </ReportKpiGrid>
           <SectionTable
             title="تفاصيل الكيان"
+            tabId="details"
             columns={[
               { key: 'name', label: 'الاسم' },
               { key: 'visibility', label: 'الظهور' },
@@ -1182,54 +1256,63 @@ export default function ReportsPage() {
               )
             }}
           />
-          {reportData.kind === 'activity' || reportData.kind === 'exam' || reportData.kind === 'dawra' ? (
+          <SectionTable
+            title={str('reports.members_title')}
+            tabId="members"
+            columns={[
+              { key: 'displayName', label: 'الاسم' },
+              { key: 'role', label: 'الدور' },
+              { key: 'email', label: 'البريد' },
+              ...(reportData.kind === 'activity' || reportData.kind === 'exam' || reportData.kind === 'dawra'
+                ? [
+                    {
+                      key: 'learnerNote',
+                      label:
+                        reportData.kind === 'exam'
+                          ? 'الإنجاز المُبلَغ'
+                          : reportData.kind === 'activity'
+                            ? 'مساهمة الطالب'
+                            : 'مساهمة العضو',
+                    },
+                  ]
+                : []),
+            ]}
+            rows={(reportData.members || []).map((m) => ({
+              displayName: m.displayName || m.userId,
+              role: roleLabelAr(m.role),
+              email: m.email || '',
+              learnerNote:
+                reportData.kind === 'exam'
+                  ? formatExamSelfReportSummary(m)
+                  : (m.memberContributionText || '').trim() || '—',
+            }))}
+          />
+          {reportData.kind === 'plan' && (
             <SectionTable
-              title={str('reports.members_title')}
+              title="إنجاز الأعضاء في الخطة"
+              tabId="progress"
               columns={[
                 { key: 'displayName', label: 'الاسم' },
                 { key: 'role', label: 'الدور' },
-                { key: 'email', label: 'البريد' },
-                {
-                  key: 'learnerNote',
-                  label:
-                    reportData.kind === 'exam'
-                      ? 'الإنجاز المُبلَغ'
-                      : reportData.kind === 'activity'
-                        ? 'مساهمة الطالب'
-                        : 'مساهمة العضو',
-                },
+                { key: 'progressPercent', label: 'نسبة الإنجاز %' },
+                { key: 'achievedPages', label: 'أنجز (ص)' },
+                { key: 'remainingPages', label: 'بقي (ص)' },
+                { key: 'targetPages', label: 'الهدف (ص)' },
+                { key: 'awradCount', label: 'عدد الأوراد' },
+                { key: 'pagesInAwrad', label: 'صفحات الأوراد' },
+                { key: 'latestAwradAt', label: 'آخر ورد' },
               ]}
-              rows={(reportData.members || []).map((m) => ({
-                displayName: m.displayName || m.userId,
-                role: roleLabelAr(m.role),
-                email: m.email || '',
-                learnerNote:
-                  reportData.kind === 'exam'
-                    ? formatExamSelfReportSummary(m)
-                    : (m.memberContributionText || '').trim() || '—',
+              rows={(reportData.memberDetails || []).map((r) => ({
+                ...r,
+                role: roleLabelAr(r.role),
+                latestAwradAt: formatArDateTime(r.latestAwradAt),
               }))}
             />
-          ) : (
-            <div className="rh-settings-card">
-              <div className="rh-settings-card__head">
-                <h3 className="rh-settings-card__title">{str('reports.members_title')}</h3>
-              </div>
-              <ul className="rh-members-chat-list">
-                {(reportData.members || []).map((m) => (
-                  <li key={m.userId} className="rh-members-chat__item">
-                    <div className="rh-members-chat__main">
-                      <strong>{m.displayName || m.userId}</strong>
-                      <span className="rh-plans__saved-badge">{roleLabelAr(m.role)}</span>
-                    </div>
-                    <span>{m.email || ''}</span>
-                  </li>
-                ))}
-              </ul>
-            </div>
           )}
           {reportData.kind === 'halaka' && (
             <SectionTable
               title="تفاصيل أعضاء الحلقة (شامل)"
+              tabId="progress"
               columns={[
                 { key: 'displayName', label: 'الاسم' },
                 { key: 'role', label: 'دوره في الحلقة' },
@@ -1258,6 +1341,7 @@ export default function ReportsPage() {
             <>
               <SectionTable
                 title="جلسات الحلقة"
+                tabId="sessions"
                 columns={[
                   { key: 'id', label: 'الرمز' },
                   { key: 'title', label: 'العنوان' },
@@ -1275,6 +1359,7 @@ export default function ReportsPage() {
               />
               <SectionTable
                 title="سجل الحضور والتسميع"
+                tabId="attendance"
                 columns={[
                   { key: 'sessionId', label: 'الجلسة' },
                   { key: 'userName', label: 'المستخدم' },
@@ -1299,6 +1384,7 @@ export default function ReportsPage() {
             </PrintDocumentChrome>
           </div>
         </ReportPrintContext.Provider>
+        </ReportTabContext.Provider>
       )}
     </div>
   )

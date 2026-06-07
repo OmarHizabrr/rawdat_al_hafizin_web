@@ -11,6 +11,7 @@ import { loadExamMembersWithProfiles } from '../utils/examsStorage.js'
 import { loadActivityMembersWithProfiles } from '../utils/activitiesStorage.js'
 import { loadDawratMembersWithProfiles } from '../utils/dawratStorage.js'
 import { loadRemoteTasmeeMembersWithProfiles } from '../utils/remoteTasmeeStorage.js'
+import { computePlanProgress } from '../utils/planProgress.js'
 
 function asMs(value) {
   if (!value) return 0
@@ -647,6 +648,66 @@ export async function buildGroupReport(kind, entityId, range = {}) {
         sessions: sessions.length,
         attendance: attendanceRows.length,
         pagesTotal,
+      },
+    }
+  }
+
+  if (kind === 'plan') {
+    const planRow = { id, ...entity }
+    const memberDetails = await Promise.all(
+      (members || []).map(async (m) => {
+        const memberUid = String(m.userId || '').trim()
+        const mAwrad = await loadAwrad(memberUid)
+        const planAwrad = maybeFilterByRange(
+          mAwrad.filter((w) => w.planId === id),
+          (r) => r.recordedAt || r.updatedAt || r.createdAt,
+          range,
+        )
+        const progress = computePlanProgress(planRow, mAwrad) || {
+          achievedPages: 0,
+          remainingPages: Number(planRow.totalTargetPages) || 0,
+          progressPercent: 0,
+          targetPages: Number(planRow.totalTargetPages) || 0,
+        }
+        return {
+          userId: memberUid,
+          displayName: m.displayName || memberUid,
+          email: m.email || '',
+          role: m.role || '',
+          awradCount: planAwrad.length,
+          pagesInAwrad: planAwrad.reduce((sum, r) => sum + Math.max(0, Number(r.pagesCount) || 0), 0),
+          achievedPages: progress.achievedPages || 0,
+          remainingPages: progress.remainingPages || 0,
+          progressPercent: Math.round(progress.progressPercent || 0),
+          targetPages: progress.targetPages || 0,
+          latestAwradAt:
+            planAwrad
+              .map((r) => pickFirstDate(r.recordedAt, r.updatedAt, r.createdAt))
+              .sort((a, b) => asMs(b) - asMs(a))[0] || '',
+        }
+      }),
+    )
+    const pagesTotal = memberDetails.reduce((sum, r) => sum + (r.pagesInAwrad || 0), 0)
+    return {
+      kind,
+      entity: planRow,
+      entityDetails: {
+        ...baseDetails,
+        dailyPages: entity.dailyPages || '',
+        totalTargetPages: entity.totalTargetPages || '',
+      },
+      members: members || [],
+      memberDetails: [...memberDetails].sort(
+        (a, b) => (b.progressPercent - a.progressPercent) || (b.pagesInAwrad - a.pagesInAwrad),
+      ),
+      summary: {
+        members: (members || []).length,
+        awradRecords: memberDetails.reduce((sum, r) => sum + (r.awradCount || 0), 0),
+        pagesTotal,
+        avgProgress:
+          memberDetails.length > 0
+            ? Math.round(memberDetails.reduce((sum, r) => sum + (r.progressPercent || 0), 0) / memberDetails.length)
+            : 0,
       },
     }
   }
