@@ -1,14 +1,10 @@
+import { BookOpen, Home, Settings } from 'lucide-react'
+
 import { buildPreviewDomStyle } from '../data/brandingPresets.js'
+import { RhIcon, RH_ICON_STROKE } from '../ui/RhIcon.jsx'
 
 /**
  * معاينة حية للهوية (مسودة النموذج فقط — لا تُحفظ حتى تضغط حفظ).
- * @param {'light' | 'dark'} props.previewMode
- * @param {(m: 'light' | 'dark') => void} props.onPreviewMode
- * @param {Record<string, string>} props.themeLight
- * @param {Record<string, string>} props.themeDark
- * @param {string} props.siteName
- * @param {string} props.siteTitle
- * @param {string} props.logoSrc
  */
 export function BrandingLivePreview({ previewMode, onPreviewMode, themeLight, themeDark, siteName, siteTitle, logoSrc }) {
   const draft = previewMode === 'dark' ? themeDark : themeLight
@@ -20,7 +16,7 @@ export function BrandingLivePreview({ previewMode, onPreviewMode, themeLight, th
     <div className="rh-live-preview card" style={style}>
       <div className="rh-live-preview__head">
         <h3 className="rh-live-preview__title">معاينة حية</h3>
-        <p className="rh-live-preview__subtitle">تنعكس تعديلاتك هنا قبل الحفظ — للوضع الذي تختاره:</p>
+        <p className="rh-live-preview__subtitle">تنعكس تعديلاتك فوراً — اختر الوضع:</p>
         <div className="rh-live-preview__mode" role="group" aria-label="وضع المعاينة">
           <button
             type="button"
@@ -51,23 +47,34 @@ export function BrandingLivePreview({ previewMode, onPreviewMode, themeLight, th
               <p className="eyebrow">سطر تعريفي (مثال)</p>
               <h1>{siteName.trim() || 'اسم الموقع'}</h1>
               <p className="subtitle">{titleShort || 'عنوان الموقع في المتصفح'}</p>
-              <button type="button" className="cta" disabled tabIndex={-1}>
-                زر دعوة (مثال)
+              <button type="button" className="cta ui-btn ui-btn--primary ui-btn--sm" disabled tabIndex={-1}>
+                زر دعوة
               </button>
             </div>
           </header>
 
           <main className="content rh-live-preview__content">
-            <section className="card">
-              <h2 style={{ color: 'var(--rh-text-heading)' }}>بطاقة داخل المنصة</h2>
-              <p className="lead">هذا النص يوضّح لون النص الرئيسي في البطاقات.</p>
-              <p style={{ color: 'var(--rh-text-muted)', fontSize: '0.9rem' }}>نص ثانوي — مثل التلميحات في النماذج.</p>
-              <p style={{ fontSize: '0.85rem', marginTop: '0.5rem' }}>
-                <a href="#preview" style={{ color: 'var(--rh-text-link)' }} onClick={(e) => e.preventDefault()}>
-                  رابط داخل النص (مثال)
+            <section className="card rh-live-preview__sample-card">
+              <h2 className="rh-live-preview__heading">بطاقة داخل المنصة</h2>
+              <p className="lead">نص رئيسي في الفقرات والبطاقات.</p>
+              <p className="rh-live-preview__muted">نص ثانوي — مثل التلميحات تحت الحقول.</p>
+              <p className="rh-live-preview__link-row">
+                <a href="#preview" className="rh-live-preview__inline-link" onClick={(e) => e.preventDefault()}>
+                  رابط داخل النص
                 </a>
               </p>
+              <div className="rh-live-preview__chips" aria-hidden>
+                <span className="rh-live-preview__chip rh-live-preview__chip--success">نجاح</span>
+                <span className="rh-live-preview__chip rh-live-preview__chip--warning">تحذير</span>
+                <span className="rh-live-preview__chip rh-live-preview__chip--danger">خطر</span>
+              </div>
             </section>
+
+            <div className="ui-field rh-live-preview__field">
+              <span className="ui-field__label">حقل نموذجي</span>
+              <div className="rh-live-preview__fake-input">نص توضيحي داخل الحقل…</div>
+              <p className="ui-field__hint">تلميح تحت الحقل.</p>
+            </div>
 
             <div className="rh-live-preview__mock-app">
               <aside className="rh-live-preview__mock-side" aria-hidden>
@@ -75,34 +82,43 @@ export function BrandingLivePreview({ previewMode, onPreviewMode, themeLight, th
                   <img src={logoSrc} alt="" width={28} height={28} className="rh-live-preview__mock-logo" />
                   <span className="rh-live-preview__mock-site">{siteName.trim() || 'الموقع'}</span>
                 </div>
-                <div className="rh-live-preview__mock-nav">
-                  <span className="rh-live-preview__mock-link rh-live-preview__mock-link--on">
-                    <span aria-hidden>◆ </span>الرئيسية
+                <nav className="rh-live-preview__mock-nav" aria-label="معاينة القائمة">
+                  <span className="rh-nav-link rh-nav-link--active" role="presentation">
+                    <span className="rh-nav-link__icon">
+                      <RhIcon as={Home} size={14} strokeWidth={RH_ICON_STROKE} />
+                    </span>
+                    <span className="rh-nav-link__label">الرئيسية</span>
                   </span>
-                  <span className="rh-live-preview__mock-link">
-                    <span aria-hidden>◇ </span>الخطط
+                  <span className="rh-nav-link" role="presentation">
+                    <span className="rh-nav-link__icon">
+                      <RhIcon as={BookOpen} size={14} strokeWidth={RH_ICON_STROKE} />
+                    </span>
+                    <span className="rh-nav-link__label">الخطط</span>
                   </span>
-                  <span className="rh-live-preview__mock-link">
-                    <span aria-hidden>◇ </span>الإعدادات
+                  <span className="rh-nav-link" role="presentation">
+                    <span className="rh-nav-link__icon">
+                      <RhIcon as={Settings} size={14} strokeWidth={RH_ICON_STROKE} />
+                    </span>
+                    <span className="rh-nav-link__label">الإعدادات</span>
                   </span>
-                </div>
+                </nav>
               </aside>
               <div className="rh-live-preview__mock-main">
-                <div className="rh-live-preview__mock-topbar">شريط علوي (مثال)</div>
+                <div className="rh-live-preview__mock-topbar">شريط علوي</div>
                 <div className="rh-live-preview__mock-card">
-                  <strong>محتوى الصفحة</strong>
-                  <p>أزرار وألوان أساسية:</p>
+                  <strong className="rh-live-preview__heading">محتوى الصفحة</strong>
+                  <p className="rh-live-preview__muted">أزرار حقيقية كما في الموقع:</p>
                   <div className="rh-live-preview__mock-btns">
-                    <button type="button" className="rh-live-preview__btn rh-live-preview__btn--primary">
+                    <button type="button" className="ui-btn ui-btn--primary ui-btn--sm" disabled tabIndex={-1}>
                       أساسي
                     </button>
-                    <button type="button" className="rh-live-preview__btn rh-live-preview__btn--secondary">
+                    <button type="button" className="ui-btn ui-btn--secondary ui-btn--sm" disabled tabIndex={-1}>
                       ثانوي
                     </button>
-                    <button type="button" className="rh-live-preview__btn rh-live-preview__btn--ghost">
+                    <button type="button" className="ui-btn ui-btn--ghost ui-btn--sm" disabled tabIndex={-1}>
                       شفاف
                     </button>
-                    <button type="button" className="rh-live-preview__btn rh-live-preview__btn--danger">
+                    <button type="button" className="ui-btn ui-btn--danger ui-btn--sm" disabled tabIndex={-1}>
                       خطر
                     </button>
                   </div>

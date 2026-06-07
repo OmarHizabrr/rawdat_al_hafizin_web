@@ -1,4 +1,4 @@
-import { ArrowLeft, Eraser, Plus, RotateCcw, Save, Trash2, X } from 'lucide-react'
+import { ArrowLeft, Eraser, Layers, LayoutTemplate, Menu, MousePointerClick, Palette, Plus, RotateCcw, Save, Sparkles, Sun, Moon, Trash2, Type, X } from 'lucide-react'
 import { HapticLink } from '../ui/HapticLink.jsx'
 import { startTransition, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 
@@ -6,7 +6,7 @@ import { BrandingColorRow } from '../components/BrandingColorRow.jsx'
 import { BrandingLivePreview } from '../components/BrandingLivePreview.jsx'
 import { SITE_DESCRIPTION, SITE_NAME, SITE_OG_IMAGE_PATH, SITE_TITLE } from '../config/site.js'
 import { BRANDING_COLOR_PRESETS } from '../data/brandingPresets.js'
-import { BRANDING_THEME_GROUPS } from '../data/brandingThemeFields.js'
+import { BRANDING_THEME_GROUP_HINTS, BRANDING_THEME_GROUPS } from '../data/brandingThemeFields.js'
 import { useAuth } from '../context/useAuth.js'
 import { useSiteContent } from '../context/useSiteContent.js'
 import { useTheme } from '../theme/useTheme.js'
@@ -21,6 +21,23 @@ import { RhIcon, RH_ICON_STROKE } from '../ui/RhIcon.jsx'
 function cloneThemeMap(map) {
   if (!map || typeof map !== 'object') return {}
   return { ...map }
+}
+
+const GROUP_ICONS = {
+  core: Palette,
+  surfaces: Layers,
+  text: Type,
+  buttons: MousePointerClick,
+  nav: Menu,
+  hero: LayoutTemplate,
+  semantic: Sparkles,
+}
+
+function scrollToBrandingGroup(mode, groupId) {
+  const el = document.getElementById(`branding-group-${mode}-${groupId}`)
+  if (!el) return
+  el.open = true
+  el.scrollIntoView({ behavior: 'smooth', block: 'start' })
 }
 
 export default function AdminBrandingPage() {
@@ -39,6 +56,7 @@ export default function AdminBrandingPage() {
   const [lightSelectKey, setLightSelectKey] = useState(0)
   const [darkSelectKey, setDarkSelectKey] = useState(0)
   const [previewMode, setPreviewMode] = useState(() => (appColorScheme === 'dark' ? 'dark' : 'light'))
+  const [colorEditMode, setColorEditMode] = useState(() => (appColorScheme === 'dark' ? 'dark' : 'light'))
   const [saveSubmitting, setSaveSubmitting] = useState(false)
   const [contactPhonesDraft, setContactPhonesDraft] = useState([])
   const logoUrlInputRef = useRef(null)
@@ -145,6 +163,16 @@ export default function AdminBrandingPage() {
     }
   }
 
+  const onColorEditModeChange = useCallback((mode) => {
+    setColorEditMode(mode)
+    setPreviewMode(mode)
+  }, [])
+
+  const colorMap = colorEditMode === 'dark' ? themeDark : themeLight
+  const setColorVar = colorEditMode === 'dark' ? setDarkVar : setLightVar
+  const onColorPreset = colorEditMode === 'dark' ? applyDarkPreset : applyLightPreset
+  const colorSelectKey = colorEditMode === 'dark' ? darkSelectKey : lightSelectKey
+
   const crossItems = [
     { to: '/app/admin', label: 'لوحة التحكم' },
     { to: '/app', label: 'الرئيسية' },
@@ -153,21 +181,50 @@ export default function AdminBrandingPage() {
     { to: '/app/settings', label: 'الإعدادات' },
   ]
 
-  const renderThemePanel = (title, description, map, setVar, mode, onPreset, selectKey) => (
+  const renderThemePanel = () => (
     <section className="rh-admin-branding__theme-panel card">
-      <h2 className="rh-admin-branding__step-title">{title}</h2>
-      <p className="rh-admin-branding__step-desc">{description}</p>
+      <h2 className="rh-admin-branding__step-title">٢ — ألوان الموقع</h2>
+      <p className="rh-admin-branding__step-desc">
+        اختر الوضع الفاتح أو الداكن، ثم عدّل المجموعة المناسبة. المعاينة على اليمين تتحدّث مباشرة.
+      </p>
+
+      <div className="rh-admin-branding__mode-tabs" role="tablist" aria-label="وضع تعديل الألوان">
+        <button
+          type="button"
+          role="tab"
+          aria-selected={colorEditMode === 'light'}
+          className={['rh-admin-branding__mode-tab', colorEditMode === 'light' ? 'rh-admin-branding__mode-tab--active' : '']
+            .filter(Boolean)
+            .join(' ')}
+          onClick={() => onColorEditModeChange('light')}
+        >
+          <RhIcon as={Sun} size={16} strokeWidth={RH_ICON_STROKE} aria-hidden />
+          الوضع الفاتح
+        </button>
+        <button
+          type="button"
+          role="tab"
+          aria-selected={colorEditMode === 'dark'}
+          className={['rh-admin-branding__mode-tab', colorEditMode === 'dark' ? 'rh-admin-branding__mode-tab--active' : '']
+            .filter(Boolean)
+            .join(' ')}
+          onClick={() => onColorEditModeChange('dark')}
+        >
+          <RhIcon as={Moon} size={16} strokeWidth={RH_ICON_STROKE} aria-hidden />
+          الوضع الداكن
+        </button>
+      </div>
 
       <div className="rh-admin-branding__preset-block">
-        <label className="rh-admin-branding__preset-label" htmlFor={`preset-${mode}`}>
+        <label className="rh-admin-branding__preset-label" htmlFor={`preset-${colorEditMode}`}>
           تعبئة سريعة بمجموعة ألوان جاهزة
         </label>
         <select
-          key={selectKey}
-          id={`preset-${mode}`}
+          key={colorSelectKey}
+          id={`preset-${colorEditMode}`}
           className="rh-admin-branding__preset-select"
           defaultValue=""
-          onChange={(e) => onPreset(e.target.value)}
+          onChange={(e) => onColorPreset(e.target.value)}
         >
           <option value="">— اختر مجموعة —</option>
           {BRANDING_COLOR_PRESETS.map((p) => (
@@ -178,25 +235,61 @@ export default function AdminBrandingPage() {
         </select>
       </div>
 
-      {BRANDING_THEME_GROUPS.map((group) => (
-        <details key={group.id} className="rh-admin-branding__details" open={['text', 'buttons', 'nav'].includes(group.id)}>
-          <summary className="rh-admin-branding__details-summary">{group.label}</summary>
-          <div className="rh-admin-branding__color-fields">
-            {group.vars.map(({ name, label: vlabel, useColorPicker, pickerMode }) => (
-              <BrandingColorRow
-                key={name}
-                label={vlabel}
-                name={name}
-                value={map[name] || ''}
-                onChange={setVar}
-                mode={mode}
-                useColorPicker={useColorPicker !== false}
-                pickerMode={pickerMode || 'hex'}
-              />
-            ))}
-          </div>
-        </details>
-      ))}
+      <div className="rh-admin-branding__group-jump" aria-label="انتقال سريع لمجموعات الألوان">
+        {BRANDING_THEME_GROUPS.map((group) => {
+          const GroupIcon = GROUP_ICONS[group.id] || Palette
+          return (
+            <button
+              key={group.id}
+              type="button"
+              className="rh-admin-branding__group-jump-btn"
+              onClick={() => scrollToBrandingGroup(colorEditMode, group.id)}
+            >
+              <RhIcon as={GroupIcon} size={14} strokeWidth={RH_ICON_STROKE} aria-hidden />
+              {group.label}
+            </button>
+          )
+        })}
+      </div>
+
+      {BRANDING_THEME_GROUPS.map((group) => {
+        const GroupIcon = GROUP_ICONS[group.id] || Palette
+        const hint = BRANDING_THEME_GROUP_HINTS[group.id]
+        return (
+          <details
+            key={group.id}
+            id={`branding-group-${colorEditMode}-${group.id}`}
+            className="rh-admin-branding__details"
+            open={['text', 'buttons', 'nav'].includes(group.id)}
+          >
+            <summary className="rh-admin-branding__details-summary">
+              <span className="rh-admin-branding__details-summary-inner">
+                <span className="rh-admin-branding__details-icon" aria-hidden>
+                  <RhIcon as={GroupIcon} size={18} strokeWidth={RH_ICON_STROKE} />
+                </span>
+                <span className="rh-admin-branding__details-text">
+                  <span className="rh-admin-branding__details-label">{group.label}</span>
+                  {hint ? <span className="rh-admin-branding__details-hint">{hint}</span> : null}
+                </span>
+              </span>
+            </summary>
+            <div className="rh-admin-branding__color-fields">
+              {group.vars.map(({ name, label: vlabel, useColorPicker, pickerMode }) => (
+                <BrandingColorRow
+                  key={name}
+                  label={vlabel}
+                  name={name}
+                  value={colorMap[name] || ''}
+                  onChange={setColorVar}
+                  mode={colorEditMode}
+                  useColorPicker={useColorPicker !== false}
+                  pickerMode={pickerMode || 'hex'}
+                />
+              ))}
+            </div>
+          </details>
+        )
+      })}
     </section>
   )
 
@@ -208,7 +301,7 @@ export default function AdminBrandingPage() {
             <RhIcon as={ArrowLeft} size={18} strokeWidth={RH_ICON_STROKE} /> لوحة التحكم
           </HapticLink>
         </div>
-        <h1 className="rh-admin-branding__title">هوية الموقع</h1>
+        <h1 className="rh-admin-branding__title">هوية الموقع والألوان</h1>
         <p className="rh-admin-branding__desc">
           خطوات بسيطة: النصوص والشعار أولاً، ثم ألوان النصوص والعناوين والروابط، والأزرار، والقائمة الجانبية مع
           أيقوناتها — للوضع الفاتح والداكن. استخدم القوائم الجاهزة أو منتقي الألوان، ثم احفظ.
@@ -219,7 +312,7 @@ export default function AdminBrandingPage() {
 
       <div className="rh-admin-branding__toolbar card">
         <Button type="button" variant="primary" icon={Save} loading={saveSubmitting} onClick={onSave}>
-          حفظ التغييرات في السحابة
+          حفظ التغييرات
         </Button>
         <Button
           type="button"
@@ -346,25 +439,7 @@ export default function AdminBrandingPage() {
         </Button>
       </section>
 
-      {renderThemePanel(
-        '٢ — ألوان الوضع الفاتح',
-        'عدّل النصوص والأزرار والقائمة الجانبية والأيقونات. افتح كل مجموعة واختر اللون — «مسح» يعيد الافتراضي.',
-        themeLight,
-        setLightVar,
-        'light',
-        applyLightPreset,
-        lightSelectKey,
-      )}
-
-      {renderThemePanel(
-        '٣ — ألوان الوضع الداكن',
-        'نفس الفكرة للوضع الداكن (عندما يختار المستخدم الوضع الداكن من الإعدادات).',
-        themeDark,
-        setDarkVar,
-        'dark',
-        applyDarkPreset,
-        darkSelectKey,
-      )}
+      {renderThemePanel()}
 
       <section className="rh-admin-branding__theme-actions card">
         <Button type="button" variant="secondary" icon={Eraser} onClick={() => setThemeLight({})}>
@@ -391,8 +466,8 @@ export default function AdminBrandingPage() {
 
       <Modal open={resetAllOpen} title="إعادة الوضع الافتراضي؟" onClose={() => setResetAllOpen(false)} size="sm">
         <p className="rh-admin-users__warn">
-          سيتم ملء هذا النموذج بالقيم البرمجية الافتراضية (الاسم، العنوان، الوصف، بدون شعار مخصّص، بدون ألوان مخصّصة). لن تُحفظ
-          التغييرات في Firebase حتى تضغط «حفظ التغييرات في السحابة».
+          سيتم ملء هذا النموذج بالقيم الافتراضية (الاسم، العنوان، الوصف، بدون شعار مخصّص، بدون ألوان مخصّصة). لن تُحفظ
+          التغييرات حتى تضغط «حفظ التغييرات».
         </p>
         <div className="rh-admin-users__modal-actions">
           <Button type="button" variant="danger" icon={RotateCcw} onClick={resetEntireFormToProgramDefaults}>

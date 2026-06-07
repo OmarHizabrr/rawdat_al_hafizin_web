@@ -2,6 +2,16 @@
  * متغيرات CSS قابلة للتعديل من «هوية الموقع».
  * القيم الفارغة في Firestore تعني الاعتماد على `tokens.css`.
  */
+export const BRANDING_THEME_GROUP_HINTS = {
+  core: 'اللون الرئيسي للموقع',
+  surfaces: 'خلفيات البطاقات والصفحات',
+  text: 'العناوين، الفقرات، الروابط',
+  buttons: 'جميع أزرار المنصة',
+  nav: 'القائمة الجانبية والأيقونات',
+  hero: 'الصفحة العامة للزوار',
+  semantic: 'رسائل النجاح والتحذير',
+}
+
 export const BRANDING_THEME_GROUPS = [
   {
     id: 'core',
