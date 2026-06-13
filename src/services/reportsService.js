@@ -12,6 +12,7 @@ import { loadActivityMembersWithProfiles } from '../utils/activitiesStorage.js'
 import { loadDawratMembersWithProfiles } from '../utils/dawratStorage.js'
 import { loadRemoteTasmeeMembersWithProfiles } from '../utils/remoteTasmeeStorage.js'
 import { computePlanProgress } from '../utils/planProgress.js'
+import { REPORT_SCOPE_ALL } from '../config/reportKinds.js'
 
 function asMs(value) {
   if (!value) return 0
@@ -361,6 +362,151 @@ async function loadUserMembershipRows(userId, kind) {
   return rows.filter(Boolean)
 }
 
+function halakaIdFromDocPath(docSnap) {
+  const path = String(docSnap?.ref?.path || '')
+  const parts = path.split('/')
+  const idx = parts.indexOf('halakat')
+  if (idx >= 0 && parts[idx + 1]) return parts[idx + 1]
+  return ''
+}
+
+function normalizeScopeId(value) {
+  const id = String(value || '').trim()
+  if (!id || id === REPORT_SCOPE_ALL) return ''
+  return id
+}
+
+function applyScopeFilter(rows, scopeId) {
+  const id = normalizeScopeId(scopeId)
+  if (!id) return rows || []
+  return (rows || []).filter((row) => String(row.id || '') === id)
+}
+
+function rowTouchesRange(row, range) {
+  const { fromMs, toMs } = toRangeMs(range)
+  if (!fromMs && !toMs) return true
+  const dateFields = [
+    'startAt',
+    'endAt',
+    'courseStart',
+    'courseEnd',
+    'joinedAt',
+    'memberContributionUpdatedAt',
+    'examSelfReportUpdatedAt',
+    'updatedAt',
+    'createdAt',
+  ]
+  for (const field of dateFields) {
+    if (inRange(row[field], fromMs, toMs)) return true
+  }
+  const start = asMs(row.startAt || row.courseStart)
+  const end = asMs(row.endAt || row.courseEnd || row.startAt || row.courseStart)
+  if (start && fromMs && toMs && start <= toMs && (end || start) >= fromMs) return true
+  return false
+}
+
+function maybeFilterMembershipRowsByRange(rows, range) {
+  const { fromMs, toMs } = toRangeMs(range)
+  if (!fromMs && !toMs) return rows || []
+  return (rows || []).filter((row) => rowTouchesRange(row, range))
+}
+
+function buildStudentPlanProgress(plans, awradAll, awradInPeriod) {
+  return (plans || []).map((plan) => {
+    const progress = computePlanProgress(plan, awradAll) || {
+      achievedPages: 0,
+      remainingPages: Number(plan.totalTargetPages) || 0,
+      progressPercent: 0,
+      targetPages: Number(plan.totalTargetPages) || 0,
+    }
+    const allForPlan = (awradAll || []).filter((w) => w.planId === plan.id)
+    const inPeriodForPlan = (awradInPeriod || []).filter((w) => w.planId === plan.id)
+    const latestAll = sortByRecent(allForPlan, (r) => pickFirstDate(r.recordedAt, r.updatedAt, r.createdAt))[0]
+    const latestInPeriod = sortByRecent(inPeriodForPlan, (r) =>
+      pickFirstDate(r.recordedAt, r.updatedAt, r.createdAt),
+    )[0]
+    return {
+      planId: plan.id,
+      name: plan.name || '',
+      role: plan.planRole || '',
+      visibility: plan.planVisibility || '',
+      dailyPages: plan.dailyPages ?? '—',
+      totalTargetPages: plan.totalTargetPages ?? '—',
+      achievedPages: progress.achievedPages ?? 0,
+      remainingPages: progress.remainingPages ?? 0,
+      targetPages: progress.targetPages ?? 0,
+      progressPercent: Math.round(progress.progressPercent ?? 0),
+      awradTotalCount: allForPlan.length,
+      awradInPeriodCount: inPeriodForPlan.length,
+      pagesTotal: allForPlan.reduce((sum, r) => sum + Math.max(0, Number(r.pagesCount) || 0), 0),
+      pagesInPeriod: inPeriodForPlan.reduce((sum, r) => sum + Math.max(0, Number(r.pagesCount) || 0), 0),
+      latestAwradAt: pickFirstDate(latestInPeriod?.recordedAt, latestInPeriod?.updatedAt, latestAll?.recordedAt),
+    }
+  })
+}
+
+async function loadStudentHalakaAttendance(uid, halakatList, range) {
+  const list = halakatList || []
+  const nested = await Promise.all(
+    list.map(async (h) => {
+      const sessions = sortByRecent(
+        maybeFilterByRange(
+          await loadHalakaSessions(h.id),
+          (s) => s.startedAt || s.createdAt || s.updatedAt,
+          range,
+        ),
+        (s) => pickFirstDate(s.startedAt, s.updatedAt, s.createdAt),
+      )
+      const sessionRows = await Promise.all(
+        sessions.map(async (session) => {
+          const rows = await loadSessionAttendance(h.id, session.id)
+          const mine = rows.find((r) => String(r.userId || '') === uid)
+          if (!mine) return null
+          return {
+            halakaId: h.id,
+            halakaName: h.name || '',
+            sessionId: session.id,
+            sessionTitle: session.title || 'جلسة',
+            sessionStartedAt: session.startedAt || '',
+            sessionEndedAt: session.endedAt || '',
+            sessionStatus: session.status || '',
+            attendanceStatus: mine.attendanceStatus || '',
+            pagesCount: mine.pagesCount ?? 0,
+            fromPage: mine.fromPage ?? '',
+            toPage: mine.toPage ?? '',
+            recordedAt: pickFirstDate(mine.updatedAt, mine.recordedAt),
+            recordedBy: mine.recordedBy || '',
+          }
+        }),
+      )
+      return sessionRows.filter(Boolean)
+    }),
+  )
+  const flat = nested.flat()
+  const teacherMap = await loadUserNamesByIds(flat.map((r) => r.recordedBy))
+  return sortByRecent(
+    flat.map((r) => ({
+      ...r,
+      recordedByName: teacherMap.get(String(r.recordedBy || '').trim()) || '',
+    })),
+    (r) => pickFirstDate(r.recordedAt, r.sessionStartedAt),
+  )
+}
+
+/** خيارات نطاق تقرير الطالب — خططه وحلقاته */
+export async function loadStudentScopeOptions(uid) {
+  const studentUid = String(uid || '').trim()
+  if (!studentUid) return { plans: [], halakat: [] }
+  const [plans, halakat] = await Promise.all([
+    loadUserMembershipRows(studentUid, 'plan'),
+    loadUserMembershipRows(studentUid, 'halaka'),
+  ])
+  return {
+    plans: plans.map((p) => ({ id: p.id, name: String(p.name || '').trim() || p.id })),
+    halakat: halakat.map((h) => ({ id: h.id, name: String(h.name || '').trim() || h.id })),
+  }
+}
+
 async function loadUserNamesByIds(userIds = []) {
   const map = new Map()
   const unique = [...new Set((userIds || []).map((id) => String(id || '').trim()).filter(Boolean))]
@@ -382,42 +528,68 @@ async function loadUserNamesByIds(userIds = []) {
   return map
 }
 
-export async function buildStudentReport(user, range = {}) {
+export async function buildStudentReport(user, range = {}, scope = {}) {
   const uid = String(user?.uid || '').trim()
   if (!uid) return null
-  const [plans, halakat, exams, activities, dawrat, remoteTasmee, awradDocs, notificationsDocs] = await Promise.all([
-    loadUserMembershipRows(uid, 'plan'),
-    loadUserMembershipRows(uid, 'halaka'),
-    loadUserMembershipRows(uid, 'exam'),
-    loadUserMembershipRows(uid, 'activity'),
-    loadUserMembershipRows(uid, 'dawra'),
-    loadUserMembershipRows(uid, 'remote_tasmee'),
-    loadAwrad(uid),
-    firestoreApi.getDocuments(firestoreApi.getUserNotificationsCollection(uid)),
+  const scopePlanId = normalizeScopeId(scope.planId)
+  const scopeHalakaId = normalizeScopeId(scope.halakaId)
+
+  const [plansAll, halakatAll, examsAll, activitiesAll, dawratAll, remoteTasmeeAll, awradDocs, notificationsDocs] =
+    await Promise.all([
+      loadUserMembershipRows(uid, 'plan'),
+      loadUserMembershipRows(uid, 'halaka'),
+      loadUserMembershipRows(uid, 'exam'),
+      loadUserMembershipRows(uid, 'activity'),
+      loadUserMembershipRows(uid, 'dawra'),
+      loadUserMembershipRows(uid, 'remote_tasmee'),
+      loadAwrad(uid),
+      firestoreApi.getDocuments(firestoreApi.getUserNotificationsCollection(uid)),
+    ])
+
+  const plans = applyScopeFilter(plansAll, scopePlanId)
+  const halakat = applyScopeFilter(halakatAll, scopeHalakaId)
+  const exams = maybeFilterMembershipRowsByRange(examsAll, range)
+  const activities = maybeFilterMembershipRowsByRange(activitiesAll, range)
+  const dawrat = maybeFilterMembershipRowsByRange(dawratAll, range)
+  const remoteTasmee = maybeFilterMembershipRowsByRange(remoteTasmeeAll, range)
+
+  let awradFiltered = maybeFilterByRange(awradDocs, (r) => r.recordedAt || r.updatedAt || r.createdAt, range)
+  if (scopePlanId) {
+    awradFiltered = awradFiltered.filter((r) => String(r.planId || '') === scopePlanId)
+  }
+
+  const planNameById = new Map(plansAll.map((p) => [String(p.id), String(p.name || '').trim() || 'خطة']))
+  const halakaNameById = new Map(halakatAll.map((h) => [String(h.id), String(h.name || '').trim() || 'حلقة']))
+
+  const [planProgress, halakaAttendance] = await Promise.all([
+    Promise.resolve(buildStudentPlanProgress(plans, awradDocs, awradFiltered)),
+    loadStudentHalakaAttendance(uid, halakat, range),
   ])
 
-  const planNameById = new Map(plans.map((p) => [String(p.id), String(p.name || '').trim() || 'خطة']))
-  const awrad = maybeFilterByRange(awradDocs, (r) => r.recordedAt || r.updatedAt || r.createdAt, range)
   const notifications = maybeFilterByRange(
     notificationsDocs.map((d) => ({ id: d.id, ...d.data() })),
     (r) => r.createdAt || r.updatedAt,
     range,
   )
+
   const studentRows = {
-    plans: sortByRecent(plans, (r) => pickFirstDate(r.updatedAt, r.createdAt, r.joinedAt)).map((r) => ({
+    plans: sortByRecent(plansAll, (r) => pickFirstDate(r.updatedAt, r.createdAt, r.joinedAt)).map((r) => ({
       id: r.id,
       name: r.name || '',
       role: r.planRole || '',
       visibility: r.planVisibility || '',
+      dailyPages: r.dailyPages ?? '—',
+      totalTargetPages: r.totalTargetPages ?? '—',
       createdAt: pickFirstDate(r.createdAt, r.createTimes),
       updatedAt: pickFirstDate(r.updatedAt, r.updatedTimes),
       joinedAt: r.joinedAt || '',
     })),
-    halakat: sortByRecent(halakat, (r) => pickFirstDate(r.updatedAt, r.createdAt, r.joinedAt)).map((r) => ({
+    halakat: sortByRecent(halakatAll, (r) => pickFirstDate(r.updatedAt, r.createdAt, r.joinedAt)).map((r) => ({
       id: r.id,
       name: r.name || '',
       role: r.halakaRole || '',
       visibility: r.halakaVisibility || '',
+      location: r.location || '',
       createdAt: pickFirstDate(r.createdAt, r.createTimes),
       updatedAt: pickFirstDate(r.updatedAt, r.updatedTimes),
       joinedAt: r.joinedAt || '',
@@ -434,34 +606,39 @@ export async function buildStudentReport(user, range = {}) {
       examSelfReportNotes: r.examSelfReportNotes || '',
       examSelfReportUpdatedAt: r.examSelfReportUpdatedAt || '',
     })),
-    activities: sortByRecent(activities, (r) => pickFirstDate(r.updatedAt, r.startAt, r.createdAt, r.joinedAt)).map((r) => ({
-      id: r.id,
-      name: r.name || '',
-      role: r.activityRole || '',
-      visibility: r.activityVisibility || '',
-      startAt: r.startAt || '',
-      endAt: r.endAt || '',
-      createdAt: pickFirstDate(r.createdAt, r.createTimes),
-      updatedAt: pickFirstDate(r.updatedAt, r.updatedTimes),
-      joinedAt: r.joinedAt || '',
-      memberContributionText: r.memberContributionText || '',
-      memberContributionUpdatedAt: r.memberContributionUpdatedAt || '',
-    })),
-    dawrat: sortByRecent(dawrat, (r) => pickFirstDate(r.updatedAt, r.courseStart, r.createdAt, r.joinedAt)).map((r) => ({
-      id: r.id,
-      name: r.name || '',
-      role: r.dawraRole || '',
-      visibility: r.dawraVisibility || '',
-      registrationStart: r.registrationStart || '',
-      registrationEnd: r.registrationEnd || '',
-      courseStart: r.courseStart || '',
-      courseEnd: r.courseEnd || '',
-      createdAt: pickFirstDate(r.createdAt, r.createTimes),
-      updatedAt: pickFirstDate(r.updatedAt, r.updatedTimes),
-      joinedAt: r.joinedAt || '',
-      memberContributionText: r.memberContributionText || '',
-      memberContributionUpdatedAt: r.memberContributionUpdatedAt || '',
-    })),
+    activities: sortByRecent(activities, (r) => pickFirstDate(r.updatedAt, r.startAt, r.createdAt, r.joinedAt)).map(
+      (r) => ({
+        id: r.id,
+        name: r.name || '',
+        role: r.activityRole || '',
+        visibility: r.activityVisibility || '',
+        startAt: r.startAt || '',
+        endAt: r.endAt || '',
+        location: r.location || '',
+        createdAt: pickFirstDate(r.createdAt, r.createTimes),
+        updatedAt: pickFirstDate(r.updatedAt, r.updatedTimes),
+        joinedAt: r.joinedAt || '',
+        memberContributionText: r.memberContributionText || '',
+        memberContributionUpdatedAt: r.memberContributionUpdatedAt || '',
+      }),
+    ),
+    dawrat: sortByRecent(dawrat, (r) => pickFirstDate(r.updatedAt, r.courseStart, r.createdAt, r.joinedAt)).map(
+      (r) => ({
+        id: r.id,
+        name: r.name || '',
+        role: r.dawraRole || '',
+        visibility: r.dawraVisibility || '',
+        registrationStart: r.registrationStart || '',
+        registrationEnd: r.registrationEnd || '',
+        courseStart: r.courseStart || '',
+        courseEnd: r.courseEnd || '',
+        createdAt: pickFirstDate(r.createdAt, r.createTimes),
+        updatedAt: pickFirstDate(r.updatedAt, r.updatedTimes),
+        joinedAt: r.joinedAt || '',
+        memberContributionText: r.memberContributionText || '',
+        memberContributionUpdatedAt: r.memberContributionUpdatedAt || '',
+      }),
+    ),
     remoteTasmee: sortByRecent(remoteTasmee, (r) => pickFirstDate(r.updatedAt, r.createdAt, r.joinedAt)).map((r) => ({
       id: r.id,
       name: r.name || r.meetingCode || '',
@@ -476,33 +653,58 @@ export async function buildStudentReport(user, range = {}) {
     })),
   }
 
+  const plansWithTarget = planProgress.filter((p) => (p.targetPages || 0) > 0)
+  const avgPlanProgress =
+    plansWithTarget.length > 0
+      ? Math.round(plansWithTarget.reduce((sum, p) => sum + (p.progressPercent || 0), 0) / plansWithTarget.length)
+      : 0
+
+  const halakaPagesRecorded = halakaAttendance.reduce((sum, r) => sum + Math.max(0, Number(r.pagesCount) || 0), 0)
+
   return {
     kind: 'student',
     entity: user,
-    modules: { plans, halakat, exams, activities, dawrat, remoteTasmee },
+    scope: {
+      planId: scopePlanId || REPORT_SCOPE_ALL,
+      halakaId: scopeHalakaId || REPORT_SCOPE_ALL,
+      planLabel: scopePlanId ? planNameById.get(scopePlanId) || scopePlanId : 'كل الخطط',
+      halakaLabel: scopeHalakaId ? halakaNameById.get(scopeHalakaId) || scopeHalakaId : 'كل الحلقات',
+    },
+    modules: { plans: plansAll, halakat: halakatAll, exams: examsAll, activities: activitiesAll, dawrat: dawratAll, remoteTasmee: remoteTasmeeAll },
     studentRows,
-    awrad: sortByRecent(awrad, (r) => pickFirstDate(r.recordedAt, r.updatedAt, r.createdAt)).map((r) => ({
+    planProgress: [...planProgress].sort(
+      (a, b) => (b.progressPercent - a.progressPercent) || (b.pagesInPeriod - a.pagesInPeriod),
+    ),
+    halakaAttendance,
+    awrad: sortByRecent(awradFiltered, (r) => pickFirstDate(r.recordedAt, r.updatedAt, r.createdAt)).map((r) => ({
       ...r,
       planName: planNameById.get(String(r.planId || '')) || '—',
     })),
     notifications: sortByRecent(notifications, (r) => pickFirstDate(r.createdAt, r.updatedAt)),
     summary: {
-      plans: plans.length,
-      halakat: halakat.length,
+      plans: plansAll.length,
+      halakat: halakatAll.length,
       exams: exams.length,
       activities: activities.length,
       dawrat: dawrat.length,
       remoteTasmee: remoteTasmee.length,
-      awrad: awrad.length,
+      awrad: awradFiltered.length,
       notifications: notifications.length,
-      totalPages: awrad.reduce((sum, r) => sum + Math.max(0, Number(r.pagesCount) || 0), 0),
+      totalPages: awradFiltered.reduce((sum, r) => sum + Math.max(0, Number(r.pagesCount) || 0), 0),
+      avgPlanProgress,
+      plansInScope: plans.length,
+      halakaAttendanceRecords: halakaAttendance.length,
+      halakaPagesRecorded,
+      pagesInScopePlans: planProgress.reduce((sum, p) => sum + (p.pagesInPeriod || 0), 0),
     },
   }
 }
 
-export async function buildTeacherReport(user, range = {}) {
+export async function buildTeacherReport(user, range = {}, scope = {}) {
   const uid = String(user?.uid || '').trim()
   if (!uid) return null
+  const scopeHalakaId = normalizeScopeId(scope.halakaId)
+
   const [plans, halakat, exams, activities, dawrat, remoteTasmee] = await Promise.all([
     loadUserMembershipRows(uid, 'plan'),
     loadUserMembershipRows(uid, 'halaka'),
@@ -512,23 +714,40 @@ export async function buildTeacherReport(user, range = {}) {
     loadUserMembershipRows(uid, 'remote_tasmee'),
   ])
 
+  const halakaNameById = new Map(halakat.map((h) => [String(h.id), String(h.name || '').trim() || 'حلقة']))
+
   const sessionsRaw = await firestoreApi.getCollectionGroupDocuments('sessions')
+  let teacherSessions = sessionsRaw
+    .map((d) => ({
+      id: d.id,
+      halakaId: halakaIdFromDocPath(d),
+      ...d.data(),
+    }))
+    .filter((s) => String(s.teacherUid || '') === uid)
+
+  if (scopeHalakaId) {
+    teacherSessions = teacherSessions.filter((s) => String(s.halakaId || '') === scopeHalakaId)
+  }
+
   const sessions = sortByRecent(
-    maybeFilterByRange(
-    sessionsRaw
-      .map((d) => ({ id: d.id, ...d.data() }))
-      .filter((s) => String(s.teacherUid || '') === uid),
-    (s) => s.startedAt || s.createdAt || s.updatedAt,
-    range,
-    ),
+    maybeFilterByRange(teacherSessions, (s) => s.startedAt || s.createdAt || s.updatedAt, range),
     (s) => pickFirstDate(s.startedAt, s.updatedAt, s.createdAt),
-  )
+  ).map((s) => ({
+    ...s,
+    halakaName: halakaNameById.get(String(s.halakaId || '')) || '—',
+  }))
 
   const attendanceRaw = await firestoreApi.getCollectionGroupDocuments('attendance')
   const attendanceRecordedRaw = maybeFilterByRange(
     attendanceRaw
-      .map((d) => ({ id: d.id, ...d.data() }))
-      .filter((a) => String(a.recordedBy || '') === uid),
+      .map((d) => ({
+        id: d.id,
+        halakaId: halakaIdFromDocPath(d),
+        sessionId: String(d.ref?.parent?.id || ''),
+        ...d.data(),
+      }))
+      .filter((a) => String(a.recordedBy || '') === uid)
+      .filter((a) => !scopeHalakaId || String(a.halakaId || '') === scopeHalakaId),
     (a) => a.updatedAt || a.recordedAt,
     range,
   )
@@ -537,6 +756,7 @@ export async function buildTeacherReport(user, range = {}) {
     attendanceRecordedRaw.map((a) => ({
       ...a,
       userName: userNameMap.get(String(a.userId || '').trim()) || String(a.userId || '').trim(),
+      halakaName: halakaNameById.get(String(a.halakaId || '')) || '—',
     })),
     (a) => pickFirstDate(a.updatedAt, a.recordedAt),
   )
@@ -597,6 +817,10 @@ export async function buildTeacherReport(user, range = {}) {
   return {
     kind: 'teacher',
     entity: user,
+    scope: {
+      halakaId: scopeHalakaId || REPORT_SCOPE_ALL,
+      halakaLabel: scopeHalakaId ? halakaNameById.get(scopeHalakaId) || scopeHalakaId : 'كل الحلقات',
+    },
     teacherRows,
     sessions,
     attendanceRecorded,

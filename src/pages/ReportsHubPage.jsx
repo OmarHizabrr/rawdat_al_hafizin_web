@@ -7,6 +7,7 @@ import {
   REPORT_KIND_OPTIONS,
   REPORT_KIND_PERMISSION,
   REPORT_RANGE_PRESETS,
+  REPORT_SCOPE_ALL,
   reportViewPath,
 } from '../config/reportKinds.js'
 import { PERMISSION_PAGE_IDS } from '../config/permissionRegistry.js'
@@ -18,6 +19,7 @@ import {
   listEntitiesByKind,
   loadTeachersDirectory,
   loadUsersDirectory,
+  loadStudentScopeOptions,
 } from '../services/reportsService.js'
 import { getImpersonateUid, withImpersonationQuery } from '../utils/impersonation.js'
 import {
@@ -62,6 +64,10 @@ export default function ReportsHubPage() {
   const [fromDate, setFromDate] = useState('')
   const [toDate, setToDate] = useState('')
   const [rangePreset, setRangePreset] = useState('all')
+  const [scopePlan, setScopePlan] = useState(REPORT_SCOPE_ALL)
+  const [scopeHalaka, setScopeHalaka] = useState(REPORT_SCOPE_ALL)
+  const [scopeOptions, setScopeOptions] = useState({ plans: [], halakat: [] })
+  const [loadingScope, setLoadingScope] = useState(false)
   const [entities, setEntities] = useState([])
   const [loadingEntities, setLoadingEntities] = useState(false)
 
@@ -136,6 +142,51 @@ export default function ReportsHubPage() {
       cancelled = true
     }
   }, [kind, canAccessPage, user])
+
+  useEffect(() => {
+    if (kind !== 'student' && kind !== 'teacher') {
+      setScopeOptions({ plans: [], halakat: [] })
+      setScopePlan(REPORT_SCOPE_ALL)
+      setScopeHalaka(REPORT_SCOPE_ALL)
+      return undefined
+    }
+    if (!entityId) {
+      setScopeOptions({ plans: [], halakat: [] })
+      return undefined
+    }
+    let cancelled = false
+    setLoadingScope(true)
+    loadStudentScopeOptions(entityId)
+      .then((opts) => {
+        if (cancelled) return
+        setScopeOptions(kind === 'teacher' ? { plans: [], halakat: opts.halakat || [] } : opts)
+      })
+      .catch(() => {
+        if (!cancelled) setScopeOptions({ plans: [], halakat: [] })
+      })
+      .finally(() => {
+        if (!cancelled) setLoadingScope(false)
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [kind, entityId])
+
+  const scopePlanOptions = useMemo(
+    () => [
+      { value: REPORT_SCOPE_ALL, label: 'كل الخطط' },
+      ...(scopeOptions.plans || []).map((p) => ({ value: p.id, label: p.name })),
+    ],
+    [scopeOptions.plans],
+  )
+
+  const scopeHalakaOptions = useMemo(
+    () => [
+      { value: REPORT_SCOPE_ALL, label: 'كل الحلقات' },
+      ...(scopeOptions.halakat || []).map((h) => ({ value: h.id, label: h.name })),
+    ],
+    [scopeOptions.halakat],
+  )
 
   const entityOptions = useMemo(() => toEntityOptions(entities), [entities])
   const isRangeInvalid = useMemo(() => {
@@ -216,6 +267,8 @@ export default function ReportsHubPage() {
           from: fromDate || undefined,
           to: toDate || undefined,
           rangePreset,
+          scopePlan: kind === 'student' ? scopePlan : undefined,
+          scopeHalaka: kind === 'student' || kind === 'teacher' ? scopeHalaka : undefined,
         }),
       ),
     )
@@ -324,6 +377,30 @@ export default function ReportsHubPage() {
           ))}
         </div>
         {isRangeInvalid ? <p className="rh-reports__range-error">{str('reports.range_invalid_hint')}</p> : null}
+        {(kind === 'student' || kind === 'teacher') && entityId ? (
+          <div className="rh-reports__scope-filters">
+            {kind === 'student' ? (
+              <SearchableSelect
+                label="نطاق الخطة"
+                options={scopePlanOptions}
+                value={scopePlan}
+                onChange={setScopePlan}
+                placeholder={loadingScope ? 'جاري التحميل…' : 'كل الخطط'}
+                searchPlaceholder={str('reports.search_placeholder')}
+                emptyText={str('reports.search_empty')}
+              />
+            ) : null}
+            <SearchableSelect
+              label="نطاق الحلقة"
+              options={scopeHalakaOptions}
+              value={scopeHalaka}
+              onChange={setScopeHalaka}
+              placeholder={loadingScope ? 'جاري التحميل…' : 'كل الحلقات'}
+              searchPlaceholder={str('reports.search_placeholder')}
+              emptyText={str('reports.search_empty')}
+            />
+          </div>
+        ) : null}
         <div className="rh-reports__filters-actions">
           <Button type="button" variant="primary" icon={FileText} disabled={!entityId || isRangeInvalid} onClick={openReport}>
             عرض التقرير الشامل

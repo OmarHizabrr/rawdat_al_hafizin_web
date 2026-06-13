@@ -22,6 +22,7 @@ import {
   REPORT_KIND_OPTIONS,
   REPORT_KIND_PERMISSION,
   REPORT_RANGE_PRESETS,
+  REPORT_SCOPE_ALL,
   reportViewPath,
 } from '../config/reportKinds.js'
 import { PERMISSION_PAGE_IDS } from '../config/permissionRegistry.js'
@@ -34,6 +35,7 @@ import {
   buildStudentReport,
   buildTeacherReport,
   listEntitiesByKind,
+  loadStudentScopeOptions,
   loadTeachersDirectory,
   loadUsersDirectory,
 } from '../services/reportsService.js'
@@ -71,6 +73,8 @@ const PAGE_ID = PERMISSION_PAGE_IDS.reports
 
 const STUDENT_TABS = [
   { id: 'all', label: 'الكل' },
+  { id: 'planProgress', label: 'إنجاز الخطط' },
+  { id: 'halakaRecords', label: 'حضور الحلقات' },
   { id: 'plans', label: 'الخطط' },
   { id: 'halakat', label: 'الحلقات' },
   { id: 'activities', label: 'الأنشطة' },
@@ -285,6 +289,10 @@ export default function ReportViewPage() {
   const [fromDate, setFromDate] = useState('')
   const [toDate, setToDate] = useState('')
   const [rangePreset, setRangePreset] = useState('all')
+  const [scopePlan, setScopePlan] = useState(REPORT_SCOPE_ALL)
+  const [scopeHalaka, setScopeHalaka] = useState(REPORT_SCOPE_ALL)
+  const [scopeOptions, setScopeOptions] = useState({ plans: [], halakat: [] })
+  const [loadingScope, setLoadingScope] = useState(false)
   const [entities, setEntities] = useState([])
   const [loadingEntities, setLoadingEntities] = useState(false)
   const [loadingReport, setLoadingReport] = useState(false)
@@ -319,6 +327,10 @@ export default function ReportViewPage() {
       setToDate(y >= 1900 && y <= 2199 ? gregorianYmdStringToHijriYmd(toParam) : toParam)
     }
     if (presetParam) setRangePreset(presetParam)
+    const scopePlanParam = String(params.get('scopePlan') || '').trim()
+    const scopeHalakaParam = String(params.get('scopeHalaka') || '').trim()
+    if (scopePlanParam) setScopePlan(scopePlanParam)
+    if (scopeHalakaParam) setScopeHalaka(scopeHalakaParam)
     didHydrateFromQueryRef.current = true
   }, [search])
 
@@ -341,6 +353,8 @@ export default function ReportViewPage() {
     setEntities([])
     if (prevKindRef.current !== null && prevKindRef.current !== kind) {
       setEntityId('')
+      setScopePlan(REPORT_SCOPE_ALL)
+      setScopeHalaka(REPORT_SCOPE_ALL)
     }
     prevKindRef.current = kind
     const run = async () => {
@@ -368,6 +382,56 @@ export default function ReportViewPage() {
       cancelled = true
     }
   }, [kind, canAccessPage, user])
+
+  useEffect(() => {
+    if (!canAccessPage(PAGE_ID)) return
+    if (kind !== 'student' && kind !== 'teacher') {
+      setScopeOptions({ plans: [], halakat: [] })
+      return undefined
+    }
+    if (!entityId) {
+      setScopeOptions({ plans: [], halakat: [] })
+      setScopePlan(REPORT_SCOPE_ALL)
+      setScopeHalaka(REPORT_SCOPE_ALL)
+      return undefined
+    }
+    let cancelled = false
+    setLoadingScope(true)
+    const run = async () => {
+      try {
+        const opts = await loadStudentScopeOptions(entityId)
+        if (!cancelled) {
+          setScopeOptions(
+            kind === 'teacher' ? { plans: [], halakat: opts.halakat || [] } : opts,
+          )
+        }
+      } catch {
+        if (!cancelled) setScopeOptions({ plans: [], halakat: [] })
+      } finally {
+        if (!cancelled) setLoadingScope(false)
+      }
+    }
+    run()
+    return () => {
+      cancelled = true
+    }
+  }, [kind, entityId, canAccessPage])
+
+  const scopePlanOptions = useMemo(
+    () => [
+      { value: REPORT_SCOPE_ALL, label: 'كل الخطط' },
+      ...(scopeOptions.plans || []).map((p) => ({ value: p.id, label: p.name })),
+    ],
+    [scopeOptions.plans],
+  )
+
+  const scopeHalakaOptions = useMemo(
+    () => [
+      { value: REPORT_SCOPE_ALL, label: 'كل الحلقات' },
+      ...(scopeOptions.halakat || []).map((h) => ({ value: h.id, label: h.name })),
+    ],
+    [scopeOptions.halakat],
+  )
 
   const entityOptions = useMemo(() => toEntityOptions(entities), [entities])
   const entityMap = useMemo(
@@ -409,11 +473,15 @@ export default function ReportViewPage() {
     else params.delete('to')
     if (rangePreset && rangePreset !== 'custom') params.set('rangePreset', rangePreset)
     else params.delete('rangePreset')
+    if (scopePlan && scopePlan !== REPORT_SCOPE_ALL) params.set('scopePlan', scopePlan)
+    else params.delete('scopePlan')
+    if (scopeHalaka && scopeHalaka !== REPORT_SCOPE_ALL) params.set('scopeHalaka', scopeHalaka)
+    else params.delete('scopeHalaka')
     const nextSearch = params.toString()
     const currentSearch = String(search || '').replace(/^\?/, '')
     if (nextSearch === currentSearch) return
     navigate({ pathname: '/app/reports/view', search: nextSearch ? `?${nextSearch}` : '' }, { replace: true })
-  }, [kind, entityId, fromDate, toDate, rangePreset, search, navigate])
+  }, [kind, entityId, fromDate, toDate, rangePreset, scopePlan, scopeHalaka, search, navigate])
 
   const appLink = useCallback(
     (path) => withImpersonationQuery(path, getImpersonateUid(user, search)),
@@ -431,6 +499,14 @@ export default function ReportViewPage() {
     [appLink, str, hidePlanNavigation],
   )
 
+  const reportScope = useMemo(
+    () => ({
+      planId: scopePlan,
+      halakaId: scopeHalaka,
+    }),
+    [scopePlan, scopeHalaka],
+  )
+
   const build = async () => {
     if (!entityId || !canRunForKind(kind)) return
     if (isRangeInvalid) {
@@ -441,9 +517,17 @@ export default function ReportViewPage() {
     try {
       const result =
         kind === 'student'
-          ? await buildStudentReport(entities.find((u) => (u.uid || u.id) === entityId), range)
+          ? await buildStudentReport(
+              entities.find((u) => (u.uid || u.id) === entityId),
+              range,
+              reportScope,
+            )
           : kind === 'teacher'
-            ? await buildTeacherReport(entities.find((u) => (u.uid || u.id) === entityId), range)
+            ? await buildTeacherReport(
+                entities.find((u) => (u.uid || u.id) === entityId),
+                range,
+                reportScope,
+              )
             : await buildGroupReport(kind, entityId, range)
       setReportData(result)
       setActiveTab('all')
@@ -520,8 +604,40 @@ export default function ReportViewPage() {
         for (const row of sectionRows || []) rows.push({ القسم: section, ...row })
       }
       addRows(
+        'إنجاز الخطط',
+        (reportData.planProgress || []).map((r) => ({
+          name: r.name || '',
+          role: roleLabelAr(r.role),
+          progressPercent: r.progressPercent ?? '',
+          achievedPages: r.achievedPages ?? '',
+          remainingPages: r.remainingPages ?? '',
+          targetPages: r.targetPages ?? '',
+          awradInPeriodCount: r.awradInPeriodCount ?? '',
+          pagesInPeriod: r.pagesInPeriod ?? '',
+          latestAwradAt: formatArDateTime(r.latestAwradAt),
+        })),
+      )
+      addRows(
+        'حضور الحلقات',
+        (reportData.halakaAttendance || []).map((r) => ({
+          halakaName: r.halakaName || '',
+          sessionTitle: r.sessionTitle || '',
+          sessionStartedAt: formatArDateTime(r.sessionStartedAt),
+          attendanceStatusLabel: reportAttendanceStatusLabel(r.attendanceStatus),
+          pagesCount: r.pagesCount ?? '',
+          fromPage: r.fromPage ?? '',
+          toPage: r.toPage ?? '',
+          recordedAt: formatArDateTime(r.recordedAt),
+          recordedByName: r.recordedByName || '',
+        })),
+      )
+      addRows(
         'الخطط',
-        (reportData.studentRows?.plans || []).map((r) => mapMembershipDisplayRow(r, { withJoined: true })),
+        (reportData.studentRows?.plans || []).map((r) => ({
+          ...mapMembershipDisplayRow(r, { withJoined: true }),
+          dailyPages: r.dailyPages ?? '',
+          totalTargetPages: r.totalTargetPages ?? '',
+        })),
       )
       addRows(
         'الحلقات',
@@ -715,6 +831,8 @@ export default function ReportViewPage() {
     setFromDate('')
     setToDate('')
     setRangePreset('all')
+    setScopePlan(REPORT_SCOPE_ALL)
+    setScopeHalaka(REPORT_SCOPE_ALL)
   }, [])
   const rangePresetLabel = useCallback(
     (preset) => {
@@ -783,16 +901,32 @@ export default function ReportViewPage() {
 
   const reportMetaItems = useMemo(() => {
     const issuedAt = new Date().toLocaleString('ar-SA', { dateStyle: 'medium', timeStyle: 'short' })
-    return [
+    const items = [
       { label: 'نوع التقرير', value: REPORT_KIND_OPTIONS.find((k) => k.value === kind)?.label || '—' },
       { label: 'الكيان', value: selectedEntityName || '—' },
       {
         label: 'الفترة (أم القرى)',
         value: fromDate || toDate ? `${fromDate || '—'} ← ${toDate || '—'}` : 'كامل الفترة',
       },
-      { label: 'تاريخ الإصدار', value: issuedAt },
     ]
-  }, [kind, selectedEntityName, fromDate, toDate])
+    if (kind === 'student') {
+      items.push({
+        label: 'نطاق الخطة',
+        value: scopePlanOptions.find((o) => o.value === scopePlan)?.label || 'كل الخطط',
+      })
+      items.push({
+        label: 'نطاق الحلقة',
+        value: scopeHalakaOptions.find((o) => o.value === scopeHalaka)?.label || 'كل الحلقات',
+      })
+    } else if (kind === 'teacher') {
+      items.push({
+        label: 'نطاق الحلقة',
+        value: scopeHalakaOptions.find((o) => o.value === scopeHalaka)?.label || 'كل الحلقات',
+      })
+    }
+    items.push({ label: 'تاريخ الإصدار', value: issuedAt })
+    return items
+  }, [kind, selectedEntityName, fromDate, toDate, scopePlan, scopeHalaka, scopePlanOptions, scopeHalakaOptions])
 
   const halakaMemberNameMap = useMemo(() => {
     const map = new Map()
@@ -961,6 +1095,30 @@ export default function ReportViewPage() {
           ))}
         </div>
         {isRangeInvalid && <p className="rh-reports__range-error">{str('reports.range_invalid_hint')}</p>}
+        {(kind === 'student' || kind === 'teacher') && entityId ? (
+          <div className="rh-reports__scope-filters">
+            {kind === 'student' ? (
+              <SearchableSelect
+                label="نطاق الخطة"
+                options={scopePlanOptions}
+                value={scopePlan}
+                onChange={setScopePlan}
+                placeholder={loadingScope ? 'جاري التحميل…' : 'كل الخطط'}
+                searchPlaceholder={str('reports.search_placeholder')}
+                emptyText={str('reports.search_empty')}
+              />
+            ) : null}
+            <SearchableSelect
+              label="نطاق الحلقة"
+              options={scopeHalakaOptions}
+              value={scopeHalaka}
+              onChange={setScopeHalaka}
+              placeholder={loadingScope ? 'جاري التحميل…' : 'كل الحلقات'}
+              searchPlaceholder={str('reports.search_placeholder')}
+              emptyText={str('reports.search_empty')}
+            />
+          </div>
+        ) : null}
         <div className="rh-reports__filters-actions">
           {kind === 'student' && entityId ? (
             <HapticLink to={appLink(studentProgressLink(entityId))} className="ui-btn ui-btn--secondary ui-btn--sm">
@@ -1021,16 +1179,65 @@ export default function ReportViewPage() {
             {reportData.kind === 'student' ? (
         <section className="rh-reports__result">
           <ReportKpiGrid>
+            <div className="card rh-reports__kpi"><strong>{reportData.summary.avgPlanProgress ?? 0}%</strong><span>متوسط إنجاز الخطط</span></div>
             <div className="card rh-reports__kpi"><strong>{reportData.summary.plans}</strong><span>{str('layout.nav_plans')}</span></div>
             <div className="card rh-reports__kpi"><strong>{reportData.summary.halakat}</strong><span>{str('layout.nav_halakat')}</span></div>
+            <div className="card rh-reports__kpi"><strong>{reportData.summary.halakaAttendanceRecords ?? 0}</strong><span>حضور حلقات (فترة)</span></div>
+            <div className="card rh-reports__kpi"><strong>{reportData.summary.halakaPagesRecorded ?? 0}</strong><span>صفحات في الحلقات</span></div>
+            <div className="card rh-reports__kpi"><strong>{reportData.summary.awrad}</strong><span>{str('layout.nav_awrad')}</span></div>
+            <div className="card rh-reports__kpi"><strong>{reportData.summary.totalPages}</strong><span>{str('reports.kpi_pages')}</span></div>
             <div className="card rh-reports__kpi"><strong>{reportData.summary.activities}</strong><span>{str('layout.nav_activities')}</span></div>
             <div className="card rh-reports__kpi"><strong>{reportData.summary.exams}</strong><span>{str('layout.nav_exams')}</span></div>
             <div className="card rh-reports__kpi"><strong>{reportData.summary.dawrat}</strong><span>{str('layout.nav_dawrat')}</span></div>
-            <div className="card rh-reports__kpi"><strong>{reportData.summary.remoteTasmee}</strong><span>{str('layout.nav_remote_tasmee')}</span></div>
-            <div className="card rh-reports__kpi"><strong>{reportData.summary.awrad}</strong><span>{str('layout.nav_awrad')}</span></div>
-            <div className="card rh-reports__kpi"><strong>{reportData.summary.totalPages}</strong><span>{str('reports.kpi_pages')}</span></div>
             <div className="card rh-reports__kpi"><strong>{reportData.summary.notifications}</strong><span>الإشعارات</span></div>
           </ReportKpiGrid>
+          <SectionTable
+            title="إنجاز الخطط (تفصيلي)"
+            tabId="planProgress"
+            columns={[
+              { key: 'name', label: 'الخطة' },
+              { key: 'role', label: 'الدور' },
+              { key: 'progressPercent', label: 'نسبة الإنجاز %' },
+              { key: 'achievedPages', label: 'أنجز (ص)' },
+              { key: 'remainingPages', label: 'بقي (ص)' },
+              { key: 'targetPages', label: 'الهدف (ص)' },
+              { key: 'dailyPages', label: 'ورد يومي' },
+              { key: 'awradInPeriodCount', label: 'أوراد الفترة' },
+              { key: 'pagesInPeriod', label: 'صفحات الفترة' },
+              { key: 'latestAwradAt', label: 'آخر ورد' },
+            ]}
+            rows={(reportData.planProgress || []).map((r) => ({
+              ...r,
+              role: roleLabelAr(r.role),
+              latestAwradAt: formatArDateTime(r.latestAwradAt),
+            }))}
+          />
+          <SectionTable
+            title="حضور وتسميع الحلقات"
+            tabId="halakaRecords"
+            columns={[
+              { key: 'halakaName', label: 'الحلقة' },
+              { key: 'sessionTitle', label: 'الجلسة' },
+              { key: 'sessionStartedAt', label: 'بداية الجلسة' },
+              { key: 'attendanceStatusLabel', label: 'الحضور' },
+              { key: 'pagesCount', label: 'الصفحات' },
+              { key: 'fromPage', label: 'من' },
+              { key: 'toPage', label: 'إلى' },
+              { key: 'recordedAt', label: 'تاريخ التسجيل' },
+              { key: 'recordedByName', label: 'سجّله' },
+            ]}
+            rows={(reportData.halakaAttendance || []).map((r) => ({
+              halakaName: r.halakaName || '—',
+              sessionTitle: r.sessionTitle || '—',
+              sessionStartedAt: formatArDateTime(r.sessionStartedAt),
+              attendanceStatusLabel: reportAttendanceStatusLabel(r.attendanceStatus),
+              pagesCount: r.pagesCount ?? 0,
+              fromPage: r.fromPage ?? '—',
+              toPage: r.toPage ?? '—',
+              recordedAt: formatArDateTime(r.recordedAt),
+              recordedByName: r.recordedByName || '—',
+            }))}
+          />
           <SectionTable
             title="الخطط"
             tabId="plans"
@@ -1038,9 +1245,15 @@ export default function ReportViewPage() {
               { key: 'name', label: 'الاسم' },
               { key: 'role', label: 'الدور' },
               { key: 'visibilityLabel', label: 'الظهور' },
+              { key: 'dailyPages', label: 'ورد يومي' },
+              { key: 'totalTargetPages', label: 'هدف (ص)' },
               { key: 'joinedAt', label: 'تاريخ الانضمام' },
             ]}
-            rows={(reportData.studentRows?.plans || []).map((r) => mapMembershipDisplayRow(r, { withJoined: true }))}
+            rows={(reportData.studentRows?.plans || []).map((r) => ({
+              ...mapMembershipDisplayRow(r, { withJoined: true }),
+              dailyPages: r.dailyPages ?? '—',
+              totalTargetPages: r.totalTargetPages ?? '—',
+            }))}
             actions={(row) => {
               const to = viewLinkByKind('plan', row.id)
               if (!to) return null
@@ -1058,9 +1271,13 @@ export default function ReportViewPage() {
               { key: 'name', label: 'الاسم' },
               { key: 'role', label: 'الدور' },
               { key: 'visibilityLabel', label: 'الظهور' },
+              { key: 'location', label: 'الموقع' },
               { key: 'joinedAt', label: 'تاريخ الانضمام' },
             ]}
-            rows={(reportData.studentRows?.halakat || []).map((r) => mapMembershipDisplayRow(r, { withJoined: true }))}
+            rows={(reportData.studentRows?.halakat || []).map((r) => ({
+              ...mapMembershipDisplayRow(r, { withJoined: true }),
+              location: r.location || '—',
+            }))}
             actions={(row) => {
               const to = viewLinkByKind('halaka', row.id)
               if (!to) return null
@@ -1291,12 +1508,14 @@ export default function ReportViewPage() {
             title="جلسات سجّلها المعلم"
             tabId="sessions"
             columns={[
+              { key: 'halakaName', label: 'الحلقة' },
               { key: 'title', label: 'العنوان' },
               { key: 'startedAt', label: 'البداية' },
               { key: 'endedAt', label: 'النهاية' },
               { key: 'status', label: 'الحالة' },
             ]}
             rows={(reportData.sessions || []).map((s) => ({
+              halakaName: s.halakaName || '—',
               title: s.title || '',
               startedAt: formatArDateTime(s.startedAt),
               endedAt: formatArDateTime(s.endedAt),
@@ -1307,12 +1526,14 @@ export default function ReportViewPage() {
             title="سجلات الحضور التي أدخلها المعلم"
             tabId="attendance"
             columns={[
+              { key: 'halakaName', label: 'الحلقة' },
               { key: 'userName', label: 'الطالب' },
               { key: 'attendanceStatusLabel', label: 'الحضور' },
               { key: 'pagesCount', label: 'الصفحات' },
               { key: 'updatedAt', label: 'آخر تحديث' },
             ]}
             rows={(reportData.attendanceRecorded || []).map((a) => ({
+              halakaName: a.halakaName || '—',
               userName: reportPersonLabel(a.userName, a.userId),
               attendanceStatusLabel: reportAttendanceStatusLabel(a.attendanceStatus),
               pagesCount: a.pagesCount ?? 0,

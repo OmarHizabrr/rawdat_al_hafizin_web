@@ -7,13 +7,12 @@ function formatRangeLabel(fromYmd, toYmd) {
   return 'كامل الفترة المتاحة (بدون تقييد زمني)'
 }
 
-function pluralAr(n, one, two, many) {
-  const num = Number(n) || 0
-  if (num === 0) return `لا ${many}`
-  if (num === 1) return `${one} واحد`
-  if (num === 2) return `${two}`
-  if (num >= 3 && num <= 10) return `${num} ${many}`
-  return `${num} ${one}`
+function formatScopeLabel(scope) {
+  if (!scope) return ''
+  const parts = []
+  if (scope.planLabel) parts.push(`الخطط: ${scope.planLabel}`)
+  if (scope.halakaLabel) parts.push(`الحلقات: ${scope.halakaLabel}`)
+  return parts.join(' · ')
 }
 
 /**
@@ -28,38 +27,42 @@ export function buildReportExecutiveSummary(reportData, context = {}) {
   const entityName = String(context.entityName || '').trim() || 'الكيان المحدد'
   const typeLabel = String(context.reportTypeLabel || '').trim()
   const rangeLabel = formatRangeLabel(context.fromYmd, context.toYmd)
+  const scopeLabel = formatScopeLabel(reportData.scope)
   const s = reportData.summary || {}
   const paragraphs = []
   const highlights = []
 
   if (reportData.kind === 'student') {
-    const totalMemberships =
-      (s.plans ?? 0) + (s.halakat ?? 0) + (s.activities ?? 0) + (s.exams ?? 0) + (s.dawrat ?? 0) + (s.remoteTasmee ?? 0)
     paragraphs.push(
-      `يُقدّم هذا التقرير نظرة شاملة على نشاط الطالب «${entityName}» خلال ${rangeLabel}. يجمع بين الارتباطات التعليمية (خطط، حلقات، أنشطة، اختبارات، دورات، تسميع عن بُعد) وسجلات الأوراد والإشعارات ذات الصلة.`,
+      `تقرير شامل عن الطالب «${entityName}» خلال ${rangeLabel}.${scopeLabel ? ` النطاق: ${scopeLabel}.` : ''} يتضمّن إنجاز الخطط (أوراد ونسب)، حضور وتسميع الحلقات، والارتباطات التعليمية الأخرى.`,
     )
-    if (totalMemberships > 0) {
+    if ((s.plans ?? 0) > 0 || (s.halakat ?? 0) > 0) {
       paragraphs.push(
-        `يُظهر الطالب ارتباطاً بـ ${totalMemberships} عنصراً تعليمياً موزّعة على ${s.plans ?? 0} خطة و${s.halakat ?? 0} حلقة و${s.activities ?? 0} نشاط و${s.exams ?? 0} اختبار و${s.dawrat ?? 0} دورة و${s.remoteTasmee ?? 0} جلسة تسميع عن بُعد.`,
+        `مشترك في ${s.plans ?? 0} خطة و${s.halakat ?? 0} حلقة. متوسط إنجاز الخطط ${s.avgPlanProgress ?? 0}%، مع ${s.awrad ?? 0} ورد في الفترة (${s.totalPages ?? 0} صفحة) و${s.halakaAttendanceRecords ?? 0} تسجيل حضور/تسميع في الحلقات (${s.halakaPagesRecorded ?? 0} صفحة).`,
+      )
+    }
+    if ((s.activities ?? 0) + (s.exams ?? 0) + (s.dawrat ?? 0) > 0) {
+      paragraphs.push(
+        `ضمن الفترة: ${s.activities ?? 0} نشاط، ${s.exams ?? 0} اختبار، ${s.dawrat ?? 0} دورة، ${s.remoteTasmee ?? 0} تسميع عن بُعد.`,
       )
     }
     highlights.push(
-      { label: 'إجمالي الارتباطات', value: totalMemberships },
-      { label: 'سجلات الأوراد', value: s.awrad ?? 0 },
-      { label: 'صفحات محفوظة', value: s.totalPages ?? 0 },
-      { label: 'إشعارات', value: s.notifications ?? 0 },
+      { label: 'متوسط إنجاز الخطط', value: `${s.avgPlanProgress ?? 0}%` },
+      { label: 'أوراد الفترة', value: s.awrad ?? 0 },
+      { label: 'صفحات الأوراد', value: s.totalPages ?? 0 },
+      { label: 'حضور الحلقات', value: s.halakaAttendanceRecords ?? 0 },
+      { label: 'صفحات الحلقات', value: s.halakaPagesRecorded ?? 0 },
+      { label: 'الخطط', value: s.plans ?? 0 },
+      { label: 'الحلقات', value: s.halakat ?? 0 },
     )
-    if ((s.totalPages ?? 0) > 0 && (s.awrad ?? 0) > 0) {
-      const avgPages = Math.round((s.totalPages / s.awrad) * 10) / 10
-      highlights.push({ label: 'متوسط الصفحات لكل ورد', value: avgPages })
-    }
   } else if (reportData.kind === 'teacher') {
+    const scopeNote = reportData.scope?.halakaLabel ? ` — نطاق الحلقة: ${reportData.scope.halakaLabel}` : ''
     paragraphs.push(
-      `يُلخّص هذا التقرير أداء المعلم «${entityName}» خلال ${rangeLabel}، ويشمل الحلقات والارتباطات والجلسات المسجّلة وتسجيلات حضور الطلاب.`,
+      `يُلخّص هذا التقرير أداء المعلم «${entityName}» خلال ${rangeLabel}${scopeNote}، ويشمل الجلسات المسجّلة وتسجيلات حضور الطلاب.`,
     )
     if ((s.sessions ?? 0) > 0) {
       paragraphs.push(
-        `سجّل المعلم ${pluralAr(s.sessions, 'جلسة', 'جلستان', 'جلسات')}، مع ${s.studentsRecorded ?? 0} طالب تم تسجيل حضورهم و${s.pagesRecorded ?? 0} صفحة محفوظة في سجلات الحضور.`,
+        `سجّل ${s.sessions ?? 0} جلسة، مع ${s.studentsRecorded ?? 0} طالب تم تسجيل حضورهم و${s.pagesRecorded ?? 0} صفحة في سجلات الحضور.`,
       )
     }
     highlights.push(
@@ -148,6 +151,7 @@ export function buildReportExecutiveSummary(reportData, context = {}) {
     rangeLabel,
     entityName,
     reportTypeLabel: typeLabel,
+    scopeLabel,
     paragraphs: paragraphs.filter(Boolean),
     highlights: highlights.filter((h) => h.label),
   }

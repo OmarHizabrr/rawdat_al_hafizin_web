@@ -30,15 +30,73 @@ export function collectPrintSectionsFromReport(reportData, helpers = {}) {
   const sections = []
 
   if (reportData.kind === 'student') {
+    if (reportData.planProgress?.length) {
+      sections.push({
+        title: 'إنجاز الخطط (تفصيلي)',
+        columns: [
+          { key: 'name', label: 'الخطة' },
+          { key: 'role', label: 'الدور' },
+          { key: 'progressPercent', label: 'نسبة الإنجاز %' },
+          { key: 'achievedPages', label: 'أنجز (ص)' },
+          { key: 'remainingPages', label: 'بقي (ص)' },
+          { key: 'targetPages', label: 'الهدف (ص)' },
+          { key: 'dailyPages', label: 'الورد اليومي' },
+          { key: 'awradInPeriodCount', label: 'أوراد الفترة' },
+          { key: 'pagesInPeriod', label: 'صفحات الفترة' },
+          { key: 'latestAwradAt', label: 'آخر ورد' },
+        ],
+        rows: reportData.planProgress.map((r) => ({
+          ...r,
+          role: role(r.role),
+          latestAwradAt: fmt(r.latestAwradAt),
+        })),
+      })
+    }
+    if (reportData.halakaAttendance?.length) {
+      sections.push({
+        title: 'حضور وتسميع الحلقات',
+        columns: [
+          { key: 'halakaName', label: 'الحلقة' },
+          { key: 'sessionTitle', label: 'الجلسة' },
+          { key: 'sessionStartedAt', label: 'بداية الجلسة' },
+          { key: 'attendanceStatusLabel', label: 'الحضور' },
+          { key: 'pagesCount', label: 'الصفحات' },
+          { key: 'fromPage', label: 'من' },
+          { key: 'toPage', label: 'إلى' },
+          { key: 'recordedAt', label: 'تاريخ التسجيل' },
+          { key: 'recordedByName', label: 'سجّله' },
+        ],
+        rows: reportData.halakaAttendance.map((r) => ({
+          halakaName: r.halakaName || '—',
+          sessionTitle: r.sessionTitle || '—',
+          sessionStartedAt: fmt(r.sessionStartedAt),
+          attendanceStatusLabel: reportAttendanceStatusLabel(r.attendanceStatus),
+          pagesCount: r.pagesCount ?? 0,
+          fromPage: r.fromPage ?? '—',
+          toPage: r.toPage ?? '—',
+          recordedAt: fmt(r.recordedAt),
+          recordedByName: r.recordedByName || '—',
+        })),
+      })
+    }
     sections.push({
       title: 'الخطط',
       columns: [
         { key: 'name', label: 'الاسم' },
         { key: 'role', label: 'الدور' },
         { key: 'visibilityLabel', label: 'الظهور' },
+        { key: 'dailyPages', label: 'ورد يومي' },
+        { key: 'totalTargetPages', label: 'هدف (ص)' },
         { key: 'joinedAt', label: 'تاريخ الانضمام' },
       ],
-      rows: mapRoleRows(reportData.studentRows?.plans, role, fmt),
+      rows: (reportData.studentRows?.plans || []).map((r) => ({
+        name: r.name || '—',
+        role: role(r.role),
+        visibilityLabel: reportVisibilityLabel(r.visibility),
+        dailyPages: r.dailyPages ?? '—',
+        totalTargetPages: r.totalTargetPages ?? '—',
+        joinedAt: fmt(r.joinedAt),
+      })),
     })
     sections.push({
       title: 'الحلقات',
@@ -46,9 +104,16 @@ export function collectPrintSectionsFromReport(reportData, helpers = {}) {
         { key: 'name', label: 'الاسم' },
         { key: 'role', label: 'الدور' },
         { key: 'visibilityLabel', label: 'الظهور' },
+        { key: 'location', label: 'الموقع' },
         { key: 'joinedAt', label: 'تاريخ الانضمام' },
       ],
-      rows: mapRoleRows(reportData.studentRows?.halakat, role, fmt),
+      rows: (reportData.studentRows?.halakat || []).map((r) => ({
+        name: r.name || '—',
+        role: role(r.role),
+        visibilityLabel: reportVisibilityLabel(r.visibility),
+        location: r.location || '—',
+        joinedAt: fmt(r.joinedAt),
+      })),
     })
     sections.push({
       title: 'الأنشطة',
@@ -213,12 +278,14 @@ export function collectPrintSectionsFromReport(reportData, helpers = {}) {
     sections.push({
       title: 'جلسات المعلم',
       columns: [
+        { key: 'halakaName', label: 'الحلقة' },
         { key: 'title', label: 'العنوان' },
         { key: 'startedAt', label: 'البداية' },
         { key: 'endedAt', label: 'النهاية' },
         { key: 'status', label: 'الحالة' },
       ],
       rows: (reportData.sessions || []).map((s) => ({
+        halakaName: s.halakaName || '—',
         title: s.title || '',
         startedAt: fmt(s.startedAt),
         endedAt: fmt(s.endedAt),
@@ -228,12 +295,14 @@ export function collectPrintSectionsFromReport(reportData, helpers = {}) {
     sections.push({
       title: 'سجلات الحضور',
       columns: [
+        { key: 'halakaName', label: 'الحلقة' },
         { key: 'userName', label: 'الطالب' },
         { key: 'attendanceStatusLabel', label: 'الحضور' },
         { key: 'pagesCount', label: 'الصفحات' },
         { key: 'updatedAt', label: 'آخر تحديث' },
       ],
       rows: (reportData.attendanceRecorded || []).map((a) => ({
+        halakaName: a.halakaName || '—',
         userName: reportPersonLabel(a.userName, a.userId),
         attendanceStatusLabel: reportAttendanceStatusLabel(a.attendanceStatus),
         pagesCount: a.pagesCount ?? 0,
@@ -485,14 +554,14 @@ export function collectPrintKpisFromReport(reportData, labels = {}) {
   if (reportData.kind === 'student') {
     return [
       { label: L.plans, value: s.plans ?? 0 },
+      { label: 'متوسط إنجاز الخطط', value: `${s.avgPlanProgress ?? 0}%` },
       { label: L.halakat, value: s.halakat ?? 0 },
-      { label: L.activities, value: s.activities ?? 0 },
-      { label: L.exams, value: s.exams ?? 0 },
-      { label: labels.dawrat || 'الدورات', value: s.dawrat ?? 0 },
-      { label: labels.remoteTasmee || 'التسميع عن بُعد', value: s.remoteTasmee ?? 0 },
+      { label: 'حضور حلقات (فترة)', value: s.halakaAttendanceRecords ?? 0 },
       { label: L.awrad, value: s.awrad ?? 0 },
       { label: L.pages, value: s.totalPages ?? 0 },
-      { label: labels.notifications || 'الإشعارات', value: s.notifications ?? 0 },
+      { label: 'صفحات في الحلقات', value: s.halakaPagesRecorded ?? 0 },
+      { label: L.activities, value: s.activities ?? 0 },
+      { label: L.exams, value: s.exams ?? 0 },
     ]
   }
 

@@ -39,6 +39,9 @@ export const REPORT_RANGE_PRESETS = [
   { value: 'all' },
 ]
 
+/** كل الخطط / كل الحلقات — قيمة النطاق الافتراضية */
+export const REPORT_SCOPE_ALL = 'all'
+
 /** مسار عرض التقرير المفصّل */
 export function reportViewPath(params = {}) {
   const q = new URLSearchParams()
@@ -47,6 +50,8 @@ export function reportViewPath(params = {}) {
   if (params.from) q.set('from', params.from)
   if (params.to) q.set('to', params.to)
   if (params.rangePreset && params.rangePreset !== 'custom') q.set('rangePreset', params.rangePreset)
+  if (params.scopePlan && params.scopePlan !== REPORT_SCOPE_ALL) q.set('scopePlan', params.scopePlan)
+  if (params.scopeHalaka && params.scopeHalaka !== REPORT_SCOPE_ALL) q.set('scopeHalaka', params.scopeHalaka)
   const search = q.toString()
   return search ? `/app/reports/view?${search}` : '/app/reports/view'
 }
