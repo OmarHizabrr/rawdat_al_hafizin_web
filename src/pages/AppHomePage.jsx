@@ -11,6 +11,8 @@ import {
   Bird,
   UserPlus,
   X,
+  LayoutDashboard,
+  ListChecks,
 } from "lucide-react";
 import { HapticLink } from '../ui/HapticLink.jsx'
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -73,6 +75,7 @@ import {
   readFeelingsFlightMode,
 } from "../utils/feelingsFlightPrefs.js";
 import { RhIcon, RH_ICON_STROKE } from "../ui/RhIcon.jsx";
+import { useTasksStore } from "../stores/useTasksStore.js";
 
 const PH = PERMISSION_PAGE_IDS.home;
 const WEEKDAY_NAMES_AR = [
@@ -619,6 +622,8 @@ export default function AppHomePage() {
   const canVisitFeelings = canAccessPage("feelings");
   const canVisitAwradFromHome = canAccessPage("awrad") && can(PH, "home_footer_awrad_link");
   const canVisitPlansFromHome = canAccessPage("plans") && can(PH, "home_quick_plans");
+  const canVisitWorkspace = canAccessPage("home");
+  const openTaskCount = useTasksStore((s) => s.tasks.filter((t) => t.step !== "done").length);
   const canBackfillWird = can(PH, "home_log_wird");
   const showFeelingAuthor = canViewCreator(can, PH);
   const canRenderFlights =
@@ -931,6 +936,15 @@ export default function AppHomePage() {
               متابعة خططك من «الخطط» في القائمة الجانبية، أو إعادة الإظهار على الرئيسية من الإعدادات إن سمح نوع
               صلاحياتك.
             </p>
+            {canVisitWorkspace && openTaskCount > 0 ? (
+              <HapticLink
+                className="rh-home-dash__btn rh-home-dash__btn--primary"
+                to={appPath("/app/tasks")}
+              >
+                <RhIcon as={ListChecks} size={20} strokeWidth={RH_ICON_STROKE} />
+                {str("app.home_cross_tasks", { count: openTaskCount })}
+              </HapticLink>
+            ) : null}
           </div>
         </section>
       ) : activePlan && progress ? (
@@ -1213,16 +1227,29 @@ export default function AppHomePage() {
           </p>
 
           <div className="rh-home-dash__actions">
-            {/*
-            <button
-              type="button"
-              className="rh-home-dash__btn rh-home-dash__btn--primary rh-home-dash__btn--pulse-hint"
-              onClick={() => setHomeWirdOpen(true)}
-            >
-              <NotebookPen size={22} strokeWidth={1.75} />
-              تسجيل الورد السريع
-            </button>
-            */}
+            {canVisitWorkspace ? (
+              <HapticLink
+                className="rh-home-dash__btn rh-home-dash__btn--secondary"
+                to={appPath("/app/dashboard")}
+              >
+                <RhIcon as={LayoutDashboard} size={20} strokeWidth={RH_ICON_STROKE} />
+                {str("app.home_cross_dashboard")}
+              </HapticLink>
+            ) : null}
+            {canVisitWorkspace ? (
+              <HapticLink
+                className={[
+                  "rh-home-dash__btn",
+                  openTaskCount > 0 ? "rh-home-dash__btn--primary" : "rh-home-dash__btn--secondary",
+                ].join(" ")}
+                to={appPath("/app/tasks")}
+              >
+                <RhIcon as={ListChecks} size={20} strokeWidth={RH_ICON_STROKE} />
+                {openTaskCount > 0
+                  ? str("app.home_cross_tasks", { count: openTaskCount })
+                  : str("layout.nav_tasks")}
+              </HapticLink>
+            ) : null}
             {canVisitAwradFromHome ? (
               <HapticLink
                 className="rh-home-dash__btn rh-home-dash__btn--secondary"

@@ -1,38 +1,17 @@
 import { Suspense, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
-import {
-  BookOpen,
-  CalendarClock,
-  ChevronsLeft,
-  ChevronsRight,
-  ClipboardList,
-  FileText,
-  GraduationCap,
-  LayoutDashboard,
-  ListChecks,
-  NotebookPen,
-  Home,
-  Bird,
-  CalendarDays,
-  Menu,
-  Puzzle,
-  ScrollText,
-  Settings,
-  UserRound,
-  Users,
-  UsersRound,
-  Video,
-  MessageCircleMore,
-  MessageCircleQuestion,
-  Bell,
-} from 'lucide-react'
+import { ChevronsLeft, ChevronsRight, Menu } from 'lucide-react'
 import { NavLink, Outlet, useLocation } from 'react-router-dom'
+import { MobileBottomNav } from '../components/MobileBottomNav.jsx'
 import { UserNotificationsMenu } from '../components/UserNotificationsMenu.jsx'
 import { UserMenu } from '../components/UserMenu.jsx'
-import { isAdmin, normalizeRole } from '../config/roles.js'
+import { buildAppNav, buildBottomNavTabs } from '../config/appNav.js'
+import { normalizeRole } from '../config/roles.js'
 import { useAuth } from '../context/useAuth.js'
 import { usePermissions } from '../context/usePermissions.js'
 import { useSiteContent } from '../context/useSiteContent.js'
 import { usePlanReminders } from '../hooks/usePlanReminders.js'
+import { useStudentWorkspace } from '../hooks/useStudentWorkspace.js'
+import { useTasksStore } from '../stores/useTasksStore.js'
 import { PROFILE_REQUEST_STATUS } from '../services/profileRequestService.js'
 import { syncFcmTokenToProfile } from '../services/pushNotificationsService.js'
 import { upsertUserNotification } from '../services/userNotificationsService.js'
@@ -51,51 +30,27 @@ export function MainLayout() {
   const impersonateUid = getImpersonateUid(user, search)
   const navRef = useRef(null)
 
-  const baseNav = useMemo(
-    () => [
-      { to: '/app', end: true, label: str('layout.nav_home'), Icon: Home, pageId: 'home' },
-      { to: '/app/welcome', label: str('layout.nav_welcome'), Icon: BookOpen, pageId: 'welcome' },
-      { to: '/app/plans', label: str('layout.nav_plans'), Icon: ClipboardList, pageId: 'plans' },
-      { to: '/app/halakat', label: str('layout.nav_halakat'), Icon: UsersRound, pageId: 'halakat' },
-      { to: '/app/remote-tasmee', label: str('layout.nav_remote_tasmee'), Icon: Video, pageId: 'remote_tasmee' },
-      { to: '/app/exams', label: str('layout.nav_exams'), Icon: ListChecks, pageId: 'exams' },
-      { to: '/app/dawrat', label: str('layout.nav_dawrat'), Icon: GraduationCap, pageId: 'dawrat' },
-      { to: '/app/awrad', label: str('layout.nav_awrad'), Icon: NotebookPen, pageId: 'awrad' },
-      { to: '/app/activities', label: str('layout.nav_activities'), Icon: CalendarDays, pageId: 'activities' },
-      { to: '/app/feelings', label: str('layout.nav_feelings'), Icon: Bird, pageId: 'feelings' },
-      { to: '/app/inquiries', label: str('layout.nav_inquiries'), Icon: MessageCircleQuestion, pageId: 'inquiries' },
-      { to: '/app/reports', label: str('layout.nav_reports'), Icon: FileText, pageId: 'reports' },
-      {
-        to: '/app/leave-request',
-        label: str('layout.nav_leave_request'),
-        Icon: CalendarClock,
-        pageId: 'leave_request',
-      },
-      { to: '/app/certificates', label: str('layout.nav_certificates'), Icon: ScrollText, pageId: 'certificates' },
-      { to: '/app/profile', label: 'الملف الشخصي', Icon: UserRound, pageId: 'settings' },
-      { to: '/app/settings', label: str('layout.nav_settings'), Icon: Settings, pageId: 'settings' },
-      { to: '/app/foundation', label: str('layout.nav_foundation'), Icon: Puzzle, pageId: 'foundation' },
-    ],
-    [str],
+  const nav = useMemo(
+    () => buildAppNav({ str, user, permReady, canAccessPage }),
+    [str, user, permReady, canAccessPage],
   )
 
-  const adminNavItems = useMemo(
-    () => [
-      { to: '/app/admin', label: str('layout.nav_dashboard'), Icon: LayoutDashboard },
-      { to: '/app/admin/users', label: str('layout.nav_users'), Icon: Users },
-      { to: '/app/admin/push-notifications', label: 'إشعارات المستخدمين', Icon: Bell },
-      { to: '/app/admin/applications', label: 'طلبات الالتحاق', Icon: Users },
-      { to: '/app/admin/groups', label: 'إدارة المجموعات', Icon: MessageCircleMore },
-    ],
-    [str],
+  const bottomNavTabs = useMemo(
+    () => buildBottomNavTabs({ str, user, permReady, canAccessPage }),
+    [str, user, permReady, canAccessPage],
   )
 
-  const nav = useMemo(() => {
-    const visible = (item) =>
-      !item.pageId || !permReady || isAdmin(user) || canAccessPage(item.pageId)
-    const filtered = baseNav.filter(visible)
-    return isAdmin(user) ? [...filtered.slice(0, 9), ...adminNavItems, ...filtered.slice(9)] : filtered
-  }, [baseNav, adminNavItems, user, permReady, canAccessPage])
+  const showBottomNav = bottomNavTabs.length > 0
+  useStudentWorkspace()
+  const openTaskCount = useTasksStore((s) => s.tasks.filter((t) => t.step !== 'done').length)
+
+  const bottomNavTabsWithBadges = useMemo(
+    () =>
+      bottomNavTabs.map((tab) =>
+        tab.to === '/app/tasks' && openTaskCount > 0 ? { ...tab, badge: openTaskCount } : tab,
+      ),
+    [bottomNavTabs, openTaskCount],
+  )
   usePlanReminders(impersonateUid || user?.hideHomePlanUi ? null : user, { iconSrc: branding.logoSrc })
   const [collapsed, setCollapsed] = useState(() => {
     try {
@@ -272,9 +227,16 @@ export function MainLayout() {
   }
 
   return (
-    <div className={['rh-app', collapsed ? 'rh-app--collapsed' : '', mobileOpen ? 'rh-app--mobile-nav' : '']
-      .filter(Boolean)
-      .join(' ')}>
+    <div
+      className={[
+        'rh-app',
+        collapsed ? 'rh-app--collapsed' : '',
+        mobileOpen ? 'rh-app--mobile-nav' : '',
+        showBottomNav ? 'rh-app--bottom-nav' : '',
+      ]
+        .filter(Boolean)
+        .join(' ')}
+    >
       <aside className="rh-sidebar" aria-label="القائمة الرئيسية">
         <NavLink
           to={withImpersonationQuery('/app', impersonateUid)}
@@ -307,6 +269,11 @@ export function MainLayout() {
                 <RhIcon as={item.Icon} size={20} strokeWidth={RH_ICON_STROKE} />
               </span>
               <span className="rh-nav-link__label">{item.label}</span>
+              {item.to === '/app/tasks' && openTaskCount > 0 ? (
+                <span className="rh-nav-link__badge" aria-hidden>
+                  {openTaskCount > 99 ? '99+' : openTaskCount}
+                </span>
+              ) : null}
             </NavLink>
           ))}
         </nav>
@@ -389,6 +356,15 @@ export function MainLayout() {
             </Suspense>
           </div>
         </main>
+
+        {showBottomNav ? (
+          <MobileBottomNav
+            tabs={bottomNavTabsWithBadges}
+            impersonateUid={impersonateUid}
+            moreOpen={mobileOpen}
+            onMoreClick={() => setMobileOpen((open) => !open)}
+          />
+        ) : null}
       </div>
     </div>
   )

@@ -9,6 +9,7 @@ import { useAuth } from '../context/useAuth.js'
 import { usePermissions } from '../context/usePermissions.js'
 import { useSiteContent } from '../context/useSiteContent.js'
 import { useHidePlanNavigation } from '../hooks/useHidePlanNavigation.js'
+import { useFocusGroupCardFromUrl } from '../hooks/useFocusGroupCardFromUrl.js'
 import { useExploreUrlAutoOpen } from '../hooks/useExploreUrlAutoOpen.js'
 import { ExplorePublicTrigger } from '../components/explore/ExplorePublicTrigger.jsx'
 import { MemberProgressTools } from '../components/MemberProgressSnippet.jsx'
@@ -119,6 +120,7 @@ export default function DawratPage() {
   const { search } = useLocation()
   const [searchParams] = useSearchParams()
   const uidParam = searchParams.get('uid')?.trim() || ''
+  const focusDawraId = searchParams.get('dawra')?.trim() || ''
   const impersonateUid = getImpersonateUid(user, search)
   const appLink = useCallback((path) => withImpersonationQuery(path, impersonateUid), [impersonateUid])
   const hidePlanNavigation = useHidePlanNavigation()
@@ -197,6 +199,8 @@ export default function DawratPage() {
       unsub()
     }
   }, [viewUserId])
+
+  useFocusGroupCardFromUrl(focusDawraId, 'dawra-card', saved.length > 0)
 
   useEffect(() => {
     if (!membersModal?.id || !user?.uid) return undefined
@@ -512,7 +516,7 @@ export default function DawratPage() {
           <h2 className="rh-plans__saved-title">دوراتك</h2>
           <ul className="rh-plans__saved-list">
             {saved.map((d) => (
-              <li key={d.id} className="rh-plans__saved-card">
+              <li key={d.id} id={`dawra-card-${d.id}`} className="rh-plans__saved-card">
                 <div className="rh-plans__saved-head">
                   <div className="rh-plans__saved-head-main">
                     <strong>{d.title}</strong>

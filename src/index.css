@@ -757,6 +757,7 @@ a.rh-sidebar__brand-link.rh-sidebar__brand-link--active {
   font-size: var(--rh-text-sm);
   font-weight: 600;
   letter-spacing: 0.01em;
+  position: relative;
   transition:
     background 0.18s cubic-bezier(0.4, 0, 0.2, 1),
     color 0.18s ease,
@@ -809,6 +810,33 @@ a.rh-sidebar__brand-link.rh-sidebar__brand-link--active {
 .rh-nav-link__label {
   white-space: nowrap;
   overflow: hidden;
+  flex: 1;
+  min-width: 0;
+}
+
+.rh-nav-link__badge {
+  flex-shrink: 0;
+  min-width: 1.35rem;
+  height: 1.35rem;
+  padding: 0 0.35rem;
+  border-radius: 999px;
+  background: var(--rh-primary);
+  color: var(--rh-on-primary, #fff);
+  font-size: 0.65rem;
+  font-weight: 800;
+  line-height: 1.35rem;
+  text-align: center;
+}
+
+.rh-app--collapsed .rh-nav-link__badge {
+  position: absolute;
+  top: 0.35rem;
+  inset-inline-end: 0.35rem;
+  min-width: 1rem;
+  height: 1rem;
+  padding: 0 0.2rem;
+  font-size: 0.55rem;
+  line-height: 1rem;
 }
 
 .rh-app--collapsed .rh-nav-link__label {
@@ -6124,6 +6152,11 @@ html:not([data-theme='dark']) .rh-segment__btn--active .rh-segment__label {
   transition: box-shadow 0.2s ease, border-color 0.2s ease;
 }
 
+.rh-plans__saved-card[data-rh-focused='1'] {
+  border-color: color-mix(in srgb, var(--rh-primary) 55%, var(--rh-border));
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--rh-primary) 22%, transparent), var(--rh-shadow-sm);
+}
+
 @media (min-width: 900px) {
   .rh-plans__saved-card {
     border-radius: var(--rh-radius-xl);
@@ -11076,6 +11109,7 @@ a.rh-peek-btn {
   .rh-sidebar,
   .rh-topbar,
   .rh-backdrop,
+  .rh-bottom-nav,
   .ui-toast-region,
   .ui-modal,
   .no-print {

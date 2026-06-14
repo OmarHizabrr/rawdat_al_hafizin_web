@@ -37,6 +37,8 @@ const LeaveRequestPage = lazy(() => import('./pages/LeaveRequestPage.jsx'))
 const CertificatesPage = lazy(() => import('./pages/CertificatesPage.jsx'))
 const StudentFeelingsPage = lazy(() => import('./pages/StudentFeelingsPage.jsx'))
 const InquiriesPage = lazy(() => import('./pages/InquiriesPage.jsx'))
+const DashboardPage = lazy(() => import('./pages/DashboardPage.jsx'))
+const TasksPage = lazy(() => import('./pages/TasksPage.jsx'))
 const ApplicationRequestPage = lazy(() => import('./pages/ApplicationRequestPage.jsx'))
 const AdminUsersPage = lazy(() => import('./pages/AdminUsersPage.jsx'))
 const AdminDashboardPage = lazy(() => import('./pages/AdminDashboardPage.jsx'))
@@ -118,6 +120,8 @@ export default function App() {
                   />
                   <Route path="/app" element={<MainLayout />}>
                     <Route index element={<PageGuard pageId="home"><AppHomePage /></PageGuard>} />
+                    <Route path="dashboard" element={<PageGuard pageId="home"><DashboardPage /></PageGuard>} />
+                    <Route path="tasks" element={<PageGuard pageId="home"><TasksPage /></PageGuard>} />
                     <Route path="welcome" element={<PageGuard pageId="welcome"><WelcomePage /></PageGuard>} />
                     <Route
                       path="plans/explore"

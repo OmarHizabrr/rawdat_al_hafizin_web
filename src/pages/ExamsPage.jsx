@@ -23,6 +23,7 @@ import { useAuth } from '../context/useAuth.js'
 import { usePermissions } from '../context/usePermissions.js'
 import { useSiteContent } from '../context/useSiteContent.js'
 import { useHidePlanNavigation } from '../hooks/useHidePlanNavigation.js'
+import { useFocusGroupCardFromUrl } from '../hooks/useFocusGroupCardFromUrl.js'
 import { useExploreUrlAutoOpen } from '../hooks/useExploreUrlAutoOpen.js'
 import { ExplorePublicTrigger } from '../components/explore/ExplorePublicTrigger.jsx'
 import { MemberProgressTools } from '../components/MemberProgressSnippet.jsx'
@@ -174,6 +175,7 @@ export default function ExamsPage() {
   const { search } = useLocation()
   const [searchParams] = useSearchParams()
   const uidParam = searchParams.get('uid')?.trim() || ''
+  const focusExamId = searchParams.get('exam')?.trim() || ''
   const impersonateUid = getImpersonateUid(user, search)
   const appLink = useCallback((path) => withImpersonationQuery(path, impersonateUid), [impersonateUid])
   const hidePlanNavigation = useHidePlanNavigation()
@@ -249,6 +251,8 @@ export default function ExamsPage() {
       unsub()
     }
   }, [viewUserId])
+
+  useFocusGroupCardFromUrl(focusExamId, 'exam-card', saved.length > 0)
 
   useEffect(() => {
     if (!membersModal?.id || !user?.uid) return undefined
@@ -540,7 +544,7 @@ export default function ExamsPage() {
               const volLines = formatExamVolumeSpecsSummaryLines(ex.examVolumeSpecs)
               const volTotal = totalResolvedPagesFromExamVolumeSpecs(ex.examVolumeSpecs)
               return (
-              <li key={ex.id} className="rh-plans__saved-card">
+              <li key={ex.id} id={`exam-card-${ex.id}`} className="rh-plans__saved-card">
                 <div className="rh-plans__saved-head">
                   <div className="rh-plans__saved-head-main">
                     <strong>{ex.name}</strong>
