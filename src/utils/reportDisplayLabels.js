@@ -1,5 +1,33 @@
+import { VOLUME_BY_ID } from '../data/volumes.js'
 import { HALAKA_ATTENDANCE_STATUSES } from './halakatStorage.js'
 import { remoteTasmeeMediaLabelAr, remoteTasmeeProviderLabelAr } from './remoteTasmeeStorage.js'
+
+/** ملخص مجلدات الخطة كما تظهر في صفحة الخطط */
+export function formatPlanVolumesForReport(volumes) {
+  const list = Array.isArray(volumes) ? volumes : []
+  if (!list.length) return '—'
+  return list
+    .map((v) => {
+      const id = String(v?.id || '').trim()
+      const label = String(v?.label || VOLUME_BY_ID[id]?.label || id || '').trim() || '—'
+      const pages = Math.max(0, Number(v?.pagesTarget) || 0)
+      return pages > 0 ? `${label}: ${pages} صفحة` : label
+    })
+    .join(' — ')
+}
+
+/** ملخص مجلدات خطط العضو (للتقارير الشاملة) */
+export function formatMemberPlansVolumesForReport(plans) {
+  const list = Array.isArray(plans) ? plans : []
+  if (!list.length) return '—'
+  return list
+    .map((p) => {
+      const name = String(p?.name || p?.id || '').trim() || 'خطة'
+      const vols = formatPlanVolumesForReport(p?.volumes)
+      return vols === '—' ? name : `${name}: ${vols}`
+    })
+    .join(' | ')
+}
 
 export function reportVisibilityLabel(value) {
   const v = String(value || '').trim().toLowerCase()
@@ -76,6 +104,7 @@ export function entityDetailsColumnsForKind(kind, showOwner) {
   ]
   if (showOwner) cols.push({ key: 'ownerName', label: 'المسؤول' })
   if (kind === 'plan') {
+    cols.push({ key: 'volumesSummary', label: 'المجلدات' })
     cols.push({ key: 'dailyPages', label: 'الورد اليومي (ص)' })
     cols.push({ key: 'totalTargetPages', label: 'إجمالي الهدف (ص)' })
   }
@@ -107,6 +136,7 @@ export function formatEntityDetailsForReport(details, kind, { ownerName = '', fo
   }
   if (ownerName) row.ownerName = ownerName
   if (kind === 'plan') {
+    row.volumesSummary = formatPlanVolumesForReport(details?.volumes)
     row.dailyPages = details?.dailyPages ?? '—'
     row.totalTargetPages = details?.totalTargetPages ?? '—'
   }

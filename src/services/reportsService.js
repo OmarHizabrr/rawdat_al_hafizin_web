@@ -12,6 +12,7 @@ import { loadActivityMembersWithProfiles } from '../utils/activitiesStorage.js'
 import { loadDawratMembersWithProfiles } from '../utils/dawratStorage.js'
 import { loadRemoteTasmeeMembersWithProfiles } from '../utils/remoteTasmeeStorage.js'
 import { computePlanProgress } from '../utils/planProgress.js'
+import { formatPlanVolumesForReport, formatMemberPlansVolumesForReport } from '../utils/reportDisplayLabels.js'
 import { REPORT_SCOPE_ALL } from '../config/reportKinds.js'
 
 function asMs(value) {
@@ -430,6 +431,7 @@ function buildStudentPlanProgress(plans, awradAll, awradInPeriod) {
       name: plan.name || '',
       role: plan.planRole || '',
       visibility: plan.planVisibility || '',
+      volumesSummary: formatPlanVolumesForReport(plan.volumes),
       dailyPages: plan.dailyPages ?? '—',
       totalTargetPages: plan.totalTargetPages ?? '—',
       achievedPages: progress.achievedPages ?? 0,
@@ -502,7 +504,11 @@ export async function loadStudentScopeOptions(uid) {
     loadUserMembershipRows(studentUid, 'halaka'),
   ])
   return {
-    plans: plans.map((p) => ({ id: p.id, name: String(p.name || '').trim() || p.id })),
+    plans: plans.map((p) => ({
+      id: p.id,
+      name: String(p.name || '').trim() || p.id,
+      volumesSummary: formatPlanVolumesForReport(p.volumes),
+    })),
     halakat: halakat.map((h) => ({ id: h.id, name: String(h.name || '').trim() || h.id })),
   }
 }
@@ -559,6 +565,9 @@ export async function buildStudentReport(user, range = {}, scope = {}) {
   }
 
   const planNameById = new Map(plansAll.map((p) => [String(p.id), String(p.name || '').trim() || 'خطة']))
+  const planVolumesById = new Map(
+    plansAll.map((p) => [String(p.id), formatPlanVolumesForReport(p.volumes)]),
+  )
   const halakaNameById = new Map(halakatAll.map((h) => [String(h.id), String(h.name || '').trim() || 'حلقة']))
 
   const [planProgress, halakaAttendance] = await Promise.all([
@@ -578,6 +587,7 @@ export async function buildStudentReport(user, range = {}, scope = {}) {
       name: r.name || '',
       role: r.planRole || '',
       visibility: r.planVisibility || '',
+      volumesSummary: formatPlanVolumesForReport(r.volumes),
       dailyPages: r.dailyPages ?? '—',
       totalTargetPages: r.totalTargetPages ?? '—',
       createdAt: pickFirstDate(r.createdAt, r.createTimes),
@@ -668,6 +678,7 @@ export async function buildStudentReport(user, range = {}, scope = {}) {
       planId: scopePlanId || REPORT_SCOPE_ALL,
       halakaId: scopeHalakaId || REPORT_SCOPE_ALL,
       planLabel: scopePlanId ? planNameById.get(scopePlanId) || scopePlanId : 'كل الخطط',
+      planVolumesLabel: scopePlanId ? planVolumesById.get(scopePlanId) || '—' : '',
       halakaLabel: scopeHalakaId ? halakaNameById.get(scopeHalakaId) || scopeHalakaId : 'كل الحلقات',
     },
     modules: { plans: plansAll, halakat: halakatAll, exams: examsAll, activities: activitiesAll, dawrat: dawratAll, remoteTasmee: remoteTasmeeAll },
@@ -679,6 +690,7 @@ export async function buildStudentReport(user, range = {}, scope = {}) {
     awrad: sortByRecent(awradFiltered, (r) => pickFirstDate(r.recordedAt, r.updatedAt, r.createdAt)).map((r) => ({
       ...r,
       planName: planNameById.get(String(r.planId || '')) || '—',
+      planVolumesSummary: planVolumesById.get(String(r.planId || '')) || '—',
     })),
     notifications: sortByRecent(notifications, (r) => pickFirstDate(r.createdAt, r.updatedAt)),
     summary: {
@@ -784,7 +796,13 @@ export async function buildTeacherReport(user, range = {}, scope = {}) {
     (b.recordsCount - a.recordsCount) || (b.pagesTotal - a.pagesTotal) || (asMs(b.latestUpdatedAt) - asMs(a.latestUpdatedAt)))
 
   const teacherRows = {
-    plans: sortByRecent(plans, (r) => pickFirstDate(r.updatedAt, r.createdAt, r.joinedAt)).map((r) => ({ id: r.id, name: r.name || '', role: r.planRole || '', visibility: r.planVisibility || '' })),
+    plans: sortByRecent(plans, (r) => pickFirstDate(r.updatedAt, r.createdAt, r.joinedAt)).map((r) => ({
+      id: r.id,
+      name: r.name || '',
+      role: r.planRole || '',
+      visibility: r.planVisibility || '',
+      volumesSummary: formatPlanVolumesForReport(r.volumes),
+    })),
     halakat: sortByRecent(halakat, (r) => pickFirstDate(r.updatedAt, r.createdAt, r.joinedAt)).map((r) => ({ id: r.id, name: r.name || '', role: r.halakaRole || '', visibility: r.halakaVisibility || '' })),
     exams: sortByRecent(exams, (r) => pickFirstDate(r.updatedAt, r.createdAt, r.joinedAt)).map((r) => ({
       id: r.id,
@@ -924,6 +942,7 @@ export async function buildGroupReport(kind, entityId, range = {}) {
           email: m.email || '',
           role: m.role || '',
           plansCount: mPlans.length,
+          plansVolumesSummary: formatMemberPlansVolumesForReport(mPlans),
           halakatCount: mHalakat.length,
           examsCount: mExams.length,
           activitiesCount: mActivities.length,
@@ -1009,6 +1028,8 @@ export async function buildGroupReport(kind, entityId, range = {}) {
       entity: planRow,
       entityDetails: {
         ...baseDetails,
+        volumes: entity.volumes || [],
+        volumesSummary: formatPlanVolumesForReport(entity.volumes),
         dailyPages: entity.dailyPages || '',
         totalTargetPages: entity.totalTargetPages || '',
       },

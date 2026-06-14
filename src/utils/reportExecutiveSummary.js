@@ -10,7 +10,12 @@ function formatRangeLabel(fromYmd, toYmd) {
 function formatScopeLabel(scope) {
   if (!scope) return ''
   const parts = []
-  if (scope.planLabel) parts.push(`الخطط: ${scope.planLabel}`)
+  if (scope.planLabel) {
+    const planPart = scope.planVolumesLabel
+      ? `${scope.planLabel} (${scope.planVolumesLabel})`
+      : scope.planLabel
+    parts.push(`الخطط: ${planPart}`)
+  }
   if (scope.halakaLabel) parts.push(`الحلقات: ${scope.halakaLabel}`)
   return parts.join(' · ')
 }
@@ -72,8 +77,11 @@ export function buildReportExecutiveSummary(reportData, context = {}) {
       { label: 'صفحات في الحضور', value: s.pagesRecorded ?? 0 },
     )
   } else if (reportData.kind === 'plan') {
+    const volumesNote = reportData.entityDetails?.volumesSummary
+      ? ` المجلدات: ${reportData.entityDetails.volumesSummary}.`
+      : ''
     paragraphs.push(
-      `يعرض تقرير الخطة «${entityName}» إنجاز الأعضاء في الأوراد خلال ${rangeLabel}. يتضمّن تفاصيل الخطة وقائمة الأعضاء ونسب الإنجاز لكل عضو.`,
+      `يعرض تقرير الخطة «${entityName}» إنجاز الأعضاء في الأوراد خلال ${rangeLabel}.${volumesNote} يتضمّن تفاصيل الخطة وقائمة الأعضاء ونسب الإنجاز لكل عضو.`,
     )
     if ((s.members ?? 0) > 0) {
       paragraphs.push(

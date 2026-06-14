@@ -35,6 +35,7 @@ export function collectPrintSectionsFromReport(reportData, helpers = {}) {
         title: 'إنجاز الخطط (تفصيلي)',
         columns: [
           { key: 'name', label: 'الخطة' },
+          { key: 'volumesSummary', label: 'المجلدات' },
           { key: 'role', label: 'الدور' },
           { key: 'progressPercent', label: 'نسبة الإنجاز %' },
           { key: 'achievedPages', label: 'أنجز (ص)' },
@@ -83,6 +84,7 @@ export function collectPrintSectionsFromReport(reportData, helpers = {}) {
       title: 'الخطط',
       columns: [
         { key: 'name', label: 'الاسم' },
+        { key: 'volumesSummary', label: 'المجلدات' },
         { key: 'role', label: 'الدور' },
         { key: 'visibilityLabel', label: 'الظهور' },
         { key: 'dailyPages', label: 'ورد يومي' },
@@ -91,6 +93,7 @@ export function collectPrintSectionsFromReport(reportData, helpers = {}) {
       ],
       rows: (reportData.studentRows?.plans || []).map((r) => ({
         name: r.name || '—',
+        volumesSummary: r.volumesSummary || '—',
         role: role(r.role),
         visibilityLabel: reportVisibilityLabel(r.visibility),
         dailyPages: r.dailyPages ?? '—',
@@ -183,6 +186,7 @@ export function collectPrintSectionsFromReport(reportData, helpers = {}) {
       title: 'الأوراد',
       columns: [
         { key: 'planName', label: 'الخطة' },
+        { key: 'planVolumesSummary', label: 'المجلدات' },
         { key: 'recordedAt', label: 'تاريخ الورد' },
         { key: 'pagesCount', label: 'عدد الصفحات' },
         { key: 'fromPage', label: 'من صفحة' },
@@ -190,6 +194,7 @@ export function collectPrintSectionsFromReport(reportData, helpers = {}) {
       ],
       rows: (reportData.awrad || []).map((r) => ({
         planName: r.planName || '—',
+        planVolumesSummary: r.planVolumesSummary || '—',
         recordedAt: fmt(r.recordedAt),
         pagesCount: r.pagesCount ?? 0,
         fromPage: r.fromPage ?? '—',
@@ -233,6 +238,7 @@ export function collectPrintSectionsFromReport(reportData, helpers = {}) {
       columns: [
         { key: 'section', label: 'القسم' },
         { key: 'name', label: 'الاسم' },
+        { key: 'volumesSummary', label: 'المجلدات' },
         { key: 'role', label: 'الدور' },
         { key: 'visibilityLabel', label: 'الظهور' },
         { key: 'learnerContribution', label: 'مساهمة / إنجاز' },
@@ -241,6 +247,7 @@ export function collectPrintSectionsFromReport(reportData, helpers = {}) {
         ...(reportData.teacherRows?.plans || []).map((r) => ({
           section: 'الخطط',
           name: r.name,
+          volumesSummary: r.volumesSummary || '—',
           role: role(r.role),
           visibilityLabel: reportVisibilityLabel(r.visibility),
           learnerContribution: '—',
@@ -248,6 +255,7 @@ export function collectPrintSectionsFromReport(reportData, helpers = {}) {
         ...(reportData.teacherRows?.activities || []).map((r) => ({
           section: 'الأنشطة',
           name: r.name,
+          volumesSummary: '—',
           role: role(r.role),
           visibilityLabel: reportVisibilityLabel(r.visibility),
           learnerContribution: (r.memberContributionText || '').trim() || '—',
@@ -255,6 +263,7 @@ export function collectPrintSectionsFromReport(reportData, helpers = {}) {
         ...(reportData.teacherRows?.exams || []).map((r) => ({
           section: 'الاختبارات',
           name: r.name,
+          volumesSummary: '—',
           role: role(r.role),
           visibilityLabel: reportVisibilityLabel(r.visibility),
           learnerContribution: examSummary(r),
@@ -262,6 +271,7 @@ export function collectPrintSectionsFromReport(reportData, helpers = {}) {
         ...(reportData.teacherRows?.dawrat || []).map((r) => ({
           section: 'الدورات',
           name: r.name,
+          volumesSummary: '—',
           role: role(r.role),
           visibilityLabel: reportVisibilityLabel(r.visibility),
           learnerContribution: (r.memberContributionText || '').trim() || '—',
@@ -269,6 +279,7 @@ export function collectPrintSectionsFromReport(reportData, helpers = {}) {
         ...(reportData.teacherRows?.remoteTasmee || []).map((r) => ({
           section: 'التسميع عن بعد',
           name: r.name,
+          volumesSummary: '—',
           role: role(r.role),
           visibilityLabel: reportVisibilityLabel(r.visibility),
           learnerContribution: '—',
@@ -476,6 +487,7 @@ export function collectPrintSectionsFromReport(reportData, helpers = {}) {
       columns: [
         { key: 'displayName', label: 'الاسم' },
         { key: 'role', label: 'الدور' },
+        { key: 'plansVolumesSummary', label: 'مجلدات خططه' },
         { key: 'plansCount', label: 'خطط' },
         { key: 'awradCount', label: 'أوراد' },
         { key: 'pagesInAwrad', label: 'صفحات' },
