@@ -3,6 +3,7 @@
 @import './styles/ui-components.css';
 @import './styles/app-mobile.css';
 @import './styles/platform-polish.css';
+@import './styles/student-workspace.css';
 
 * {
   box-sizing: border-box;

@@ -4,6 +4,11 @@
 @import 'tailwindcss/theme' layer(theme) prefix(tw);
 @import 'tailwindcss/utilities' layer(utilities) prefix(tw);
 
+/* مسح ملفات المشروع لتوليد tw- من الصفحات والمكوّنات */
+@source '../pages/**/*.{jsx,js}';
+@source '../components/dashboard/**/*.{jsx,js}';
+@source '../components/tasks/**/*.{jsx,js}';
+
 @theme {
   --font-sans: 'Noto Sans Arabic', ui-sans-serif, system-ui, sans-serif;
 }
