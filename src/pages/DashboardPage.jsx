@@ -5,7 +5,6 @@ import { DashboardMenuGrid } from '../components/dashboard/DashboardMenuGrid.jsx
 import { DashboardUrgentTasks } from '../components/dashboard/DashboardUrgentTasks.jsx'
 import { buildDashboardMenuItems } from '../data/dashboardMenuItems.js'
 import { useTasksStore } from '../stores/useTasksStore.js'
-import { useStudentWorkspace } from '../hooks/useStudentWorkspace.js'
 import { useAuth } from '../context/useAuth.js'
 import { usePermissions } from '../context/usePermissions.js'
 import { useSiteContent } from '../context/useSiteContent.js'
@@ -20,8 +19,12 @@ export default function DashboardPage() {
   const impersonateUid = getImpersonateUid(user, search)
   const tasksPath = useMemo(() => withImpersonationQuery('/app/tasks', impersonateUid), [impersonateUid])
   const { ready: permReady, canAccessPage } = usePermissions()
-  const { loading, plansCount, halakatCount, pendingTaskCount, workspace } = useStudentWorkspace()
+
   const tasks = useTasksStore((s) => s.tasks)
+  const loading = useTasksStore((s) => s.workspaceLoading)
+  const plansCount = useTasksStore((s) => s.plansCount)
+  const halakatCount = useTasksStore((s) => s.halakatCount)
+  const openTaskCount = useTasksStore((s) => s.tasks.filter((t) => t.step !== 'done').length)
 
   const stats = useMemo(() => {
     const total = tasks.length
@@ -34,8 +37,8 @@ export default function DashboardPage() {
     const visible = (item) =>
       !item.pageId || !permReady || isAdmin(user) || canAccessPage(item.pageId)
     return buildDashboardMenuItems(str).filter(visible).map((item) => {
-      if (item.id === 'tasks' && pendingTaskCount > 0) {
-        return { ...item, badge: `${pendingTaskCount} واجب` }
+      if (item.id === 'tasks' && openTaskCount > 0) {
+        return { ...item, badge: `${openTaskCount} واجب` }
       }
       if (item.id === 'plans' && plansCount > 0) {
         return { ...item, badge: `${plansCount} خطة` }
@@ -45,13 +48,14 @@ export default function DashboardPage() {
       }
       return item
     })
-  }, [permReady, user, canAccessPage, pendingTaskCount, plansCount, halakatCount, str])
+  }, [permReady, user, canAccessPage, openTaskCount, plansCount, halakatCount, str])
 
   const awradToday = useMemo(() => {
-    const open = (workspace.plans || []).length
-    const done = tasks.filter((t) => t.source === 'plan' && t.step === 'done').length
+    const planTasks = tasks.filter((t) => t.source === 'plan')
+    const open = planTasks.filter((t) => t.step !== 'done').length
+    const done = planTasks.filter((t) => t.step === 'done').length
     return { open, done }
-  }, [workspace.plans, tasks])
+  }, [tasks])
 
   return (
     <div className="rh-student-workspace" dir="rtl">
@@ -69,8 +73,8 @@ export default function DashboardPage() {
             <Link to={tasksPath} className="rh-student-workspace__cta">
               <RhIcon as={ListChecks} size={18} strokeWidth={RH_ICON_STROKE} />
               {str('layout.nav_tasks')}
-              {pendingTaskCount > 0 ? (
-                <span className="rh-student-workspace__cta-badge">{pendingTaskCount}</span>
+              {openTaskCount > 0 ? (
+                <span className="rh-student-workspace__cta-badge">{openTaskCount}</span>
               ) : null}
             </Link>
           </div>
@@ -86,7 +90,7 @@ export default function DashboardPage() {
               {[
                 { label: str('dashboard.kpi_open'), value: stats.total - stats.done },
                 { label: str('dashboard.kpi_in_progress'), value: stats.inProgress },
-                { label: str('dashboard.kpi_awrad_today'), value: `${awradToday.done}/${awradToday.open || '—'}` },
+                { label: str('dashboard.kpi_awrad_today'), value: `${awradToday.done}/${awradToday.open + awradToday.done || '—'}` },
                 { label: str('dashboard.kpi_done'), value: stats.done },
               ].map((kpi) => (
                 <div key={kpi.label} className="rh-student-workspace__kpi">
@@ -98,7 +102,7 @@ export default function DashboardPage() {
           )}
         </header>
 
-        {!loading && pendingTaskCount > 0 ? (
+        {!loading && openTaskCount > 0 ? (
           <DashboardUrgentTasks tasks={tasks} impersonateUid={impersonateUid} str={str} />
         ) : null}
 
@@ -114,8 +118,8 @@ export default function DashboardPage() {
 
         <footer className="rh-student-workspace__footer">
           <p className="rh-student-workspace__footer-text">
-            {pendingTaskCount > 0
-              ? str('dashboard.footer_pending', { count: pendingTaskCount })
+            {openTaskCount > 0
+              ? str('dashboard.footer_pending', { count: openTaskCount })
               : str('dashboard.footer_all_clear')}
           </p>
           <Link to={tasksPath} className="rh-student-workspace__footer-link">

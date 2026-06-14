@@ -366,6 +366,7 @@ export function MainLayout() {
             impersonateUid={impersonateUid}
             moreOpen={mobileOpen}
             onMoreClick={() => setMobileOpen((open) => !open)}
+            onTabClick={closeMobile}
           />
         ) : null}
       </div>

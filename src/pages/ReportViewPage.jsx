@@ -2170,7 +2170,12 @@ export default function ReportViewPage() {
                     />
                     {reportData.kind === "plan" && (
                       <SectionTable
-                        title="إنجاز الأعضاء في الخطة"
+                        title={
+                          reportData.entityDetails?.volumesSummary &&
+                          reportData.entityDetails.volumesSummary !== "—"
+                            ? `إنجاز الأعضاء في الخطة — المجلدات: ${reportData.entityDetails.volumesSummary}`
+                            : "إنجاز الأعضاء في الخطة"
+                        }
                         tabId="progress"
                         columns={[
                           { key: "displayName", label: "الاسم" },

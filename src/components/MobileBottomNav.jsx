@@ -4,7 +4,7 @@ import { withImpersonationQuery } from '../utils/impersonation.js'
 import { rhHapticChromeTap } from '../utils/haptics.js'
 import { RhIcon, RH_ICON_STROKE } from '../ui/RhIcon.jsx'
 
-export function MobileBottomNav({ tabs = [], impersonateUid = '', moreOpen = false, onMoreClick }) {
+export function MobileBottomNav({ tabs = [], impersonateUid = '', moreOpen = false, onMoreClick, onTabClick }) {
   if (!tabs.length) return null
 
   return (
@@ -16,6 +16,7 @@ export function MobileBottomNav({ tabs = [], impersonateUid = '', moreOpen = fal
               to={withImpersonationQuery(item.to, impersonateUid)}
               end={item.end}
               aria-label={item.badge ? `${item.label} (${item.badge})` : item.label}
+              onClick={() => onTabClick?.()}
               className={({ isActive }) =>
                 ['rh-bottom-nav__item', isActive ? 'rh-bottom-nav__item--active' : ''].filter(Boolean).join(' ')
               }

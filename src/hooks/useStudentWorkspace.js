@@ -27,6 +27,8 @@ export function useStudentWorkspace() {
   const [loadingMemberships, setLoadingMemberships] = useState(true)
 
   const syncFromWorkspace = useTasksStore((s) => s.syncFromWorkspace)
+  const clearWorkspace = useTasksStore((s) => s.clearWorkspace)
+  const setWorkspaceMeta = useTasksStore((s) => s.setWorkspaceMeta)
 
   const workspaceRefreshKey = useMemo(() => {
     if (
@@ -54,7 +56,7 @@ export function useStudentWorkspace() {
       unsubP()
       unsubA()
     }
-  }, [contextUserId])
+  }, [contextUserId, clearWorkspace])
 
   useEffect(() => {
     if (!contextUserId) {
@@ -117,7 +119,15 @@ export function useStudentWorkspace() {
     syncFromWorkspace(builtTasks, contextUserId)
   }, [builtTasks, contextUserId, syncFromWorkspace])
 
-  const loading = !contextUserId || (loadingMemberships && plans.length === 0 && builtTasks.length === 0)
+  const loading = Boolean(contextUserId) && loadingMemberships
+
+  useEffect(() => {
+    setWorkspaceMeta({
+      loading: Boolean(contextUserId) && loadingMemberships,
+      plansCount: plans.length,
+      halakatCount: memberships.halakat.length,
+    })
+  }, [contextUserId, loadingMemberships, plans.length, memberships.halakat.length, setWorkspaceMeta])
 
   return {
     contextUserId,
@@ -126,6 +136,5 @@ export function useStudentWorkspace() {
     loading,
     plansCount: plans.length,
     halakatCount: memberships.halakat.length,
-    pendingTaskCount: builtTasks.filter((t) => t.step !== 'done').length,
   }
 }

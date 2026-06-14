@@ -189,6 +189,74 @@
   color: inherit;
 }
 
+.rh-student-workspace__menu-card[data-accent='emerald'] {
+  --rh-menu-accent: #059669;
+  --rh-menu-accent-bg: #ecfdf5;
+}
+
+.rh-student-workspace__menu-card[data-accent='sky'] {
+  --rh-menu-accent: #0284c7;
+  --rh-menu-accent-bg: #f0f9ff;
+}
+
+.rh-student-workspace__menu-card[data-accent='violet'] {
+  --rh-menu-accent: #7c3aed;
+  --rh-menu-accent-bg: #f5f3ff;
+}
+
+.rh-student-workspace__menu-card[data-accent='amber'] {
+  --rh-menu-accent: #d97706;
+  --rh-menu-accent-bg: #fffbeb;
+}
+
+.rh-student-workspace__menu-card[data-accent='rose'] {
+  --rh-menu-accent: #e11d48;
+  --rh-menu-accent-bg: #fff1f2;
+}
+
+.rh-student-workspace__menu-card[data-accent='indigo'] {
+  --rh-menu-accent: #4f46e5;
+  --rh-menu-accent-bg: #eef2ff;
+}
+
+.rh-student-workspace__menu-card[data-accent='orange'] {
+  --rh-menu-accent: #ea580c;
+  --rh-menu-accent-bg: #fff7ed;
+}
+
+.rh-student-workspace__menu-card[data-accent='slate'] {
+  --rh-menu-accent: #475569;
+  --rh-menu-accent-bg: #f8fafc;
+}
+
+.rh-student-workspace__menu-card[data-accent='pink'] {
+  --rh-menu-accent: #db2777;
+  --rh-menu-accent-bg: #fdf2f8;
+}
+
+.rh-student-workspace__menu-card[data-accent='teal'] {
+  --rh-menu-accent: #0d9488;
+  --rh-menu-accent-bg: #f0fdfa;
+}
+
+.rh-student-workspace__menu-card[data-accent] {
+  border-color: color-mix(in srgb, var(--rh-menu-accent, var(--rh-primary)) 18%, var(--rh-border));
+}
+
+.rh-student-workspace__menu-card[data-accent]:hover {
+  border-color: color-mix(in srgb, var(--rh-menu-accent, var(--rh-primary)) 35%, var(--rh-border));
+}
+
+.rh-student-workspace__menu-card[data-accent] .rh-student-workspace__menu-icon {
+  background: color-mix(in srgb, var(--rh-menu-accent-bg, var(--rh-primary-muted)) 75%, var(--rh-surface));
+  color: var(--rh-menu-accent, var(--rh-primary));
+}
+
+.rh-student-workspace__menu-card[data-accent] .rh-student-workspace__menu-badge {
+  background: color-mix(in srgb, var(--rh-menu-accent-bg, var(--rh-primary-muted)) 85%, var(--rh-surface));
+  color: var(--rh-menu-accent, var(--rh-primary));
+}
+
 .rh-student-workspace__menu-card-top {
   display: flex;
   align-items: flex-start;

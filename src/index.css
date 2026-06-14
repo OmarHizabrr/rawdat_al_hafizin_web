@@ -1199,10 +1199,6 @@ a.rh-sidebar__brand-link.rh-sidebar__brand-link--active {
     line-height: inherit;
   }
 
-  .rh-student-workspace .tw-font-sans {
-    font-family: var(--font) !important;
-  }
-
   .rh-student-workspace button,
   .rh-student-workspace a {
     -webkit-tap-highlight-color: transparent;

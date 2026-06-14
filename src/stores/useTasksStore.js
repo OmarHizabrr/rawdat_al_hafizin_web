@@ -57,6 +57,27 @@ export const useTasksStore = create((set, get) => ({
   activeTaskId: null,
   userId: '',
   stepOverrides: {},
+  workspaceLoading: false,
+  plansCount: 0,
+  halakatCount: 0,
+
+  setWorkspaceMeta: ({ loading, plansCount, halakatCount } = {}) =>
+    set({
+      workspaceLoading: loading ?? get().workspaceLoading,
+      plansCount: plansCount ?? get().plansCount,
+      halakatCount: halakatCount ?? get().halakatCount,
+    }),
+
+  clearWorkspace: () =>
+    set({
+      tasks: [],
+      activeTaskId: null,
+      userId: '',
+      stepOverrides: {},
+      workspaceLoading: false,
+      plansCount: 0,
+      halakatCount: 0,
+    }),
 
   syncFromWorkspace: (builtTasks, userId) => {
     const uid = String(userId || '').trim()

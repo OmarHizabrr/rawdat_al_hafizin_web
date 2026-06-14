@@ -175,7 +175,14 @@ export default function ReportsHubPage() {
   const scopePlanOptions = useMemo(
     () => [
       { value: REPORT_SCOPE_ALL, label: 'كل الخطط' },
-      ...(scopeOptions.plans || []).map((p) => ({ value: p.id, label: p.name })),
+      ...(scopeOptions.plans || []).map((p) => {
+        const vols = String(p.volumesSummary || '').trim()
+        const base = p.name || p.id
+        return {
+          value: p.id,
+          label: vols && vols !== '—' ? `${base} — ${vols}` : base,
+        }
+      }),
     ],
     [scopeOptions.plans],
   )

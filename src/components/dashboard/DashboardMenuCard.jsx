@@ -10,7 +10,11 @@ export function DashboardMenuCard({ item }) {
   const impersonateUid = getImpersonateUid(user, search)
 
   return (
-    <HapticLink to={withImpersonationQuery(item.to, impersonateUid)} className="rh-student-workspace__menu-card">
+    <HapticLink
+      to={withImpersonationQuery(item.to, impersonateUid)}
+      className="rh-student-workspace__menu-card"
+      data-accent={item.accent || 'slate'}
+    >
       <div className="rh-student-workspace__menu-card-top">
         <span className="rh-student-workspace__menu-icon" aria-hidden>
           <RhIcon as={item.Icon} size={22} strokeWidth={RH_ICON_STROKE} />

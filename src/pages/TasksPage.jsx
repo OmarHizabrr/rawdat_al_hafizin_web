@@ -1,8 +1,8 @@
 import { Link, useLocation } from 'react-router-dom'
+import { useEffect } from 'react'
 import { ArrowLeft, ArrowRight, ChevronLeft, ChevronRight, ExternalLink, Loader2, RotateCcw } from 'lucide-react'
 import { TaskStepper } from '../components/tasks/TaskStepper.jsx'
 import { TASK_PROGRESS_STEPS, useTasksStore } from '../stores/useTasksStore.js'
-import { useStudentWorkspace } from '../hooks/useStudentWorkspace.js'
 import { useAuth } from '../context/useAuth.js'
 import { useSiteContent } from '../context/useSiteContent.js'
 import { buildTaskHref } from '../utils/buildTaskHref.js'
@@ -19,7 +19,7 @@ export default function TasksPage() {
   const { str } = useSiteContent()
   const { search } = useLocation()
   const impersonateUid = getImpersonateUid(user, search)
-  const { loading, builtTasks } = useStudentWorkspace()
+  const loading = useTasksStore((s) => s.workspaceLoading)
 
   const tasks = useTasksStore((s) => s.tasks)
   const activeTaskId = useTasksStore((s) => s.activeTaskId)
@@ -28,6 +28,12 @@ export default function TasksPage() {
   const advanceTask = useTasksStore((s) => s.advanceTask)
   const regressTask = useTasksStore((s) => s.regressTask)
   const resetTaskToBuilt = useTasksStore((s) => s.resetTaskToBuilt)
+
+  useEffect(() => {
+    const taskId = new URLSearchParams(search).get('task')?.trim()
+    if (!taskId) return
+    if (tasks.some((t) => t.id === taskId)) setActiveTaskId(taskId)
+  }, [search, tasks, setActiveTaskId])
 
   const activeTask = tasks.find((t) => t.id === activeTaskId) || tasks[0] || null
   const openCount = tasks.filter((t) => t.step !== 'done').length
@@ -59,7 +65,7 @@ export default function TasksPage() {
               </span>
             ) : (
               <span className="rh-task-chip">
-                {openCount} مفتوح · {builtTasks.length} إجمالي
+                {openCount} مفتوح · {tasks.length} إجمالي
               </span>
             )}
           </div>
