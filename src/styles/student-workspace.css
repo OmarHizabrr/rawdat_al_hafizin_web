@@ -521,12 +521,16 @@
   padding: 0;
   font: inherit;
   cursor: pointer;
+  appearance: none;
 }
 
 .rh-task-stepper__dot:disabled {
   cursor: default;
 }
 
+.rh-student-workspace__urgent-item .rh-task-actions {
+  flex-shrink: 0;
+}
 .rh-task-stepper__dot--done {
   border-color: var(--rh-success);
   background: var(--rh-success);

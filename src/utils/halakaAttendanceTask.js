@@ -24,6 +24,8 @@ function daysBetweenYmd(a, b) {
 }
 
 /** أحدث جلسة ذات صلة (اليوم أو مفتوحة أو خلال ١٤ يوماً) */
+export const HALAKA_TASKS_LIMIT = 10
+
 export function pickRelevantHalakaSession(sessions = [], todayYmd = localYmd()) {
   const rows = (sessions || []).filter((s) => s?.id)
   if (!rows.length) return null

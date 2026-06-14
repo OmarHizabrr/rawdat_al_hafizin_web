@@ -53,19 +53,17 @@ export default function TasksPage() {
           <div className="rh-student-workspace__section-head">
             <div>
               <h1 className="rh-student-workspace__title">{str('layout.nav_tasks')}</h1>
-              <p className="rh-student-workspace__lead">
-                مرتبطة بخططك وأورادك واختباراتك — Stepper يعكس التقدّم الفعلي مع إمكانية التعديل اليدوي.
-              </p>
+              <p className="rh-student-workspace__lead">{str('tasks.lead')}</p>
             </div>
             {loading ? (
               <span className="rh-task-chip">
                 <RhIcon as={Loader2} size={14} strokeWidth={RH_ICON_STROKE} className="rh-lucide" style={{ animation: 'rh-spin 1s linear infinite' }} />
                 {' '}
-                تحديث…
+                {str('tasks.updating')}
               </span>
             ) : (
               <span className="rh-task-chip">
-                {openCount} مفتوح · {tasks.length} إجمالي
+                {str('tasks.summary', { open: openCount, total: tasks.length })}
               </span>
             )}
           </div>
@@ -73,9 +71,9 @@ export default function TasksPage() {
 
         {!loading && tasks.length === 0 ? (
           <div className="rh-student-workspace__empty">
-            <p className="rh-student-workspace__footer-text">لا توجد واجبات حالياً.</p>
+            <p className="rh-student-workspace__footer-text">{str('tasks.empty_title')}</p>
             <p className="rh-student-workspace__menu-desc" style={{ marginTop: 'var(--rh-space-2)' }}>
-              انضم لخطة أو حلقة أو نشاط ليظهر واجبك هنا تلقائياً.
+              {str('tasks.empty_hint')}
             </p>
             <div className="rh-task-actions" style={{ justifyContent: 'center', marginTop: 'var(--rh-space-4)' }}>
               <Link to={plansPath} className="rh-student-workspace__cta">
@@ -89,7 +87,7 @@ export default function TasksPage() {
         ) : (
           <div className="rh-student-workspace__tasks-layout">
             <aside>
-              <h2 className="rh-student-workspace__section-title">قائمة الواجبات</h2>
+              <h2 className="rh-student-workspace__section-title">{str('tasks.list_title')}</h2>
               <ul className="rh-student-workspace__task-list" style={{ marginTop: 'var(--rh-space-3)' }}>
                 {tasks.map((task) => {
                   const selected = task.id === activeTask?.id
@@ -121,7 +119,7 @@ export default function TasksPage() {
                           <span className="rh-task-chip" style={{ color: 'var(--rh-primary)' }}>
                             {stepLabel(task.step)}
                           </span>
-                          {manual ? <span className="rh-task-chip rh-task-chip--manual">تعديل يدوي</span> : null}
+                          {manual ? <span className="rh-task-chip rh-task-chip--manual">{str('tasks.manual_badge')}</span> : null}
                           <span className="rh-task-chip">{task.dueLabel}</span>
                         </div>
                       </button>
@@ -129,7 +127,7 @@ export default function TasksPage() {
                         <div style={{ marginTop: 'var(--rh-space-3)', display: 'flex', justifyContent: 'flex-end' }}>
                           <Link to={itemHref} className="rh-student-workspace__urgent-open">
                             <RhIcon as={ExternalLink} size={12} strokeWidth={RH_ICON_STROKE} />
-                            فتح
+                            {str('tasks.open_short')}
                           </Link>
                         </div>
                       ) : null}
@@ -151,7 +149,7 @@ export default function TasksPage() {
                       <p className="rh-student-workspace__lead">{activeTask.description}</p>
                       {activeTask.builtStep && activeTask.builtStep !== activeTask.step ? (
                         <p className="rh-student-workspace__menu-desc" style={{ color: 'var(--rh-warning)' }}>
-                          الحالة من البيانات: <strong>{stepLabel(activeTask.builtStep)}</strong>
+                          {str('tasks.built_step_note', { step: stepLabel(activeTask.builtStep) })}
                         </p>
                       ) : null}
                     </div>
@@ -160,37 +158,37 @@ export default function TasksPage() {
 
                   <div className="rh-task-panel-box" style={{ marginTop: 'var(--rh-space-5)' }}>
                     <p className="rh-student-workspace__section-title" style={{ marginBottom: 'var(--rh-space-4)' }}>
-                      مراحل التقدّم
+                      {str('tasks.progress_title')}
                     </p>
                     <TaskStepper currentStep={activeTask.step} onStepClick={(stepId) => setTaskStep(activeTask.id, stepId)} />
                   </div>
 
                   <div className="rh-task-actions" style={{ marginTop: 'var(--rh-space-5)' }}>
                     <Button type="button" variant="secondary" icon={ChevronRight} onClick={() => regressTask(activeTask.id)}>
-                      المرحلة السابقة
+                      {str('tasks.step_prev')}
                     </Button>
                     <Button type="button" icon={ChevronLeft} onClick={() => advanceTask(activeTask.id)}>
-                      المرحلة التالية
+                      {str('tasks.step_next')}
                     </Button>
                     {activeTask.builtStep && activeTask.step !== activeTask.builtStep ? (
                       <Button type="button" variant="secondary" icon={RotateCcw} onClick={() => resetTaskToBuilt(activeTask.id)}>
-                        إعادة لمزامنة البيانات
+                        {str('tasks.reset_sync')}
                       </Button>
                     ) : null}
                     {taskLink ? (
                       <Link to={taskLink} className="rh-student-workspace__urgent-open">
                         <RhIcon as={ExternalLink} size={14} strokeWidth={RH_ICON_STROKE} />
-                        فتح الصفحة
+                        {str('tasks.open_page')}
                       </Link>
                     ) : null}
                   </div>
 
                   <p className="rh-student-workspace__menu-desc" style={{ marginTop: 'var(--rh-space-4)' }}>
-                    عند تسجيل الورد أو إتمام الاختبار أو كتابة المساهمة، تُحدَّث الحالة تلقائياً من بياناتك.
+                    {str('tasks.auto_sync_note')}
                   </p>
                 </>
               ) : (
-                <p className="rh-student-workspace__footer-text">اختر واجباً من القائمة.</p>
+                <p className="rh-student-workspace__footer-text">{str('tasks.pick_one')}</p>
               )}
             </section>
           </div>
@@ -199,7 +197,7 @@ export default function TasksPage() {
         <footer className="rh-student-workspace__footer" style={{ justifyContent: 'center' }}>
           <Link to={homePath} className="rh-student-workspace__footer-link">
             <RhIcon as={ArrowLeft} size={16} strokeWidth={RH_ICON_STROKE} />
-            العودة للرئيسية
+            {str('tasks.back_home')}
           </Link>
         </footer>
       </div>

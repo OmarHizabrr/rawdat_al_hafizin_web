@@ -6,6 +6,7 @@ import {
   describeHalakaAttendance,
   halakaAttendanceDueLabel,
   halakaAttendanceToTaskStep,
+  HALAKA_TASKS_LIMIT,
 } from './halakaAttendanceTask.js'
 
 const TASK_STEP_IDS = ['pending', 'in_progress', 'review', 'done']
@@ -84,7 +85,7 @@ export function buildStudentTasks(workspace = {}) {
 
   const snapshotByHalakaId = new Map(halakaSnapshots.map((s) => [s.halakaId, s]))
 
-  for (const h of halakat.slice(0, 6)) {
+  for (const h of halakat.slice(0, HALAKA_TASKS_LIMIT)) {
     const snap = snapshotByHalakaId.get(h.id)
     const session = snap?.session || null
     const attendance = snap?.attendance || null

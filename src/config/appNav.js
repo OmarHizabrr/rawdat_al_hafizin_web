@@ -44,7 +44,7 @@ export function buildBaseNav(str) {
     { to: '/app/plans', label: str('layout.nav_plans'), Icon: ClipboardList, pageId: 'plans' },
     { to: '/app/halakat', label: str('layout.nav_halakat'), Icon: UsersRound, pageId: 'halakat' },
     { to: '/app/remote-tasmee', label: str('layout.nav_remote_tasmee'), Icon: Video, pageId: 'remote_tasmee' },
-    { to: '/app/exams', label: str('layout.nav_exams'), Icon: ListChecks, pageId: 'exams' },
+    { to: '/app/exams', label: str('layout.nav_exams'), Icon: ScrollText, pageId: 'exams' },
     { to: '/app/dawrat', label: str('layout.nav_dawrat'), Icon: GraduationCap, pageId: 'dawrat' },
     { to: '/app/awrad', label: str('layout.nav_awrad'), Icon: NotebookPen, pageId: 'awrad' },
     { to: '/app/activities', label: str('layout.nav_activities'), Icon: CalendarDays, pageId: 'activities' },

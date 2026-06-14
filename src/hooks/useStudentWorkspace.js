@@ -8,6 +8,19 @@ import { subscribePlans } from '../utils/plansStorage.js'
 import { getImpersonateUid } from '../utils/impersonation.js'
 import { useTasksStore } from '../stores/useTasksStore.js'
 
+const WORKSPACE_REFRESH_PREFIXES = [
+  '/app/dashboard',
+  '/app/tasks',
+  '/app/plans',
+  '/app/awrad',
+  '/app/halakat',
+  '/app/exams',
+  '/app/activities',
+  '/app/dawrat',
+  '/app/reports',
+  '/app',
+]
+
 /** تحميل بيانات الطالب الحية ومزامنة الواجبات مع Zustand */
 export function useStudentWorkspace() {
   const { user } = useAuth()
@@ -31,18 +44,22 @@ export function useStudentWorkspace() {
   const setWorkspaceMeta = useTasksStore((s) => s.setWorkspaceMeta)
 
   const workspaceRefreshKey = useMemo(() => {
-    if (
-      pathname.startsWith('/app/tasks') ||
-      pathname.startsWith('/app/dashboard') ||
-      pathname.startsWith('/app/exams') ||
-      pathname.startsWith('/app/activities') ||
-      pathname.startsWith('/app/dawrat') ||
-      pathname.startsWith('/app/halakat')
-    ) {
-      return pathname
-    }
-    return ''
+    const matches = WORKSPACE_REFRESH_PREFIXES.filter(
+      (prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`),
+    )
+    return matches.sort((a, b) => b.length - a.length)[0] || ''
   }, [pathname])
+
+  useEffect(() => {
+    if (!contextUserId) {
+      clearWorkspace()
+      return
+    }
+    setPlans([])
+    setAwrad([])
+    setMemberships({ halakat: [], exams: [], activities: [], dawrat: [], halakaSnapshots: [] })
+    setLoadingMemberships(true)
+  }, [contextUserId, clearWorkspace])
 
   useEffect(() => {
     if (!contextUserId) {
@@ -56,7 +73,7 @@ export function useStudentWorkspace() {
       unsubP()
       unsubA()
     }
-  }, [contextUserId, clearWorkspace])
+  }, [contextUserId])
 
   useEffect(() => {
     if (!contextUserId) {

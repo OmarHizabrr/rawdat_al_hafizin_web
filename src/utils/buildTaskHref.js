@@ -19,3 +19,11 @@ export function buildTaskHref(task, impersonateUid = '') {
   }
   return path ? withImpersonationQuery(path, impersonateUid) : ''
 }
+
+/** رابط صفحة الواجبات مع تحديد واجب */
+export function buildTasksPageHref(task, impersonateUid = '') {
+  const base = task?.id
+    ? `/app/tasks?task=${encodeURIComponent(task.id)}`
+    : '/app/tasks'
+  return withImpersonationQuery(base, impersonateUid)
+}

@@ -1,6 +1,6 @@
 import { firestoreApi } from './firestoreApi.js'
 import { loadHalakaSessions } from '../utils/halakatStorage.js'
-import { pickRelevantHalakaSession } from '../utils/halakaAttendanceTask.js'
+import { HALAKA_TASKS_LIMIT, pickRelevantHalakaSession } from '../utils/halakaAttendanceTask.js'
 
 async function mergeMemberDocExtras(kind, groupId, memberUid) {
   if (!groupId || !memberUid) return {}
@@ -96,20 +96,18 @@ async function loadHalakaAttendanceSnapshot(userId, halaka) {
 export async function loadStudentWorkspaceMemberships(userId) {
   const uid = String(userId || '').trim()
   if (!uid) {
-    return { plans: [], halakat: [], exams: [], activities: [], dawrat: [], halakaSnapshots: [] }
+    return { halakat: [], exams: [], activities: [], dawrat: [], halakaSnapshots: [] }
   }
-  const [plans, halakat, exams, activities, dawrat] = await Promise.all([
-    loadMembershipRows(uid, 'plan'),
+  const [halakat, exams, activities, dawrat] = await Promise.all([
     loadMembershipRows(uid, 'halakat'),
     loadMembershipRows(uid, 'exam'),
     loadMembershipRows(uid, 'activity'),
     loadMembershipRows(uid, 'dawra'),
   ])
   const halakaSnapshots = await Promise.all(
-    halakat.slice(0, 6).map((h) => loadHalakaAttendanceSnapshot(uid, h)),
+    halakat.slice(0, HALAKA_TASKS_LIMIT).map((h) => loadHalakaAttendanceSnapshot(uid, h)),
   )
   return {
-    plans,
     halakat,
     exams,
     activities,

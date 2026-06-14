@@ -81,10 +81,15 @@ export const useTasksStore = create((set, get) => ({
 
   syncFromWorkspace: (builtTasks, userId) => {
     const uid = String(userId || '').trim()
+    if (!uid) {
+      get().clearWorkspace()
+      return
+    }
+    const { userId: prevUid } = get()
     const overrides = loadStepOverrides(uid)
     const merged = mergeBuiltWithOverrides(builtTasks, overrides)
     const { activeTaskId } = get()
-    const stillValid = merged.some((t) => t.id === activeTaskId)
+    const stillValid = merged.some((t) => t.id === activeTaskId) && prevUid === uid
     set({
       tasks: merged,
       userId: uid,

@@ -381,8 +381,12 @@ export function collectPrintSectionsFromReport(reportData, helpers = {}) {
   })
 
   if (reportData.kind === 'plan' && reportData.memberDetails?.length) {
+    const planVolumes =
+      reportData.entityDetails?.volumesSummary && reportData.entityDetails.volumesSummary !== '—'
+        ? reportData.entityDetails.volumesSummary
+        : ''
     sections.push({
-      title: 'إنجاز الأعضاء في الخطة',
+      title: planVolumes ? `إنجاز الأعضاء في الخطة — المجلدات: ${planVolumes}` : 'إنجاز الأعضاء في الخطة',
       columns: [
         { key: 'displayName', label: 'الاسم' },
         { key: 'role', label: 'الدور' },
