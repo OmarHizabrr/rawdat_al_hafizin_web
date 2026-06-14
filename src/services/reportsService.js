@@ -86,6 +86,16 @@ async function loadRootCollectionDocs(kind) {
   return []
 }
 
+function canonicalRefByKind(kind, id) {
+  if (kind === 'halaka') return firestoreApi.getHalakaCanonicalDoc(id)
+  if (kind === 'plan') return firestoreApi.getPlanCanonicalDoc(id)
+  if (kind === 'exam') return firestoreApi.getExamCanonicalDoc(id)
+  if (kind === 'activity') return firestoreApi.getActivityCanonicalDoc(id)
+  if (kind === 'dawra') return firestoreApi.getDawraCanonicalDoc(id)
+  if (kind === 'remote_tasmee') return firestoreApi.getRemoteTasmeeCanonicalDoc(id)
+  return null
+}
+
 async function loadEntitiesFromMirrorGroup(kind) {
   const groupName = ENTITY_MIRROR_GROUP[kind]
   if (!groupName) return []
@@ -128,16 +138,6 @@ export async function listEntitiesByKind(kind, options = {}) {
   }
 
   return normalizeEntityRowsFromData([...byId.values()])
-}
-
-function canonicalRefByKind(kind, id) {
-  if (kind === 'halaka') return firestoreApi.getHalakaCanonicalDoc(id)
-  if (kind === 'plan') return firestoreApi.getPlanCanonicalDoc(id)
-  if (kind === 'exam') return firestoreApi.getExamCanonicalDoc(id)
-  if (kind === 'activity') return firestoreApi.getActivityCanonicalDoc(id)
-  if (kind === 'dawra') return firestoreApi.getDawraCanonicalDoc(id)
-  if (kind === 'remote_tasmee') return firestoreApi.getRemoteTasmeeCanonicalDoc(id)
-  return null
 }
 
 function membersLoaderByKind(kind) {

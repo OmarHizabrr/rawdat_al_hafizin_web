@@ -210,7 +210,10 @@ export default function ReportsHubPage() {
 
   const scopePlanOptions = useMemo(
     () => [
-      { value: REPORT_SCOPE_ALL, label: 'كل الخطط' },
+      {
+        value: REPORT_SCOPE_ALL,
+        label: centralReports ? str('reports.scope_plan_all_central') : str('reports.scope_plan_all'),
+      },
       ...(scopeOptions.plans || []).map((p) => {
         const vols = String(p.volumesSummary || '').trim()
         const base = p.name || p.id
@@ -220,15 +223,18 @@ export default function ReportsHubPage() {
         }
       }),
     ],
-    [scopeOptions.plans],
+    [scopeOptions.plans, centralReports, str],
   )
 
   const scopeHalakaOptions = useMemo(
     () => [
-      { value: REPORT_SCOPE_ALL, label: 'كل الحلقات' },
+      {
+        value: REPORT_SCOPE_ALL,
+        label: centralReports ? str('reports.scope_halaka_all_central') : str('reports.scope_halaka_all'),
+      },
       ...(scopeOptions.halakat || []).map((h) => ({ value: h.id, label: h.name })),
     ],
-    [scopeOptions.halakat],
+    [scopeOptions.halakat, centralReports, str],
   )
 
   const entityOptions = useMemo(() => toEntityOptions(entities, kind), [entities, kind])
@@ -393,6 +399,9 @@ export default function ReportsHubPage() {
             searchPlaceholder={str('reports.search_placeholder')}
             emptyText={str('reports.search_empty')}
           />
+          {centralReports && !loadingEntities && entities.length > 0 ? (
+            <p className="rh-reports-hub__entity-count">{str('reports.admin_entity_count', { count: entities.length })}</p>
+          ) : null}
           <RhDatePickerField
             label={str('reports.field_from')}
             value={fromDate}
@@ -431,21 +440,33 @@ export default function ReportsHubPage() {
           <div className="rh-reports__scope-filters">
             {kind === 'student' ? (
               <SearchableSelect
-                label="نطاق الخطة"
+                label={str('reports.scope_plan_label')}
                 options={scopePlanOptions}
                 value={scopePlan}
                 onChange={setScopePlan}
-                placeholder={loadingScope ? 'جاري التحميل…' : 'كل الخطط'}
+                placeholder={
+                  loadingScope
+                    ? str('reports.loading_entities')
+                    : centralReports
+                      ? str('reports.scope_plan_all_central')
+                      : str('reports.scope_plan_all')
+                }
                 searchPlaceholder={str('reports.search_placeholder')}
                 emptyText={str('reports.search_empty')}
               />
             ) : null}
             <SearchableSelect
-              label="نطاق الحلقة"
+              label={str('reports.scope_halaka_label')}
               options={scopeHalakaOptions}
               value={scopeHalaka}
               onChange={setScopeHalaka}
-              placeholder={loadingScope ? 'جاري التحميل…' : 'كل الحلقات'}
+              placeholder={
+                loadingScope
+                  ? str('reports.loading_entities')
+                  : centralReports
+                    ? str('reports.scope_halaka_all_central')
+                    : str('reports.scope_halaka_all')
+              }
               searchPlaceholder={str('reports.search_placeholder')}
               emptyText={str('reports.search_empty')}
             />

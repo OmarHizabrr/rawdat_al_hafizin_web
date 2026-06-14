@@ -345,6 +345,7 @@ export default function ReportViewPage() {
   const hidePlanNavigation = useHidePlanNavigation();
   const didHydrateFromQueryRef = useRef(false);
   const prevKindRef = useRef(null);
+  const adminDefaultKindSet = useRef(false);
   const autoBuiltFromQueryRef = useRef(false);
 
   const [kind, setKind] = useState("student");
@@ -414,6 +415,17 @@ export default function ReportViewPage() {
     if (scopeHalakaParam) setScopeHalaka(scopeHalakaParam);
     didHydrateFromQueryRef.current = true;
   }, [search]);
+
+  useEffect(() => {
+    if (!centralReports || adminDefaultKindSet.current) return;
+    const params = new URLSearchParams(search);
+    const kindParam = String(params.get("reportKind") || "").trim();
+    if (kindParam) return;
+    if (allowedKinds.some((k) => k.value === "plan")) {
+      setKind("plan");
+      adminDefaultKindSet.current = true;
+    }
+  }, [centralReports, allowedKinds, search]);
 
   useEffect(() => {
     document.title = str("reports.doc_title", {
@@ -506,7 +518,12 @@ export default function ReportViewPage() {
 
   const scopePlanOptions = useMemo(
     () => [
-      { value: REPORT_SCOPE_ALL, label: "كل الخطط" },
+      {
+        value: REPORT_SCOPE_ALL,
+        label: centralReports
+          ? str("reports.scope_plan_all_central")
+          : str("reports.scope_plan_all"),
+      },
       ...(scopeOptions.plans || []).map((p) => {
         const vols = String(p.volumesSummary || "").trim();
         const base = p.name || p.id;
@@ -516,18 +533,23 @@ export default function ReportViewPage() {
         };
       }),
     ],
-    [scopeOptions.plans],
+    [scopeOptions.plans, centralReports, str],
   );
 
   const scopeHalakaOptions = useMemo(
     () => [
-      { value: REPORT_SCOPE_ALL, label: "كل الحلقات" },
+      {
+        value: REPORT_SCOPE_ALL,
+        label: centralReports
+          ? str("reports.scope_halaka_all_central")
+          : str("reports.scope_halaka_all"),
+      },
       ...(scopeOptions.halakat || []).map((h) => ({
         value: h.id,
         label: h.name,
       })),
     ],
-    [scopeOptions.halakat],
+    [scopeOptions.halakat, centralReports, str],
   );
 
   const entityOptions = useMemo(() => toEntityOptions(entities, kind), [entities, kind]);
@@ -1139,10 +1161,12 @@ export default function ReportViewPage() {
     ];
     if (kind === "student") {
       items.push({
-        label: "نطاق الخطة",
+        label: str("reports.scope_plan_label"),
         value:
           scopePlanOptions.find((o) => o.value === scopePlan)?.label ||
-          "كل الخطط",
+          (centralReports
+            ? str("reports.scope_plan_all_central")
+            : str("reports.scope_plan_all")),
       });
       if (reportData?.scope?.planVolumesLabel) {
         items.push({
@@ -1151,17 +1175,21 @@ export default function ReportViewPage() {
         });
       }
       items.push({
-        label: "نطاق الحلقة",
+        label: str("reports.scope_halaka_label"),
         value:
           scopeHalakaOptions.find((o) => o.value === scopeHalaka)?.label ||
-          "كل الحلقات",
+          (centralReports
+            ? str("reports.scope_halaka_all_central")
+            : str("reports.scope_halaka_all")),
       });
     } else if (kind === "teacher") {
       items.push({
-        label: "نطاق الحلقة",
+        label: str("reports.scope_halaka_label"),
         value:
           scopeHalakaOptions.find((o) => o.value === scopeHalaka)?.label ||
-          "كل الحلقات",
+          (centralReports
+            ? str("reports.scope_halaka_all_central")
+            : str("reports.scope_halaka_all")),
       });
     }
     items.push({ label: "تاريخ الإصدار", value: issuedAt });
@@ -1176,6 +1204,8 @@ export default function ReportViewPage() {
     scopePlanOptions,
     scopeHalakaOptions,
     reportData?.scope?.planVolumesLabel,
+    centralReports,
+    str,
   ]);
 
   const halakaMemberNameMap = useMemo(() => {
@@ -1354,6 +1384,11 @@ export default function ReportViewPage() {
             searchPlaceholder={str("reports.search_placeholder")}
             emptyText={str("reports.search_empty")}
           />
+          {centralReports && !loadingEntities && entities.length > 0 ? (
+            <p className="rh-reports-hub__entity-count">
+              {str("reports.admin_entity_count", { count: entities.length })}
+            </p>
+          ) : null}
           <RhDatePickerField
             label={str("reports.field_from")}
             value={fromDate}
@@ -1396,21 +1431,33 @@ export default function ReportViewPage() {
           <div className="rh-reports__scope-filters">
             {kind === "student" ? (
               <SearchableSelect
-                label="نطاق الخطة"
+                label={str("reports.scope_plan_label")}
                 options={scopePlanOptions}
                 value={scopePlan}
                 onChange={setScopePlan}
-                placeholder={loadingScope ? "جاري التحميل…" : "كل الخطط"}
+                placeholder={
+                  loadingScope
+                    ? str("reports.loading_entities")
+                    : centralReports
+                      ? str("reports.scope_plan_all_central")
+                      : str("reports.scope_plan_all")
+                }
                 searchPlaceholder={str("reports.search_placeholder")}
                 emptyText={str("reports.search_empty")}
               />
             ) : null}
             <SearchableSelect
-              label="نطاق الحلقة"
+              label={str("reports.scope_halaka_label")}
               options={scopeHalakaOptions}
               value={scopeHalaka}
               onChange={setScopeHalaka}
-              placeholder={loadingScope ? "جاري التحميل…" : "كل الحلقات"}
+              placeholder={
+                loadingScope
+                  ? str("reports.loading_entities")
+                  : centralReports
+                    ? str("reports.scope_halaka_all_central")
+                    : str("reports.scope_halaka_all")
+              }
               searchPlaceholder={str("reports.search_placeholder")}
               emptyText={str("reports.search_empty")}
             />
