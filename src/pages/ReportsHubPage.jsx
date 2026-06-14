@@ -1,6 +1,6 @@
 import { ArrowLeft, Calendar, FileText } from 'lucide-react'
 import { CalendarDate } from '@internationalized/date'
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { CrossNav } from '../components/CrossNav.jsx'
 import {
@@ -8,9 +8,11 @@ import {
   REPORT_KIND_PERMISSION,
   REPORT_RANGE_PRESETS,
   REPORT_SCOPE_ALL,
+  ADMIN_REPORT_KIND_ORDER,
   reportViewPath,
 } from '../config/reportKinds.js'
 import { PERMISSION_PAGE_IDS } from '../config/permissionRegistry.js'
+import { isAdmin } from '../config/roles.js'
 import { useAuth } from '../context/useAuth.js'
 import { usePermissions } from '../context/usePermissions.js'
 import { useSiteContent } from '../context/useSiteContent.js'
@@ -20,8 +22,10 @@ import {
   loadTeachersDirectory,
   loadUsersDirectory,
   loadStudentScopeOptions,
+  isCentralReportsMode,
 } from '../services/reportsService.js'
 import { getImpersonateUid, withImpersonationQuery } from '../utils/impersonation.js'
+import { formatPlanVolumesForReport } from '../utils/reportDisplayLabels.js'
 import {
   HIJRI,
   formatHijriYmd,
@@ -38,11 +42,28 @@ import { RH_ICON_STROKE, RhIcon } from '../ui/RhIcon.jsx'
 
 const PAGE_ID = PERMISSION_PAGE_IDS.reports
 
-function toEntityOptions(rows) {
-  return (rows || []).map((row) => ({
-    value: row.id || row.uid,
-    label: row.name || row.displayName || row.email || row.uid || row.id,
-  }))
+function toEntityOptions(rows, kind) {
+  return (rows || []).map((row) => {
+    const base = row.name || row.displayName || row.email || row.uid || row.id
+    let label = base
+    if (kind === 'plan') {
+      const vols = formatPlanVolumesForReport(row.raw?.volumes)
+      if (vols && vols !== '—') label = `${base} — ${vols}`
+    }
+    return {
+      value: row.id || row.uid,
+      label,
+    }
+  })
+}
+
+function sortKindsForUser(kinds, user) {
+  if (!isAdmin(user)) return kinds
+  return [...kinds].sort((a, b) => {
+    const ia = ADMIN_REPORT_KIND_ORDER.indexOf(a.value)
+    const ib = ADMIN_REPORT_KIND_ORDER.indexOf(b.value)
+    return (ia < 0 ? 99 : ia) - (ib < 0 ? 99 : ib)
+  })
 }
 
 export default function ReportsHubPage() {
@@ -55,11 +76,18 @@ export default function ReportsHubPage() {
   const hidePlanNavigation = useHidePlanNavigation()
 
   const allowedKinds = useMemo(
-    () => REPORT_KIND_OPTIONS.filter((k) => can(PAGE_ID, REPORT_KIND_PERMISSION[k.value])),
-    [can],
+    () =>
+      sortKindsForUser(
+        REPORT_KIND_OPTIONS.filter((k) => can(PAGE_ID, REPORT_KIND_PERMISSION[k.value])),
+        user,
+      ),
+    [can, user],
   )
 
+  const centralReports = isCentralReportsMode(user)
+
   const [kind, setKind] = useState(() => allowedKinds[0]?.value || 'student')
+  const adminDefaultKindSet = useRef(false)
   const [entityId, setEntityId] = useState('')
   const [fromDate, setFromDate] = useState('')
   const [toDate, setToDate] = useState('')
@@ -112,6 +140,14 @@ export default function ReportsHubPage() {
   }, [kind, allowedKinds, canAccessPage])
 
   useEffect(() => {
+    if (!centralReports || adminDefaultKindSet.current) return
+    if (allowedKinds.some((k) => k.value === 'plan')) {
+      setKind('plan')
+      adminDefaultKindSet.current = true
+    }
+  }, [centralReports, allowedKinds])
+
+  useEffect(() => {
     if (!canAccessPage(PAGE_ID)) return
     let cancelled = false
     setLoadingEntities(true)
@@ -129,7 +165,7 @@ export default function ReportsHubPage() {
           if (!cancelled) setEntities(teachers)
           return
         }
-        const rows = await listEntitiesByKind(kind)
+        const rows = await listEntitiesByKind(kind, { currentUser: user })
         if (!cancelled) setEntities(rows)
       } catch {
         if (!cancelled) setEntities([])
@@ -156,7 +192,7 @@ export default function ReportsHubPage() {
     }
     let cancelled = false
     setLoadingScope(true)
-    loadStudentScopeOptions(entityId)
+    loadStudentScopeOptions(entityId, { currentUser: user })
       .then((opts) => {
         if (cancelled) return
         setScopeOptions(kind === 'teacher' ? { plans: [], halakat: opts.halakat || [] } : opts)
@@ -170,7 +206,7 @@ export default function ReportsHubPage() {
     return () => {
       cancelled = true
     }
-  }, [kind, entityId])
+  }, [kind, entityId, user])
 
   const scopePlanOptions = useMemo(
     () => [
@@ -195,7 +231,7 @@ export default function ReportsHubPage() {
     [scopeOptions.halakat],
   )
 
-  const entityOptions = useMemo(() => toEntityOptions(entities), [entities])
+  const entityOptions = useMemo(() => toEntityOptions(entities, kind), [entities, kind])
   const isRangeInvalid = useMemo(() => {
     if (!fromDate || !toDate) return false
     const a = parseHijriYmdString(fromDate)
@@ -301,6 +337,13 @@ export default function ReportsHubPage() {
           </div>
         </div>
       </header>
+
+      {centralReports ? (
+        <div className="rh-reports-hub__central card" role="status">
+          <strong>{str('reports.admin_central_title')}</strong>
+          <p>{str('reports.admin_central_desc')}</p>
+        </div>
+      ) : null}
 
       <section className="rh-reports-hub__kinds">
         <h2 className="rh-reports-hub__heading">1 — نوع التقرير</h2>

@@ -626,6 +626,18 @@ export const SITE_STRING_REGISTRY = [
   },
   { key: 'reports.empty', group: 'التقارير', label: 'حالة فارغة', defaultValue: 'اختر نوع التقرير والكيان ثم اضغط إنشاء التقرير.' },
   { key: 'reports.no_access', group: 'التقارير', label: 'منع الوصول', defaultValue: 'لا تملك صلاحية الوصول إلى صفحة التقارير.' },
+  {
+    key: 'reports.admin_central_title',
+    group: 'التقارير',
+    label: 'عنوان وضع التقارير المركزية',
+    defaultValue: 'وضع التقارير المركزية (أدمن)',
+  },
+  {
+    key: 'reports.admin_central_desc',
+    group: 'التقارير',
+    label: 'وصف وضع التقارير المركزية',
+    defaultValue: 'تظهر هنا كل الخطط والحلقات والاختبارات والأنشطة في المنصة — وليس فقط ما تنتمي إليه عضويتك.',
+  },
   { key: 'reports.kpi_members', group: 'التقارير', label: 'KPI الأعضاء', defaultValue: 'عدد الأعضاء' },
   { key: 'reports.kpi_sessions', group: 'التقارير', label: 'KPI الجلسات', defaultValue: 'عدد الجلسات' },
   { key: 'reports.kpi_attendance', group: 'التقارير', label: 'KPI الحضور', defaultValue: 'قيود الحضور' },

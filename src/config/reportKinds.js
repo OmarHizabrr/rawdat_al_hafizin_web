@@ -42,6 +42,18 @@ export const REPORT_RANGE_PRESETS = [
 /** كل الخطط / كل الحلقات — قيمة النطاق الافتراضية */
 export const REPORT_SCOPE_ALL = 'all'
 
+/** ترتيب أنواع التقارير للأدمن — الكيانات المركزية أولاً */
+export const ADMIN_REPORT_KIND_ORDER = [
+  'plan',
+  'halaka',
+  'exam',
+  'activity',
+  'dawra',
+  'remote_tasmee',
+  'student',
+  'teacher',
+]
+
 /** مسار عرض التقرير المفصّل */
 export function reportViewPath(params = {}) {
   const q = new URLSearchParams()

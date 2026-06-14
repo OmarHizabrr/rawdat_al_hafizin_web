@@ -31,8 +31,10 @@ import {
   REPORT_KIND_PERMISSION,
   REPORT_RANGE_PRESETS,
   REPORT_SCOPE_ALL,
+  ADMIN_REPORT_KIND_ORDER,
 } from "../config/reportKinds.js";
 import { PERMISSION_PAGE_IDS } from "../config/permissionRegistry.js";
+import { isAdmin } from "../config/roles.js";
 import { useAuth } from "../context/useAuth.js";
 import { usePermissions } from "../context/usePermissions.js";
 import { useSiteContent } from "../context/useSiteContent.js";
@@ -41,6 +43,7 @@ import {
   buildGroupReport,
   buildStudentReport,
   buildTeacherReport,
+  isCentralReportsMode,
   listEntitiesByKind,
   loadStudentScopeOptions,
   loadTeachersDirectory,
@@ -64,6 +67,7 @@ import { elementToPdfBlob, shareOrDownloadPdf } from "../utils/reportPdf.js";
 import {
   entityDetailsColumnsForKind,
   formatEntityDetailsForReport,
+  formatPlanVolumesForReport,
   reportAttendanceStatusLabel,
   reportMediaTypeLabel,
   reportNotificationTypeLabel,
@@ -175,11 +179,28 @@ function downloadCsvFile(rows, fileName) {
   return true;
 }
 
-function toEntityOptions(rows) {
-  return (rows || []).map((row) => ({
-    value: row.id || row.uid,
-    label: row.name || row.displayName || row.email || row.uid || row.id,
-  }));
+function toEntityOptions(rows, kind) {
+  return (rows || []).map((row) => {
+    const base = row.name || row.displayName || row.email || row.uid || row.id;
+    let label = base;
+    if (kind === "plan") {
+      const vols = formatPlanVolumesForReport(row.raw?.volumes);
+      if (vols && vols !== "—") label = `${base} — ${vols}`;
+    }
+    return {
+      value: row.id || row.uid,
+      label,
+    };
+  });
+}
+
+function sortKindsForUser(kinds, user) {
+  if (!isAdmin(user)) return kinds;
+  return [...kinds].sort((a, b) => {
+    const ia = ADMIN_REPORT_KIND_ORDER.indexOf(a.value);
+    const ib = ADMIN_REPORT_KIND_ORDER.indexOf(b.value);
+    return (ia < 0 ? 99 : ia) - (ib < 0 ? 99 : ib);
+  });
 }
 
 function formatArDateTime(v) {
@@ -349,6 +370,15 @@ export default function ReportViewPage() {
     (k) => Boolean(can(PAGE_ID, REPORT_KIND_PERMISSION[k])),
     [can],
   );
+  const allowedKinds = useMemo(
+    () =>
+      sortKindsForUser(
+        REPORT_KIND_OPTIONS.filter((k) => canRunForKind(k.value)),
+        user,
+      ),
+    [canRunForKind, user],
+  );
+  const centralReports = isCentralReportsMode(user);
 
   useEffect(() => {
     if (didHydrateFromQueryRef.current) return;
@@ -424,7 +454,7 @@ export default function ReportViewPage() {
           if (!cancelled) setEntities(teachers);
           return;
         }
-        const rows = await listEntitiesByKind(kind);
+        const rows = await listEntitiesByKind(kind, { currentUser: user });
         if (!cancelled) setEntities(rows);
       } catch {
         if (!cancelled) setEntities([]);
@@ -454,7 +484,7 @@ export default function ReportViewPage() {
     setLoadingScope(true);
     const run = async () => {
       try {
-        const opts = await loadStudentScopeOptions(entityId);
+        const opts = await loadStudentScopeOptions(entityId, { currentUser: user });
         if (!cancelled) {
           setScopeOptions(
             kind === "teacher"
@@ -472,7 +502,7 @@ export default function ReportViewPage() {
     return () => {
       cancelled = true;
     };
-  }, [kind, entityId, canAccessPage]);
+  }, [kind, entityId, canAccessPage, user]);
 
   const scopePlanOptions = useMemo(
     () => [
@@ -500,7 +530,7 @@ export default function ReportViewPage() {
     [scopeOptions.halakat],
   );
 
-  const entityOptions = useMemo(() => toEntityOptions(entities), [entities]);
+  const entityOptions = useMemo(() => toEntityOptions(entities, kind), [entities, kind]);
   const entityMap = useMemo(
     () =>
       new Map(
@@ -1288,6 +1318,13 @@ export default function ReportViewPage() {
         </div>
       </header>
 
+      {centralReports ? (
+        <div className="rh-reports-hub__central card no-print" role="status">
+          <strong>{str("reports.admin_central_title")}</strong>
+          <p>{str("reports.admin_central_desc")}</p>
+        </div>
+      ) : null}
+
       <section className="rh-settings-card rh-reports__filters no-print">
         <div className="rh-settings-card__head">
           <h2 className="rh-settings-card__title">
@@ -1297,7 +1334,7 @@ export default function ReportViewPage() {
         <div className="rh-reports__filters-grid">
           <SearchableSelect
             label={str("reports.field_report_type")}
-            options={REPORT_KIND_OPTIONS.filter((k) => canRunForKind(k.value))}
+            options={allowedKinds}
             value={kind}
             onChange={setKind}
             placeholder={str("reports.field_report_type")}

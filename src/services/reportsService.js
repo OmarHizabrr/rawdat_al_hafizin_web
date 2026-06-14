@@ -1,5 +1,5 @@
 import { firestoreApi } from './firestoreApi.js'
-import { normalizeRole } from '../config/roles.js'
+import { normalizeRole, isAdmin } from '../config/roles.js'
 import { loadAwrad } from '../utils/awradStorage.js'
 import { loadPlanMembersWithProfiles } from '../utils/plansStorage.js'
 import {
@@ -53,15 +53,81 @@ function pickFirstDate(...values) {
   return ''
 }
 
-function normalizeEntityRows(docs, titleField = 'name') {
-  return docs
-    .map((d) => ({ id: d.id, ...d.data() }))
-    .map((row) => ({
-      id: row.id,
-      name: String(row[titleField] || row.title || row.subject || row.meetingCode || row.id || '').trim() || row.id,
-      raw: row,
-    }))
+/** مرايا المستخدمين — لجلب كل الكيانات في التقارير المركزية للأدمن */
+const ENTITY_MIRROR_GROUP = {
+  plan: 'Myplans',
+  halaka: 'Myhalakat',
+  exam: 'Myexams',
+  activity: 'Myactivities',
+  dawra: 'Mydawrat',
+  remote_tasmee: 'MyremoteTasmee',
+}
+
+function normalizeEntityRowsFromData(rows, titleField = 'name') {
+  return (rows || [])
+    .map((row) => {
+      const id = String(row?.id || '').trim()
+      if (!id) return null
+      const data = row.data && typeof row.data === 'object' ? row.data : row
+      const name = String(data[titleField] || data.title || data.subject || data.meetingCode || id).trim() || id
+      return { id, name, raw: { id, ...data } }
+    })
+    .filter(Boolean)
     .sort((a, b) => a.name.localeCompare(b.name, 'ar'))
+}
+
+async function loadRootCollectionDocs(kind) {
+  if (kind === 'halaka') return firestoreApi.getDocuments(firestoreApi.getHalakatCollection())
+  if (kind === 'plan') return firestoreApi.getDocuments(firestoreApi.getPlansCollection())
+  if (kind === 'exam') return firestoreApi.getDocuments(firestoreApi.getExamsCollection())
+  if (kind === 'activity') return firestoreApi.getDocuments(firestoreApi.getActivitiesCollection())
+  if (kind === 'dawra') return firestoreApi.getDocuments(firestoreApi.getDawratCollection())
+  if (kind === 'remote_tasmee') return firestoreApi.getDocuments(firestoreApi.getRemoteTasmeeCollection())
+  return []
+}
+
+async function loadEntitiesFromMirrorGroup(kind) {
+  const groupName = ENTITY_MIRROR_GROUP[kind]
+  if (!groupName) return []
+  const mirrorDocs = await firestoreApi.getCollectionGroupDocuments(groupName)
+  const ids = [...new Set(mirrorDocs.map((d) => String(d.id || '').trim()).filter(Boolean))]
+  const canonicals = await Promise.all(
+    ids.map(async (id) => {
+      const ref = canonicalRefByKind(kind, id)
+      if (!ref) return null
+      try {
+        const data = await firestoreApi.getData(ref)
+        return data ? { id, data } : null
+      } catch {
+        return null
+      }
+    }),
+  )
+  return canonicals.filter(Boolean)
+}
+
+/** هل يُفعَّل وضع التقارير المركزية (كل الكيانات وليس عضويات المستخدم فقط) */
+export function isCentralReportsMode(user) {
+  return isAdmin(user)
+}
+
+/**
+ * قائمة الكيانات لتقرير مجموعة (خطة، حلقة، اختبار…).
+ * للأدمن: يدمج الجذر + مرايا المستخدمين لضمان ظهور كل الخطط والحلقات.
+ */
+export async function listEntitiesByKind(kind, options = {}) {
+  const central = options.centralReport === true || isCentralReportsMode(options.currentUser)
+  const rootDocs = await loadRootCollectionDocs(kind)
+  const byId = new Map(rootDocs.map((d) => [d.id, { id: d.id, data: d.data() }]))
+
+  if (central) {
+    const fromMirrors = await loadEntitiesFromMirrorGroup(kind)
+    for (const item of fromMirrors) {
+      if (!byId.has(item.id)) byId.set(item.id, item)
+    }
+  }
+
+  return normalizeEntityRowsFromData([...byId.values()])
 }
 
 function canonicalRefByKind(kind, id) {
@@ -149,17 +215,6 @@ function buildGroupSummary(kind, members, memberDetails) {
     }
   }
   return { members: count }
-}
-
-export async function listEntitiesByKind(kind) {
-  let docs = []
-  if (kind === 'halaka') docs = await firestoreApi.getDocuments(firestoreApi.getHalakatCollection())
-  if (kind === 'plan') docs = await firestoreApi.getDocuments(firestoreApi.getPlansCollection())
-  if (kind === 'exam') docs = await firestoreApi.getDocuments(firestoreApi.getExamsCollection())
-  if (kind === 'activity') docs = await firestoreApi.getDocuments(firestoreApi.getActivitiesCollection())
-  if (kind === 'dawra') docs = await firestoreApi.getDocuments(firestoreApi.getDawratCollection())
-  if (kind === 'remote_tasmee') docs = await firestoreApi.getDocuments(firestoreApi.getRemoteTasmeeCollection())
-  return normalizeEntityRows(docs)
 }
 
 function mapStudentCandidate(row) {
@@ -257,6 +312,7 @@ function mergeUniquePeople(...lists) {
 }
 
 export async function loadUsersDirectory(currentUser = null) {
+  const central = isCentralReportsMode(currentUser)
   let fromUsers = []
   let fromMembers = []
   try {
@@ -264,7 +320,7 @@ export async function loadUsersDirectory(currentUser = null) {
   } catch {
     fromUsers = []
   }
-  if (fromUsers.length <= 1) {
+  if (central || fromUsers.length <= 1) {
     try {
       fromMembers = await loadStudentsFromMembershipsFallback()
     } catch {
@@ -276,6 +332,7 @@ export async function loadUsersDirectory(currentUser = null) {
 }
 
 export async function loadTeachersDirectory(currentUser = null) {
+  const central = isCentralReportsMode(currentUser)
   let fromUsers = []
   let fromMembers = []
   try {
@@ -283,7 +340,7 @@ export async function loadTeachersDirectory(currentUser = null) {
   } catch {
     fromUsers = []
   }
-  if (fromUsers.length <= 1) {
+  if (central || fromUsers.length <= 1) {
     try {
       fromMembers = await loadTeachersFromMembershipsFallback()
     } catch {
@@ -495,8 +552,24 @@ async function loadStudentHalakaAttendance(uid, halakatList, range) {
   )
 }
 
-/** خيارات نطاق تقرير الطالب — خططه وحلقاته */
-export async function loadStudentScopeOptions(uid) {
+/** خيارات نطاق تقرير الطالب — خططه وحلقاته (أو كل الخطط/الحلقات للأدمن) */
+export async function loadStudentScopeOptions(uid, options = {}) {
+  const central = isCentralReportsMode(options.currentUser)
+  if (central) {
+    const [plans, halakat] = await Promise.all([
+      listEntitiesByKind('plan', { currentUser: options.currentUser, centralReport: true }),
+      listEntitiesByKind('halaka', { currentUser: options.currentUser, centralReport: true }),
+    ])
+    return {
+      plans: plans.map((p) => ({
+        id: p.id,
+        name: p.name,
+        volumesSummary: formatPlanVolumesForReport(p.raw?.volumes),
+      })),
+      halakat: halakat.map((h) => ({ id: h.id, name: h.name })),
+    }
+  }
+
   const studentUid = String(uid || '').trim()
   if (!studentUid) return { plans: [], halakat: [] }
   const [plans, halakat] = await Promise.all([
