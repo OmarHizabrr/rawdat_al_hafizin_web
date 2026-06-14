@@ -55,7 +55,7 @@ export default function DashboardPage() {
   }, [workspace.plans, tasks])
 
   return (
-    <div className="tw-font-sans tw-text-slate-900" dir="rtl">
+    <div className="rh-student-workspace tw-font-sans tw-text-slate-900" dir="rtl">
       <div className="tw-mx-auto tw-max-w-6xl tw-space-y-6">
         <header className="tw-rounded-2xl tw-border tw-border-slate-200 tw-bg-gradient-to-l tw-from-sky-50 tw-to-white tw-p-5 tw-shadow-sm sm:tw-p-6">
           <div className="tw-flex tw-flex-wrap tw-items-start tw-justify-between tw-gap-4">

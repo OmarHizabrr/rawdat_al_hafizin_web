@@ -810,6 +810,7 @@ a.rh-sidebar__brand-link.rh-sidebar__brand-link--active {
 .rh-nav-link__label {
   white-space: nowrap;
   overflow: hidden;
+  text-overflow: ellipsis;
   flex: 1;
   min-width: 0;
 }
@@ -819,6 +820,7 @@ a.rh-sidebar__brand-link.rh-sidebar__brand-link--active {
   min-width: 1.35rem;
   height: 1.35rem;
   padding: 0 0.35rem;
+  margin-inline-start: auto;
   border-radius: 999px;
   background: var(--rh-primary);
   color: var(--rh-on-primary, #fff);
@@ -1190,6 +1192,21 @@ a.rh-sidebar__brand-link.rh-sidebar__brand-link--active {
 }
 
 @media (min-width: 900px) {
+  .rh-student-workspace {
+    font-family: var(--font);
+    color: var(--text);
+    line-height: inherit;
+  }
+
+  .rh-student-workspace .tw-font-sans {
+    font-family: var(--font) !important;
+  }
+
+  .rh-student-workspace button,
+  .rh-student-workspace a {
+    -webkit-tap-highlight-color: transparent;
+  }
+
   .rh-content {
     padding: clamp(1rem, 1.3vw, 1.4rem) clamp(0.9rem, 1.2vw, 1.5rem);
     padding-bottom: max(var(--rh-space-6), env(safe-area-inset-bottom, 0));

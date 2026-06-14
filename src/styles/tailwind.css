@@ -1,4 +1,8 @@
-@import 'tailwindcss' prefix(tw);
+/* بدون Preflight — لا نُعيد ضبط أنماط المنصة الحالية */
+@layer theme, utilities;
+
+@import 'tailwindcss/theme' layer(theme) prefix(tw);
+@import 'tailwindcss/utilities' layer(utilities) prefix(tw);
 
 @theme {
   --font-sans: 'Noto Sans Arabic', ui-sans-serif, system-ui, sans-serif;

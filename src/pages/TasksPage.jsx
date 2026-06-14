@@ -36,7 +36,7 @@ export default function TasksPage() {
   const plansPath = withImpersonationQuery('/app/plans', impersonateUid)
 
   return (
-    <div className="tw-font-sans tw-text-slate-900" dir="rtl">
+    <div className="rh-student-workspace tw-font-sans tw-text-slate-900" dir="rtl">
       <div className="tw-mx-auto tw-max-w-6xl tw-space-y-6">
         <header className="tw-flex tw-flex-wrap tw-items-center tw-justify-between tw-gap-3">
           <div>

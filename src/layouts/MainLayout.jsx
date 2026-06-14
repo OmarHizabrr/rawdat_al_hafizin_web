@@ -10,6 +10,7 @@ import { useAuth } from '../context/useAuth.js'
 import { usePermissions } from '../context/usePermissions.js'
 import { useSiteContent } from '../context/useSiteContent.js'
 import { usePlanReminders } from '../hooks/usePlanReminders.js'
+import { useMobileLayout } from '../hooks/useMobileLayout.js'
 import { useStudentWorkspace } from '../hooks/useStudentWorkspace.js'
 import { useTasksStore } from '../stores/useTasksStore.js'
 import { PROFILE_REQUEST_STATUS } from '../services/profileRequestService.js'
@@ -41,6 +42,8 @@ export function MainLayout() {
   )
 
   const showBottomNav = bottomNavTabs.length > 0
+  const isMobileLayout = useMobileLayout()
+  const showMobileBottomNav = showBottomNav && isMobileLayout
   useStudentWorkspace()
   const openTaskCount = useTasksStore((s) => s.tasks.filter((t) => t.step !== 'done').length)
 
@@ -232,7 +235,7 @@ export function MainLayout() {
         'rh-app',
         collapsed ? 'rh-app--collapsed' : '',
         mobileOpen ? 'rh-app--mobile-nav' : '',
-        showBottomNav ? 'rh-app--bottom-nav' : '',
+        showMobileBottomNav ? 'rh-app--bottom-nav' : '',
       ]
         .filter(Boolean)
         .join(' ')}
@@ -357,7 +360,7 @@ export function MainLayout() {
           </div>
         </main>
 
-        {showBottomNav ? (
+        {showMobileBottomNav ? (
           <MobileBottomNav
             tabs={bottomNavTabsWithBadges}
             impersonateUid={impersonateUid}
