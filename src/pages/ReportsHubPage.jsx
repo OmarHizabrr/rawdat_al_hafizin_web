@@ -86,11 +86,12 @@ export default function ReportsHubPage() {
   )
 
   const centralReports = isCentralReportsMode(user)
+
+  const [kind, setKind] = useState(() => allowedKinds[0]?.value || 'student')
   const showDateFilters = reportKindUsesDateFilter(kind)
   const personAutoReport = reportKindIsPersonAutoReport(kind)
   const personHintKey = reportPersonSelectHintKey(kind)
 
-  const [kind, setKind] = useState(() => allowedKinds[0]?.value || 'student')
   const adminDefaultKindSet = useRef(false)
   const [entityId, setEntityId] = useState('')
   const [fromDate, setFromDate] = useState('')
