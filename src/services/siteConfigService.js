@@ -30,6 +30,35 @@ export function normalizeBrandingThemeMap(input) {
   return out
 }
 
+function isPlainObject(v) {
+  return v != null && typeof v === 'object' && !Array.isArray(v)
+}
+
+/**
+ * يُسطّح خريطة strings من Firestore.
+ * مفاتيح النصوص تحتوي نقاطاً (layout.nav_home) — لا يجوز استخدام `strings.${key}` في updateDoc
+ * لأن Firestore يفسّر النقطة كمسار متداخل ويترك المفتاح المسطّح القديم دون تحديث.
+ */
+export function flattenSiteStringsMap(raw, prefix = '') {
+  const out = {}
+  if (!isPlainObject(raw)) return out
+  for (const [k, v] of Object.entries(raw)) {
+    if (typeof v === 'string' || typeof v === 'number') {
+      const key = prefix ? `${prefix}.${k}` : k
+      out[key] = String(v)
+    } else if (isPlainObject(v)) {
+      Object.assign(out, flattenSiteStringsMap(v, prefix ? `${prefix}.${k}` : k))
+    }
+  }
+  return out
+}
+
+function normalizeSiteConfigSnapshot(data) {
+  if (!data) return null
+  const strings = flattenSiteStringsMap(data.strings)
+  return { ...data, strings }
+}
+
 function normalizePlanTypeDoc(id, data) {
   const value = String(data?.value ?? id ?? '').trim()
   const label = String(data?.label ?? '').trim() || value
@@ -64,7 +93,7 @@ export function subscribeSiteConfig(onNext, onError) {
         onNext(null)
         return
       }
-      onNext(snap.data())
+      onNext(normalizeSiteConfigSnapshot(snap.data()))
     },
     onError,
   )
@@ -131,29 +160,23 @@ export async function seedDefaultPlanTypes(actor) {
 
 /**
  * تحديث نصوص site_config/main.strings.
- * يستخدم deleteField لحذف المفتاح من Firestore — merge العادي لا يحذف حقول الخريطة المتداخلة.
+ * يُستبدل حقل strings بالكامل بخريطة مسطّحة — يدعم مفاتيح فيها نقاط ويحذف التخصيصات فعلياً.
  */
 export async function patchSiteStrings(actor, partial) {
   const ref = firestoreApi.getSiteConfigDoc()
   const cur = await firestoreApi.getData(ref)
-  const payload = {}
+  const strings = flattenSiteStringsMap(cur?.strings)
 
   for (const [k, v] of Object.entries(partial)) {
-    if (v == null || String(v).trim() === '') {
-      payload[`strings.${k}`] = deleteField()
-    } else {
-      payload[`strings.${k}`] = String(v).trim()
-    }
+    const trimmed = v != null ? String(v).trim() : ''
+    if (!trimmed) delete strings[k]
+    else strings[k] = trimmed
   }
 
-  if (!Object.keys(payload).length) return
+  const hasStrings = Object.keys(strings).length > 0
 
   if (!cur) {
-    const strings = {}
-    for (const [k, v] of Object.entries(partial)) {
-      if (v != null && String(v).trim() !== '') strings[k] = String(v).trim()
-    }
-    if (!Object.keys(strings).length) return
+    if (!hasStrings) return
     await firestoreApi.setData({
       docRef: ref,
       data: { strings },
@@ -165,7 +188,7 @@ export async function patchSiteStrings(actor, partial) {
 
   await firestoreApi.updateData({
     docRef: ref,
-    data: payload,
+    data: hasStrings ? { strings } : { strings: deleteField() },
     userData: actor ?? {},
   })
 }
