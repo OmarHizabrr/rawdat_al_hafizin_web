@@ -1,7 +1,7 @@
 import { SITE_NAME, SITE_TITLE } from '../config/site.js'
 
 /**
- * سجل النصوص القابلة للتعديل من لوحة التحكم.
+ * سجل النصوص القابلة للتعديل من إدارة الموقع (admin/copy).
  * المفتاح ثابت في الكود؛ القيمة الافتراضية تُستبدل بما يُخزَّن في `site_config/main.strings`.
  */
 export const SITE_STRING_REGISTRY = [
@@ -64,41 +64,58 @@ export const SITE_STRING_REGISTRY = [
   { key: 'layout.nav_inquiries', group: 'التنقل', label: 'قائمة: الاستفسارات', defaultValue: 'الاستفسارات' },
   { key: 'layout.nav_notifications', group: 'التنقل', label: 'قائمة: الإشعارات', defaultValue: 'الإشعارات' },
   { key: 'layout.nav_users', group: 'التنقل', label: 'قائمة: المستخدمون', defaultValue: 'المستخدمون' },
-  { key: 'layout.nav_dashboard', group: 'التنقل', label: 'قائمة: لوحة التحكم', defaultValue: 'لوحة التحكم' },
+  {
+    key: 'layout.nav_my_board',
+    group: 'التنقل',
+    label: 'قائمة: لوحتي (مساحة الطالب)',
+    defaultValue: 'لوحتي',
+  },
+  {
+    key: 'layout.nav_admin',
+    group: 'التنقل',
+    label: 'قائمة: إدارة الموقع (أدمن)',
+    defaultValue: 'إدارة الموقع',
+  },
+  {
+    key: 'layout.nav_dashboard',
+    group: 'التنقل',
+    label: 'قائمة: لوحة التحكم (قديم — يُفضّل لوحتي)',
+    defaultValue: 'لوحتي',
+  },
   { key: 'layout.nav_tasks', group: 'التنقل', label: 'قائمة: الواجبات', defaultValue: 'الواجبات' },
   {
     key: 'dashboard.lead',
-    group: 'لوحة التحكم',
-    label: 'لوحة التحكم: الوصف التعريفي',
+    group: 'لوحتي',
+    label: 'لوحتي: الوصف التعريفي',
     defaultValue: 'بيانات حية من خططك وأورادك وحلقاتك. الواجبات تُحدَّث تلقائياً من إنجازك الفعلي.',
   },
-  { key: 'dashboard.loading', group: 'لوحة التحكم', label: 'لوحة التحكم: جاري التحميل', defaultValue: 'جاري تحميل بياناتك…' },
-  { key: 'dashboard.kpi_open', group: 'لوحة التحكم', label: 'لوحة التحكم: واجبات مفتوحة', defaultValue: 'واجبات مفتوحة' },
-  { key: 'dashboard.kpi_in_progress', group: 'لوحة التحكم', label: 'لوحة التحكم: قيد التنفيذ', defaultValue: 'قيد التنفيذ' },
+  { key: 'dashboard.loading', group: 'لوحتي', label: 'لوحتي: جاري التحميل', defaultValue: 'جاري تحميل بياناتك…' },
+  { key: 'dashboard.kpi_open', group: 'لوحتي', label: 'لوحتي: واجبات مفتوحة', defaultValue: 'واجبات مفتوحة' },
+  { key: 'dashboard.kpi_in_progress', group: 'لوحتي', label: 'لوحتي: قيد التنفيذ', defaultValue: 'قيد التنفيذ' },
   {
     key: 'dashboard.kpi_awrad_today',
-    group: 'لوحة التحكم',
-    label: 'لوحة التحكم: أوراد اليوم',
+    group: 'لوحتي',
+    label: 'لوحتي: أوراد اليوم',
     defaultValue: 'أوراد اليوم (منجز)',
   },
-  { key: 'dashboard.kpi_done', group: 'لوحة التحكم', label: 'لوحة التحكم: مكتملة', defaultValue: 'مكتملة' },
-  { key: 'dashboard.menu_title', group: 'لوحة التحكم', label: 'لوحة التحكم: عنوان القائمة', defaultValue: 'القائمة الرئيسية' },
+  { key: 'dashboard.kpi_done', group: 'لوحتي', label: 'لوحتي: مكتملة', defaultValue: 'مكتملة' },
+  { key: 'dashboard.menu_title', group: 'لوحتي', label: 'لوحتي: عنوان القائمة', defaultValue: 'القائمة الرئيسية' },
   {
     key: 'dashboard.footer_pending',
-    group: 'لوحة التحكم',
-    label: 'لوحة التحكم: تذكير واجبات',
+    group: 'لوحتي',
+    label: 'لوحتي: تذكير واجبات',
     defaultValue: 'لديك {count} واجباً يحتاج متابعة — سجّل الورد أو أكمل المساهمات.',
   },
   {
     key: 'dashboard.footer_all_clear',
-    group: 'لوحة التحكم',
-    label: 'لوحة التحكم: لا واجبات عاجلة',
+    group: 'لوحتي',
+    label: 'لوحتي: لا واجبات عاجلة',
     defaultValue: 'أحسنت! لا توجد واجبات عاجلة حالياً.',
   },
-  { key: 'dashboard.footer_go_tasks', group: 'لوحة التحكم', label: 'لوحة التحكم: انتقل للواجبات', defaultValue: 'انتقل إلى الواجبات' },
-  { key: 'dashboard.urgent_title', group: 'لوحة التحكم', label: 'لوحة التحكم: واجبات عاجلة', defaultValue: 'واجبات تحتاج متابعة' },
-  { key: 'dashboard.task_open', group: 'لوحة التحكم', label: 'لوحة التحكم: فتح الواجب', defaultValue: 'فتح' },
-  { key: 'dashboard.task_track', group: 'لوحة التحكم', label: 'لوحة التحكم: تتبّع الواجب', defaultValue: 'تتبّع' },
+  { key: 'dashboard.footer_go_tasks', group: 'لوحتي', label: 'لوحتي: انتقل للواجبات', defaultValue: 'انتقل إلى الواجبات' },
+  { key: 'dashboard.urgent_title', group: 'لوحتي', label: 'لوحتي: واجبات عاجلة', defaultValue: 'واجبات تحتاج متابعة' },
+  { key: 'dashboard.task_open', group: 'لوحتي', label: 'لوحتي: فتح الواجب', defaultValue: 'فتح' },
+  { key: 'dashboard.task_track', group: 'لوحتي', label: 'لوحتي: تتبّع الواجب', defaultValue: 'تتبّع' },
   {
     key: 'tasks.lead',
     group: 'الواجبات',
@@ -272,7 +289,7 @@ export const SITE_STRING_REGISTRY = [
   { key: 'app.home_cross_halakat', group: 'التطبيق', label: 'الرئيسية: روابط سريعة — الحلقات', defaultValue: 'الحلقات' },
   { key: 'app.home_cross_dawrat', group: 'التطبيق', label: 'الرئيسية: روابط سريعة — الدورات', defaultValue: 'الدورات' },
   { key: 'app.home_cross_awrad', group: 'التطبيق', label: 'الرئيسية: روابط سريعة — الأوراد', defaultValue: 'كل الأوراد' },
-  { key: 'app.home_cross_dashboard', group: 'التطبيق', label: 'الرئيسية: روابط سريعة — لوحة التحكم', defaultValue: 'لوحة التحكم' },
+  { key: 'app.home_cross_dashboard', group: 'التطبيق', label: 'الرئيسية: روابط سريعة — لوحتي', defaultValue: 'لوحتي' },
   {
     key: 'app.home_cross_tasks',
     group: 'التطبيق',

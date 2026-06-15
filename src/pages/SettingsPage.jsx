@@ -73,7 +73,7 @@ export default function SettingsPage() {
     }
     base.push({ to: '/app/welcome', label: str('layout.nav_welcome') })
     if (isAdmin(user)) {
-      base.push({ to: '/app/admin', label: str('layout.nav_dashboard') })
+      base.push({ to: '/app/admin', label: str('layout.nav_admin') })
       base.push({ to: '/app/admin/users', label: str('layout.nav_users') })
     }
     return base

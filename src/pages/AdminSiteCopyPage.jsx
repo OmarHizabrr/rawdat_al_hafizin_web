@@ -13,7 +13,7 @@ import { RhIcon, RH_ICON_STROKE } from '../ui/RhIcon.jsx'
 
 export default function AdminSiteCopyPage() {
   const { user } = useAuth()
-  const { branding, mergedStrings, registryDefaults } = useSiteContent()
+  const { branding, mergedStrings, registryDefaults, str } = useSiteContent()
   const toast = useToast()
   const [query, setQuery] = useState('')
   const [drafts, setDrafts] = useState({})
@@ -27,12 +27,22 @@ export default function AdminSiteCopyPage() {
     setDrafts((d) => ({ ...d, [key]: val }))
   }, [])
 
+  const savedValue = useCallback(
+    (key) => String(mergedStrings[key] ?? registryDefaults[key] ?? '').trim(),
+    [mergedStrings, registryDefaults],
+  )
+
   const valueFor = useCallback(
     (key) => {
       if (Object.prototype.hasOwnProperty.call(drafts, key)) return drafts[key]
-      return mergedStrings[key] ?? ''
+      return mergedStrings[key] ?? registryDefaults[key] ?? ''
     },
-    [drafts, mergedStrings],
+    [drafts, mergedStrings, registryDefaults],
+  )
+
+  const isDirty = useCallback(
+    (key) => String(valueFor(key)).trim() !== savedValue(key),
+    [savedValue, valueFor],
   )
 
   const filtered = useMemo(() => {
@@ -53,14 +63,13 @@ export default function AdminSiteCopyPage() {
     return [...m.entries()]
   }, [filtered])
 
-  const saveOne = async (key) => {
+  const persistKey = async (key, rawValue) => {
     if (!user) return
-    const raw = valueFor(key)
-    const trimmed = String(raw).trim()
-    const def = registryDefaults[key]
+    const trimmed = String(rawValue).trim()
+    const def = String(registryDefaults[key] ?? '').trim()
     setSavingKey(key)
     try {
-      if (trimmed === def || trimmed === '') {
+      if (!trimmed || trimmed === def) {
         await patchSiteStrings(user, { [key]: '' })
       } else {
         await patchSiteStrings(user, { [key]: trimmed })
@@ -78,9 +87,16 @@ export default function AdminSiteCopyPage() {
     }
   }
 
+  const saveOne = (key) => persistKey(key, valueFor(key))
+
+  const resetOne = (key, defaultValue) => {
+    setDraft(key, defaultValue)
+    persistKey(key, defaultValue)
+  }
+
   const crossItems = [
-    { to: '/app/admin', label: 'لوحة التحكم' },
-    { to: '/app', label: 'الرئيسية' },
+    { to: '/app/admin', label: str('layout.nav_admin') },
+    { to: '/app', label: str('layout.nav_home') },
   ]
 
   return (
@@ -88,12 +104,13 @@ export default function AdminSiteCopyPage() {
       <header className="rh-admin-copy__hero card">
         <div className="rh-admin-copy__head-row">
           <HapticLink to="/app/admin" className="rh-admin-plan-types__back">
-            <RhIcon as={ArrowLeft} size={18} strokeWidth={RH_ICON_STROKE} /> لوحة التحكم
+            <RhIcon as={ArrowLeft} size={18} strokeWidth={RH_ICON_STROKE} /> {str('layout.nav_admin')}
           </HapticLink>
         </div>
         <h1 className="rh-admin-copy__title">النصوص الثابتة</h1>
         <p className="rh-admin-copy__desc">
-          عدّل النصوص الظاهرة في المنصة والصفحة العامة. لإعادة الافتراضي اضغط «ملء الافتراضي» أو امسح الحقل واحفظ.
+          عدّل النصوص الظاهرة في المنصة والصفحة العامة. يمكنك الحفظ أكثر من مرة — «إعادة الافتراضي» يحذف التخصيص
+          ويعيد النص الأصلي.
         </p>
         <div className="rh-admin-copy__toolbar">
           <SearchField label="بحث" placeholder="ابحث باسم النص أو المجموعة…" value={query} onChange={(e) => setQuery(e.target.value)} />
@@ -113,6 +130,11 @@ export default function AdminSiteCopyPage() {
                   <p className="rh-admin-copy__default">
                     <strong>النص الافتراضي:</strong> {e.defaultValue}
                   </p>
+                  {savedValue(e.key) !== String(e.defaultValue).trim() ? (
+                    <p className="rh-admin-copy__default">
+                      <strong>المحفوظ حالياً:</strong> {savedValue(e.key)}
+                    </p>
+                  ) : null}
                   <AdminAdvancedPanel summary="رمز النص في النظام">
                     <code className="rh-admin-copy__key">{e.key}</code>
                   </AdminAdvancedPanel>
@@ -130,7 +152,7 @@ export default function AdminSiteCopyPage() {
                     size="sm"
                     icon={Save}
                     loading={savingKey === e.key}
-                    disabled={savingKey !== null}
+                    disabled={savingKey !== null || !isDirty(e.key)}
                     onClick={() => saveOne(e.key)}
                   >
                     حفظ
@@ -141,11 +163,18 @@ export default function AdminSiteCopyPage() {
                     size="sm"
                     icon={RotateCcw}
                     disabled={savingKey !== null}
-                    onClick={() => {
-                      setDraft(e.key, e.defaultValue)
-                    }}
+                    onClick={() => setDraft(e.key, e.defaultValue)}
                   >
                     ملء الافتراضي
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    disabled={savingKey !== null || savedValue(e.key) === String(e.defaultValue).trim()}
+                    onClick={() => resetOne(e.key, e.defaultValue)}
+                  >
+                    إعادة الافتراضي
                   </Button>
                 </div>
               </div>

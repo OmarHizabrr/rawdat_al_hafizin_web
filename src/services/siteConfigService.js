@@ -1,4 +1,4 @@
-import { orderBy, query } from 'firebase/firestore'
+import { deleteField, orderBy, query } from 'firebase/firestore'
 import { DEFAULT_PLAN_TYPES } from '../data/defaultPlanTypes.js'
 import { SITE_DESCRIPTION, SITE_NAME, SITE_OG_IMAGE_PATH, SITE_TITLE } from '../config/site.js'
 import { normalizeContactPhones } from '../utils/contactPhones.js'
@@ -129,18 +129,43 @@ export async function seedDefaultPlanTypes(actor) {
   }
 }
 
+/**
+ * تحديث نصوص site_config/main.strings.
+ * يستخدم deleteField لحذف المفتاح من Firestore — merge العادي لا يحذف حقول الخريطة المتداخلة.
+ */
 export async function patchSiteStrings(actor, partial) {
   const ref = firestoreApi.getSiteConfigDoc()
-  const cur = (await firestoreApi.getData(ref)) || {}
-  const prev = { ...(cur.strings || {}) }
+  const cur = await firestoreApi.getData(ref)
+  const payload = {}
+
   for (const [k, v] of Object.entries(partial)) {
-    if (v == null || String(v).trim() === '') delete prev[k]
-    else prev[k] = String(v)
+    if (v == null || String(v).trim() === '') {
+      payload[`strings.${k}`] = deleteField()
+    } else {
+      payload[`strings.${k}`] = String(v).trim()
+    }
   }
-  await firestoreApi.setData({
+
+  if (!Object.keys(payload).length) return
+
+  if (!cur) {
+    const strings = {}
+    for (const [k, v] of Object.entries(partial)) {
+      if (v != null && String(v).trim() !== '') strings[k] = String(v).trim()
+    }
+    if (!Object.keys(strings).length) return
+    await firestoreApi.setData({
+      docRef: ref,
+      data: { strings },
+      merge: true,
+      userData: actor ?? {},
+    })
+    return
+  }
+
+  await firestoreApi.updateData({
     docRef: ref,
-    data: { strings: prev },
-    merge: true,
+    data: payload,
     userData: actor ?? {},
   })
 }

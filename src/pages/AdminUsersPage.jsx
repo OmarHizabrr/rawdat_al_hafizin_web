@@ -78,7 +78,7 @@ export default function AdminUsersPage() {
 
   const adminCrossItems = useMemo(
     () => [
-      { to: '/app/admin', label: str('layout.nav_dashboard') },
+      { to: '/app/admin', label: str('layout.nav_admin') },
       { to: '/app', label: str('layout.nav_home') },
       { to: '/app/plans', label: str('layout.nav_plans') },
       { to: '/app/awrad', label: str('layout.nav_awrad') },

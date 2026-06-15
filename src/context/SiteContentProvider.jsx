@@ -99,7 +99,11 @@ export function SiteContentProvider({ children }) {
     const overrides = configData?.strings && typeof configData.strings === 'object' ? configData.strings : {}
     const out = { ...registryDefaults }
     for (const [k, v] of Object.entries(overrides)) {
-      if (v != null && String(v).trim() !== '') out[k] = String(v)
+      const trimmed = v != null ? String(v).trim() : ''
+      if (!trimmed) continue
+      // تجاهل التخصيص إن طابق الافتراضي (قد يبقى من دمج قديم في Firestore)
+      if (trimmed === String(registryDefaults[k] ?? '').trim()) continue
+      out[k] = trimmed
     }
     return out
   }, [configData])

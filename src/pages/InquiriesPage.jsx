@@ -155,7 +155,7 @@ export default function InquiriesPage() {
     if (canAccessPage('leave_request')) base.push({ to: appLink('/app/leave-request'), label: str('layout.nav_leave_request') })
     if (canAccessPage('settings')) base.push({ to: appLink('/app/settings'), label: str('layout.nav_settings') })
     if (isAdmin(user)) {
-      base.push({ to: '/app/admin', label: str('layout.nav_dashboard') })
+      base.push({ to: '/app/admin', label: str('layout.nav_admin') })
     }
     return base
   }, [appLink, canAccessPage, hidePlanNavigation, str, user])

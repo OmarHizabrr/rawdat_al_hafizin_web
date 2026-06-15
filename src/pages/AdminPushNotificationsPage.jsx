@@ -135,7 +135,7 @@ export default function AdminPushNotificationsPage() {
 
   const crossItems = useMemo(
     () => [
-      { to: '/app/admin', label: str('layout.nav_dashboard') },
+      { to: '/app/admin', label: str('layout.nav_admin') },
       { to: '/app/admin/users', label: str('layout.nav_users') },
       { to: '/app', label: str('layout.nav_home') },
     ],

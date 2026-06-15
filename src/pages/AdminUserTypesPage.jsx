@@ -81,7 +81,7 @@ export default function AdminUserTypesPage() {
 
   const adminCrossItems = useMemo(
     () => [
-      { to: '/app/admin', label: str('layout.nav_dashboard') },
+      { to: '/app/admin', label: str('layout.nav_admin') },
       { to: '/app/admin/users', label: str('layout.nav_users') },
       { to: '/app', label: str('layout.nav_home') },
     ],

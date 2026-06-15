@@ -48,7 +48,7 @@ export default function TasksPage() {
         <header>
           <Link to={dashboardPath} className="rh-student-workspace__back-link">
             <RhIcon as={ArrowRight} size={16} strokeWidth={RH_ICON_STROKE} />
-            {str('layout.nav_dashboard')}
+            {str('layout.nav_my_board')}
           </Link>
           <div className="rh-student-workspace__section-head">
             <div>

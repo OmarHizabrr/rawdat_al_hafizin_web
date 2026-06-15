@@ -38,7 +38,7 @@ const BOTTOM_TAB_FALLBACK_SKIP = new Set([
 export function buildBaseNav(str) {
   return [
     { to: '/app', end: true, label: str('layout.nav_home'), Icon: Home, pageId: 'home' },
-    { to: '/app/dashboard', label: str('layout.nav_dashboard'), Icon: LayoutDashboard, pageId: 'home' },
+    { to: '/app/dashboard', label: str('layout.nav_my_board'), Icon: LayoutDashboard, pageId: 'home' },
     { to: '/app/tasks', label: str('layout.nav_tasks'), Icon: ListChecks, pageId: 'home' },
     { to: '/app/welcome', label: str('layout.nav_welcome'), Icon: BookOpen, pageId: 'welcome' },
     { to: '/app/plans', label: str('layout.nav_plans'), Icon: ClipboardList, pageId: 'plans' },
@@ -66,7 +66,7 @@ export function buildBaseNav(str) {
 
 export function buildAdminNavItems(str) {
   return [
-    { to: '/app/admin', label: str('layout.nav_dashboard'), Icon: LayoutDashboard },
+    { to: '/app/admin', label: str('layout.nav_admin'), Icon: LayoutDashboard },
     { to: '/app/admin/users', label: str('layout.nav_users'), Icon: Users },
     { to: '/app/admin/push-notifications', label: 'إشعارات المستخدمين', Icon: Bell },
     { to: '/app/admin/applications', label: 'طلبات الالتحاق', Icon: Users },

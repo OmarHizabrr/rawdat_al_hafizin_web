@@ -65,9 +65,9 @@ export default function DashboardPage() {
             <div>
               <div className="rh-student-workspace__eyebrow">
                 <RhIcon as={LayoutDashboard} size={14} strokeWidth={RH_ICON_STROKE} />
-                {str('layout.nav_dashboard')}
+                {str('layout.nav_my_board')}
               </div>
-              <h1 className="rh-student-workspace__title">{str('layout.nav_dashboard')}</h1>
+              <h1 className="rh-student-workspace__title">{str('layout.nav_my_board')}</h1>
               <p className="rh-student-workspace__lead">{str('dashboard.lead')}</p>
             </div>
             <Link to={tasksPath} className="rh-student-workspace__cta">
