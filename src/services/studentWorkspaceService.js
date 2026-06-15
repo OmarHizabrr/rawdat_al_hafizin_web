@@ -60,7 +60,9 @@ async function loadMembershipRows(userId, kind) {
   const rows = await Promise.all(
     mirrorDocs.map(async (docSnap) => {
       const mirror = docSnap.data() || {}
-      const canonical = await firestoreApi.getData(canonicalRef(docSnap.id))
+      const ref = canonicalRef(docSnap.id)
+      if (!ref) return null
+      const canonical = await firestoreApi.getData(ref)
       if (!canonical) return null
       const extras = await mergeMemberDocExtras(kind, docSnap.id, userId)
       return {
@@ -99,7 +101,7 @@ export async function loadStudentWorkspaceMemberships(userId) {
     return { halakat: [], exams: [], activities: [], dawrat: [], halakaSnapshots: [] }
   }
   const [halakat, exams, activities, dawrat] = await Promise.all([
-    loadMembershipRows(uid, 'halakat'),
+    loadMembershipRows(uid, 'halaka'),
     loadMembershipRows(uid, 'exam'),
     loadMembershipRows(uid, 'activity'),
     loadMembershipRows(uid, 'dawra'),

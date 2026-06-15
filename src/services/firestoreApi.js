@@ -764,6 +764,7 @@ class FirestoreApi {
 
   /** جلب بيانات مستند */
   async getData(docRef) {
+    if (!docRef) return null;
     const snap = await getDoc(docRef);
     return snap.exists() ? snap.data() : null;
   }

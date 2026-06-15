@@ -405,7 +405,9 @@ async function loadUserMembershipRows(userId, kind) {
   const rows = await Promise.all(
     mirrorDocs.map(async (docSnap) => {
       const mirror = docSnap.data() || {}
-      const canonical = await firestoreApi.getData(canonicalRefByKind(kind, docSnap.id))
+      const ref = canonicalRefByKind(kind, docSnap.id)
+      if (!ref) return null
+      const canonical = await firestoreApi.getData(ref)
       if (!canonical) return null
       const extras = await mergeMemberDocExtras(kind, docSnap.id, userId)
       return {
@@ -934,8 +936,10 @@ export async function buildTeacherReport(user, range = {}, scope = {}) {
 export async function buildGroupReport(kind, entityId, range = {}) {
   const id = String(entityId || '').trim()
   if (!id) return null
+  const entityRef = canonicalRefByKind(kind, id)
+  if (!entityRef) return null
   const [entity, members] = await Promise.all([
-    firestoreApi.getData(canonicalRefByKind(kind, id)),
+    firestoreApi.getData(entityRef),
     membersLoaderByKind(kind)?.(id),
   ])
   if (!entity) return null
