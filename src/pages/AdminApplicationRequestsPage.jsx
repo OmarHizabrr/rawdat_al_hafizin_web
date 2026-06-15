@@ -26,7 +26,7 @@ import { RhIcon, RH_ICON_STROKE } from '../ui/RhIcon.jsx'
 
 export default function AdminApplicationRequestsPage() {
   const { user } = useAuth()
-  const { branding, applicationFormFields } = useSiteContent()
+  const { branding, applicationFormFields, str } = useSiteContent()
   const toast = useToast()
   const [rows, setRows] = useState([])
   const [q, setQ] = useState('')
@@ -203,7 +203,7 @@ export default function AdminApplicationRequestsPage() {
   }
 
   const crossItems = [
-    { to: '/app/admin', label: 'لوحة التحكم' },
+    { to: '/app/admin', label: str('layout.nav_admin') },
     { to: '/app/admin/application-form', label: 'حقول الاستمارة' },
     { to: '/app/admin/users', label: 'المستخدمون' },
     { to: '/app', label: 'الرئيسية' },

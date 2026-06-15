@@ -183,7 +183,7 @@ export default function AdminProgramBlocksPage() {
   const DraftIcon = resolveProgramBlockIcon(draft.icon)
 
   const crossItems = [
-    { to: '/app/admin', label: 'لوحة التحكم' },
+    { to: '/app/admin', label: str('layout.nav_admin') },
     { to: '/app/welcome', label: 'صفحة البداية' },
     { to: '/app/admin/copy', label: 'النصوص الثابتة' },
   ]
@@ -196,7 +196,7 @@ export default function AdminProgramBlocksPage() {
         <div className="rh-admin-program-blocks__head-row">
           <HapticLink to="/app/admin" className="rh-admin-program-blocks__back">
             <RhIcon as={ArrowLeft} size={18} strokeWidth={RH_ICON_STROKE} aria-hidden />
-            لوحة التحكم
+            {str('layout.nav_admin')}
           </HapticLink>
         </div>
         <h1 className="rh-admin-program-blocks__title">أقسام صفحة البداية</h1>

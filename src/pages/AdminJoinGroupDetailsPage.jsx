@@ -17,6 +17,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { CrossNav } from '../components/CrossNav.jsx'
 import { useAuth } from '../context/useAuth.js'
+import { useSiteContent } from '../context/useSiteContent.js'
 import {
   getJoinGroupById,
   loadJoinGroupAuditEvents,
@@ -60,6 +61,7 @@ function isProtectedRole(role) {
 
 export default function AdminJoinGroupDetailsPage() {
   const { user } = useAuth()
+  const { str } = useSiteContent()
   const { groupId = '' } = useParams()
   const navigate = useNavigate()
   const toast = useToast()
@@ -134,10 +136,10 @@ export default function AdminJoinGroupDetailsPage() {
 
   const crossItems = useMemo(
     () => [
-      { to: '/app/admin', label: 'لوحة التحكم' },
+      { to: '/app/admin', label: str('layout.nav_admin') },
       { to: '/app/admin/groups', label: 'إدارة المجموعات' },
     ],
-    [],
+    [str],
   )
   const filteredMembers = useMemo(() => {
     let rows = [...members]

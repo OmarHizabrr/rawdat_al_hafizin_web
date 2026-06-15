@@ -13,7 +13,7 @@ import { RhIcon, RH_ICON_STROKE } from '../ui/RhIcon.jsx'
 
 export default function AdminPlanTypesPage() {
   const { user } = useAuth()
-  const { branding } = useSiteContent()
+  const { branding, str } = useSiteContent()
   const toast = useToast()
   const [rows, setRows] = useState([])
   const [editorOpen, setEditorOpen] = useState(false)
@@ -110,7 +110,7 @@ export default function AdminPlanTypesPage() {
   const sorted = useMemo(() => [...rows].sort((a, b) => a.order - b.order || a.value.localeCompare(b.value)), [rows])
 
   const crossItems = [
-    { to: '/app/admin', label: 'لوحة التحكم' },
+    { to: '/app/admin', label: str('layout.nav_admin') },
     { to: '/app/plans', label: 'الخطط' },
     { to: '/app', label: 'الرئيسية' },
   ]
@@ -120,7 +120,7 @@ export default function AdminPlanTypesPage() {
       <header className="rh-admin-plan-types__hero card">
         <div className="rh-admin-plan-types__head-row">
           <HapticLink to="/app/admin" className="rh-admin-plan-types__back">
-            <RhIcon as={ArrowLeft} size={18} strokeWidth={RH_ICON_STROKE} /> لوحة التحكم
+            <RhIcon as={ArrowLeft} size={18} strokeWidth={RH_ICON_STROKE} /> {str('layout.nav_admin')}
           </HapticLink>
         </div>
         <h1 className="rh-admin-plan-types__title">أنواع الخطط</h1>

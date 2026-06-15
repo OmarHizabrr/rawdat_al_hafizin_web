@@ -80,7 +80,7 @@ function scrollToBrandingGroup(mode, groupId) {
 
 export default function AdminBrandingPage() {
   const { user } = useAuth()
-  const { branding, contactPhones } = useSiteContent()
+  const { branding, contactPhones, str } = useSiteContent()
   const { resolved: appColorScheme } = useTheme()
   const toast = useToast()
   const [activeTab, setActiveTab] = useState('identity')
@@ -212,7 +212,7 @@ export default function AdminBrandingPage() {
   )
 
   const crossItems = [
-    { to: '/app/admin', label: 'لوحة التحكم' },
+    { to: '/app/admin', label: str('layout.nav_admin') },
     { to: '/app', label: 'الرئيسية' },
     { to: '/app/leave-request', label: 'طلب إجازة' },
     { to: '/app/certificates', label: 'الشهادات' },
@@ -319,7 +319,7 @@ export default function AdminBrandingPage() {
       <header className="rh-admin-branding__hero card">
         <div className="rh-admin-branding__head-row">
           <HapticLink to="/app/admin" className="rh-admin-plan-types__back">
-            <RhIcon as={ArrowLeft} size={18} strokeWidth={RH_ICON_STROKE} /> لوحة التحكم
+            <RhIcon as={ArrowLeft} size={18} strokeWidth={RH_ICON_STROKE} /> {str('layout.nav_admin')}
           </HapticLink>
         </div>
         <h1 className="rh-admin-branding__title">إعدادات الموقع</h1>

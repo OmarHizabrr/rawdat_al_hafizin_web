@@ -141,7 +141,7 @@ export default function LeaveRequestPage() {
           ) : (
             <div className="rh-service-page__empty-contact card">
               <p className="rh-service-page__empty-p">
-                لم تُعرَّف أرقام تواصل بعد. يمكن للمشرف إضافتها من لوحة التحكم ← هوية الموقع ← أرقام التواصل العامة.
+                لم تُعرَّف أرقام تواصل بعد. يمكن للمشرف إضافتها من {str('layout.nav_admin')} ← هوية الموقع ← أرقام التواصل العامة.
               </p>
             </div>
           )}

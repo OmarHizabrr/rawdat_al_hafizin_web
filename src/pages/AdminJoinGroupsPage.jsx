@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom'
 import { CrossNav } from '../components/CrossNav.jsx'
 import { ImagePickPreview } from '../components/ImagePickPreview.jsx'
 import { useAuth } from '../context/useAuth.js'
+import { useSiteContent } from '../context/useSiteContent.js'
 import {
   deleteJoinGroup,
   JOIN_GROUP_GENDER,
@@ -41,6 +42,7 @@ function platformIcon(v) {
 export default function AdminJoinGroupsPage() {
   const navigate = useNavigate()
   const { user } = useAuth()
+  const { str } = useSiteContent()
   const toast = useToast()
   const [rows, setRows] = useState([])
   const [q, setQ] = useState('')
@@ -104,7 +106,7 @@ export default function AdminJoinGroupsPage() {
   }, [rows])
 
   const crossItems = [
-    { to: '/app/admin', label: 'لوحة التحكم' },
+    { to: '/app/admin', label: str('layout.nav_admin') },
     { to: '/app/admin/users', label: 'المستخدمون' },
     { to: '/app', label: 'الرئيسية' },
   ]

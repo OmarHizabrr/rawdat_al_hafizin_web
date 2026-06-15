@@ -263,7 +263,7 @@ export default function SettingsPage() {
           <div className="rh-settings-card__head">
             <h2 className="rh-settings-card__title">أرقام التواصل</h2>
             <p className="rh-settings-card__subtitle">
-              لم تُضف أرقام بعد. يضبطها مشرف الموقع من لوحة التحكم ← هوية الموقع ← أرقام التواصل العامة.
+              لم تُضف أرقام بعد. يضبطها مشرف الموقع من {str('layout.nav_admin')} ← هوية الموقع ← أرقام التواصل العامة.
             </p>
           </div>
         </section>

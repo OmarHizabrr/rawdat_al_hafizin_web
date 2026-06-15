@@ -148,7 +148,7 @@ export default function CertificatesPage() {
           ) : (
             <div className="rh-service-page__empty-contact card">
               <p className="rh-service-page__empty-p">
-                لا توجد أرقام مضبوطة بعد. راجع المشرف لإضافة أرقام التواصل من لوحة التحكم ← هوية الموقع.
+                لا توجد أرقام مضبوطة بعد. راجع المشرف لإضافة أرقام التواصل من {str('layout.nav_admin')} ← هوية الموقع.
               </p>
             </div>
           )}

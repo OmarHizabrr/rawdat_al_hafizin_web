@@ -85,7 +85,7 @@ function emptyField(order = 0) {
 
 export default function AdminApplicationFormPage() {
   const { user } = useAuth()
-  const { branding, applicationFormFields, hasCustomApplicationFormFields } = useSiteContent()
+  const { branding, applicationFormFields, hasCustomApplicationFormFields, str } = useSiteContent()
   const toast = useToast()
   const [rows, setRows] = useState([])
   const [editorOpen, setEditorOpen] = useState(false)
@@ -259,7 +259,7 @@ export default function AdminApplicationFormPage() {
   const placeholderExample = PLACEHOLDER_EXAMPLES[draft.type] || 'نص يظهر داخل الحقل قبل الكتابة'
 
   const crossItems = [
-    { to: '/app/admin', label: 'لوحة التحكم' },
+    { to: '/app/admin', label: str('layout.nav_admin') },
     { to: '/app/admin/applications', label: 'طلبات الالتحاق' },
     { to: '/app/application', label: 'صفحة الطلب' },
   ]
@@ -270,7 +270,7 @@ export default function AdminApplicationFormPage() {
         <div className="rh-admin-program-blocks__head-row">
           <HapticLink to="/app/admin" className="rh-admin-program-blocks__back">
             <RhIcon as={ArrowLeft} size={18} strokeWidth={RH_ICON_STROKE} aria-hidden />
-            لوحة التحكم
+            {str('layout.nav_admin')}
           </HapticLink>
         </div>
         <h1 className="rh-admin-program-blocks__title">حقول استمارة طلب الالتحاق</h1>
