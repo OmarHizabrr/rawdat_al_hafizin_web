@@ -33,7 +33,10 @@ import {
   REPORT_SCOPE_ALL,
   ADMIN_REPORT_KIND_ORDER,
   reportKindUsesDateFilter,
-  reportKindUsesScopeFilters,
+  reportKindIsPersonAutoReport,
+  reportPersonSelectHintKey,
+  reportPersonPeriodAutoKey,
+  reportPersonEmptyKey,
 } from "../config/reportKinds.js";
 import { PERMISSION_PAGE_IDS } from "../config/permissionRegistry.js";
 import { isAdmin } from "../config/roles.js";
@@ -47,7 +50,6 @@ import {
   buildTeacherReport,
   isCentralReportsMode,
   listEntitiesByKind,
-  loadStudentScopeOptions,
   loadTeachersDirectory,
   loadUsersDirectory,
 } from "../services/reportsService.js";
@@ -357,8 +359,6 @@ export default function ReportViewPage() {
   const [rangePreset, setRangePreset] = useState("all");
   const [scopePlan, setScopePlan] = useState(REPORT_SCOPE_ALL);
   const [scopeHalaka, setScopeHalaka] = useState(REPORT_SCOPE_ALL);
-  const [scopeOptions, setScopeOptions] = useState({ plans: [], halakat: [] });
-  const [loadingScope, setLoadingScope] = useState(false);
   const [entities, setEntities] = useState([]);
   const [loadingEntities, setLoadingEntities] = useState(false);
   const [loadingReport, setLoadingReport] = useState(false);
@@ -383,8 +383,9 @@ export default function ReportViewPage() {
   );
   const centralReports = isCentralReportsMode(user);
   const showDateFilters = reportKindUsesDateFilter(kind);
-  const showScopeFilters = reportKindUsesScopeFilters(kind);
-  const lastBuiltStudentRef = useRef("");
+  const personAutoReport = reportKindIsPersonAutoReport(kind);
+  const personHintKey = reportPersonSelectHintKey(kind);
+  const lastBuiltPersonKeyRef = useRef("");
 
   useEffect(() => {
     if (didHydrateFromQueryRef.current) return;
@@ -397,8 +398,8 @@ export default function ReportViewPage() {
     if (kindParam && REPORT_KIND_OPTIONS.some((k) => k.value === kindParam))
       setKind(kindParam);
     if (entityParam) setEntityId(entityParam);
-    const isStudentFromUrl = kindParam === "student";
-    if (!isStudentFromUrl) {
+    const isPersonAutoFromUrl = reportKindIsPersonAutoReport(kindParam);
+    if (!isPersonAutoFromUrl) {
       if (fromParam) {
         const y = Number(fromParam.slice(0, 4));
         setFromDate(
@@ -425,13 +426,13 @@ export default function ReportViewPage() {
   }, [search]);
 
   useEffect(() => {
-    if (kind !== "student") return;
+    if (!reportKindIsPersonAutoReport(kind)) return;
     setFromDate("");
     setToDate("");
     setRangePreset("all");
     setScopePlan(REPORT_SCOPE_ALL);
     setScopeHalaka(REPORT_SCOPE_ALL);
-    lastBuiltStudentRef.current = "";
+    lastBuiltPersonKeyRef.current = "";
   }, [kind]);
 
   useEffect(() => {
@@ -498,60 +499,6 @@ export default function ReportViewPage() {
     };
   }, [kind, canAccessPage, user]);
 
-  useEffect(() => {
-    if (!canAccessPage(PAGE_ID)) return;
-    if (kind !== "teacher") {
-      setScopeOptions({ plans: [], halakat: [] });
-      setScopePlan(REPORT_SCOPE_ALL);
-      setScopeHalaka(REPORT_SCOPE_ALL);
-      return undefined;
-    }
-    if (!entityId) {
-      setScopeOptions({ plans: [], halakat: [] });
-      setScopePlan(REPORT_SCOPE_ALL);
-      setScopeHalaka(REPORT_SCOPE_ALL);
-      return undefined;
-    }
-    let cancelled = false;
-    setLoadingScope(true);
-    const run = async () => {
-      try {
-        const opts = await loadStudentScopeOptions(entityId, { currentUser: user });
-        if (!cancelled) {
-          setScopeOptions(
-            kind === "teacher"
-              ? { plans: [], halakat: opts.halakat || [] }
-              : opts,
-          );
-        }
-      } catch {
-        if (!cancelled) setScopeOptions({ plans: [], halakat: [] });
-      } finally {
-        if (!cancelled) setLoadingScope(false);
-      }
-    };
-    run();
-    return () => {
-      cancelled = true;
-    };
-  }, [kind, entityId, canAccessPage, user]);
-
-  const scopeHalakaOptions = useMemo(
-    () => [
-      {
-        value: REPORT_SCOPE_ALL,
-        label: centralReports
-          ? str("reports.scope_halaka_all_central")
-          : str("reports.scope_halaka_all"),
-      },
-      ...(scopeOptions.halakat || []).map((h) => ({
-        value: h.id,
-        label: h.name,
-      })),
-    ],
-    [scopeOptions.halakat, centralReports, str],
-  );
-
   const entityOptions = useMemo(() => toEntityOptions(entities, kind), [entities, kind]);
   const entityMap = useMemo(
     () =>
@@ -565,7 +512,7 @@ export default function ReportViewPage() {
   );
 
   const range = useMemo(() => {
-    if (kind === "student") return { from: "", to: "" };
+    if (reportKindIsPersonAutoReport(kind)) return { from: "", to: "" };
     return {
       from: fromDate ? hijriYmdLocalDayStartIso(fromDate) : "",
       to: toDate ? hijriYmdLocalDayEndIso(toDate) : "",
@@ -573,7 +520,7 @@ export default function ReportViewPage() {
   }, [kind, fromDate, toDate]);
 
   const reportScope = useMemo(() => {
-    if (kind === "student") {
+    if (reportKindIsPersonAutoReport(kind)) {
       return { planId: REPORT_SCOPE_ALL, halakaId: REPORT_SCOPE_ALL };
     }
     return {
@@ -608,12 +555,6 @@ export default function ReportViewPage() {
       params.delete("from");
       params.delete("to");
       params.delete("rangePreset");
-    }
-    if (showScopeFilters) {
-      if (scopeHalaka && scopeHalaka !== REPORT_SCOPE_ALL)
-        params.set("scopeHalaka", scopeHalaka);
-      else params.delete("scopeHalaka");
-    } else {
       params.delete("scopePlan");
       params.delete("scopeHalaka");
     }
@@ -633,10 +574,7 @@ export default function ReportViewPage() {
     fromDate,
     toDate,
     rangePreset,
-    scopePlan,
-    scopeHalaka,
     showDateFilters,
-    showScopeFilters,
     search,
     navigate,
   ]);
@@ -698,9 +636,10 @@ export default function ReportViewPage() {
     if (showDateFilters && isRangeInvalid) return;
     if (!entityOptions.some((o) => o.value === entityId)) return;
 
-    if (kind === "student") {
-      if (lastBuiltStudentRef.current === entityId) return;
-      lastBuiltStudentRef.current = entityId;
+    if (reportKindIsPersonAutoReport(kind)) {
+      const personKey = `${kind}:${entityId}`;
+      if (lastBuiltPersonKeyRef.current === personKey) return;
+      lastBuiltPersonKeyRef.current = personKey;
       build();
       return;
     }
@@ -1177,36 +1116,16 @@ export default function ReportViewPage() {
       { label: "الكيان", value: selectedEntityName || "—" },
       {
         label: "الفترة (أم القرى)",
-        value:
-          kind === "student"
-            ? str("reports.student_period_auto")
-            : fromDate || toDate
-              ? `${fromDate || "—"} ← ${toDate || "—"}`
-              : "كامل الفترة",
+        value: reportKindIsPersonAutoReport(kind)
+          ? str(reportPersonPeriodAutoKey(kind))
+          : fromDate || toDate
+            ? `${fromDate || "—"} ← ${toDate || "—"}`
+            : "كامل الفترة",
       },
     ];
-    if (kind === "teacher") {
-      items.push({
-        label: str("reports.scope_halaka_label"),
-        value:
-          scopeHalakaOptions.find((o) => o.value === scopeHalaka)?.label ||
-          (centralReports
-            ? str("reports.scope_halaka_all_central")
-            : str("reports.scope_halaka_all")),
-      });
-    }
     items.push({ label: "تاريخ الإصدار", value: issuedAt });
     return items;
-  }, [
-    kind,
-    selectedEntityName,
-    fromDate,
-    toDate,
-    scopeHalaka,
-    scopeHalakaOptions,
-    centralReports,
-    str,
-  ]);
+  }, [kind, selectedEntityName, fromDate, toDate, str]);
 
   const halakaMemberNameMap = useMemo(() => {
     const map = new Map();
@@ -1377,7 +1296,9 @@ export default function ReportViewPage() {
             value={entityId}
             onChange={(id) => {
               setEntityId(id);
-              if (kind === "student") lastBuiltStudentRef.current = "";
+              if (reportKindIsPersonAutoReport(kind)) {
+                lastBuiltPersonKeyRef.current = "";
+              }
             }}
             placeholder={
               loadingEntities
@@ -1387,10 +1308,8 @@ export default function ReportViewPage() {
             searchPlaceholder={str("reports.search_placeholder")}
             emptyText={str("reports.search_empty")}
           />
-          {kind === "student" ? (
-            <p className="rh-reports-hub__student-hint">
-              {str("reports.student_select_hint")}
-            </p>
+          {personHintKey ? (
+            <p className="rh-reports-hub__student-hint">{str(personHintKey)}</p>
           ) : null}
           {centralReports && !loadingEntities && entities.length > 0 ? (
             <p className="rh-reports-hub__entity-count">
@@ -1441,25 +1360,6 @@ export default function ReportViewPage() {
             {str("reports.range_invalid_hint")}
           </p>
         )}
-        {showScopeFilters && entityId ? (
-          <div className="rh-reports__scope-filters">
-            <SearchableSelect
-              label={str("reports.scope_halaka_label")}
-              options={scopeHalakaOptions}
-              value={scopeHalaka}
-              onChange={setScopeHalaka}
-              placeholder={
-                loadingScope
-                  ? str("reports.loading_entities")
-                  : centralReports
-                    ? str("reports.scope_halaka_all_central")
-                    : str("reports.scope_halaka_all")
-              }
-              searchPlaceholder={str("reports.search_placeholder")}
-              emptyText={str("reports.search_empty")}
-            />
-          </div>
-        ) : null}
         <div className="rh-reports__filters-actions">
           {kind === "student" && entityId ? (
             <HapticLink
@@ -1500,8 +1400,8 @@ export default function ReportViewPage() {
 
       {!reportData ? (
         <p className="rh-plans__empty">
-          {kind === "student"
-            ? str("reports.empty_student")
+          {reportKindIsPersonAutoReport(kind)
+            ? str(reportPersonEmptyKey(kind))
             : str("reports.empty")}
         </p>
       ) : (

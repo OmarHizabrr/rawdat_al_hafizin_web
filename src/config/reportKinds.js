@@ -42,14 +42,36 @@ export const REPORT_RANGE_PRESETS = [
 /** كل الخطط / كل الحلقات — قيمة النطاق الافتراضية */
 export const REPORT_SCOPE_ALL = 'all'
 
-/** تقرير الطالب: بدون فلتر تاريخ يدوي — التواريخ من سجلات الطالب وخططه */
-export function reportKindUsesDateFilter(kind) {
-  return kind !== 'student'
+/** تقارير الطالب/المعلم: بدون فلتر تاريخ يدوي — التواريخ من السجلات */
+export function reportKindIsPersonAutoReport(kind) {
+  return kind === 'student' || kind === 'teacher'
 }
 
-/** تقرير الطالب: بدون تقييد نطاق خطة/حلقة — يجمع كل عضوياته */
-export function reportKindUsesScopeFilters(kind) {
-  return kind === 'teacher'
+export function reportKindUsesDateFilter(kind) {
+  return !reportKindIsPersonAutoReport(kind)
+}
+
+/** بدون تقييد نطاق خطة/حلقة — يجمع كل عضويات الشخص */
+export function reportKindUsesScopeFilters() {
+  return false
+}
+
+export function reportPersonSelectHintKey(kind) {
+  if (kind === 'student') return 'reports.student_select_hint'
+  if (kind === 'teacher') return 'reports.teacher_select_hint'
+  return ''
+}
+
+export function reportPersonPeriodAutoKey(kind) {
+  if (kind === 'student') return 'reports.student_period_auto'
+  if (kind === 'teacher') return 'reports.teacher_period_auto'
+  return ''
+}
+
+export function reportPersonEmptyKey(kind) {
+  if (kind === 'student') return 'reports.empty_student'
+  if (kind === 'teacher') return 'reports.empty_teacher'
+  return 'reports.empty'
 }
 
 /** ترتيب أنواع التقارير للأدمن — الكيانات المركزية أولاً */

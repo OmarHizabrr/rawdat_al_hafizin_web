@@ -657,6 +657,24 @@ export const SITE_STRING_REGISTRY = [
     defaultValue: 'اختر اسم الطالب لعرض تقريره الشامل.',
   },
   {
+    key: 'reports.teacher_select_hint',
+    group: 'التقارير',
+    label: 'تلميح تقرير المعلم',
+    defaultValue: 'اختر اسم المعلم فقط — يُجمع التقرير تلقائياً من جلساته وحضوره وارتباطاته، والتواريخ من سجلاته دون إدخال يدوي.',
+  },
+  {
+    key: 'reports.teacher_period_auto',
+    group: 'التقارير',
+    label: 'فترة تقرير المعلم التلقائية',
+    defaultValue: 'من سجلات المعلم (كامل)',
+  },
+  {
+    key: 'reports.empty_teacher',
+    group: 'التقارير',
+    label: 'حالة فارغة لتقرير المعلم',
+    defaultValue: 'اختر اسم المعلم لعرض تقريره الشامل.',
+  },
+  {
     key: 'reports.admin_entity_count',
     group: 'التقارير',
     label: 'عداد الكيانات للأدمن',
