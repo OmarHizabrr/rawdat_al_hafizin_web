@@ -42,6 +42,16 @@ export const REPORT_RANGE_PRESETS = [
 /** كل الخطط / كل الحلقات — قيمة النطاق الافتراضية */
 export const REPORT_SCOPE_ALL = 'all'
 
+/** تقرير الطالب: بدون فلتر تاريخ يدوي — التواريخ من سجلات الطالب وخططه */
+export function reportKindUsesDateFilter(kind) {
+  return kind !== 'student'
+}
+
+/** تقرير الطالب: بدون تقييد نطاق خطة/حلقة — يجمع كل عضوياته */
+export function reportKindUsesScopeFilters(kind) {
+  return kind === 'teacher'
+}
+
 /** ترتيب أنواع التقارير للأدمن — الكيانات المركزية أولاً */
 export const ADMIN_REPORT_KIND_ORDER = [
   'plan',

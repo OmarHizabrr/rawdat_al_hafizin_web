@@ -10,6 +10,8 @@ import {
   REPORT_SCOPE_ALL,
   ADMIN_REPORT_KIND_ORDER,
   reportViewPath,
+  reportKindUsesDateFilter,
+  reportKindUsesScopeFilters,
 } from '../config/reportKinds.js'
 import { PERMISSION_PAGE_IDS } from '../config/permissionRegistry.js'
 import { isAdmin } from '../config/roles.js'
@@ -85,6 +87,8 @@ export default function ReportsHubPage() {
   )
 
   const centralReports = isCentralReportsMode(user)
+  const showDateFilters = reportKindUsesDateFilter(kind)
+  const showScopeFilters = reportKindUsesScopeFilters(kind)
 
   const [kind, setKind] = useState(() => allowedKinds[0]?.value || 'student')
   const adminDefaultKindSet = useRef(false)
@@ -140,6 +144,15 @@ export default function ReportsHubPage() {
   }, [kind, allowedKinds, canAccessPage])
 
   useEffect(() => {
+    if (kind !== 'student') return
+    setFromDate('')
+    setToDate('')
+    setRangePreset('all')
+    setScopePlan(REPORT_SCOPE_ALL)
+    setScopeHalaka(REPORT_SCOPE_ALL)
+  }, [kind])
+
+  useEffect(() => {
     if (!centralReports || adminDefaultKindSet.current) return
     if (allowedKinds.some((k) => k.value === 'plan')) {
       setKind('plan')
@@ -180,7 +193,7 @@ export default function ReportsHubPage() {
   }, [kind, canAccessPage, user])
 
   useEffect(() => {
-    if (kind !== 'student' && kind !== 'teacher') {
+    if (kind !== 'teacher') {
       setScopeOptions({ plans: [], halakat: [] })
       setScopePlan(REPORT_SCOPE_ALL)
       setScopeHalaka(REPORT_SCOPE_ALL)
@@ -207,24 +220,6 @@ export default function ReportsHubPage() {
       cancelled = true
     }
   }, [kind, entityId, user])
-
-  const scopePlanOptions = useMemo(
-    () => [
-      {
-        value: REPORT_SCOPE_ALL,
-        label: centralReports ? str('reports.scope_plan_all_central') : str('reports.scope_plan_all'),
-      },
-      ...(scopeOptions.plans || []).map((p) => {
-        const vols = String(p.volumesSummary || '').trim()
-        const base = p.name || p.id
-        return {
-          value: p.id,
-          label: vols && vols !== '—' ? `${base} — ${vols}` : base,
-        }
-      }),
-    ],
-    [scopeOptions.plans, centralReports, str],
-  )
 
   const scopeHalakaOptions = useMemo(
     () => [
@@ -304,7 +299,7 @@ export default function ReportsHubPage() {
       toast.warning('اختر الكيان أولاً.', '')
       return
     }
-    if (isRangeInvalid) {
+    if (showDateFilters && isRangeInvalid) {
       toast.warning(str('reports.toast_invalid_range'))
       return
     }
@@ -313,15 +308,24 @@ export default function ReportsHubPage() {
         reportViewPath({
           kind,
           entityId,
-          from: fromDate || undefined,
-          to: toDate || undefined,
-          rangePreset,
-          scopePlan: kind === 'student' ? scopePlan : undefined,
-          scopeHalaka: kind === 'student' || kind === 'teacher' ? scopeHalaka : undefined,
+          from: showDateFilters ? fromDate || undefined : undefined,
+          to: showDateFilters ? toDate || undefined : undefined,
+          rangePreset: showDateFilters ? rangePreset : undefined,
+          scopeHalaka: showScopeFilters ? scopeHalaka : undefined,
         }),
       ),
     )
   }
+
+  const onEntityChange = useCallback(
+    (id) => {
+      setEntityId(id)
+      if (kind === 'student' && id) {
+        navigate(appLink(reportViewPath({ kind: 'student', entityId: id })))
+      }
+    },
+    [kind, navigate, appLink],
+  )
 
   const selectedKindMeta = REPORT_KIND_OPTIONS.find((k) => k.value === kind)
 
@@ -394,67 +398,61 @@ export default function ReportsHubPage() {
             label={str('reports.field_entity')}
             options={entityOptions}
             value={entityId}
-            onChange={setEntityId}
+            onChange={onEntityChange}
             placeholder={loadingEntities ? str('reports.loading_entities') : str('reports.field_entity')}
             searchPlaceholder={str('reports.search_placeholder')}
             emptyText={str('reports.search_empty')}
           />
+          {kind === 'student' ? (
+            <p className="rh-reports-hub__student-hint">{str('reports.student_select_hint')}</p>
+          ) : null}
           {centralReports && !loadingEntities && entities.length > 0 ? (
             <p className="rh-reports-hub__entity-count">{str('reports.admin_entity_count', { count: entities.length })}</p>
           ) : null}
-          <RhDatePickerField
-            label={str('reports.field_from')}
-            value={fromDate}
-            onChange={(v) => {
-              setFromDate(v)
-              setRangePreset('custom')
-            }}
-            placeholderText={str('reports.hijri_placeholder')}
-          />
-          <RhDatePickerField
-            label={str('reports.field_to')}
-            value={toDate}
-            onChange={(v) => {
-              setToDate(v)
-              setRangePreset('custom')
-            }}
-            placeholderText={str('reports.hijri_placeholder')}
-          />
-        </div>
-        <div className="rh-reports__range-presets">
-          {REPORT_RANGE_PRESETS.map((preset) => (
-            <Button
-              key={preset.value}
-              type="button"
-              variant={rangePreset === preset.value ? 'primary' : 'ghost'}
-              size="sm"
-              icon={Calendar}
-              onClick={() => applyRangePreset(preset.value)}
-            >
-              {rangePresetLabel(preset.value)}
-            </Button>
-          ))}
-        </div>
-        {isRangeInvalid ? <p className="rh-reports__range-error">{str('reports.range_invalid_hint')}</p> : null}
-        {(kind === 'student' || kind === 'teacher') && entityId ? (
-          <div className="rh-reports__scope-filters">
-            {kind === 'student' ? (
-              <SearchableSelect
-                label={str('reports.scope_plan_label')}
-                options={scopePlanOptions}
-                value={scopePlan}
-                onChange={setScopePlan}
-                placeholder={
-                  loadingScope
-                    ? str('reports.loading_entities')
-                    : centralReports
-                      ? str('reports.scope_plan_all_central')
-                      : str('reports.scope_plan_all')
-                }
-                searchPlaceholder={str('reports.search_placeholder')}
-                emptyText={str('reports.search_empty')}
+          {showDateFilters ? (
+            <>
+              <RhDatePickerField
+                label={str('reports.field_from')}
+                value={fromDate}
+                onChange={(v) => {
+                  setFromDate(v)
+                  setRangePreset('custom')
+                }}
+                placeholderText={str('reports.hijri_placeholder')}
               />
-            ) : null}
+              <RhDatePickerField
+                label={str('reports.field_to')}
+                value={toDate}
+                onChange={(v) => {
+                  setToDate(v)
+                  setRangePreset('custom')
+                }}
+                placeholderText={str('reports.hijri_placeholder')}
+              />
+            </>
+          ) : null}
+        </div>
+        {showDateFilters ? (
+          <div className="rh-reports__range-presets">
+            {REPORT_RANGE_PRESETS.map((preset) => (
+              <Button
+                key={preset.value}
+                type="button"
+                variant={rangePreset === preset.value ? 'primary' : 'ghost'}
+                size="sm"
+                icon={Calendar}
+                onClick={() => applyRangePreset(preset.value)}
+              >
+                {rangePresetLabel(preset.value)}
+              </Button>
+            ))}
+          </div>
+        ) : null}
+        {showDateFilters && isRangeInvalid ? (
+          <p className="rh-reports__range-error">{str('reports.range_invalid_hint')}</p>
+        ) : null}
+        {showScopeFilters && entityId ? (
+          <div className="rh-reports__scope-filters">
             <SearchableSelect
               label={str('reports.scope_halaka_label')}
               options={scopeHalakaOptions}
@@ -473,9 +471,17 @@ export default function ReportsHubPage() {
           </div>
         ) : null}
         <div className="rh-reports__filters-actions">
-          <Button type="button" variant="primary" icon={FileText} disabled={!entityId || isRangeInvalid} onClick={openReport}>
-            عرض التقرير الشامل
-          </Button>
+          {kind === 'student' ? null : (
+            <Button
+              type="button"
+              variant="primary"
+              icon={FileText}
+              disabled={!entityId || (showDateFilters && isRangeInvalid)}
+              onClick={openReport}
+            >
+              عرض التقرير الشامل
+            </Button>
+          )}
         </div>
       </section>
     </div>

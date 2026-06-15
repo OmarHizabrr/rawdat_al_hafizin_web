@@ -639,6 +639,24 @@ export const SITE_STRING_REGISTRY = [
     defaultValue: 'تظهر هنا كل الخطط والحلقات والاختبارات والأنشطة في المنصة — وليس فقط ما تنتمي إليه عضويتك.',
   },
   {
+    key: 'reports.student_select_hint',
+    group: 'التقارير',
+    label: 'تلميح تقرير الطالب',
+    defaultValue: 'اختر اسم الطالب فقط — يُجمع التقرير تلقائياً من كل خططه وحلقاته وأوراده، والتواريخ من سجلاته دون إدخال يدوي.',
+  },
+  {
+    key: 'reports.student_period_auto',
+    group: 'التقارير',
+    label: 'فترة تقرير الطالب التلقائية',
+    defaultValue: 'من سجلات الطالب (كامل)',
+  },
+  {
+    key: 'reports.empty_student',
+    group: 'التقارير',
+    label: 'حالة فارغة لتقرير الطالب',
+    defaultValue: 'اختر اسم الطالب لعرض تقريره الشامل.',
+  },
+  {
     key: 'reports.admin_entity_count',
     group: 'التقارير',
     label: 'عداد الكيانات للأدمن',

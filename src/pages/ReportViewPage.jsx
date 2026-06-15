@@ -32,6 +32,8 @@ import {
   REPORT_RANGE_PRESETS,
   REPORT_SCOPE_ALL,
   ADMIN_REPORT_KIND_ORDER,
+  reportKindUsesDateFilter,
+  reportKindUsesScopeFilters,
 } from "../config/reportKinds.js";
 import { PERMISSION_PAGE_IDS } from "../config/permissionRegistry.js";
 import { isAdmin } from "../config/roles.js";
@@ -380,6 +382,9 @@ export default function ReportViewPage() {
     [canRunForKind, user],
   );
   const centralReports = isCentralReportsMode(user);
+  const showDateFilters = reportKindUsesDateFilter(kind);
+  const showScopeFilters = reportKindUsesScopeFilters(kind);
+  const lastBuiltStudentRef = useRef("");
 
   useEffect(() => {
     if (didHydrateFromQueryRef.current) return;
@@ -392,29 +397,42 @@ export default function ReportViewPage() {
     if (kindParam && REPORT_KIND_OPTIONS.some((k) => k.value === kindParam))
       setKind(kindParam);
     if (entityParam) setEntityId(entityParam);
-    if (fromParam) {
-      const y = Number(fromParam.slice(0, 4));
-      setFromDate(
-        y >= 1900 && y <= 2199
-          ? gregorianYmdStringToHijriYmd(fromParam)
-          : fromParam,
-      );
+    const isStudentFromUrl = kindParam === "student";
+    if (!isStudentFromUrl) {
+      if (fromParam) {
+        const y = Number(fromParam.slice(0, 4));
+        setFromDate(
+          y >= 1900 && y <= 2199
+            ? gregorianYmdStringToHijriYmd(fromParam)
+            : fromParam,
+        );
+      }
+      if (toParam) {
+        const y = Number(toParam.slice(0, 4));
+        setToDate(
+          y >= 1900 && y <= 2199
+            ? gregorianYmdStringToHijriYmd(toParam)
+            : toParam,
+        );
+      }
+      if (presetParam) setRangePreset(presetParam);
+      const scopePlanParam = String(params.get("scopePlan") || "").trim();
+      const scopeHalakaParam = String(params.get("scopeHalaka") || "").trim();
+      if (scopePlanParam) setScopePlan(scopePlanParam);
+      if (scopeHalakaParam) setScopeHalaka(scopeHalakaParam);
     }
-    if (toParam) {
-      const y = Number(toParam.slice(0, 4));
-      setToDate(
-        y >= 1900 && y <= 2199
-          ? gregorianYmdStringToHijriYmd(toParam)
-          : toParam,
-      );
-    }
-    if (presetParam) setRangePreset(presetParam);
-    const scopePlanParam = String(params.get("scopePlan") || "").trim();
-    const scopeHalakaParam = String(params.get("scopeHalaka") || "").trim();
-    if (scopePlanParam) setScopePlan(scopePlanParam);
-    if (scopeHalakaParam) setScopeHalaka(scopeHalakaParam);
     didHydrateFromQueryRef.current = true;
   }, [search]);
+
+  useEffect(() => {
+    if (kind !== "student") return;
+    setFromDate("");
+    setToDate("");
+    setRangePreset("all");
+    setScopePlan(REPORT_SCOPE_ALL);
+    setScopeHalaka(REPORT_SCOPE_ALL);
+    lastBuiltStudentRef.current = "";
+  }, [kind]);
 
   useEffect(() => {
     if (!centralReports || adminDefaultKindSet.current) return;
@@ -482,8 +500,10 @@ export default function ReportViewPage() {
 
   useEffect(() => {
     if (!canAccessPage(PAGE_ID)) return;
-    if (kind !== "student" && kind !== "teacher") {
+    if (kind !== "teacher") {
       setScopeOptions({ plans: [], halakat: [] });
+      setScopePlan(REPORT_SCOPE_ALL);
+      setScopeHalaka(REPORT_SCOPE_ALL);
       return undefined;
     }
     if (!entityId) {
@@ -516,26 +536,6 @@ export default function ReportViewPage() {
     };
   }, [kind, entityId, canAccessPage, user]);
 
-  const scopePlanOptions = useMemo(
-    () => [
-      {
-        value: REPORT_SCOPE_ALL,
-        label: centralReports
-          ? str("reports.scope_plan_all_central")
-          : str("reports.scope_plan_all"),
-      },
-      ...(scopeOptions.plans || []).map((p) => {
-        const vols = String(p.volumesSummary || "").trim();
-        const base = p.name || p.id;
-        return {
-          value: p.id,
-          label: vols && vols !== "—" ? `${base} — ${vols}` : base,
-        };
-      }),
-    ],
-    [scopeOptions.plans, centralReports, str],
-  );
-
   const scopeHalakaOptions = useMemo(
     () => [
       {
@@ -564,13 +564,23 @@ export default function ReportViewPage() {
     [entities],
   );
 
-  const range = useMemo(
-    () => ({
+  const range = useMemo(() => {
+    if (kind === "student") return { from: "", to: "" };
+    return {
       from: fromDate ? hijriYmdLocalDayStartIso(fromDate) : "",
       to: toDate ? hijriYmdLocalDayEndIso(toDate) : "",
-    }),
-    [fromDate, toDate],
-  );
+    };
+  }, [kind, fromDate, toDate]);
+
+  const reportScope = useMemo(() => {
+    if (kind === "student") {
+      return { planId: REPORT_SCOPE_ALL, halakaId: REPORT_SCOPE_ALL };
+    }
+    return {
+      planId: scopePlan,
+      halakaId: scopeHalaka,
+    };
+  }, [kind, scopePlan, scopeHalaka]);
   const isRangeInvalid = useMemo(() => {
     if (!fromDate || !toDate) return false;
     const a = parseHijriYmdString(fromDate);
@@ -586,19 +596,27 @@ export default function ReportViewPage() {
     else params.delete("reportKind");
     if (entityId) params.set("reportEntity", entityId);
     else params.delete("reportEntity");
-    if (fromDate) params.set("from", fromDate);
-    else params.delete("from");
-    if (toDate) params.set("to", toDate);
-    else params.delete("to");
-    if (rangePreset && rangePreset !== "custom")
-      params.set("rangePreset", rangePreset);
-    else params.delete("rangePreset");
-    if (scopePlan && scopePlan !== REPORT_SCOPE_ALL)
-      params.set("scopePlan", scopePlan);
-    else params.delete("scopePlan");
-    if (scopeHalaka && scopeHalaka !== REPORT_SCOPE_ALL)
-      params.set("scopeHalaka", scopeHalaka);
-    else params.delete("scopeHalaka");
+    if (showDateFilters) {
+      if (fromDate) params.set("from", fromDate);
+      else params.delete("from");
+      if (toDate) params.set("to", toDate);
+      else params.delete("to");
+      if (rangePreset && rangePreset !== "custom")
+        params.set("rangePreset", rangePreset);
+      else params.delete("rangePreset");
+    } else {
+      params.delete("from");
+      params.delete("to");
+      params.delete("rangePreset");
+    }
+    if (showScopeFilters) {
+      if (scopeHalaka && scopeHalaka !== REPORT_SCOPE_ALL)
+        params.set("scopeHalaka", scopeHalaka);
+      else params.delete("scopeHalaka");
+    } else {
+      params.delete("scopePlan");
+      params.delete("scopeHalaka");
+    }
     const nextSearch = params.toString();
     const currentSearch = String(search || "").replace(/^\?/, "");
     if (nextSearch === currentSearch) return;
@@ -617,6 +635,8 @@ export default function ReportViewPage() {
     rangePreset,
     scopePlan,
     scopeHalaka,
+    showDateFilters,
+    showScopeFilters,
     search,
     navigate,
   ]);
@@ -639,18 +659,10 @@ export default function ReportViewPage() {
     [appLink, str, hidePlanNavigation],
   );
 
-  const reportScope = useMemo(
-    () => ({
-      planId: scopePlan,
-      halakaId: scopeHalaka,
-    }),
-    [scopePlan, scopeHalaka],
-  );
-
   // eslint-disable-next-line react-hooks/exhaustive-deps
   const build = useCallback(async () => {
     if (!entityId || !canRunForKind(kind)) return;
-    if (isRangeInvalid) {
+    if (showDateFilters && isRangeInvalid) {
       toast.warning(str("reports.toast_invalid_range"));
       return;
     }
@@ -680,15 +692,24 @@ export default function ReportViewPage() {
   });
 
   useEffect(() => {
-    if (!didHydrateFromQueryRef.current || autoBuiltFromQueryRef.current)
-      return;
+    if (!didHydrateFromQueryRef.current) return;
     if (loadingEntities || loadingReport) return;
+    if (!entityId || !canRunForKind(kind)) return;
+    if (showDateFilters && isRangeInvalid) return;
+    if (!entityOptions.some((o) => o.value === entityId)) return;
+
+    if (kind === "student") {
+      if (lastBuiltStudentRef.current === entityId) return;
+      lastBuiltStudentRef.current = entityId;
+      build();
+      return;
+    }
+
+    if (autoBuiltFromQueryRef.current) return;
     const params = new URLSearchParams(search);
     const kindParam = String(params.get("reportKind") || "").trim();
     const entityParam = String(params.get("reportEntity") || "").trim();
     if (!entityParam || kindParam !== kind) return;
-    if (!canRunForKind(kind) || isRangeInvalid) return;
-    if (!entityOptions.some((o) => o.value === entityParam)) return;
     if (entityId !== entityParam) {
       setEntityId(entityParam);
       return;
@@ -704,6 +725,7 @@ export default function ReportViewPage() {
     search,
     canRunForKind,
     isRangeInvalid,
+    showDateFilters,
     build,
   ]);
 
@@ -1057,7 +1079,9 @@ export default function ReportViewPage() {
     }
   };
 
-  const canBuild = Boolean(entityId && canRunForKind(kind) && !isRangeInvalid);
+  const canBuild = Boolean(
+    entityId && canRunForKind(kind) && (!showDateFilters || !isRangeInvalid),
+  );
   const clearFilters = useCallback(() => {
     setFromDate("");
     setToDate("");
@@ -1154,35 +1178,14 @@ export default function ReportViewPage() {
       {
         label: "الفترة (أم القرى)",
         value:
-          fromDate || toDate
-            ? `${fromDate || "—"} ← ${toDate || "—"}`
-            : "كامل الفترة",
+          kind === "student"
+            ? str("reports.student_period_auto")
+            : fromDate || toDate
+              ? `${fromDate || "—"} ← ${toDate || "—"}`
+              : "كامل الفترة",
       },
     ];
-    if (kind === "student") {
-      items.push({
-        label: str("reports.scope_plan_label"),
-        value:
-          scopePlanOptions.find((o) => o.value === scopePlan)?.label ||
-          (centralReports
-            ? str("reports.scope_plan_all_central")
-            : str("reports.scope_plan_all")),
-      });
-      if (reportData?.scope?.planVolumesLabel) {
-        items.push({
-          label: "مجلدات الخطة المحددة",
-          value: reportData.scope.planVolumesLabel,
-        });
-      }
-      items.push({
-        label: str("reports.scope_halaka_label"),
-        value:
-          scopeHalakaOptions.find((o) => o.value === scopeHalaka)?.label ||
-          (centralReports
-            ? str("reports.scope_halaka_all_central")
-            : str("reports.scope_halaka_all")),
-      });
-    } else if (kind === "teacher") {
+    if (kind === "teacher") {
       items.push({
         label: str("reports.scope_halaka_label"),
         value:
@@ -1199,11 +1202,8 @@ export default function ReportViewPage() {
     selectedEntityName,
     fromDate,
     toDate,
-    scopePlan,
     scopeHalaka,
-    scopePlanOptions,
     scopeHalakaOptions,
-    reportData?.scope?.planVolumesLabel,
     centralReports,
     str,
   ]);
@@ -1375,7 +1375,10 @@ export default function ReportViewPage() {
             label={str("reports.field_entity")}
             options={entityOptions}
             value={entityId}
-            onChange={setEntityId}
+            onChange={(id) => {
+              setEntityId(id);
+              if (kind === "student") lastBuiltStudentRef.current = "";
+            }}
             placeholder={
               loadingEntities
                 ? str("reports.loading_entities")
@@ -1384,68 +1387,62 @@ export default function ReportViewPage() {
             searchPlaceholder={str("reports.search_placeholder")}
             emptyText={str("reports.search_empty")}
           />
+          {kind === "student" ? (
+            <p className="rh-reports-hub__student-hint">
+              {str("reports.student_select_hint")}
+            </p>
+          ) : null}
           {centralReports && !loadingEntities && entities.length > 0 ? (
             <p className="rh-reports-hub__entity-count">
               {str("reports.admin_entity_count", { count: entities.length })}
             </p>
           ) : null}
-          <RhDatePickerField
-            label={str("reports.field_from")}
-            value={fromDate}
-            onChange={(v) => {
-              setFromDate(v);
-              setRangePreset("custom");
-            }}
-            placeholderText={str("reports.hijri_placeholder")}
-          />
-          <RhDatePickerField
-            label={str("reports.field_to")}
-            value={toDate}
-            onChange={(v) => {
-              setToDate(v);
-              setRangePreset("custom");
-            }}
-            placeholderText={str("reports.hijri_placeholder")}
-          />
+          {showDateFilters ? (
+            <>
+              <RhDatePickerField
+                label={str("reports.field_from")}
+                value={fromDate}
+                onChange={(v) => {
+                  setFromDate(v);
+                  setRangePreset("custom");
+                }}
+                placeholderText={str("reports.hijri_placeholder")}
+              />
+              <RhDatePickerField
+                label={str("reports.field_to")}
+                value={toDate}
+                onChange={(v) => {
+                  setToDate(v);
+                  setRangePreset("custom");
+                }}
+                placeholderText={str("reports.hijri_placeholder")}
+              />
+            </>
+          ) : null}
         </div>
-        <div className="rh-reports__range-presets">
-          {REPORT_RANGE_PRESETS.map((preset) => (
-            <Button
-              key={preset.value}
-              type="button"
-              variant={rangePreset === preset.value ? "primary" : "ghost"}
-              size="sm"
-              icon={Calendar}
-              onClick={() => applyRangePreset(preset.value)}
-            >
-              {rangePresetLabel(preset.value)}
-            </Button>
-          ))}
-        </div>
-        {isRangeInvalid && (
+        {showDateFilters ? (
+          <div className="rh-reports__range-presets">
+            {REPORT_RANGE_PRESETS.map((preset) => (
+              <Button
+                key={preset.value}
+                type="button"
+                variant={rangePreset === preset.value ? "primary" : "ghost"}
+                size="sm"
+                icon={Calendar}
+                onClick={() => applyRangePreset(preset.value)}
+              >
+                {rangePresetLabel(preset.value)}
+              </Button>
+            ))}
+          </div>
+        ) : null}
+        {showDateFilters && isRangeInvalid && (
           <p className="rh-reports__range-error">
             {str("reports.range_invalid_hint")}
           </p>
         )}
-        {(kind === "student" || kind === "teacher") && entityId ? (
+        {showScopeFilters && entityId ? (
           <div className="rh-reports__scope-filters">
-            {kind === "student" ? (
-              <SearchableSelect
-                label={str("reports.scope_plan_label")}
-                options={scopePlanOptions}
-                value={scopePlan}
-                onChange={setScopePlan}
-                placeholder={
-                  loadingScope
-                    ? str("reports.loading_entities")
-                    : centralReports
-                      ? str("reports.scope_plan_all_central")
-                      : str("reports.scope_plan_all")
-                }
-                searchPlaceholder={str("reports.search_placeholder")}
-                emptyText={str("reports.search_empty")}
-              />
-            ) : null}
             <SearchableSelect
               label={str("reports.scope_halaka_label")}
               options={scopeHalakaOptions}
@@ -1502,7 +1499,11 @@ export default function ReportViewPage() {
       </section>
 
       {!reportData ? (
-        <p className="rh-plans__empty">{str("reports.empty")}</p>
+        <p className="rh-plans__empty">
+          {kind === "student"
+            ? str("reports.empty_student")
+            : str("reports.empty")}
+        </p>
       ) : (
         <ReportTabContext.Provider value={{ activeTab }}>
           {reportTabs.length > 1 ? (

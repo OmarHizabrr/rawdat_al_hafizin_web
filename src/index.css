@@ -11874,6 +11874,14 @@ a.rh-peek-btn {
   color: var(--rh-text-muted);
 }
 
+.rh-reports-hub__student-hint {
+  margin: 0;
+  grid-column: 1 / -1;
+  font-size: var(--rh-text-sm);
+  color: var(--rh-text-muted);
+  line-height: 1.55;
+}
+
 .rh-plan-members-modal__report-link {
   display: block;
   margin-top: var(--rh-space-2);
