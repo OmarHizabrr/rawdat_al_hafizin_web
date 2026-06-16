@@ -102,6 +102,7 @@ const PAGE_ID = PERMISSION_PAGE_IDS.reports;
 
 const STUDENT_TABS = [
   { id: "all", label: "الكل" },
+  { id: "tasks", label: "الواجبات" },
   { id: "planProgress", label: "إنجاز الخطط" },
   { id: "halakaRecords", label: "حضور الحلقات" },
   { id: "plans", label: "الخطط" },
@@ -725,6 +726,16 @@ export default function ReportViewPage() {
           awradInPeriodCount: r.awradInPeriodCount ?? "",
           pagesInPeriod: r.pagesInPeriod ?? "",
           latestAwradAt: formatArDateTime(r.latestAwradAt),
+        })),
+      );
+      addRows(
+        "الواجبات",
+        (reportData.tasks || []).map((t) => ({
+          واجب: t.title || "",
+          القسم: t.category || "",
+          الحالة: t.step === "done" ? "مكتمل" : t.step === "in_progress" ? "جاري التنفيذ" : t.step === "review" ? "مراجعة" : "قيد الانتظار",
+          المطلوب: t.dueLabel || "",
+          التفاصيل: String(t.description || ""),
         })),
       );
       addRows(
@@ -1505,6 +1516,35 @@ export default function ReportViewPage() {
                         <span>الإشعارات</span>
                       </div>
                     </ReportKpiGrid>
+                    <SectionTable
+                      title="الواجبات"
+                      tabId="tasks"
+                      columns={[
+                        { key: "title", label: "الواجب" },
+                        { key: "category", label: "القسم" },
+                        { key: "stepLabel", label: "الحالة" },
+                        { key: "dueLabel", label: "المطلوب" },
+                        { key: "description", label: "التفاصيل" },
+                      ]}
+                      rows={(reportData.tasks || []).map((t) => ({
+                        ...t,
+                        stepLabel:
+                          t.step === "done"
+                            ? "مكتمل"
+                            : t.step === "in_progress"
+                              ? "جاري التنفيذ"
+                              : t.step === "review"
+                                ? "مراجعة"
+                                : "قيد الانتظار",
+                      }))}
+                      actions={(row) =>
+                        row.to ? (
+                          <a href={row.to} className="ui-btn ui-btn--ghost ui-btn--sm">
+                            <RhIcon as={Eye} size={14} strokeWidth={RH_ICON_STROKE} />
+                          </a>
+                        ) : null
+                      }
+                    />
                     <SectionTable
                       title="إنجاز الخطط (تفصيلي)"
                       tabId="planProgress"

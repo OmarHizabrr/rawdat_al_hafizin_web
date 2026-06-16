@@ -80,6 +80,32 @@ export function collectPrintSectionsFromReport(reportData, helpers = {}) {
         })),
       })
     }
+    if (reportData.tasks?.length) {
+      sections.push({
+        title: 'الواجبات',
+        columns: [
+          { key: 'title', label: 'الواجب' },
+          { key: 'category', label: 'القسم' },
+          { key: 'stepLabel', label: 'الحالة' },
+          { key: 'dueLabel', label: 'المطلوب' },
+          { key: 'description', label: 'التفاصيل' },
+        ],
+        rows: reportData.tasks.map((t) => ({
+          title: t.title || '—',
+          category: t.category || '—',
+          stepLabel:
+            t.step === 'done'
+              ? 'مكتمل'
+              : t.step === 'in_progress'
+                ? 'جاري التنفيذ'
+                : t.step === 'review'
+                  ? 'مراجعة'
+                  : 'قيد الانتظار',
+          dueLabel: t.dueLabel || '—',
+          description: String(t.description || ''),
+        })),
+      })
+    }
     sections.push({
       title: 'الخطط',
       columns: [

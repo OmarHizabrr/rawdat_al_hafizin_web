@@ -14,6 +14,8 @@ import { loadRemoteTasmeeMembersWithProfiles } from '../utils/remoteTasmeeStorag
 import { computePlanProgress } from '../utils/planProgress.js'
 import { formatPlanVolumesForReport, formatMemberPlansVolumesForReport } from '../utils/reportDisplayLabels.js'
 import { REPORT_SCOPE_ALL } from '../config/reportKinds.js'
+import { HALAKA_TASKS_LIMIT, pickRelevantHalakaSession } from '../utils/halakaAttendanceTask.js'
+import { buildStudentTasks } from '../utils/buildStudentTasks.js'
 
 function asMs(value) {
   if (!value) return 0
@@ -554,6 +556,32 @@ async function loadStudentHalakaAttendance(uid, halakatList, range) {
   )
 }
 
+async function loadStudentHalakaTaskSnapshots(uid, halakatList) {
+  const list = (halakatList || []).slice(0, HALAKA_TASKS_LIMIT)
+  const snapshots = await Promise.all(
+    list.map(async (h) => {
+      const halakaId = String(h?.id || '').trim()
+      if (!halakaId) return null
+      const sessions = await loadHalakaSessions(halakaId)
+      const session = pickRelevantHalakaSession(sessions)
+      if (!session) return { halakaId, session: null, attendance: null }
+
+      // حتى لو ما فيه سجل حضور للطالب، نبني snapshot ب attendance = null
+      // حتى تظهر واجبات الحلقة كـ "متابعة/مستمر" حسب منطق halakaAttendanceTask.
+      const rows = await loadSessionAttendance(halakaId, session.id)
+      const mine = (rows || []).find((r) => String(r.userId || '').trim() === String(uid || '').trim()) || null
+
+      return {
+        halakaId,
+        session,
+        attendance: mine ? { ...mine, pagesCount: mine.pagesCount ?? mine.memorizedAmount } : null,
+      }
+    }),
+  )
+
+  return snapshots.filter(Boolean)
+}
+
 /** خيارات نطاق تقرير الطالب — خططه وحلقاته (أو كل الخطط/الحلقات للأدمن) */
 export async function loadStudentScopeOptions(uid, options = {}) {
   const central = isCentralReportsMode(options.currentUser)
@@ -649,6 +677,8 @@ export async function buildStudentReport(user, range = {}, scope = {}) {
     Promise.resolve(buildStudentPlanProgress(plans, awradDocs, awradFiltered)),
     loadStudentHalakaAttendance(uid, halakat, range),
   ])
+
+  const halakaTaskSnapshots = await loadStudentHalakaTaskSnapshots(uid, halakatAll)
 
   const notifications = maybeFilterByRange(
     notificationsDocs.map((d) => ({ id: d.id, ...d.data() })),
@@ -762,6 +792,15 @@ export async function buildStudentReport(user, range = {}, scope = {}) {
       (a, b) => (b.progressPercent - a.progressPercent) || (b.pagesInPeriod - a.pagesInPeriod),
     ),
     halakaAttendance,
+    tasks: buildStudentTasks({
+      plans: plansAll,
+      awrad: awradDocs,
+      halakat: halakatAll,
+      halakaSnapshots: halakaTaskSnapshots,
+      exams: examsAll,
+      activities: activitiesAll,
+      dawrat: dawratAll,
+    }),
     awrad: sortByRecent(awradFiltered, (r) => pickFirstDate(r.recordedAt, r.updatedAt, r.createdAt)).map((r) => ({
       ...r,
       planName: planNameById.get(String(r.planId || '')) || '—',
