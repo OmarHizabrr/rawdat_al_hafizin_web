@@ -204,12 +204,15 @@ export function SearchableMultiSelect({
       left: portalLayout.left,
       width: portalLayout.width,
       maxHeight: `min(22rem, ${maxH}px)`,
+      zIndex: 1305,
     }
   }, [portalLayout])
 
-  const renderDropdown = (withBackdrop) => (
+  const isMobileSheet = Boolean(portalLayout?.mobile)
+
+  const renderDropdown = () => (
     <>
-      {withBackdrop && (
+      {isMobileSheet && (
         <button
           type="button"
           className="ui-multi__backdrop ui-multi__backdrop--portal"
@@ -221,7 +224,15 @@ export function SearchableMultiSelect({
           }}
         />
       )}
-      <div className="ui-multi__panel ui-multi__panel--portal" style={portalPanelStyle} role="presentation">
+      <div
+        className={[
+          'ui-multi__panel',
+          'ui-multi__panel--portal',
+          isMobileSheet ? 'ui-multi__panel--mobile-sheet' : 'ui-multi__panel--desktop-dropdown',
+        ].join(' ')}
+        style={portalPanelStyle}
+        role="presentation"
+      >
         <div className="ui-multi__search">
           <SearchField
             ref={searchRef}
@@ -338,8 +349,14 @@ export function SearchableMultiSelect({
       {showPortalLayer &&
         typeof document !== 'undefined' &&
         createPortal(
-          <div ref={portalLayerRef} className="ui-multi__portal-layer">
-            {renderDropdown(portalLayout.mobile)}
+          <div
+            ref={portalLayerRef}
+            className={[
+              'ui-multi__portal-layer',
+              isMobileSheet ? 'ui-multi__portal-layer--mobile' : 'ui-multi__portal-layer--desktop',
+            ].join(' ')}
+          >
+            {renderDropdown()}
           </div>,
           document.body,
         )}
