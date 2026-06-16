@@ -11917,6 +11917,30 @@ a.rh-peek-btn {
   color: var(--rh-primary);
 }
 
+@media (max-width: 899px) {
+  .rh-reports-view__tabs {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    scroll-snap-type: x proximity;
+  }
+
+  .rh-reports-view__tabs::-webkit-scrollbar {
+    display: none;
+  }
+
+  .rh-reports-view__tab {
+    flex-shrink: 0;
+    scroll-snap-align: start;
+    white-space: nowrap;
+  }
+
+  .rh-reports-hub__cards {
+    grid-template-columns: 1fr;
+  }
+}
+
 .rh-reports__student-batch-block {
   margin-block: 1.25rem;
   padding: 1rem 1.1rem;

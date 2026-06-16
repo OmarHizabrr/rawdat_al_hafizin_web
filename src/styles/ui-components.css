@@ -1774,6 +1774,14 @@ html[data-theme='dark'] .rh-themed-scroll::-webkit-scrollbar-thumb:hover {
     width: auto;
     left: auto;
   }
+
+  html.rh-has-bottom-nav .ui-multi__panel--portal.ui-multi__panel {
+    inset-block-end: max(
+      calc(var(--rh-bottom-nav-h, 3.75rem) + var(--rh-space-2)),
+      env(safe-area-inset-bottom, 0px)
+    );
+    max-height: min(calc(72dvh - var(--rh-bottom-nav-h, 3.75rem)), 28rem);
+  }
 }
 
 @media (max-width: 520px) {

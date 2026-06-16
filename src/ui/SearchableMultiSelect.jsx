@@ -109,6 +109,15 @@ export function SearchableMultiSelect({
     return () => cancelAnimationFrame(id)
   }, [open])
 
+  useEffect(() => {
+    if (!open || !portalLayout?.mobile || typeof document === 'undefined') return undefined
+    const prev = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    return () => {
+      document.body.style.overflow = prev
+    }
+  }, [open, portalLayout?.mobile])
+
   const toggleOpen = useCallback(() => {
     if (disabled) return
     setOpen((o) => !o)

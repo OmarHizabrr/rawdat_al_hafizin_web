@@ -111,6 +111,22 @@ export function MainLayout() {
   }, [mobileOpen])
 
   useEffect(() => {
+    if (typeof document === 'undefined') return undefined
+    const root = document.documentElement
+    if (!showMobileBottomNav) {
+      root.classList.remove('rh-has-bottom-nav')
+      root.style.removeProperty('--rh-bottom-nav-h')
+      return undefined
+    }
+    root.classList.add('rh-has-bottom-nav')
+    root.style.setProperty('--rh-bottom-nav-h', 'calc(3.75rem + env(safe-area-inset-bottom, 0px))')
+    return () => {
+      root.classList.remove('rh-has-bottom-nav')
+      root.style.removeProperty('--rh-bottom-nav-h')
+    }
+  }, [showMobileBottomNav])
+
+  useEffect(() => {
     if (typeof window === 'undefined' || impersonateUid) return undefined
     if (!notificationsEnabled()) return undefined
     const askPermission = () => {
