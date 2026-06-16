@@ -37,6 +37,25 @@ export function buildReportExecutiveSummary(reportData, context = {}) {
   const paragraphs = []
   const highlights = []
 
+  if (reportData.kind === 'student_batch') {
+    const names = (reportData.entity?.batchNames || []).filter(Boolean)
+    const namesLine = names.length ? names.join('، ') : entityName
+    paragraphs.push(
+      `تقرير مجمّع لـ ${s.studentCount ?? reportData.students?.length ?? 0} طالب/طلاب: ${namesLine}. يجمع كل الأقسام التفصيلية لكل طالب في مستند واحد.`,
+    )
+    paragraphs.push(
+      `إجمالي: ${s.plans ?? 0} خطة، ${s.halakat ?? 0} حلقة، ${s.awrad ?? 0} ورد (${s.totalPages ?? 0} صفحة)، متوسط إنجاز الخطط ${s.avgPlanProgress ?? 0}%.`,
+    )
+    highlights.push(
+      { label: 'عدد الطلاب', value: s.studentCount ?? 0 },
+      { label: 'متوسط إنجاز الخطط', value: `${s.avgPlanProgress ?? 0}%` },
+      { label: 'أوراد الفترة', value: s.awrad ?? 0 },
+      { label: 'صفحات الأوراد', value: s.totalPages ?? 0 },
+      { label: 'حضور الحلقات', value: s.halakaAttendanceRecords ?? 0 },
+    )
+    return { rangeLabel, paragraphs, highlights }
+  }
+
   if (reportData.kind === 'student') {
     paragraphs.push(
       `تقرير شامل عن الطالب «${entityName}» خلال ${rangeLabel}.${scopeLabel ? ` النطاق: ${scopeLabel}.` : ''} يتضمّن إنجاز الخطط (أوراد ونسب)، حضور وتسميع الحلقات، والارتباطات التعليمية الأخرى.`,

@@ -21,18 +21,23 @@ function mapRoleRows(rows, roleLabelAr, fmt) {
   }))
 }
 
-export function collectPrintSectionsFromReport(reportData, helpers = {}) {
-  if (!reportData) return []
-  const { formatArDateTime, roleLabelAr, formatExamSelfReportSummary, showEntityOwner } = helpers
+/** تصفية أقسام الطباعة حسب تبويب العرض */
+export function filterPrintSectionsByTab(sections, tabId) {
+  if (!tabId || tabId === 'all') return sections || []
+  return (sections || []).filter((s) => s.tabId === tabId)
+}
+
+function collectStudentPrintSections(reportData, helpers) {
+  const { formatArDateTime, roleLabelAr, formatExamSelfReportSummary } = helpers
   const fmt = formatArDateTime || ((v) => String(v || '—'))
   const role = roleLabelAr || ((r) => r || '—')
   const examSummary = formatExamSelfReportSummary || (() => '—')
   const sections = []
 
-  if (reportData.kind === 'student') {
-    if (reportData.planProgress?.length) {
-      sections.push({
-        title: 'إنجاز الخطط (تفصيلي)',
+  if (reportData.planProgress?.length) {
+    sections.push({
+      tabId: 'planProgress',
+      title: 'إنجاز الخطط (تفصيلي)',
         columns: [
           { key: 'name', label: 'الخطة' },
           { key: 'volumesSummary', label: 'المجلدات' },
@@ -55,6 +60,7 @@ export function collectPrintSectionsFromReport(reportData, helpers = {}) {
     }
     if (reportData.halakaAttendance?.length) {
       sections.push({
+        tabId: 'halakaRecords',
         title: 'حضور وتسميع الحلقات',
         columns: [
           { key: 'halakaName', label: 'الحلقة' },
@@ -82,6 +88,7 @@ export function collectPrintSectionsFromReport(reportData, helpers = {}) {
     }
     if (reportData.tasks?.length) {
       sections.push({
+        tabId: 'tasks',
         title: 'الواجبات',
         columns: [
           { key: 'title', label: 'الواجب' },
@@ -107,6 +114,7 @@ export function collectPrintSectionsFromReport(reportData, helpers = {}) {
       })
     }
     sections.push({
+      tabId: 'plans',
       title: 'الخطط',
       columns: [
         { key: 'name', label: 'الاسم' },
@@ -128,6 +136,7 @@ export function collectPrintSectionsFromReport(reportData, helpers = {}) {
       })),
     })
     sections.push({
+      tabId: 'halakat',
       title: 'الحلقات',
       columns: [
         { key: 'name', label: 'الاسم' },
@@ -145,6 +154,7 @@ export function collectPrintSectionsFromReport(reportData, helpers = {}) {
       })),
     })
     sections.push({
+      tabId: 'activities',
       title: 'الأنشطة',
       columns: [
         { key: 'name', label: 'الاسم' },
@@ -162,6 +172,7 @@ export function collectPrintSectionsFromReport(reportData, helpers = {}) {
       })),
     })
     sections.push({
+      tabId: 'exams',
       title: 'الاختبارات',
       columns: [
         { key: 'name', label: 'الاسم' },
@@ -177,6 +188,7 @@ export function collectPrintSectionsFromReport(reportData, helpers = {}) {
       })),
     })
     sections.push({
+      tabId: 'dawrat',
       title: 'الدورات',
       columns: [
         { key: 'name', label: 'الاسم' },
@@ -194,6 +206,7 @@ export function collectPrintSectionsFromReport(reportData, helpers = {}) {
       })),
     })
     sections.push({
+      tabId: 'remote',
       title: 'التسميع عن بعد',
       columns: [
         { key: 'name', label: 'الاسم' },
@@ -209,6 +222,7 @@ export function collectPrintSectionsFromReport(reportData, helpers = {}) {
       })),
     })
     sections.push({
+      tabId: 'awrad',
       title: 'الأوراد',
       columns: [
         { key: 'planName', label: 'الخطة' },
@@ -228,6 +242,7 @@ export function collectPrintSectionsFromReport(reportData, helpers = {}) {
       })),
     })
     sections.push({
+      tabId: 'notifications',
       title: 'الإشعارات',
       columns: [
         { key: 'title', label: 'العنوان' },
@@ -242,11 +257,40 @@ export function collectPrintSectionsFromReport(reportData, helpers = {}) {
         isRead: r.isRead ? 'نعم' : 'لا',
       })),
     })
-    return sections.filter((s) => s.rows?.length)
+  return sections.filter((s) => s.rows?.length)
+}
+
+export function collectPrintSectionsFromReport(reportData, helpers = {}) {
+  if (!reportData) return []
+  const { formatArDateTime, roleLabelAr, formatExamSelfReportSummary, showEntityOwner } = helpers
+  const fmt = formatArDateTime || ((v) => String(v || '—'))
+  const role = roleLabelAr || ((r) => r || '—')
+  const examSummary = formatExamSelfReportSummary || (() => '—')
+
+  if (reportData.kind === 'student_batch') {
+    const merged = []
+    for (const studentReport of reportData.students || []) {
+      const studentName =
+        String(studentReport.entity?.displayName || studentReport.entity?.name || '').trim() || 'طالب'
+      for (const sec of collectStudentPrintSections(studentReport, helpers)) {
+        merged.push({
+          ...sec,
+          title: `${studentName} — ${sec.title}`,
+        })
+      }
+    }
+    return merged
   }
+
+  if (reportData.kind === 'student') {
+    return collectStudentPrintSections(reportData, helpers)
+  }
+
+  const sections = []
 
   if (reportData.kind === 'teacher') {
     sections.push({
+      tabId: 'halakat',
       title: 'حلقات المعلم',
       columns: [
         { key: 'name', label: 'الاسم' },
@@ -260,6 +304,7 @@ export function collectPrintSectionsFromReport(reportData, helpers = {}) {
       })),
     })
     sections.push({
+      tabId: 'memberships',
       title: 'ارتباطات المعلم',
       columns: [
         { key: 'section', label: 'القسم' },
@@ -313,6 +358,7 @@ export function collectPrintSectionsFromReport(reportData, helpers = {}) {
       ],
     })
     sections.push({
+      tabId: 'sessions',
       title: 'جلسات المعلم',
       columns: [
         { key: 'halakaName', label: 'الحلقة' },
@@ -330,6 +376,7 @@ export function collectPrintSectionsFromReport(reportData, helpers = {}) {
       })),
     })
     sections.push({
+      tabId: 'attendance',
       title: 'سجلات الحضور',
       columns: [
         { key: 'halakaName', label: 'الحلقة' },
@@ -347,6 +394,7 @@ export function collectPrintSectionsFromReport(reportData, helpers = {}) {
       })),
     })
     sections.push({
+      tabId: 'attendance',
       title: 'ملخص حسب الطالب',
       columns: [
         { key: 'userName', label: 'الطالب' },
@@ -366,6 +414,7 @@ export function collectPrintSectionsFromReport(reportData, helpers = {}) {
 
   const details = reportData.entityDetails || {}
   sections.push({
+    tabId: 'details',
     title: 'تفاصيل الكيان',
     columns: entityDetailsColumnsForKind(reportData.kind, showEntityOwner),
     rows: [
@@ -386,6 +435,7 @@ export function collectPrintSectionsFromReport(reportData, helpers = {}) {
           : 'ملاحظة'
 
   sections.push({
+    tabId: 'members',
     title: 'الأعضاء',
     columns: [
       { key: 'displayName', label: 'الاسم' },
@@ -591,6 +641,20 @@ export function collectPrintKpisFromReport(reportData, labels = {}) {
     awradRecords: labels.awradRecords || 'سجلات الأوراد',
     studentsRecorded: labels.studentsRecorded || 'طلاب مسجّلون',
     pagesRecorded: labels.pagesRecorded || 'صفحات مسجّلة',
+  }
+
+  if (reportData.kind === 'student_batch') {
+    return [
+      { label: 'عدد الطلاب', value: s.studentCount ?? reportData.students?.length ?? 0 },
+      { label: L.plans, value: s.plans ?? 0 },
+      { label: 'متوسط إنجاز الخطط', value: `${s.avgPlanProgress ?? 0}%` },
+      { label: L.halakat, value: s.halakat ?? 0 },
+      { label: 'حضور حلقات (فترة)', value: s.halakaAttendanceRecords ?? 0 },
+      { label: L.awrad, value: s.awrad ?? 0 },
+      { label: L.pages, value: s.totalPages ?? 0 },
+      { label: L.activities, value: s.activities ?? 0 },
+      { label: L.exams, value: s.exams ?? 0 },
+    ]
   }
 
   if (reportData.kind === 'student') {

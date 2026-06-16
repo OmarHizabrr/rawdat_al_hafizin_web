@@ -473,6 +473,61 @@ function maybeFilterMembershipRowsByRange(rows, range) {
   return (rows || []).filter((row) => rowTouchesRange(row, range))
 }
 
+function normalizeAwradPlanId(row) {
+  return String(row?.planId || row?.plan_id || '').trim()
+}
+
+function resolveAwradPlanName(row, planNameById) {
+  const planId = normalizeAwradPlanId(row)
+  const fromMap = planId ? planNameById.get(planId) : ''
+  if (fromMap) return fromMap
+  const fromRow = String(row?.planName || row?.plan_name || '').trim()
+  return fromRow || '—'
+}
+
+function resolveAwradPlanVolumes(row, planVolumesById) {
+  const planId = normalizeAwradPlanId(row)
+  if (!planId) return '—'
+  return planVolumesById.get(planId) || '—'
+}
+
+async function buildPlanLookupMaps(plansAll, awradDocs) {
+  const planNameById = new Map(
+    (plansAll || []).map((p) => [String(p.id), String(p.name || '').trim() || 'خطة']),
+  )
+  const planVolumesById = new Map(
+    (plansAll || []).map((p) => [String(p.id), formatPlanVolumesForReport(p.volumes)]),
+  )
+
+  const missingIds = [
+    ...new Set(
+      (awradDocs || [])
+        .map((r) => normalizeAwradPlanId(r))
+        .filter((id) => id && (!planNameById.has(id) || planVolumesById.get(id) === '—')),
+    ),
+  ]
+
+  if (missingIds.length) {
+    await Promise.all(
+      missingIds.map(async (planId) => {
+        try {
+          const data = await firestoreApi.getData(firestoreApi.getPlanCanonicalDoc(planId))
+          if (!data) return
+          if (!planNameById.has(planId)) {
+            planNameById.set(planId, String(data.name || '').trim() || 'خطة')
+          }
+          const vols = formatPlanVolumesForReport(data.volumes)
+          if (vols !== '—') planVolumesById.set(planId, vols)
+        } catch {
+          /* ignore */
+        }
+      }),
+    )
+  }
+
+  return { planNameById, planVolumesById }
+}
+
 function buildStudentPlanProgress(plans, awradAll, awradInPeriod) {
   return (plans || []).map((plan) => {
     const progress = computePlanProgress(plan, awradAll) || {
@@ -671,6 +726,7 @@ export async function buildStudentReport(user, range = {}, scope = {}) {
   const planVolumesById = new Map(
     plansAll.map((p) => [String(p.id), formatPlanVolumesForReport(p.volumes)]),
   )
+  const awradPlanLookup = await buildPlanLookupMaps(plansAll, awradDocs)
   const halakaNameById = new Map(halakatAll.map((h) => [String(h.id), String(h.name || '').trim() || 'حلقة']))
 
   const [planProgress, halakaAttendance] = await Promise.all([
@@ -803,8 +859,8 @@ export async function buildStudentReport(user, range = {}, scope = {}) {
     }),
     awrad: sortByRecent(awradFiltered, (r) => pickFirstDate(r.recordedAt, r.updatedAt, r.createdAt)).map((r) => ({
       ...r,
-      planName: planNameById.get(String(r.planId || '')) || '—',
-      planVolumesSummary: planVolumesById.get(String(r.planId || '')) || '—',
+      planName: resolveAwradPlanName(r, awradPlanLookup.planNameById),
+      planVolumesSummary: resolveAwradPlanVolumes(r, awradPlanLookup.planVolumesById),
     })),
     notifications: sortByRecent(notifications, (r) => pickFirstDate(r.createdAt, r.updatedAt)),
     summary: {
@@ -822,6 +878,54 @@ export async function buildStudentReport(user, range = {}, scope = {}) {
       halakaAttendanceRecords: halakaAttendance.length,
       halakaPagesRecorded,
       pagesInScopePlans: planProgress.reduce((sum, p) => sum + (p.pagesInPeriod || 0), 0),
+    },
+  }
+}
+
+/** تقرير مجمّع لعدة طلاب — كل طالب بأقسامه التفصيلية */
+export async function buildMultiStudentReport(users, range = {}, scope = {}) {
+  const list = (users || []).filter((u) => String(u?.uid || u?.id || '').trim())
+  if (!list.length) return null
+  if (list.length === 1) return buildStudentReport(list[0], range, scope)
+
+  const students = await Promise.all(list.map((u) => buildStudentReport(u, range, scope)))
+  const valid = students.filter(Boolean)
+  if (!valid.length) return null
+
+  const names = valid.map(
+    (s) =>
+      String(s.entity?.displayName || s.entity?.name || s.entity?.email || '').trim() || 'طالب',
+  )
+
+  const sumKey = (key) => valid.reduce((sum, s) => sum + (Number(s.summary?.[key]) || 0), 0)
+  const avgProgress =
+    valid.length > 0
+      ? Math.round(
+          valid.reduce((sum, s) => sum + (Number(s.summary?.avgPlanProgress) || 0), 0) / valid.length,
+        )
+      : 0
+
+  return {
+    kind: 'student_batch',
+    entity: {
+      displayName: `${valid.length} طلاب`,
+      batchNames: names,
+    },
+    students: valid,
+    summary: {
+      studentCount: valid.length,
+      plans: sumKey('plans'),
+      halakat: sumKey('halakat'),
+      exams: sumKey('exams'),
+      activities: sumKey('activities'),
+      dawrat: sumKey('dawrat'),
+      remoteTasmee: sumKey('remoteTasmee'),
+      awrad: sumKey('awrad'),
+      notifications: sumKey('notifications'),
+      totalPages: sumKey('totalPages'),
+      avgPlanProgress: avgProgress,
+      halakaAttendanceRecords: sumKey('halakaAttendanceRecords'),
+      halakaPagesRecorded: sumKey('halakaPagesRecorded'),
     },
   }
 }

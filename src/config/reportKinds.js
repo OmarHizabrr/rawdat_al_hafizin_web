@@ -90,7 +90,16 @@ export const ADMIN_REPORT_KIND_ORDER = [
 export function reportViewPath(params = {}) {
   const q = new URLSearchParams()
   if (params.kind) q.set('reportKind', params.kind)
-  if (params.entityId) q.set('reportEntity', params.entityId)
+  const entityIds = Array.isArray(params.entityIds)
+    ? params.entityIds.map((id) => String(id || '').trim()).filter(Boolean)
+    : []
+  if (entityIds.length > 1) {
+    for (const id of entityIds) q.append('reportEntity', id)
+  } else if (entityIds.length === 1) {
+    q.set('reportEntity', entityIds[0])
+  } else if (params.entityId) {
+    q.set('reportEntity', params.entityId)
+  }
   if (params.from) q.set('from', params.from)
   if (params.to) q.set('to', params.to)
   if (params.rangePreset && params.rangePreset !== 'custom') q.set('rangePreset', params.rangePreset)

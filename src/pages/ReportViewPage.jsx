@@ -46,6 +46,7 @@ import { useSiteContent } from "../context/useSiteContent.js";
 import { useHidePlanNavigation } from "../hooks/useHidePlanNavigation.js";
 import {
   buildGroupReport,
+  buildMultiStudentReport,
   buildStudentReport,
   buildTeacherReport,
   isCentralReportsMode,
@@ -84,6 +85,7 @@ import { buildReportExecutiveSummary } from "../utils/reportExecutiveSummary.js"
 import {
   collectPrintKpisFromReport,
   collectPrintSectionsFromReport,
+  filterPrintSectionsByTab,
 } from "../utils/reportPrintSections.js";
 import {
   printMultiSectionReport,
@@ -93,6 +95,7 @@ import { studentProgressLink } from "../utils/studentProgressLink.js";
 import {
   Button,
   RhDatePickerField,
+  SearchableMultiSelect,
   SearchableSelect,
   useToast,
 } from "../ui/index.js";
@@ -238,7 +241,63 @@ function mapMembershipDisplayRow(r, { withJoined = false } = {}) {
 }
 
 function printSingleTable(title, columns, rows, printContext) {
-  printSingleTableDoc({ title, columns, rows, printContext });
+  printSingleTableDoc(
+    { title, columns, rows, printContext },
+    { autoPrint: false },
+  );
+}
+
+function ReportPrintSectionsView({ reportData, printHelpers, activeTab }) {
+  const sections = useMemo(() => {
+    const all = collectPrintSectionsFromReport(reportData, printHelpers);
+    return filterPrintSectionsByTab(all, activeTab);
+  }, [reportData, printHelpers, activeTab]);
+
+  if (!sections.length) {
+    return <p className="rh-plans__empty">لا توجد بيانات في هذا القسم.</p>;
+  }
+
+  return sections.map((sec) => (
+    <SectionTable
+      key={`${sec.tabId || "sec"}-${sec.title}`}
+      title={sec.title}
+      tabId="all"
+      ignoreTabFilter
+      columns={sec.columns}
+      rows={sec.rows}
+    />
+  ));
+}
+
+function StudentBatchKpiGrid({ summary, str }) {
+  return (
+    <ReportKpiGrid heading="ملخص الطلاب المختارين">
+      <div className="card rh-reports__kpi">
+        <strong>{summary.studentCount ?? 0}</strong>
+        <span>عدد الطلاب</span>
+      </div>
+      <div className="card rh-reports__kpi">
+        <strong>{summary.avgPlanProgress ?? 0}%</strong>
+        <span>متوسط إنجاز الخطط</span>
+      </div>
+      <div className="card rh-reports__kpi">
+        <strong>{summary.plans ?? 0}</strong>
+        <span>{str("layout.nav_plans")}</span>
+      </div>
+      <div className="card rh-reports__kpi">
+        <strong>{summary.halakat ?? 0}</strong>
+        <span>{str("layout.nav_halakat")}</span>
+      </div>
+      <div className="card rh-reports__kpi">
+        <strong>{summary.awrad ?? 0}</strong>
+        <span>{str("layout.nav_awrad")}</span>
+      </div>
+      <div className="card rh-reports__kpi">
+        <strong>{summary.totalPages ?? 0}</strong>
+        <span>{str("reports.kpi_pages")}</span>
+      </div>
+    </ReportKpiGrid>
+  );
 }
 
 function tabVisible(activeTab, tabId) {
@@ -280,12 +339,13 @@ function SectionTable({
   actions,
   printContext: printContextProp,
   tabId = "all",
+  ignoreTabFilter = false,
 }) {
   const ctxPrint = useContext(ReportPrintContext);
   const printContext = printContextProp ?? ctxPrint;
   const { activeTab } = useContext(ReportTabContext);
   if (!rows?.length) return null;
-  if (!tabVisible(activeTab, tabId)) return null;
+  if (!ignoreTabFilter && !tabVisible(activeTab, tabId)) return null;
   return (
     <div className="rh-settings-card rh-reports__section">
       <div className="rh-settings-card__head">
@@ -355,6 +415,7 @@ export default function ReportViewPage() {
 
   const [kind, setKind] = useState("student");
   const [entityId, setEntityId] = useState("");
+  const [entityIds, setEntityIds] = useState([]);
   const [fromDate, setFromDate] = useState("");
   const [toDate, setToDate] = useState("");
   const [rangePreset, setRangePreset] = useState("all");
@@ -392,13 +453,19 @@ export default function ReportViewPage() {
     if (didHydrateFromQueryRef.current) return;
     const params = new URLSearchParams(search);
     const kindParam = String(params.get("reportKind") || "").trim();
-    const entityParam = String(params.get("reportEntity") || "").trim();
+    const entityParams = params
+      .getAll("reportEntity")
+      .map((id) => String(id || "").trim())
+      .filter(Boolean);
+    const entityParam = entityParams[0] || "";
     const fromParam = String(params.get("from") || "").trim();
     const toParam = String(params.get("to") || "").trim();
     const presetParam = String(params.get("rangePreset") || "").trim();
     if (kindParam && REPORT_KIND_OPTIONS.some((k) => k.value === kindParam))
       setKind(kindParam);
     if (entityParam) setEntityId(entityParam);
+    if (entityParams.length > 1) setEntityIds(entityParams);
+    else if (entityParam) setEntityIds([entityParam]);
     const isPersonAutoFromUrl = reportKindIsPersonAutoReport(kindParam);
     if (!isPersonAutoFromUrl) {
       if (fromParam) {
@@ -470,6 +537,7 @@ export default function ReportViewPage() {
     setEntities([]);
     if (prevKindRef.current !== null && prevKindRef.current !== kind) {
       setEntityId("");
+      setEntityIds([]);
       setScopePlan(REPORT_SCOPE_ALL);
       setScopeHalaka(REPORT_SCOPE_ALL);
     }
@@ -501,6 +569,23 @@ export default function ReportViewPage() {
   }, [kind, canAccessPage, user]);
 
   const entityOptions = useMemo(() => toEntityOptions(entities, kind), [entities, kind]);
+
+  const selectedStudentIds = useMemo(() => {
+    if (kind !== "student") return entityId ? [entityId] : [];
+    if (entityIds.length) return entityIds;
+    if (entityId) return [entityId];
+    return [];
+  }, [kind, entityIds, entityId]);
+
+  const printHelpers = useMemo(
+    () => ({
+      formatArDateTime,
+      roleLabelAr,
+      formatExamSelfReportSummary,
+      showEntityOwner,
+    }),
+    [showEntityOwner],
+  );
   const entityMap = useMemo(
     () =>
       new Map(
@@ -600,27 +685,33 @@ export default function ReportViewPage() {
 
   // eslint-disable-next-line react-hooks/exhaustive-deps
   const build = useCallback(async () => {
-    if (!entityId || !canRunForKind(kind)) return;
+    const runIds =
+      kind === "student" ? selectedStudentIds : entityId ? [entityId] : [];
+    if (!runIds.length || !canRunForKind(kind)) return;
     if (showDateFilters && isRangeInvalid) {
       toast.warning(str("reports.toast_invalid_range"));
       return;
     }
     setLoadingReport(true);
     try {
-      const result =
-        kind === "student"
-          ? await buildStudentReport(
-              entities.find((u) => (u.uid || u.id) === entityId),
-              range,
-              reportScope,
-            )
-          : kind === "teacher"
-            ? await buildTeacherReport(
-                entities.find((u) => (u.uid || u.id) === entityId),
-                range,
-                reportScope,
-              )
-            : await buildGroupReport(kind, entityId, range);
+      let result;
+      if (kind === "student") {
+        const users = runIds
+          .map((id) => entities.find((u) => (u.uid || u.id) === id))
+          .filter(Boolean);
+        result =
+          users.length > 1
+            ? await buildMultiStudentReport(users, range, reportScope)
+            : await buildStudentReport(users[0], range, reportScope);
+      } else if (kind === "teacher") {
+        result = await buildTeacherReport(
+          entities.find((u) => (u.uid || u.id) === entityId),
+          range,
+          reportScope,
+        );
+      } else {
+        result = await buildGroupReport(kind, entityId, range);
+      }
       setReportData(result);
       setActiveTab("all");
     } catch {
@@ -633,12 +724,17 @@ export default function ReportViewPage() {
   useEffect(() => {
     if (!didHydrateFromQueryRef.current) return;
     if (loadingEntities || loadingReport) return;
-    if (!entityId || !canRunForKind(kind)) return;
+    if (!canRunForKind(kind)) return;
     if (showDateFilters && isRangeInvalid) return;
-    if (!entityOptions.some((o) => o.value === entityId)) return;
+
+    const runIds =
+      kind === "student" ? selectedStudentIds : entityId ? [entityId] : [];
+    if (!runIds.length) return;
+    if (!runIds.every((id) => entityOptions.some((o) => o.value === id)))
+      return;
 
     if (reportKindIsPersonAutoReport(kind)) {
-      const personKey = `${kind}:${entityId}`;
+      const personKey = `${kind}:${[...runIds].sort().join(",")}`;
       if (lastBuiltPersonKeyRef.current === personKey) return;
       lastBuiltPersonKeyRef.current = personKey;
       build();
@@ -658,6 +754,7 @@ export default function ReportViewPage() {
     build();
   }, [
     entityId,
+    selectedStudentIds,
     kind,
     loadingEntities,
     loadingReport,
@@ -669,44 +766,24 @@ export default function ReportViewPage() {
     build,
   ]);
 
-  const onPrint = () => {
-    if (!canPrint || !reportData) return;
-    const sections = collectPrintSectionsFromReport(reportData, {
-      formatArDateTime,
-      roleLabelAr,
-      formatExamSelfReportSummary,
-      showEntityOwner,
-    });
-    const kpis = collectPrintKpisFromReport(reportData, {
-      plans: str("layout.nav_plans"),
-      halakat: str("layout.nav_halakat"),
-      activities: str("layout.nav_activities"),
-      exams: str("layout.nav_exams"),
-      awrad: str("layout.nav_awrad"),
-      pages: str("reports.kpi_pages"),
-      members: str("reports.kpi_members"),
-      sessions: str("reports.kpi_sessions"),
-      attendance: str("reports.kpi_attendance"),
-      dawrat: str("layout.nav_dawrat"),
-      remoteTasmee: str("layout.nav_remote_tasmee"),
-      notifications: "الإشعارات",
-    });
-    const ok = printMultiSectionReport({
-      documentTitle: str("reports.print_title"),
-      sections,
-      kpis,
-      printContext: sectionPrintContext,
-      executiveSummary,
-    });
-    if (!ok)
-      toast.warning(
-        "تعذّر فتح نافذة الطباعة. تحقّق من حظر النوافذ المنبثقة.",
-        "",
-      );
-  };
-
   const onExportCsv = () => {
     if (!canExportCsv || !reportData) return;
+    if (reportData.kind === "student_batch") {
+      const sections = collectPrintSectionsFromReport(reportData, printHelpers);
+      const rows = [];
+      for (const sec of sections) {
+        for (const row of sec.rows || []) {
+          rows.push({ القسم: sec.title, ...row });
+        }
+      }
+      if (!rows.length) {
+        toast.info(str("reports.toast_csv_empty"));
+        return;
+      }
+      const stamp = new Date().toISOString().slice(0, 10);
+      downloadCsvFile(rows, `report-students-batch-${stamp}.csv`);
+      return;
+    }
     const rows = [];
     if (reportData.kind === "student") {
       const addRows = (section, sectionRows) => {
@@ -1030,7 +1107,9 @@ export default function ReportViewPage() {
   };
 
   const canBuild = Boolean(
-    entityId && canRunForKind(kind) && (!showDateFilters || !isRangeInvalid),
+    (kind === "student" ? selectedStudentIds.length : entityId) &&
+      canRunForKind(kind) &&
+      (!showDateFilters || !isRangeInvalid),
   );
   const clearFilters = useCallback(() => {
     setFromDate("");
@@ -1085,7 +1164,17 @@ export default function ReportViewPage() {
     }
   }, []);
 
-  const selectedEntityName = entityMap.get(entityId) || "";
+  const selectedEntityName = useMemo(() => {
+    if (kind === "student" && selectedStudentIds.length > 1) {
+      const names = selectedStudentIds
+        .map((id) => entityMap.get(id))
+        .filter(Boolean);
+      if (!names.length) return `${selectedStudentIds.length} طلاب`;
+      const preview = names.slice(0, 3).join("، ");
+      return names.length > 3 ? `${names.length} طلاب: ${preview}…` : names.join("، ");
+    }
+    return entityMap.get(entityId) || "";
+  }, [kind, selectedStudentIds, entityMap, entityId]);
 
   const sectionPrintContext = useMemo(
     () => ({
@@ -1167,7 +1256,8 @@ export default function ReportViewPage() {
 
   const reportTabs = useMemo(() => {
     if (!reportData) return [];
-    if (reportData.kind === "student") return STUDENT_TABS;
+    if (reportData.kind === "student" || reportData.kind === "student_batch")
+      return STUDENT_TABS;
     if (reportData.kind === "teacher") return TEACHER_TABS;
     return GROUP_TABS.filter((t) => {
       if (t.id === "sessions" || t.id === "attendance")
@@ -1185,6 +1275,92 @@ export default function ReportViewPage() {
       return true;
     });
   }, [reportData]);
+
+  const openPrintDocument = useCallback(
+    (sections, { documentTitle, autoPrint = false } = {}) => {
+      if (!canPrint || !reportData) return false;
+      const kpis = collectPrintKpisFromReport(reportData, {
+        plans: str("layout.nav_plans"),
+        halakat: str("layout.nav_halakat"),
+        activities: str("layout.nav_activities"),
+        exams: str("layout.nav_exams"),
+        awrad: str("layout.nav_awrad"),
+        pages: str("reports.kpi_pages"),
+        members: str("reports.kpi_members"),
+        sessions: str("reports.kpi_sessions"),
+        attendance: str("reports.kpi_attendance"),
+        dawrat: str("layout.nav_dawrat"),
+        remoteTasmee: str("layout.nav_remote_tasmee"),
+        notifications: "الإشعارات",
+      });
+      return printMultiSectionReport(
+        {
+          documentTitle: documentTitle || str("reports.print_title"),
+          sections,
+          kpis,
+          printContext: sectionPrintContext,
+          executiveSummary,
+        },
+        { autoPrint },
+      );
+    },
+    [canPrint, reportData, str, sectionPrintContext, executiveSummary],
+  );
+
+  const onPrintPreview = () => {
+    if (!canPrint || !reportData) return;
+    const sections = collectPrintSectionsFromReport(reportData, printHelpers);
+    const ok = openPrintDocument(sections, {
+      documentTitle: "تقرير شامل — معاينة",
+      autoPrint: false,
+    });
+    if (!ok)
+      toast.warning(
+        "تعذّر فتح المعاينة. تحقّق من حظر النوافذ المنبثقة.",
+        "",
+      );
+  };
+
+  const onPrintSection = () => {
+    if (!canPrint || !reportData) return;
+    const allSections = collectPrintSectionsFromReport(reportData, printHelpers);
+    const sections = filterPrintSectionsByTab(allSections, activeTab);
+    if (!sections.length) {
+      toast.info("لا توجد بيانات في التبويب الحالي للطباعة.");
+      return;
+    }
+    const tabLabel =
+      reportTabs.find((t) => t.id === activeTab)?.label || "القسم";
+    const ok = openPrintDocument(sections, {
+      documentTitle: `تقرير ${tabLabel} — معاينة`,
+      autoPrint: false,
+    });
+    if (!ok)
+      toast.warning(
+        "تعذّر فتح المعاينة. تحقّق من حظر النوافذ المنبثقة.",
+        "",
+      );
+  };
+
+  const onExportCsvSection = () => {
+    if (!canExportCsv || !reportData) return;
+    const allSections = collectPrintSectionsFromReport(reportData, printHelpers);
+    const sections = filterPrintSectionsByTab(allSections, activeTab);
+    if (!sections.length) {
+      toast.info("لا توجد بيانات في التبويب الحالي للتصدير.");
+      return;
+    }
+    const rows = [];
+    for (const sec of sections) {
+      for (const row of sec.rows || []) {
+        rows.push({ القسم: sec.title, ...row });
+      }
+    }
+    const stamp = new Date().toISOString().slice(0, 10);
+    const tabLabel =
+      reportTabs.find((t) => t.id === activeTab)?.label || "section";
+    downloadCsvFile(rows, `report-${kind}-${tabLabel}-${stamp}.csv`);
+  };
 
   const onSharePdf = async () => {
     if (!canPrint || !reportData || !reportCaptureRef.current) return;
@@ -1248,13 +1424,35 @@ export default function ReportViewPage() {
             </Button>
             <Button
               type="button"
-              variant="secondary"
-              icon={Printer}
-              onClick={onPrint}
+              variant="primary"
+              icon={Eye}
+              onClick={onPrintPreview}
               disabled={!canPrint || !reportData}
             >
-              {str("reports.btn_print")}
+              معاينة التقرير الشامل
             </Button>
+            {activeTab !== "all" && reportData ? (
+              <>
+                <Button
+                  type="button"
+                  variant="secondary"
+                  icon={Printer}
+                  onClick={onPrintSection}
+                  disabled={!canPrint}
+                >
+                  معاينة القسم الحالي
+                </Button>
+                <Button
+                  type="button"
+                  variant="secondary"
+                  icon={Download}
+                  onClick={onExportCsvSection}
+                  disabled={!canExportCsv}
+                >
+                  CSV القسم الحالي
+                </Button>
+              </>
+            ) : null}
             <Button
               type="button"
               variant="secondary"
@@ -1272,7 +1470,7 @@ export default function ReportViewPage() {
               onClick={onExportCsv}
               disabled={!canExportCsv || !reportData}
             >
-              {str("reports.btn_csv")}
+              CSV التقرير الشامل
             </Button>
           </div>
         </div>
@@ -1301,24 +1499,45 @@ export default function ReportViewPage() {
             searchPlaceholder={str("reports.search_placeholder")}
             emptyText={str("reports.search_empty")}
           />
-          <SearchableSelect
-            label={str("reports.field_entity")}
-            options={entityOptions}
-            value={entityId}
-            onChange={(id) => {
-              setEntityId(id);
-              if (reportKindIsPersonAutoReport(kind)) {
+          {kind === "student" ? (
+            <SearchableMultiSelect
+              label="الطلاب (يمكن اختيار أكثر من طالب)"
+              options={entityOptions}
+              value={entityIds.length ? entityIds : entityId ? [entityId] : []}
+              onChange={(ids) => {
+                setEntityIds(ids);
+                setEntityId(ids[0] || "");
                 lastBuiltPersonKeyRef.current = "";
+              }}
+              placeholder={
+                loadingEntities
+                  ? str("reports.loading_entities")
+                  : "اختر طالباً أو أكثر…"
               }
-            }}
-            placeholder={
-              loadingEntities
-                ? str("reports.loading_entities")
-                : str("reports.field_entity")
-            }
-            searchPlaceholder={str("reports.search_placeholder")}
-            emptyText={str("reports.search_empty")}
-          />
+              searchPlaceholder={str("reports.search_placeholder")}
+              emptyText={str("reports.search_empty")}
+              summaryLabel={(count) => `${count} طالب مختار`}
+            />
+          ) : (
+            <SearchableSelect
+              label={str("reports.field_entity")}
+              options={entityOptions}
+              value={entityId}
+              onChange={(id) => {
+                setEntityId(id);
+                if (reportKindIsPersonAutoReport(kind)) {
+                  lastBuiltPersonKeyRef.current = "";
+                }
+              }}
+              placeholder={
+                loadingEntities
+                  ? str("reports.loading_entities")
+                  : str("reports.field_entity")
+              }
+              searchPlaceholder={str("reports.search_placeholder")}
+              emptyText={str("reports.search_empty")}
+            />
+          )}
           {personHintKey ? (
             <p className="rh-reports-hub__student-hint">{str(personHintKey)}</p>
           ) : null}
@@ -1462,7 +1681,40 @@ export default function ReportViewPage() {
                 {executiveSummary ? (
                   <ReportExecutiveSummary summary={executiveSummary} />
                 ) : null}
-                {reportData.kind === "student" ? (
+                {reportData.kind === "student_batch" ? (
+                  <section className="rh-reports__result">
+                    <StudentBatchKpiGrid
+                      summary={reportData.summary}
+                      str={str}
+                    />
+                    {(reportData.students || []).map((studentData) => {
+                      const studentUid =
+                        studentData.entity?.uid ||
+                        studentData.entity?.id ||
+                        studentData.entity?.displayName;
+                      const studentName =
+                        studentData.entity?.displayName ||
+                        studentData.entity?.name ||
+                        studentData.entity?.email ||
+                        "طالب";
+                      return (
+                        <div
+                          key={String(studentUid)}
+                          className="rh-reports__student-batch-block card"
+                        >
+                          <h2 className="rh-reports__batch-heading">
+                            تقرير الطالب: {studentName}
+                          </h2>
+                          <ReportPrintSectionsView
+                            reportData={studentData}
+                            printHelpers={printHelpers}
+                            activeTab={activeTab}
+                          />
+                        </div>
+                      );
+                    })}
+                  </section>
+                ) : reportData.kind === "student" ? (
                   <section className="rh-reports__result">
                     <ReportKpiGrid>
                       <div className="card rh-reports__kpi">

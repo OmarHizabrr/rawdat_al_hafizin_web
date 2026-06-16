@@ -32,6 +32,14 @@
   font-weight: 600;
 }
 
+.rh-report-print__toolbar-hint {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 400;
+  color: #cbd5e1;
+  flex: 1 1 200px;
+}
+
 .rh-report-print__toolbar-actions {
   display: flex;
   gap: 8px;

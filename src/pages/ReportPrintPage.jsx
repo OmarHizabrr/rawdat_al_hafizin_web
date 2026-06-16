@@ -189,6 +189,7 @@ export default function ReportPrintPage() {
     <div className="rh-report-print">
       <div className="rh-report-print__toolbar no-print">
         <p className="rh-report-print__toolbar-title">{payload.documentTitle}</p>
+        <p className="rh-report-print__toolbar-hint">معاينة قبل الطباعة — راجع التقرير ثم اضغط «طباعة».</p>
         <div className="rh-report-print__toolbar-actions">
           <button type="button" className="rh-report-print__btn rh-report-print__btn--primary" onClick={onPrint}>
             <Printer size={16} aria-hidden />

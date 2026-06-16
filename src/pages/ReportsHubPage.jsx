@@ -38,7 +38,7 @@ import {
 } from '../utils/hijriDates.js'
 import { HapticLink } from '../ui/HapticLink.jsx'
 import { studentProgressLink } from '../utils/studentProgressLink.js'
-import { Button, RhDatePickerField, SearchableSelect, useToast } from '../ui/index.js'
+import { Button, RhDatePickerField, SearchableMultiSelect, SearchableSelect, useToast } from '../ui/index.js'
 import { RH_ICON_STROKE, RhIcon } from '../ui/RhIcon.jsx'
 
 const PAGE_ID = PERMISSION_PAGE_IDS.reports
@@ -94,6 +94,7 @@ export default function ReportsHubPage() {
 
   const adminDefaultKindSet = useRef(false)
   const [entityId, setEntityId] = useState('')
+  const [entityIds, setEntityIds] = useState([])
   const [fromDate, setFromDate] = useState('')
   const [toDate, setToDate] = useState('')
   const [rangePreset, setRangePreset] = useState('all')
@@ -161,6 +162,7 @@ export default function ReportsHubPage() {
     setLoadingEntities(true)
     setEntities([])
     setEntityId('')
+    setEntityIds([])
     const run = async () => {
       try {
         if (kind === 'student') {
@@ -250,7 +252,16 @@ export default function ReportsHubPage() {
   }, [])
 
   const openReport = () => {
-    if (!entityId) {
+    const studentIds =
+      kind === 'student'
+        ? entityIds.length
+          ? entityIds
+          : entityId
+            ? [entityId]
+            : []
+        : []
+    const targetId = kind === 'student' ? studentIds[0] : entityId
+    if (!targetId) {
       toast.warning('اختر الكيان أولاً.', '')
       return
     }
@@ -262,7 +273,8 @@ export default function ReportsHubPage() {
       appLink(
         reportViewPath({
           kind,
-          entityId,
+          entityId: targetId,
+          entityIds: kind === 'student' && studentIds.length > 1 ? studentIds : undefined,
           from: showDateFilters ? fromDate || undefined : undefined,
           to: showDateFilters ? toDate || undefined : undefined,
           rangePreset: showDateFilters ? rangePreset : undefined,
@@ -279,6 +291,25 @@ export default function ReportsHubPage() {
       }
     },
     [kind, navigate, appLink],
+  )
+
+  const onStudentIdsChange = useCallback(
+    (ids) => {
+      setEntityIds(ids)
+      setEntityId(ids[0] || '')
+      if (ids.length) {
+        navigate(
+          appLink(
+            reportViewPath({
+              kind: 'student',
+              entityId: ids[0],
+              entityIds: ids.length > 1 ? ids : undefined,
+            }),
+          ),
+        )
+      }
+    },
+    [navigate, appLink],
   )
 
   const selectedKindMeta = REPORT_KIND_OPTIONS.find((k) => k.value === kind)
@@ -348,15 +379,28 @@ export default function ReportsHubPage() {
           <h2 className="rh-settings-card__title">2 — {selectedKindMeta?.label || 'التقرير'}</h2>
         </div>
         <div className="rh-reports__filters-grid">
-          <SearchableSelect
-            label={str('reports.field_entity')}
-            options={entityOptions}
-            value={entityId}
-            onChange={onEntityChange}
-            placeholder={loadingEntities ? str('reports.loading_entities') : str('reports.field_entity')}
-            searchPlaceholder={str('reports.search_placeholder')}
-            emptyText={str('reports.search_empty')}
-          />
+          {kind === 'student' ? (
+            <SearchableMultiSelect
+              label="الطلاب (يمكن اختيار أكثر من طالب)"
+              options={entityOptions}
+              value={entityIds.length ? entityIds : entityId ? [entityId] : []}
+              onChange={onStudentIdsChange}
+              placeholder={loadingEntities ? str('reports.loading_entities') : 'اختر طالباً أو أكثر…'}
+              searchPlaceholder={str('reports.search_placeholder')}
+              emptyText={str('reports.search_empty')}
+              summaryLabel={(count) => `${count} طالب مختار`}
+            />
+          ) : (
+            <SearchableSelect
+              label={str('reports.field_entity')}
+              options={entityOptions}
+              value={entityId}
+              onChange={onEntityChange}
+              placeholder={loadingEntities ? str('reports.loading_entities') : str('reports.field_entity')}
+              searchPlaceholder={str('reports.search_placeholder')}
+              emptyText={str('reports.search_empty')}
+            />
+          )}
           {personHintKey ? (
             <p className="rh-reports-hub__student-hint">{str(personHintKey)}</p>
           ) : null}

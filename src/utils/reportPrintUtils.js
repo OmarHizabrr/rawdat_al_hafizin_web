@@ -6,7 +6,7 @@ import { storePrintPayload } from './reportPrintPayload.js'
  * @param {{ autoPrint?: boolean }} [options]
  * @returns {boolean}
  */
-export function openReportPrintPage(payload, { autoPrint = true } = {}) {
+export function openReportPrintPage(payload, { autoPrint = false } = {}) {
   if (typeof window === 'undefined' || !payload) return false
   const id = storePrintPayload(payload)
   if (!id) return false

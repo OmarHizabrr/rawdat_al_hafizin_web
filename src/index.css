@@ -11917,6 +11917,20 @@ a.rh-peek-btn {
   color: var(--rh-primary);
 }
 
+.rh-reports__student-batch-block {
+  margin-block: 1.25rem;
+  padding: 1rem 1.1rem;
+}
+
+.rh-reports__batch-heading {
+  margin: 0 0 0.85rem;
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--rh-text);
+  border-bottom: 1px solid var(--rh-border);
+  padding-bottom: 0.5rem;
+}
+
 @media screen {
   .rh-print-capture.rh-print-capture--export .rh-print-doc__header,
   .rh-print-capture.rh-print-capture--export .rh-print-doc__footer {
