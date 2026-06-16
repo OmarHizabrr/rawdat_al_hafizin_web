@@ -2,18 +2,75 @@ import { VOLUME_BY_ID } from '../data/volumes.js'
 import { HALAKA_ATTENDANCE_STATUSES } from './halakatStorage.js'
 import { remoteTasmeeMediaLabelAr, remoteTasmeeProviderLabelAr } from './remoteTasmeeStorage.js'
 
-/** ملخص مجلدات الخطة كما تظهر في صفحة الخطط */
-export function formatPlanVolumesForReport(volumes) {
-  const list = Array.isArray(volumes) ? volumes : []
+function joinArabicWithWa(parts) {
+  const list = (parts || []).filter(Boolean)
   if (!list.length) return '—'
-  return list
-    .map((v) => {
-      const id = String(v?.id || '').trim()
-      const label = String(v?.label || VOLUME_BY_ID[id]?.label || id || '').trim() || '—'
-      const pages = Math.max(0, Number(v?.pagesTarget) || 0)
-      return pages > 0 ? `${label}: ${pages} صفحة` : label
-    })
-    .join(' — ')
+  if (list.length === 1) return list[0]
+  return list.reduce((acc, part, index) => (index === 0 ? part : `${acc} و${part}`))
+}
+
+/** توحيد شكل مجلدات الخطة من التخزين (مصفوفة معرفات، كائنات جزئية، …) */
+export function normalizePlanVolumes(raw) {
+  if (!raw) return []
+  if (Array.isArray(raw)) {
+    return raw
+      .map((item) => {
+        if (typeof item === 'string') {
+          const id = item.trim()
+          if (!id) return null
+          const vol = VOLUME_BY_ID[id]
+          return vol
+            ? { id, label: vol.label, pagesTarget: vol.pages, pagesMax: vol.pages }
+            : { id, label: id, pagesTarget: 0, pagesMax: 0 }
+        }
+        if (!item || typeof item !== 'object') return null
+        const id = String(item.id || item.volumeId || '').trim()
+        const vol = id ? VOLUME_BY_ID[id] : null
+        const label = String(item.label || vol?.label || id || '').trim()
+        if (!label && !id) return null
+        const pagesTarget = Math.max(
+          0,
+          Number(item.pagesTarget ?? item.pages ?? item.pagesMax ?? vol?.pages) || 0,
+        )
+        return {
+          id: id || label,
+          label: label || id,
+          pagesTarget,
+          pagesMax: Math.max(0, Number(item.pagesMax ?? vol?.pages ?? pagesTarget) || pagesTarget),
+        }
+      })
+      .filter(Boolean)
+  }
+  if (typeof raw === 'object') {
+    return Object.entries(raw)
+      .map(([key, val]) => {
+        const id = String(key || '').trim()
+        if (!id) return null
+        if (val && typeof val === 'object') {
+          return normalizePlanVolumes([{ id, ...val }])[0] || null
+        }
+        const vol = VOLUME_BY_ID[id]
+        const pages = Math.max(0, Number(val) || 0)
+        return vol
+          ? { id, label: vol.label, pagesTarget: pages || vol.pages, pagesMax: vol.pages }
+          : { id, label: id, pagesTarget: pages, pagesMax: pages }
+      })
+      .filter(Boolean)
+  }
+  return []
+}
+
+/** ملخص مجلدات الخطة كما تظهر في صفحة الخطط — المجلد الأول والثاني … */
+export function formatPlanVolumesForReport(volumes) {
+  const list = normalizePlanVolumes(volumes)
+  if (!list.length) return '—'
+  const parts = list.map((v) => {
+    const id = String(v?.id || '').trim()
+    const label = String(v?.label || VOLUME_BY_ID[id]?.label || id || '').trim() || '—'
+    const pages = Math.max(0, Number(v?.pagesTarget) || 0)
+    return pages > 0 ? `${label}: ${pages} صفحة` : label
+  })
+  return joinArabicWithWa(parts)
 }
 
 /** ملخص مجلدات خطط العضو (للتقارير الشاملة) */

@@ -12,7 +12,10 @@ import { loadActivityMembersWithProfiles } from '../utils/activitiesStorage.js'
 import { loadDawratMembersWithProfiles } from '../utils/dawratStorage.js'
 import { loadRemoteTasmeeMembersWithProfiles } from '../utils/remoteTasmeeStorage.js'
 import { computePlanProgress } from '../utils/planProgress.js'
-import { formatPlanVolumesForReport, formatMemberPlansVolumesForReport } from '../utils/reportDisplayLabels.js'
+import {
+  formatPlanVolumesForReport,
+  formatMemberPlansVolumesForReport,
+} from '../utils/reportDisplayLabels.js'
 import { REPORT_SCOPE_ALL } from '../config/reportKinds.js'
 import { HALAKA_TASKS_LIMIT, pickRelevantHalakaSession } from '../utils/halakaAttendanceTask.js'
 import { buildStudentTasks } from '../utils/buildStudentTasks.js'
@@ -477,18 +480,57 @@ function normalizeAwradPlanId(row) {
   return String(row?.planId || row?.plan_id || '').trim()
 }
 
-function resolveAwradPlanName(row, planNameById) {
-  const planId = normalizeAwradPlanId(row)
+function findPlanByName(plansAll, name) {
+  const needle = String(name || '').trim()
+  if (!needle) return null
+  return (plansAll || []).find((p) => String(p.name || '').trim() === needle) || null
+}
+
+function resolveAwradPlanId(row, plansAll) {
+  const direct = normalizeAwradPlanId(row)
+  if (direct) return direct
+  const plan = findPlanByName(plansAll, row?.planName || row?.plan_name)
+  return plan?.id ? String(plan.id) : ''
+}
+
+function formatPlanVolumesFromPlan(plan) {
+  if (!plan) return '—'
+  return formatPlanVolumesForReport(plan.volumes)
+}
+
+function resolveAwradPlanName(row, planNameById, plansAll) {
+  const planId = resolveAwradPlanId(row, plansAll)
   const fromMap = planId ? planNameById.get(planId) : ''
   if (fromMap) return fromMap
   const fromRow = String(row?.planName || row?.plan_name || '').trim()
-  return fromRow || '—'
+  if (fromRow) return fromRow
+  const plan = findPlanByName(plansAll, fromRow)
+  return plan?.name ? String(plan.name).trim() : '—'
 }
 
-function resolveAwradPlanVolumes(row, planVolumesById) {
-  const planId = normalizeAwradPlanId(row)
-  if (!planId) return '—'
-  return planVolumesById.get(planId) || '—'
+function resolveAwradPlanVolumes(row, planVolumesById, plansAll) {
+  const planId = resolveAwradPlanId(row, plansAll)
+  if (planId) {
+    const fromMap = planVolumesById.get(planId)
+    if (fromMap && fromMap !== '—') return fromMap
+    const memberPlan = (plansAll || []).find((p) => String(p.id) === planId)
+    const fromMember = formatPlanVolumesFromPlan(memberPlan)
+    if (fromMember !== '—') return fromMember
+  }
+  const byName = formatPlanVolumesFromPlan(
+    findPlanByName(plansAll, row?.planName || row?.plan_name),
+  )
+  if (byName !== '—') return byName
+  return '—'
+}
+
+function collectAwradLinkedPlanIds(awradDocs, plansAll) {
+  const ids = new Set()
+  for (const row of awradDocs || []) {
+    const id = resolveAwradPlanId(row, plansAll)
+    if (id) ids.add(id)
+  }
+  return [...ids]
 }
 
 async function buildPlanLookupMaps(plansAll, awradDocs) {
@@ -496,16 +538,13 @@ async function buildPlanLookupMaps(plansAll, awradDocs) {
     (plansAll || []).map((p) => [String(p.id), String(p.name || '').trim() || 'خطة']),
   )
   const planVolumesById = new Map(
-    (plansAll || []).map((p) => [String(p.id), formatPlanVolumesForReport(p.volumes)]),
+    (plansAll || []).map((p) => [String(p.id), formatPlanVolumesFromPlan(p)]),
   )
 
-  const missingIds = [
-    ...new Set(
-      (awradDocs || [])
-        .map((r) => normalizeAwradPlanId(r))
-        .filter((id) => id && (!planNameById.has(id) || planVolumesById.get(id) === '—')),
-    ),
-  ]
+  const linkedPlanIds = collectAwradLinkedPlanIds(awradDocs, plansAll)
+  const missingIds = linkedPlanIds.filter(
+    (id) => !planNameById.has(id) || planVolumesById.get(id) === '—',
+  )
 
   if (missingIds.length) {
     await Promise.all(
@@ -859,8 +898,8 @@ export async function buildStudentReport(user, range = {}, scope = {}) {
     }),
     awrad: sortByRecent(awradFiltered, (r) => pickFirstDate(r.recordedAt, r.updatedAt, r.createdAt)).map((r) => ({
       ...r,
-      planName: resolveAwradPlanName(r, awradPlanLookup.planNameById),
-      planVolumesSummary: resolveAwradPlanVolumes(r, awradPlanLookup.planVolumesById),
+      planName: resolveAwradPlanName(r, awradPlanLookup.planNameById, plansAll),
+      planVolumesSummary: resolveAwradPlanVolumes(r, awradPlanLookup.planVolumesById, plansAll),
     })),
     notifications: sortByRecent(notifications, (r) => pickFirstDate(r.createdAt, r.updatedAt)),
     summary: {
