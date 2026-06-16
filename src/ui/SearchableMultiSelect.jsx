@@ -1,6 +1,6 @@
 import { Check, ChevronDown } from 'lucide-react'
 import { createPortal } from 'react-dom'
-import { startTransition, useCallback, useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { useOnClickOutside } from './hooks/useOnClickOutside.js'
 import { RhIcon, RH_ICON_STROKE } from './RhIcon.jsx'
 import { SearchField } from './SearchField.jsx'
@@ -42,8 +42,8 @@ export function SearchableMultiSelect({
   const [open, setOpen] = useState(false)
   const [query, setQuery] = useState('')
   const [highlight, setHighlight] = useState(0)
-  /** غير null = عرض القائمة عبر portal على document.body (داخل .ui-modal) */
-  const [portalSpec, setPortalSpec] = useState(null)
+  /** غير null = جاهز لعرض القائمة عبر portal على document.body */
+  const [portalLayout, setPortalLayout] = useState(null)
 
   const selectedSet = useMemo(() => new Set(value), [value])
 
@@ -64,30 +64,30 @@ export function SearchableMultiSelect({
       setOpen(false)
       setQuery('')
     },
-    open && !portalSpec,
+    open,
+    portalLayerRef,
   )
 
   useLayoutEffect(() => {
     if (!open) {
-      startTransition(() => setPortalSpec(null))
-      return
-    }
-    const root = rootRef.current
-    if (!root?.closest('.ui-modal')) {
-      startTransition(() => setPortalSpec(null))
-      return
+      setPortalLayout(null)
+      return undefined
     }
     const update = () => {
-      const r = root.getBoundingClientRect()
+      const root = rootRef.current
+      if (!root) return
       const mobile = window.matchMedia('(max-width: 899px)').matches
-      if (mobile) setPortalSpec({ mobile: true })
-      else
-        setPortalSpec({
-          mobile: false,
-          top: r.bottom + 8,
-          left: r.left,
-          width: r.width,
-        })
+      if (mobile) {
+        setPortalLayout({ mobile: true })
+        return
+      }
+      const r = root.getBoundingClientRect()
+      setPortalLayout({
+        mobile: false,
+        top: r.bottom + 8,
+        left: r.left,
+        width: r.width,
+      })
     }
     update()
     window.addEventListener('resize', update)
@@ -97,26 +97,6 @@ export function SearchableMultiSelect({
       document.removeEventListener('scroll', update, true)
     }
   }, [open])
-
-  useEffect(() => {
-    if (!open || !portalSpec) return
-    const close = () => {
-      setOpen(false)
-      setQuery('')
-    }
-    const onPointer = (e) => {
-      const t = e.target
-      if (rootRef.current?.contains(t)) return
-      if (portalLayerRef.current?.contains(t)) return
-      close()
-    }
-    document.addEventListener('mousedown', onPointer)
-    document.addEventListener('touchstart', onPointer)
-    return () => {
-      document.removeEventListener('mousedown', onPointer)
-      document.removeEventListener('touchstart', onPointer)
-    }
-  }, [open, portalSpec])
 
   useEffect(() => {
     if (!open) return
@@ -206,35 +186,33 @@ export function SearchableMultiSelect({
   }, [summaryLabel, value, options, placeholder])
 
   const portalPanelStyle = useMemo(() => {
-    if (!portalSpec || portalSpec.mobile) return undefined
-    const top = portalSpec.top
+    if (!portalLayout || portalLayout.mobile) return undefined
+    const top = portalLayout.top
     const maxH = Math.max(120, typeof window !== 'undefined' ? window.innerHeight - top - 16 : 320)
     return {
       position: 'fixed',
       top,
-      left: portalSpec.left,
-      width: portalSpec.width,
+      left: portalLayout.left,
+      width: portalLayout.width,
       maxHeight: `min(22rem, ${maxH}px)`,
     }
-  }, [portalSpec])
+  }, [portalLayout])
 
-  const renderDropdown = (portal) => (
+  const renderDropdown = (withBackdrop) => (
     <>
-      <button
-        type="button"
-        className={['ui-multi__backdrop', portal ? 'ui-multi__backdrop--portal' : ''].filter(Boolean).join(' ')}
-        aria-label="إغلاق القائمة"
-        tabIndex={-1}
-        onClick={() => {
-          setOpen(false)
-          setQuery('')
-        }}
-      />
-      <div
-        className={['ui-multi__panel', portal ? 'ui-multi__panel--portal' : ''].filter(Boolean).join(' ')}
-        style={portal ? portalPanelStyle : undefined}
-        role="presentation"
-      >
+      {withBackdrop && (
+        <button
+          type="button"
+          className="ui-multi__backdrop ui-multi__backdrop--portal"
+          aria-label="إغلاق القائمة"
+          tabIndex={-1}
+          onClick={() => {
+            setOpen(false)
+            setQuery('')
+          }}
+        />
+      )}
+      <div className="ui-multi__panel ui-multi__panel--portal" style={portalPanelStyle} role="presentation">
         <div className="ui-multi__search">
           <SearchField
             ref={searchRef}
@@ -298,8 +276,7 @@ export function SearchableMultiSelect({
     </>
   )
 
-  const showPortalLayer = open && portalSpec
-  const showInlineLayer = open && !portalSpec
+  const showPortalLayer = open && portalLayout
 
   return (
     <div
@@ -349,13 +326,14 @@ export function SearchableMultiSelect({
         </span>
       </button>
 
-      {showInlineLayer && renderDropdown(false)}
-      {showPortalLayer && createPortal(
-        <div ref={portalLayerRef} className="ui-multi__portal-layer">
-          {renderDropdown(true)}
-        </div>,
-        document.body,
-      )}
+      {showPortalLayer &&
+        typeof document !== 'undefined' &&
+        createPortal(
+          <div ref={portalLayerRef} className="ui-multi__portal-layer">
+            {renderDropdown(portalLayout.mobile)}
+          </div>,
+          document.body,
+        )}
 
       {hint && !error && (
         <p className="ui-field__hint" id={hintId}>
