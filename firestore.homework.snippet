@@ -1,0 +1,55 @@
+// =============================================================================
+// أضف هذا المقطع إلى قواعد Firestore الحالية في Firebase Console
+// (Firestore Database → Rules) ثم انشر القواعد.
+// لا تنشر هذا الملف وحده — يجب دمجه مع قواعد المجموعات الأخرى الموجودة.
+// =============================================================================
+
+    function userDoc(uid) {
+      return get(/databases/$(database)/documents/users/$(uid));
+    }
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isAdmin() {
+      return isSignedIn()
+        && exists(/databases/$(database)/documents/users/$(request.auth.uid))
+        && userDoc(request.auth.uid).data.role == 'admin';
+    }
+
+    function isTeacher() {
+      return isSignedIn()
+        && exists(/databases/$(database)/documents/users/$(request.auth.uid))
+        && userDoc(request.auth.uid).data.role == 'teacher';
+    }
+
+    function canReadHomework(userId) {
+      return isSignedIn() && (request.auth.uid == userId || isAdmin() || isTeacher());
+    }
+
+    function canWriteHomework(userId) {
+      return isSignedIn() && (request.auth.uid == userId || isAdmin());
+    }
+
+    function validHomeworkLog(userId) {
+      return request.resource.data.kind == 'homework_log'
+        && request.resource.data.ownerUid == userId
+        && request.resource.data.categoryId is string
+        && request.resource.data.categoryLabel is string
+        && request.resource.data.ymd is string
+        && request.resource.data.completed is bool;
+    }
+
+    // أقسام الواجبات — قراءة للمسجّلين، تعديل للمشرف فقط
+    match /task_categories/{categoryId} {
+      allow read: if isSignedIn();
+      allow create, update, delete: if isAdmin();
+    }
+
+    // تسجيلات واجبات الطالب اليومية (نعم/لا)
+    match /Myhomework/{userId}/Myhomework/{logId} {
+      allow read: if canReadHomework(userId);
+      allow create, update: if canWriteHomework(userId) && validHomeworkLog(userId);
+      allow delete: if isAdmin();
+    }

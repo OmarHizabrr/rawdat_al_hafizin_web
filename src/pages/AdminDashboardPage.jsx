@@ -1,4 +1,4 @@
-import { Bell, BookOpen, ClipboardList, FileText, LayoutDashboard, Palette, Shapes, Shield, UserCheck, Users } from 'lucide-react'
+import { Bell, BookOpen, ClipboardList, FileText, LayoutDashboard, ListChecks, Palette, Shapes, Shield, UserCheck, Users } from 'lucide-react'
 import { HapticLink } from '../ui/HapticLink.jsx'
 import { useEffect, useMemo } from 'react'
 
@@ -21,6 +21,12 @@ const tiles = [
     title: 'أنواع الخطط',
     desc: 'إضافة وتعديل أنواع الخطط التي تظهر في صفحة الخطط والرئيسية.',
     Icon: Shapes,
+  },
+  {
+    to: '/app/admin/task-categories',
+    title: 'أقسام الواجبات',
+    desc: 'تعريف خانات الواجبات (سماع، حفظ، تكرار، ربط…) وإضافة أقسام جديدة للطلاب.',
+    Icon: ListChecks,
   },
   {
     to: '/app/admin/copy',
@@ -109,7 +115,7 @@ export default function AdminDashboardPage() {
           </p>
           <AdminAdvancedPanel summary="معلومات تقنية للمشرف" className="rh-admin-dashboard__advanced">
             <p className="rh-settings-footnote" style={{ margin: 0 }}>
-              التعديلات تُحفظ في قاعدة البيانات (مجموعات: أنواع الخطط، إعدادات الموقع، صلاحيات المستخدمين).
+              التعديلات تُحفظ في قاعدة البيانات (مجموعات: أنواع الخطط، أقسام الواجبات، إعدادات الموقع، صلاحيات المستخدمين).
             </p>
           </AdminAdvancedPanel>
         </div>

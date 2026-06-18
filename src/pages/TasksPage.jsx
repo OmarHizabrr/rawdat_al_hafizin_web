@@ -1,6 +1,7 @@
 import { Link, useLocation } from 'react-router-dom'
 import { useEffect } from 'react'
 import { ArrowLeft, ArrowRight, ChevronLeft, ChevronRight, ExternalLink, Loader2, RotateCcw } from 'lucide-react'
+import { HomeworkCategoriesPanel } from '../components/tasks/HomeworkCategoriesPanel.jsx'
 import { TaskStepper } from '../components/tasks/TaskStepper.jsx'
 import { TASK_PROGRESS_STEPS, useTasksStore } from '../stores/useTasksStore.js'
 import { useAuth } from '../context/useAuth.js'
@@ -19,6 +20,7 @@ export default function TasksPage() {
   const { str } = useSiteContent()
   const { search } = useLocation()
   const impersonateUid = getImpersonateUid(user, search)
+  const contextUserId = impersonateUid || user?.uid || ''
   const loading = useTasksStore((s) => s.workspaceLoading)
 
   const tasks = useTasksStore((s) => s.tasks)
@@ -69,12 +71,13 @@ export default function TasksPage() {
           </div>
         </header>
 
+        <div className="rh-task-panel-box" style={{ marginBottom: 'var(--rh-space-5)' }}>
+          <HomeworkCategoriesPanel userId={contextUserId} />
+        </div>
+
         {!loading && tasks.length === 0 ? (
-          <div className="rh-student-workspace__empty">
-            <p className="rh-student-workspace__footer-text">{str('tasks.empty_title')}</p>
-            <p className="rh-student-workspace__menu-desc" style={{ marginTop: 'var(--rh-space-2)' }}>
-              {str('tasks.empty_hint')}
-            </p>
+          <div className="rh-student-workspace__empty" style={{ marginTop: 'var(--rh-space-4)' }}>
+            <p className="rh-student-workspace__menu-desc">{str('tasks.sync_empty_hint')}</p>
             <div className="rh-task-actions" style={{ justifyContent: 'center', marginTop: 'var(--rh-space-4)' }}>
               <Link to={plansPath} className="rh-student-workspace__cta">
                 {str('layout.nav_plans')}
@@ -84,10 +87,10 @@ export default function TasksPage() {
               </Link>
             </div>
           </div>
-        ) : (
+        ) : loading || tasks.length > 0 ? (
           <div className="rh-student-workspace__tasks-layout">
             <aside>
-              <h2 className="rh-student-workspace__section-title">{str('tasks.list_title')}</h2>
+              <h2 className="rh-student-workspace__section-title">{str('tasks.sync_list_title')}</h2>
               <ul className="rh-student-workspace__task-list" style={{ marginTop: 'var(--rh-space-3)' }}>
                 {tasks.map((task) => {
                   const selected = task.id === activeTask?.id
@@ -192,7 +195,7 @@ export default function TasksPage() {
               )}
             </section>
           </div>
-        )}
+        ) : null}
 
         <footer className="rh-student-workspace__footer" style={{ justifyContent: 'center' }}>
           <Link to={homePath} className="rh-student-workspace__footer-link">

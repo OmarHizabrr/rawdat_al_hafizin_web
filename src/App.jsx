@@ -44,6 +44,7 @@ const AdminUsersPage = lazy(() => import('./pages/AdminUsersPage.jsx'))
 const AdminDashboardPage = lazy(() => import('./pages/AdminDashboardPage.jsx'))
 const AdminApplicationRequestsPage = lazy(() => import('./pages/AdminApplicationRequestsPage.jsx'))
 const AdminPlanTypesPage = lazy(() => import('./pages/AdminPlanTypesPage.jsx'))
+const AdminTaskCategoriesPage = lazy(() => import('./pages/AdminTaskCategoriesPage.jsx'))
 const AdminSiteCopyPage = lazy(() => import('./pages/AdminSiteCopyPage.jsx'))
 const AdminBrandingPage = lazy(() => import('./pages/AdminBrandingPage.jsx'))
 const AdminUserTypesPage = lazy(() => import('./pages/AdminUserTypesPage.jsx'))
@@ -224,6 +225,7 @@ export default function App() {
                       <Route path="admin/applications" element={<AdminApplicationRequestsPage />} />
                       <Route path="admin/application-form" element={<AdminApplicationFormPage />} />
                       <Route path="admin/plan-types" element={<AdminPlanTypesPage />} />
+                      <Route path="admin/task-categories" element={<AdminTaskCategoriesPage />} />
                       <Route path="admin/copy" element={<AdminSiteCopyPage />} />
                       <Route path="admin/program-blocks" element={<AdminProgramBlocksPage />} />
                       <Route path="admin/branding" element={<AdminBrandingPage />} />

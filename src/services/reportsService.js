@@ -19,6 +19,7 @@ import {
 import { REPORT_SCOPE_ALL } from '../config/reportKinds.js'
 import { HALAKA_TASKS_LIMIT, pickRelevantHalakaSession } from '../utils/halakaAttendanceTask.js'
 import { buildStudentTasks } from '../utils/buildStudentTasks.js'
+import { homeworkCompletedLabel, loadHomeworkLogsForUser } from './homeworkLogService.js'
 
 function asMs(value) {
   if (!value) return 0
@@ -737,7 +738,7 @@ export async function buildStudentReport(user, range = {}, scope = {}) {
   const scopePlanId = normalizeScopeId(scope.planId)
   const scopeHalakaId = normalizeScopeId(scope.halakaId)
 
-  const [plansAll, halakatAll, examsAll, activitiesAll, dawratAll, remoteTasmeeAll, awradDocs, notificationsDocs] =
+  const [plansAll, halakatAll, examsAll, activitiesAll, dawratAll, remoteTasmeeAll, awradDocs, notificationsDocs, homeworkLogsAll] =
     await Promise.all([
       loadUserMembershipRows(uid, 'plan'),
       loadUserMembershipRows(uid, 'halaka'),
@@ -747,6 +748,7 @@ export async function buildStudentReport(user, range = {}, scope = {}) {
       loadUserMembershipRows(uid, 'remote_tasmee'),
       loadAwrad(uid),
       firestoreApi.getDocuments(firestoreApi.getUserNotificationsCollection(uid)),
+      loadHomeworkLogsForUser(uid),
     ])
 
   const plans = applyScopeFilter(plansAll, scopePlanId)
@@ -780,6 +782,20 @@ export async function buildStudentReport(user, range = {}, scope = {}) {
     (r) => r.createdAt || r.updatedAt,
     range,
   )
+
+  const homeworkLogs = sortByRecent(
+    maybeFilterByRange(homeworkLogsAll, (r) => r.recordedAt || r.updatedAt, range),
+    (r) => pickFirstDate(r.recordedAt, r.updatedAt),
+  ).map((r) => ({
+    id: r.id,
+    categoryId: r.categoryId,
+    categoryLabel: r.categoryLabel || r.categoryId || '—',
+    ymd: r.ymd || '—',
+    completed: r.completed === true,
+    completedLabel: homeworkCompletedLabel(r.completed),
+    recordedAt: r.recordedAt || '',
+    updatedAt: r.updatedAt || '',
+  }))
 
   const studentRows = {
     plans: sortByRecent(plansAll, (r) => pickFirstDate(r.updatedAt, r.createdAt, r.joinedAt)).map((r) => ({
@@ -887,6 +903,7 @@ export async function buildStudentReport(user, range = {}, scope = {}) {
       (a, b) => (b.progressPercent - a.progressPercent) || (b.pagesInPeriod - a.pagesInPeriod),
     ),
     halakaAttendance,
+    homeworkLogs,
     tasks: buildStudentTasks({
       plans: plansAll,
       awrad: awradDocs,
@@ -916,6 +933,7 @@ export async function buildStudentReport(user, range = {}, scope = {}) {
       plansInScope: plans.length,
       halakaAttendanceRecords: halakaAttendance.length,
       halakaPagesRecorded,
+      homeworkLogs: homeworkLogs.length,
       pagesInScopePlans: planProgress.reduce((sum, p) => sum + (p.pagesInPeriod || 0), 0),
     },
   }

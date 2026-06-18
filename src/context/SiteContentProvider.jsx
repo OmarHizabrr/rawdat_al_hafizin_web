@@ -4,7 +4,9 @@ import {
   DEFAULT_BRANDING,
   normalizeBrandingThemeMap,
   resolvePlanTypes,
+  resolveTaskCategories,
   subscribePlanTypes,
+  subscribeTaskCategories,
   subscribeSiteConfig,
 } from '../services/siteConfigService.js'
 import { resolveProgramBlocks } from '../utils/programBlocks.js'
@@ -28,6 +30,7 @@ function interpolatePlaceholders(text, vars) {
 export function SiteContentProvider({ children }) {
   const { resolved: colorScheme } = useTheme()
   const [planTypeRows, setPlanTypeRows] = useState([])
+  const [taskCategoryRows, setTaskCategoryRows] = useState([])
   const [configData, setConfigData] = useState(null)
   const [loadError, setLoadError] = useState(null)
 
@@ -39,6 +42,13 @@ export function SiteContentProvider({ children }) {
       },
       () => setLoadError('plan_types'),
     )
+    const unsubTaskCats = subscribeTaskCategories(
+      (rows) => {
+        setTaskCategoryRows(rows)
+        setLoadError(null)
+      },
+      () => setLoadError('task_categories'),
+    )
     const unsubCfg = subscribeSiteConfig(
       (data) => {
         setConfigData(data)
@@ -48,11 +58,13 @@ export function SiteContentProvider({ children }) {
     )
     return () => {
       unsubTypes()
+      unsubTaskCats()
       unsubCfg()
     }
   }, [])
 
   const planTypes = useMemo(() => resolvePlanTypes(planTypeRows), [planTypeRows])
+  const taskCategories = useMemo(() => resolveTaskCategories(taskCategoryRows), [taskCategoryRows])
 
   const contactPhones = useMemo(
     () => normalizeContactPhones(configData?.contactPhones),
@@ -145,6 +157,8 @@ export function SiteContentProvider({ children }) {
     () => ({
       planTypes,
       planTypeRows,
+      taskCategories,
+      taskCategoryRows,
       branding,
       contactPhones,
       mergedStrings,
@@ -157,7 +171,7 @@ export function SiteContentProvider({ children }) {
       loadError,
       registryDefaults,
     }),
-    [planTypes, planTypeRows, branding, contactPhones, mergedStrings, programBlocks, hasCustomProgramBlocks, applicationFormFields, hasCustomApplicationFormFields, str, typeLabel, loadError],
+    [planTypes, planTypeRows, taskCategories, taskCategoryRows, branding, contactPhones, mergedStrings, programBlocks, hasCustomProgramBlocks, applicationFormFields, hasCustomApplicationFormFields, str, typeLabel, loadError],
   )
 
   return <SiteContentContext.Provider value={value}>{children}</SiteContentContext.Provider>

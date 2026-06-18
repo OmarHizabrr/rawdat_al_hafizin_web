@@ -113,6 +113,24 @@ function collectStudentPrintSections(reportData, helpers) {
         })),
       })
     }
+    if (reportData.homeworkLogs?.length) {
+      sections.push({
+        tabId: 'tasks',
+        title: 'تسجيل الواجبات اليومية',
+        columns: [
+          { key: 'categoryLabel', label: 'القسم' },
+          { key: 'ymd', label: 'اليوم' },
+          { key: 'completedLabel', label: 'هل تم؟' },
+          { key: 'recordedAt', label: 'وقت التسجيل' },
+        ],
+        rows: reportData.homeworkLogs.map((r) => ({
+          categoryLabel: r.categoryLabel || '—',
+          ymd: r.ymd || '—',
+          completedLabel: r.completedLabel || '—',
+          recordedAt: fmt(r.recordedAt),
+        })),
+      })
+    }
     sections.push({
       tabId: 'plans',
       title: 'الخطط',

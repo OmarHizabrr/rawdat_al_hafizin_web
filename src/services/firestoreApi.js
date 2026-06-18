@@ -61,6 +61,10 @@ const db = getFirestore(app);
  *   members/{dawraId}/members/{userId} — الأعضاء
  *   Mydawrat/{userId}/Mydawrat/{dawraId} — مرآة قائمة المستخدم
  *
+ * أقسام الواجبات (taskCategoryId):
+ *   task_categories/{taskCategoryId} — إعدادات الأقسام (سماع، حفظ، …)
+ *   Myhomework/{userId}/Myhomework/{logId} — تسجيلات الطالب اليومية (نعم/لا)
+ *
  * طلبات الالتحاق (profile request):
  *   MyProfile/{userId}/MyProfile/{userId}
  *
@@ -267,6 +271,29 @@ class FirestoreApi {
   /** plan_types/{id} */
   getPlanTypeDoc(planTypeId) {
     return this.getDocument("plan_types", planTypeId);
+  }
+
+  /** task_categories — أقسام الواجبات (إعدادات عامة للموقع) */
+  getTaskCategoriesCollection() {
+    return this.getCollection("task_categories");
+  }
+
+  /** task_categories/{id} */
+  getTaskCategoryDoc(taskCategoryId) {
+    return this.getDocument("task_categories", taskCategoryId);
+  }
+
+  static USER_HOMEWORK_MIRROR_COLL = "Myhomework";
+  static USER_HOMEWORK_MIRROR_SUB = "Myhomework";
+
+  /** Myhomework/{userId}/Myhomework — تسجيلات واجبات الطالب */
+  getUserHomeworkCollection(userId) {
+    return this.getUserScopedCollection(FirestoreApi.USER_HOMEWORK_MIRROR_COLL, userId);
+  }
+
+  /** Myhomework/{userId}/Myhomework/{logId} */
+  getUserHomeworkDoc(userId, logId) {
+    return this.getUserScopedDoc(FirestoreApi.USER_HOMEWORK_MIRROR_COLL, userId, logId);
   }
 
   /** plans — مجموعة جذر الخطط */

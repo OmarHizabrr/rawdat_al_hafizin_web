@@ -1,5 +1,6 @@
 import { deleteField, orderBy, query } from 'firebase/firestore'
 import { DEFAULT_PLAN_TYPES } from '../data/defaultPlanTypes.js'
+import { DEFAULT_TASK_CATEGORIES } from '../data/defaultTaskCategories.js'
 import { SITE_DESCRIPTION, SITE_NAME, SITE_OG_IMAGE_PATH, SITE_TITLE } from '../config/site.js'
 import { normalizeContactPhones } from '../utils/contactPhones.js'
 import { normalizeProgramBlock, sortProgramBlocks } from '../utils/programBlocks.js'
@@ -67,6 +68,15 @@ function normalizePlanTypeDoc(id, data) {
   return { id, value: value || id, label, hint, order }
 }
 
+function normalizeTaskCategoryDoc(id, data) {
+  const value = String(data?.value ?? id ?? '').trim()
+  const label = String(data?.label ?? '').trim() || value
+  const hint = String(data?.hint ?? '').trim()
+  const order = Number.isFinite(Number(data?.order)) ? Number(data.order) : 0
+  const enabled = data?.enabled !== false
+  return { id, value: value || id, label, hint, order, enabled }
+}
+
 /**
  * اشتراك مرتّب بأنواع الخطط.
  * @param {(rows: Array<{ id: string, value: string, label: string, hint: string, order: number }>) => void} onNext
@@ -78,6 +88,19 @@ export function subscribePlanTypes(onNext, onError) {
     q,
     (snap) => {
       const rows = snap.docs.map((d) => normalizePlanTypeDoc(d.id, d.data()))
+      onNext(rows)
+    },
+    onError,
+  )
+}
+
+export function subscribeTaskCategories(onNext, onError) {
+  const col = firestoreApi.getTaskCategoriesCollection()
+  const q = query(col, orderBy('order', 'asc'))
+  return firestoreApi.subscribeSnapshot(
+    q,
+    (snap) => {
+      const rows = snap.docs.map((d) => normalizeTaskCategoryDoc(d.id, d.data()))
       onNext(rows)
     },
     onError,
@@ -119,6 +142,29 @@ export function resolvePlanTypes(firestoreRows) {
   }))
 }
 
+export function resolveTaskCategories(firestoreRows) {
+  const source = firestoreRows?.length
+    ? firestoreRows
+    : DEFAULT_TASK_CATEGORIES.map((r, i) => ({
+        id: r.value,
+        value: r.value,
+        label: r.label,
+        hint: r.hint,
+        order: r.order ?? i,
+        enabled: true,
+      }))
+  return source
+    .filter((r) => r.enabled !== false)
+    .map((r) => ({
+      id: r.id,
+      value: r.value,
+      label: r.label,
+      hint: r.hint,
+      order: r.order,
+      enabled: r.enabled !== false,
+    }))
+}
+
 export async function savePlanType(actor, { docId, value, label, hint, order }) {
   const v = String(value || '')
     .trim()
@@ -151,6 +197,51 @@ export async function seedDefaultPlanTypes(actor) {
         label: row.label,
         hint: row.hint,
         order: row.order,
+      },
+      merge: true,
+      userData: actor ?? {},
+    })
+  }
+}
+
+export async function saveTaskCategory(actor, { docId, value, label, hint, order, enabled = true }) {
+  const v = String(value || '')
+    .trim()
+    .toLowerCase()
+  if (!/^[a-z0-9_]+$/.test(v)) {
+    throw new Error('INVALID_TASK_CATEGORY_VALUE')
+  }
+  const id = docId || v
+  const ref = firestoreApi.getTaskCategoryDoc(id)
+  await firestoreApi.setData({
+    docRef: ref,
+    data: {
+      value: v,
+      label: String(label || '').trim(),
+      hint: String(hint || '').trim(),
+      order: Number(order) || 0,
+      enabled: enabled !== false,
+    },
+    merge: true,
+    userData: actor ?? {},
+  })
+}
+
+export async function deleteTaskCategory(actor, taskCategoryId) {
+  await firestoreApi.deleteData(firestoreApi.getTaskCategoryDoc(taskCategoryId))
+}
+
+export async function seedDefaultTaskCategories(actor) {
+  for (const row of DEFAULT_TASK_CATEGORIES) {
+    const ref = firestoreApi.getTaskCategoryDoc(row.value)
+    await firestoreApi.setData({
+      docRef: ref,
+      data: {
+        value: row.value,
+        label: row.label,
+        hint: row.hint,
+        order: row.order,
+        enabled: true,
       },
       merge: true,
       userData: actor ?? {},

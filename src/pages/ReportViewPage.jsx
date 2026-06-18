@@ -445,7 +445,6 @@ export default function ReportViewPage() {
   );
   const centralReports = isCentralReportsMode(user);
   const showDateFilters = reportKindUsesDateFilter(kind);
-  const personAutoReport = reportKindIsPersonAutoReport(kind);
   const personHintKey = reportPersonSelectHintKey(kind);
   const lastBuiltPersonKeyRef = useRef("");
 
@@ -803,6 +802,15 @@ export default function ReportViewPage() {
           awradInPeriodCount: r.awradInPeriodCount ?? "",
           pagesInPeriod: r.pagesInPeriod ?? "",
           latestAwradAt: formatArDateTime(r.latestAwradAt),
+        })),
+      );
+      addRows(
+        "تسجيل الواجبات اليومية",
+        (reportData.homeworkLogs || []).map((r) => ({
+          القسم: r.categoryLabel || "",
+          اليوم: r.ymd || "",
+          "هل تم؟": r.completedLabel || "",
+          "وقت التسجيل": formatArDateTime(r.recordedAt),
         })),
       );
       addRows(
@@ -1768,6 +1776,22 @@ export default function ReportViewPage() {
                         <span>الإشعارات</span>
                       </div>
                     </ReportKpiGrid>
+                    <SectionTable
+                      title="تسجيل الواجبات اليومية"
+                      tabId="tasks"
+                      columns={[
+                        { key: "categoryLabel", label: "القسم" },
+                        { key: "ymd", label: "اليوم" },
+                        { key: "completedLabel", label: "هل تم؟" },
+                        { key: "recordedAt", label: "وقت التسجيل" },
+                      ]}
+                      rows={(reportData.homeworkLogs || []).map((r) => ({
+                        categoryLabel: r.categoryLabel || "—",
+                        ymd: r.ymd || "—",
+                        completedLabel: r.completedLabel || "—",
+                        recordedAt: formatArDateTime(r.recordedAt),
+                      }))}
+                    />
                     <SectionTable
                       title="الواجبات"
                       tabId="tasks"

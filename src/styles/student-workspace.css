@@ -641,3 +641,86 @@
   font-size: var(--rh-text-xs);
   font-weight: 700;
 }
+
+.rh-homework-categories__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(8.5rem, 1fr));
+  gap: var(--rh-space-3);
+}
+
+.rh-homework-categories__card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  min-height: 6.5rem;
+  padding: var(--rh-space-3);
+  border-radius: var(--rh-radius-lg);
+  border: 1px solid var(--rh-border);
+  background: var(--rh-surface);
+  cursor: pointer;
+  transition: border-color 0.15s ease, background 0.15s ease, transform 0.1s ease;
+  text-align: center;
+}
+
+.rh-homework-categories__card:hover:not(:disabled) {
+  border-color: var(--rh-primary);
+  transform: translateY(-1px);
+}
+
+.rh-homework-categories__card:disabled {
+  cursor: default;
+  opacity: 0.75;
+}
+
+.rh-homework-categories__card--yes {
+  border-color: color-mix(in srgb, var(--rh-success) 55%, var(--rh-border));
+  background: color-mix(in srgb, var(--rh-success-bg) 70%, var(--rh-surface));
+}
+
+.rh-homework-categories__card--no {
+  border-color: color-mix(in srgb, var(--rh-danger) 45%, var(--rh-border));
+  background: color-mix(in srgb, var(--rh-danger-bg, #fee) 60%, var(--rh-surface));
+}
+
+.rh-homework-categories__label {
+  font-size: 1.05rem;
+  font-weight: 800;
+  color: var(--rh-text);
+}
+
+.rh-homework-categories__hint {
+  font-size: 0.65rem;
+  color: var(--rh-text-muted);
+  line-height: 1.35;
+}
+
+.rh-homework-categories__status {
+  margin-top: 0.15rem;
+  font-size: 0.65rem;
+  font-weight: 700;
+  color: var(--rh-primary);
+}
+
+.rh-homework-categories__card--yes .rh-homework-categories__status {
+  color: var(--rh-success);
+}
+
+.rh-homework-categories__card--no .rh-homework-categories__status {
+  color: var(--rh-danger);
+}
+
+.rh-homework-categories__prompt {
+  margin: 0 0 var(--rh-space-4);
+  font-size: 1.05rem;
+  font-weight: 700;
+  text-align: center;
+}
+
+.rh-homework-categories__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--rh-space-2);
+  justify-content: center;
+}
