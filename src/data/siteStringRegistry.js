@@ -120,7 +120,7 @@ export const SITE_STRING_REGISTRY = [
     key: 'tasks.lead',
     group: 'الواجبات',
     label: 'الواجبات: الوصف',
-    defaultValue: 'مرتبطة بخططك وأورادك واختباراتك — Stepper يعكس التقدّم الفعلي مع إمكانية التعديل اليدوي.',
+    defaultValue: 'سجّل إنجاز واجباتك اليومية — اضغط على أي قسم وأجب بنعم أو لا.',
   },
   { key: 'tasks.updating', group: 'الواجبات', label: 'الواجبات: جاري التحديث', defaultValue: 'تحديث…' },
   {
