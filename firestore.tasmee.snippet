@@ -1,0 +1,60 @@
+// =============================================================================
+// أضف هذا المقطع إلى قواعد Firestore الحالية في Firebase Console
+// (Firestore Database → Rules) ثم انشر القواعد.
+// لا تنشر هذا الملف وحده — يجب دمجه مع قواعد المجموعات الأخرى الموجودة.
+//
+// يغطي حقول وقت التسميع (tasmee*) في:
+//   - sessions/{halakaId}/sessions/{sessionId}
+//   - attendance/{sessionId}/attendance/{studentUid}
+// =============================================================================
+
+    function halakaMemberDoc(halakaId, uid) {
+      return get(/databases/$(database)/documents/members/$(halakaId)/members/$(uid));
+    }
+
+    function halakaMemberRole(halakaId, uid) {
+      return halakaMemberDoc(halakaId, uid).data.role;
+    }
+
+    function isHalakaManager(halakaId) {
+      return isSignedIn()
+        && exists(/databases/$(database)/documents/members/$(halakaId)/members/$(request.auth.uid))
+        && halakaMemberRole(halakaId, request.auth.uid) in ['owner', 'supervisor', 'teacher'];
+    }
+
+    function isNonNegativeInt(v) {
+      return v is int && v >= 0;
+    }
+
+    function validTasmeeAttendanceWrite() {
+      let d = request.resource.data;
+      return (!('tasmeeSeconds' in d) || isNonNegativeInt(d.tasmeeSeconds))
+        && (!('tasmeeManualSeconds' in d) || isNonNegativeInt(d.tasmeeManualSeconds))
+        && (!('tasmeeAutoSeconds' in d) || isNonNegativeInt(d.tasmeeAutoSeconds))
+        && (!('tasmeeUpdatedAt' in d) || d.tasmeeUpdatedAt is string)
+        && (!('tasmeeHistory' in d) || d.tasmeeHistory is list)
+        && d.halakaId is string
+        && d.sessionId is string;
+    }
+
+    function validSessionTasmeeWrite() {
+      let d = request.resource.data;
+      return (!('tasmeeTotalSeconds' in d) || isNonNegativeInt(d.tasmeeTotalSeconds))
+        && (!('tasmeeTimerStatus' in d) || d.tasmeeTimerStatus in ['idle', 'running'])
+        && (!('tasmeeTimerStartedAt' in d) || d.tasmeeTimerStartedAt is string)
+        && (!('tasmeeHistory' in d) || d.tasmeeHistory is list);
+    }
+
+    // جلسات الحلقة — مؤقت وإجمالي وقت التسميع (مالك/مشرف/معلم)
+    match /sessions/{halakaId}/sessions/{sessionId} {
+      allow update: if isHalakaManager(halakaId) && validSessionTasmeeWrite();
+    }
+
+    // حضور الجلسة — وقت التسميع لكل طالب (يتطلب halakaId و sessionId في المستند)
+    match /attendance/{sessionId}/attendance/{studentUid} {
+      allow create, update: if isSignedIn()
+        && request.resource.data.halakaId is string
+        && isHalakaManager(request.resource.data.halakaId)
+        && request.resource.data.sessionId == sessionId
+        && validTasmeeAttendanceWrite();
+    }

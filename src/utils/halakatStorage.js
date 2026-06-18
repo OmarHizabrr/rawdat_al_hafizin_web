@@ -398,6 +398,254 @@ function durationMinutes(startedAt, endedAt) {
   return Math.round((e - s) / 60000)
 }
 
+function parseTasmeeSeconds(value) {
+  const n = Number(value)
+  return Number.isFinite(n) && n >= 0 ? Math.floor(n) : null
+}
+
+/** عرض وقت التسميع (ثوانٍ) بصيغة عربية مختصرة */
+export function formatTasmeeDuration(totalSeconds) {
+  const s = Math.max(0, Math.floor(Number(totalSeconds) || 0))
+  if (s <= 0) return '0ث'
+  const h = Math.floor(s / 3600)
+  const m = Math.floor((s % 3600) / 60)
+  const sec = s % 60
+  const parts = []
+  if (h > 0) parts.push(`${h}س`)
+  if (m > 0) parts.push(`${m}د`)
+  if (sec > 0 || !parts.length) parts.push(`${sec}ث`)
+  return parts.join(' ')
+}
+
+export function parseTasmeeInput(minutes, seconds) {
+  const m = Math.max(0, Math.floor(Number(minutes) || 0))
+  const sec = Math.max(0, Math.floor(Number(seconds) || 0))
+  return m * 60 + sec
+}
+
+export function splitTasmeeSeconds(totalSeconds) {
+  const s = Math.max(0, Math.floor(Number(totalSeconds) || 0))
+  return { minutes: Math.floor(s / 60), seconds: s % 60 }
+}
+
+export function formatTasmeeHistoryType(type) {
+  const t = String(type || '').trim()
+  if (t === 'timer_start') return 'بدء المؤقت'
+  if (t === 'timer_stop') return 'إيقاف المؤقت'
+  if (t === 'timer_stop_distributed') return 'إيقاف وتوزيع على الحاضرين'
+  if (t === 'timer_stop_assigned') return 'إيقاف وإسناد لطالب'
+  if (t === 'manual_add') return 'إضافة يدوية للجلسة'
+  if (t === 'manual_set') return 'تعديل يدوي للطالب'
+  if (t === 'auto_add') return 'إضافة تلقائية'
+  if (t === 'auto_distributed') return 'توزيع تلقائي'
+  if (t === 'auto_assigned') return 'إسناد تلقائي للطالب'
+  return t || '—'
+}
+
+function mergeTasmeeAttendanceFields(currentAttendance, input) {
+  const hasTasmeeInput =
+    input?.tasmeeManualSeconds !== undefined ||
+    input?.tasmeeAutoSeconds !== undefined ||
+    input?.tasmeeSecondsAdd !== undefined
+
+  if (!hasTasmeeInput) return null
+
+  let tasmeeManualSeconds = Math.max(0, Math.floor(Number(currentAttendance?.tasmeeManualSeconds) || 0))
+  let tasmeeAutoSeconds = Math.max(0, Math.floor(Number(currentAttendance?.tasmeeAutoSeconds) || 0))
+
+  if (input?.tasmeeManualSeconds !== undefined) {
+    const parsed = parseTasmeeSeconds(input.tasmeeManualSeconds)
+    if (parsed !== null) tasmeeManualSeconds = parsed
+  }
+  if (input?.tasmeeAutoSeconds !== undefined) {
+    const parsed = parseTasmeeSeconds(input.tasmeeAutoSeconds)
+    if (parsed !== null) tasmeeAutoSeconds = parsed
+  }
+  if (input?.tasmeeSecondsAdd !== undefined) {
+    const add = parseTasmeeSeconds(input.tasmeeSecondsAdd) || 0
+    tasmeeAutoSeconds += add
+  }
+
+  return {
+    tasmeeSeconds: tasmeeManualSeconds + tasmeeAutoSeconds,
+    tasmeeManualSeconds,
+    tasmeeAutoSeconds,
+    tasmeeUpdatedAt: new Date().toISOString(),
+  }
+}
+
+const TASMEE_HISTORY_LIMIT = 40
+
+function appendTasmeeHistory(existing, entry) {
+  const list = Array.isArray(existing) ? [...existing] : []
+  list.push({
+    id: `tasmee_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
+    ...entry,
+  })
+  return list.slice(-TASMEE_HISTORY_LIMIT)
+}
+
+function appendSessionTasmeeHistory(session, entry) {
+  return appendTasmeeHistory(session?.tasmeeHistory, entry)
+}
+
+export async function loadHalakaSession(halakaId, sessionId) {
+  if (!halakaId || !sessionId) return null
+  const data = await firestoreApi.getData(sessionRef(halakaId, sessionId))
+  if (!data) return null
+  return { id: sessionId, ...data }
+}
+
+export function subscribeHalakaSession(halakaId, sessionId, onNext, onError) {
+  if (!halakaId || !sessionId) return () => {}
+  return firestoreApi.subscribeSnapshot(
+    sessionRef(halakaId, sessionId),
+    (snapshot) => {
+      if (!snapshot.exists()) {
+        onNext(null)
+        return
+      }
+      onNext({ id: snapshot.id, ...snapshot.data() })
+    },
+    onError,
+  )
+}
+
+export function computeRunningTasmeeElapsedSeconds(session, nowMs = Date.now()) {
+  if (session?.tasmeeTimerStatus !== 'running') return 0
+  const startedMs = Date.parse(String(session.tasmeeTimerStartedAt || ''))
+  if (!Number.isFinite(startedMs)) return 0
+  return Math.max(0, Math.floor((nowMs - startedMs) / 1000))
+}
+
+export function computeSessionTasmeeDisplaySeconds(session, nowMs = Date.now()) {
+  const base = Math.max(0, Math.floor(Number(session?.tasmeeTotalSeconds) || 0))
+  return base + computeRunningTasmeeElapsedSeconds(session, nowMs)
+}
+
+export async function startSessionTasmeeTimer(actorUser, halakaId, sessionId) {
+  if (!actorUser?.uid || !halakaId || !sessionId) return
+  const actorRole = await assertHalakaManager(actorUser.uid, halakaId)
+  if (!canManageRole(actorRole, HALAKA_MEMBER_ROLES.STUDENT)) throw new Error('HALAKA_FORBIDDEN')
+  const session = await firestoreApi.getData(sessionRef(halakaId, sessionId))
+  if (!session) throw new Error('SESSION_NOT_FOUND')
+  if (session.tasmeeTimerStatus === 'running') throw new Error('TIMER_ALREADY_RUNNING')
+  const nowIso = new Date().toISOString()
+  await firestoreApi.updateData({
+    docRef: sessionRef(halakaId, sessionId),
+    data: {
+      tasmeeTimerStatus: 'running',
+      tasmeeTimerStartedAt: nowIso,
+      tasmeeHistory: appendSessionTasmeeHistory(session, {
+        type: 'timer_start',
+        seconds: 0,
+        at: nowIso,
+        by: actorUser.uid,
+      }),
+      updatedAt: nowIso,
+    },
+    userData: actorUser,
+  })
+  return { tasmeeTimerStatus: 'running', tasmeeTimerStartedAt: nowIso }
+}
+
+export async function stopSessionTasmeeTimer(actorUser, halakaId, sessionId, options = {}) {
+  if (!actorUser?.uid || !halakaId || !sessionId) return null
+  const actorRole = await assertHalakaManager(actorUser.uid, halakaId)
+  if (!canManageRole(actorRole, HALAKA_MEMBER_ROLES.STUDENT)) throw new Error('HALAKA_FORBIDDEN')
+  const session = await firestoreApi.getData(sessionRef(halakaId, sessionId))
+  if (!session) throw new Error('SESSION_NOT_FOUND')
+  if (session.tasmeeTimerStatus !== 'running') throw new Error('TIMER_NOT_RUNNING')
+
+  const elapsedSeconds = computeRunningTasmeeElapsedSeconds(session)
+  const prevTotal = Math.max(0, Math.floor(Number(session.tasmeeTotalSeconds) || 0))
+  const tasmeeTotalSeconds = prevTotal + elapsedSeconds
+  const nowIso = new Date().toISOString()
+
+  await firestoreApi.updateData({
+    docRef: sessionRef(halakaId, sessionId),
+    data: {
+      tasmeeTotalSeconds,
+      tasmeeTimerStatus: 'idle',
+      tasmeeTimerStartedAt: '',
+      tasmeeHistory: appendSessionTasmeeHistory(session, {
+        type:
+          options.distributeMode === 'equal_present'
+            ? 'timer_stop_distributed'
+            : options.distributeMode === 'assign_student'
+              ? 'timer_stop_assigned'
+              : 'timer_stop',
+        seconds: elapsedSeconds,
+        at: nowIso,
+        by: actorUser.uid,
+        targetUid: String(options.assignToStudentUid || '').trim(),
+      }),
+      updatedAt: nowIso,
+    },
+    userData: actorUser,
+  })
+
+  if (options.distributeMode === 'equal_present') {
+    const rows = await loadSessionAttendance(halakaId, sessionId)
+    const eligible = rows.filter(
+      (r) =>
+        !r.excludedFromSession &&
+        r.attendanceStatus !== HALAKA_ATTENDANCE_STATUSES.ABSENT &&
+        r.attendanceStatus !== HALAKA_ATTENDANCE_STATUSES.EXCUSED,
+    )
+    if (eligible.length > 0 && elapsedSeconds > 0) {
+      const perStudent = Math.floor(elapsedSeconds / eligible.length)
+      const remainder = elapsedSeconds - perStudent * eligible.length
+      await Promise.all(
+        eligible.map((row, index) =>
+          upsertSessionAttendance(actorUser, halakaId, sessionId, row.userId, {
+            tasmeeSecondsAdd: perStudent + (index === 0 ? remainder : 0),
+            tasmeeHistoryType: 'auto_distributed',
+          }),
+        ),
+      )
+    }
+  } else if (options.distributeMode === 'assign_student') {
+    const targetUid = String(options.assignToStudentUid || '').trim()
+    if (targetUid && elapsedSeconds > 0) {
+      await upsertSessionAttendance(actorUser, halakaId, sessionId, targetUid, {
+        tasmeeSecondsAdd: elapsedSeconds,
+        tasmeeHistoryType: 'auto_assigned',
+      })
+    }
+  }
+
+  return { elapsedSeconds, tasmeeTotalSeconds }
+}
+
+export async function addSessionTasmeeManualSeconds(actorUser, halakaId, sessionId, seconds) {
+  if (!actorUser?.uid || !halakaId || !sessionId) return null
+  const actorRole = await assertHalakaManager(actorUser.uid, halakaId)
+  if (!canManageRole(actorRole, HALAKA_MEMBER_ROLES.STUDENT)) throw new Error('HALAKA_FORBIDDEN')
+  const add = parseTasmeeSeconds(seconds)
+  if (add === null || add <= 0) throw new Error('INVALID_TASMEE_SECONDS')
+  const session = await firestoreApi.getData(sessionRef(halakaId, sessionId))
+  if (!session) throw new Error('SESSION_NOT_FOUND')
+  const prevTotal = Math.max(0, Math.floor(Number(session.tasmeeTotalSeconds) || 0))
+  const tasmeeTotalSeconds = prevTotal + add
+  const nowIso = new Date().toISOString()
+  await firestoreApi.updateData({
+    docRef: sessionRef(halakaId, sessionId),
+    data: {
+      tasmeeTotalSeconds,
+      tasmeeHistory: appendSessionTasmeeHistory(session, {
+        type: 'manual_add',
+        seconds: add,
+        at: nowIso,
+        by: actorUser.uid,
+      }),
+      updatedAt: nowIso,
+    },
+    userData: actorUser,
+  })
+  return { tasmeeTotalSeconds, addedSeconds: add }
+}
+
 export async function loadHalakaSessions(halakaId) {
   if (!halakaId) return []
   const docs = await firestoreApi.getDocuments(sessionsCol(halakaId))
@@ -449,6 +697,10 @@ export async function closeHalakaSession(actorUser, halakaId, sessionId, userDat
   if (!actorUser?.uid || !halakaId || !sessionId) return
   const actorRole = await assertHalakaManager(actorUser.uid, halakaId)
   if (!canManageRole(actorRole, HALAKA_MEMBER_ROLES.STUDENT)) throw new Error('HALAKA_FORBIDDEN')
+  const session = await firestoreApi.getData(sessionRef(halakaId, sessionId))
+  if (session?.tasmeeTimerStatus === 'running') {
+    await stopSessionTasmeeTimer(actorUser, halakaId, sessionId)
+  }
   await firestoreApi.updateData({
     docRef: sessionRef(halakaId, sessionId),
     data: { status: 'closed', updatedAt: new Date().toISOString() },
@@ -475,18 +727,37 @@ export async function upsertSessionAttendance(actorUser, halakaId, sessionId, st
   ) {
     throw new Error('HALAKA_FORBIDDEN_ROLE_SCOPE')
   }
-  const status = String(input?.attendanceStatus || HALAKA_ATTENDANCE_STATUSES.PRESENT)
+  const isTasmeeOnlyPatch =
+    (input?.tasmeeManualSeconds !== undefined ||
+      input?.tasmeeAutoSeconds !== undefined ||
+      input?.tasmeeSecondsAdd !== undefined) &&
+    input?.attendanceStatus === undefined &&
+    input?.fromPage === undefined &&
+    input?.toPage === undefined &&
+    input?.memorizationVolumeId === undefined &&
+    input?.notes === undefined &&
+    input?.excludedFromSession === undefined &&
+    !input?.appendEntry &&
+    !input?.updateEntry &&
+    !input?.removeEntryId
+
+  const base = isTasmeeOnlyPatch && currentAttendance ? currentAttendance : null
+  const status = String(input?.attendanceStatus ?? base?.attendanceStatus ?? HALAKA_ATTENDANCE_STATUSES.PRESENT)
   const allowed = new Set(Object.values(HALAKA_ATTENDANCE_STATUSES))
   const finalStatus = allowed.has(status) ? status : HALAKA_ATTENDANCE_STATUSES.OTHER
   const parsePage = (v) => {
     const n = Number(v)
     return Number.isFinite(n) && n >= 1 ? Math.floor(n) : null
   }
-  const fromPage = parsePage(input?.fromPage)
-  const toPage = parsePage(input?.toPage)
+  const fromPage =
+    input?.fromPage !== undefined ? parsePage(input.fromPage) : base ? parsePage(base.fromPage) : parsePage(input?.fromPage)
+  const toPage =
+    input?.toPage !== undefined ? parsePage(input.toPage) : base ? parsePage(base.toPage) : parsePage(input?.toPage)
   let pagesCount = 0
   if (fromPage != null && toPage != null && toPage >= fromPage) {
     pagesCount = toPage - fromPage + 1
+  } else if (base && (input?.fromPage === undefined && input?.toPage === undefined)) {
+    pagesCount = Math.max(0, Math.floor(Number(base.pagesCount ?? base.memorizedAmount) || 0))
   } else {
     pagesCount = Math.max(0, Math.floor(Number(input?.pagesCount ?? input?.memorizedAmount) || 0))
   }
@@ -535,20 +806,40 @@ export async function upsertSessionAttendance(actorUser, halakaId, sessionId, st
     }
   }
 
+  const tasmeeFields = mergeTasmeeAttendanceFields(currentAttendance, input)
+  if (tasmeeFields) {
+    const prevTotal = Math.max(0, Math.floor(Number(currentAttendance?.tasmeeSeconds) || 0))
+    const delta = tasmeeFields.tasmeeSeconds - prevTotal
+    if (delta !== 0 || input?.tasmeeManualSeconds !== undefined) {
+      const historyType = String(input?.tasmeeHistoryType || '').trim()
+        || (input?.tasmeeSecondsAdd ? 'auto_add' : 'manual_set')
+      tasmeeFields.tasmeeHistory = appendTasmeeHistory(currentAttendance?.tasmeeHistory, {
+        type: historyType,
+        seconds: input?.tasmeeSecondsAdd ?? tasmeeFields.tasmeeManualSeconds,
+        delta,
+        at: tasmeeFields.tasmeeUpdatedAt,
+        by: actorUser.uid,
+      })
+    }
+  }
+
   const data = {
+    halakaId,
+    sessionId,
     attendanceStatus: finalStatus,
-    memorizationVolumeId: String(input?.memorizationVolumeId || '').trim(),
-    excludedFromSession: Boolean(input?.excludedFromSession),
+    memorizationVolumeId: String(input?.memorizationVolumeId ?? base?.memorizationVolumeId ?? '').trim(),
+    excludedFromSession: Boolean(input?.excludedFromSession ?? base?.excludedFromSession),
     fromPage: fromPage ?? null,
     toPage: toPage ?? null,
     pagesCount,
     memorizedAmount: pagesCount,
-    memorizedUnit: String(input?.memorizedUnit || 'pages').trim() || 'pages',
-    notes: String(input?.notes || '').trim(),
+    memorizedUnit: String(input?.memorizedUnit ?? base?.memorizedUnit ?? 'pages').trim() || 'pages',
+    notes: String(input?.notes ?? base?.notes ?? '').trim(),
     entryHistory: nextHistory,
     recordedBy: actorUser.uid,
     recordedByRole: normalizeHalakaRole(actorMem?.role),
     updatedAt: new Date().toISOString(),
+    ...(tasmeeFields || {}),
   }
   await firestoreApi.setData({
     docRef: attendanceRef(halakaId, sessionId, studentUid),

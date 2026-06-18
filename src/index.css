@@ -5412,6 +5412,107 @@ html:not([data-theme='dark']) .rh-segment__btn--active .rh-segment__label {
   border-inline-start: 3px solid color-mix(in srgb, var(--rh-primary) 55%, var(--rh-border));
 }
 
+.rh-halaka-sessions__tasmee-bar {
+  display: flex;
+  flex-direction: column;
+  gap: var(--rh-space-3);
+  margin-top: var(--rh-space-3);
+  padding: var(--rh-space-3);
+  border: 1px solid var(--rh-border);
+  border-radius: var(--rh-radius-md);
+  background: color-mix(in srgb, var(--rh-surface) 92%, var(--rh-primary) 8%);
+}
+
+.rh-halaka-sessions__tasmee-display {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--rh-space-2);
+}
+
+.rh-halaka-sessions__tasmee-time {
+  font-size: var(--rh-text-lg);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.rh-halaka-sessions__tasmee-badge--running {
+  color: var(--rh-success, #15803d);
+}
+
+.rh-halaka-sessions__tasmee-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--rh-space-2);
+}
+
+.rh-halaka-sessions__tasmee-manual {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr)) auto;
+  gap: var(--rh-space-2);
+  align-items: end;
+}
+
+.rh-halaka-sessions__tasmee-row {
+  margin-top: var(--rh-space-1);
+}
+
+@media (max-width: 640px) {
+  .rh-halaka-sessions__tasmee-manual {
+    grid-template-columns: 1fr;
+  }
+}
+
+.rh-halaka-sessions__tasmee-distribute {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--rh-space-2);
+  font-size: var(--rh-text-sm);
+  color: var(--rh-text-muted);
+  cursor: pointer;
+}
+
+.rh-halaka-sessions__tasmee-stop-options {
+  display: grid;
+  gap: var(--rh-space-2);
+  grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr));
+}
+
+.rh-halaka-sessions__tasmee-history-block {
+  display: flex;
+  flex-direction: column;
+  gap: var(--rh-space-2);
+}
+
+.rh-halaka-sessions__history-toggle {
+  align-self: flex-start;
+  border: none;
+  background: transparent;
+  color: var(--rh-primary);
+  cursor: pointer;
+  font-size: var(--rh-text-sm);
+  padding: 0;
+}
+
+.rh-halaka-sessions__tasmee-history-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.25rem;
+}
+
+.rh-halaka-sessions__tasmee-history-item,
+.rh-halaka-sessions__tasmee-history .rh-halaka-sessions__history-item {
+  margin: 0;
+  font-size: var(--rh-text-xs);
+  color: var(--rh-text-muted);
+}
+
+.rh-halaka-sessions__tasmee-distribute input {
+  margin-top: 0.15rem;
+}
+
 .rh-halaka-sessions__toolbar {
   display: flex;
   flex-wrap: wrap;

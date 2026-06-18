@@ -4,6 +4,7 @@ import {
   entityDetailsColumnsForKind,
   formatEntityDetailsForReport,
   reportAttendanceStatusLabel,
+  formatTasmeeDurationOrDash,
   reportMediaTypeLabel,
   reportNotificationTypeLabel,
   reportPersonLabel,
@@ -70,6 +71,7 @@ function collectStudentPrintSections(reportData, helpers) {
           { key: 'pagesCount', label: 'الصفحات' },
           { key: 'fromPage', label: 'من' },
           { key: 'toPage', label: 'إلى' },
+          { key: 'tasmeeLabel', label: 'وقت التسميع' },
           { key: 'recordedAt', label: 'تاريخ التسجيل' },
           { key: 'recordedByName', label: 'سجّله' },
         ],
@@ -81,6 +83,7 @@ function collectStudentPrintSections(reportData, helpers) {
           pagesCount: r.pagesCount ?? 0,
           fromPage: r.fromPage ?? '—',
           toPage: r.toPage ?? '—',
+          tasmeeLabel: r.tasmeeLabel || '—',
           recordedAt: fmt(r.recordedAt),
           recordedByName: r.recordedByName || '—',
         })),
@@ -384,6 +387,7 @@ export function collectPrintSectionsFromReport(reportData, helpers = {}) {
         { key: 'startedAt', label: 'البداية' },
         { key: 'endedAt', label: 'النهاية' },
         { key: 'status', label: 'الحالة' },
+        { key: 'tasmeeLabel', label: 'وقت التسميع' },
       ],
       rows: (reportData.sessions || []).map((s) => ({
         halakaName: s.halakaName || '—',
@@ -391,6 +395,7 @@ export function collectPrintSectionsFromReport(reportData, helpers = {}) {
         startedAt: fmt(s.startedAt),
         endedAt: fmt(s.endedAt),
         status: reportSessionStatusLabel(s.status),
+        tasmeeLabel: s.tasmeeLabel || '—',
       })),
     })
     sections.push({
@@ -402,6 +407,7 @@ export function collectPrintSectionsFromReport(reportData, helpers = {}) {
         { key: 'attendanceStatusLabel', label: 'الحضور' },
         { key: 'pagesCount', label: 'الصفحات' },
         { key: 'updatedAt', label: 'آخر تحديث' },
+        { key: 'tasmeeLabel', label: 'وقت التسميع' },
       ],
       rows: (reportData.attendanceRecorded || []).map((a) => ({
         halakaName: a.halakaName || '—',
@@ -409,6 +415,7 @@ export function collectPrintSectionsFromReport(reportData, helpers = {}) {
         attendanceStatusLabel: reportAttendanceStatusLabel(a.attendanceStatus),
         pagesCount: a.pagesCount ?? 0,
         updatedAt: fmt(a.updatedAt),
+        tasmeeLabel: a.tasmeeLabel || '—',
       })),
     })
     sections.push({
@@ -418,12 +425,14 @@ export function collectPrintSectionsFromReport(reportData, helpers = {}) {
         { key: 'userName', label: 'الطالب' },
         { key: 'recordsCount', label: 'عدد التسجيلات' },
         { key: 'pagesTotal', label: 'إجمالي الصفحات' },
+        { key: 'tasmeeLabel', label: 'وقت التسميع' },
         { key: 'latestUpdatedAt', label: 'آخر تحديث' },
       ],
       rows: (reportData.attendanceByStudent || []).map((r) => ({
         userName: reportPersonLabel(r.userName, r.userId),
         recordsCount: r.recordsCount ?? 0,
         pagesTotal: r.pagesTotal ?? 0,
+        tasmeeLabel: r.tasmeeLabel || '—',
         latestUpdatedAt: fmt(r.latestUpdatedAt),
       })),
     })
@@ -590,6 +599,7 @@ export function collectPrintSectionsFromReport(reportData, helpers = {}) {
         { key: 'awradCount', label: 'أوراد' },
         { key: 'pagesInAwrad', label: 'صفحات' },
         { key: 'attendanceRecordsInHalaka', label: 'حضور الحلقة' },
+        { key: 'tasmeeLabelInHalaka', label: 'وقت التسميع' },
         { key: 'latestAttendanceAt', label: 'آخر حضور' },
       ],
       rows: reportData.memberDetails.map((r) => ({
@@ -607,12 +617,14 @@ export function collectPrintSectionsFromReport(reportData, helpers = {}) {
         { key: 'startedAt', label: 'البداية' },
         { key: 'endedAt', label: 'النهاية' },
         { key: 'status', label: 'الحالة' },
+        { key: 'tasmeeLabel', label: 'وقت التسميع' },
       ],
       rows: (reportData.sessions || []).map((s) => ({
         title: s.title || '',
         startedAt: fmt(s.startedAt),
         endedAt: fmt(s.endedAt),
         status: reportSessionStatusLabel(s.status),
+        tasmeeLabel: s.tasmeeLabel || '—',
       })),
     })
     sections.push({
@@ -624,6 +636,7 @@ export function collectPrintSectionsFromReport(reportData, helpers = {}) {
         { key: 'pagesCount', label: 'الصفحات' },
         { key: 'fromPage', label: 'من' },
         { key: 'toPage', label: 'إلى' },
+        { key: 'tasmeeLabel', label: 'وقت التسميع' },
         { key: 'updatedAt', label: 'التحديث' },
       ],
       rows: (reportData.attendanceRows || []).map((a) => ({
@@ -633,6 +646,7 @@ export function collectPrintSectionsFromReport(reportData, helpers = {}) {
         pagesCount: a.pagesCount ?? 0,
         fromPage: a.fromPage ?? '—',
         toPage: a.toPage ?? '—',
+        tasmeeLabel: a.tasmeeLabel || '—',
         updatedAt: fmt(a.updatedAt),
       })),
     })
@@ -684,6 +698,7 @@ export function collectPrintKpisFromReport(reportData, labels = {}) {
       { label: L.awrad, value: s.awrad ?? 0 },
       { label: L.pages, value: s.totalPages ?? 0 },
       { label: 'صفحات في الحلقات', value: s.halakaPagesRecorded ?? 0 },
+      { label: 'وقت التسميع في الحلقات', value: s.halakaTasmeeLabel || formatTasmeeDurationOrDash(s.halakaTasmeeSecondsRecorded) },
       { label: L.activities, value: s.activities ?? 0 },
       { label: L.exams, value: s.exams ?? 0 },
     ]
@@ -700,6 +715,7 @@ export function collectPrintKpisFromReport(reportData, labels = {}) {
       { label: L.sessions, value: s.sessions ?? 0 },
       { label: L.studentsRecorded, value: s.studentsRecorded ?? 0 },
       { label: L.pagesRecorded, value: s.pagesRecorded ?? 0 },
+      { label: 'وقت التسميع المُسجَّل', value: s.tasmeeLabelRecorded || formatTasmeeDurationOrDash(s.tasmeeSecondsRecorded) },
     ]
   }
 
@@ -718,6 +734,8 @@ export function collectPrintKpisFromReport(reportData, labels = {}) {
       { label: L.sessions, value: s.sessions ?? 0 },
       { label: L.attendance, value: s.attendance ?? 0 },
       { label: L.pages, value: s.pagesTotal ?? 0 },
+      { label: 'وقت تسميع الطلاب', value: s.tasmeeLabelTotal || formatTasmeeDurationOrDash(s.tasmeeSecondsTotal) },
+      { label: 'وقت تسميع الجلسات', value: s.sessionTasmeeLabel || formatTasmeeDurationOrDash(s.sessionTasmeeTotal) },
     ]
   }
 

@@ -6,6 +6,7 @@ import {
   loadHalakaSessions,
   loadHalakatMembersWithProfiles,
   loadSessionAttendance,
+  formatTasmeeDuration,
 } from '../utils/halakatStorage.js'
 import { loadExamMembersWithProfiles } from '../utils/examsStorage.js'
 import { loadActivityMembersWithProfiles } from '../utils/activitiesStorage.js'
@@ -632,6 +633,8 @@ async function loadStudentHalakaAttendance(uid, halakatList, range) {
             pagesCount: mine.pagesCount ?? 0,
             fromPage: mine.fromPage ?? '',
             toPage: mine.toPage ?? '',
+            tasmeeSeconds: Math.max(0, Number(mine.tasmeeSeconds) || 0),
+            tasmeeLabel: formatTasmeeDuration(Math.max(0, Number(mine.tasmeeSeconds) || 0)),
             recordedAt: pickFirstDate(mine.updatedAt, mine.recordedAt),
             recordedBy: mine.recordedBy || '',
           }
@@ -886,6 +889,10 @@ export async function buildStudentReport(user, range = {}, scope = {}) {
       : 0
 
   const halakaPagesRecorded = halakaAttendance.reduce((sum, r) => sum + Math.max(0, Number(r.pagesCount) || 0), 0)
+  const halakaTasmeeSecondsRecorded = halakaAttendance.reduce(
+    (sum, r) => sum + Math.max(0, Number(r.tasmeeSeconds) || 0),
+    0,
+  )
 
   return {
     kind: 'student',
@@ -933,6 +940,8 @@ export async function buildStudentReport(user, range = {}, scope = {}) {
       plansInScope: plans.length,
       halakaAttendanceRecords: halakaAttendance.length,
       halakaPagesRecorded,
+      halakaTasmeeSecondsRecorded,
+      halakaTasmeeLabel: formatTasmeeDuration(halakaTasmeeSecondsRecorded),
       homeworkLogs: homeworkLogs.length,
       pagesInScopePlans: planProgress.reduce((sum, p) => sum + (p.pagesInPeriod || 0), 0),
     },
@@ -983,6 +992,7 @@ export async function buildMultiStudentReport(users, range = {}, scope = {}) {
       avgPlanProgress: avgProgress,
       halakaAttendanceRecords: sumKey('halakaAttendanceRecords'),
       halakaPagesRecorded: sumKey('halakaPagesRecorded'),
+      halakaTasmeeSecondsRecorded: sumKey('halakaTasmeeSecondsRecorded'),
     },
   }
 }
@@ -1022,6 +1032,9 @@ export async function buildTeacherReport(user, range = {}, scope = {}) {
   ).map((s) => ({
     ...s,
     halakaName: halakaNameById.get(String(s.halakaId || '')) || '—',
+    tasmeeTotalSeconds: Math.max(0, Number(s.tasmeeTotalSeconds) || 0),
+    tasmeeLabel: formatTasmeeDuration(Math.max(0, Number(s.tasmeeTotalSeconds) || 0)),
+    timerRunning: s.tasmeeTimerStatus === 'running',
   }))
 
   const attendanceRaw = await firestoreApi.getCollectionGroupDocuments('attendance')
@@ -1044,6 +1057,8 @@ export async function buildTeacherReport(user, range = {}, scope = {}) {
       ...a,
       userName: userNameMap.get(String(a.userId || '').trim()) || String(a.userId || '').trim(),
       halakaName: halakaNameById.get(String(a.halakaId || '')) || '—',
+      tasmeeSeconds: Math.max(0, Number(a.tasmeeSeconds) || 0),
+      tasmeeLabel: formatTasmeeDuration(Math.max(0, Number(a.tasmeeSeconds) || 0)),
     })),
     (a) => pickFirstDate(a.updatedAt, a.recordedAt),
   )
@@ -1055,6 +1070,7 @@ export async function buildTeacherReport(user, range = {}, scope = {}) {
       userId: studentUid,
       recordsCount: 0,
       pagesTotal: 0,
+      tasmeeSecondsTotal: 0,
       latestUpdatedAt: '',
     }
     const next = {
@@ -1062,6 +1078,10 @@ export async function buildTeacherReport(user, range = {}, scope = {}) {
       userName: row.userName || prev.userName || studentUid,
       recordsCount: prev.recordsCount + 1,
       pagesTotal: prev.pagesTotal + Math.max(0, Number(row.pagesCount) || 0),
+      tasmeeSecondsTotal: prev.tasmeeSecondsTotal + Math.max(0, Number(row.tasmeeSeconds) || 0),
+      tasmeeLabel: formatTasmeeDuration(
+        prev.tasmeeSecondsTotal + Math.max(0, Number(row.tasmeeSeconds) || 0),
+      ),
       latestUpdatedAt:
         asMs(row.updatedAt) > asMs(prev.latestUpdatedAt) ? String(row.updatedAt || '') : prev.latestUpdatedAt,
     }
@@ -1128,6 +1148,10 @@ export async function buildTeacherReport(user, range = {}, scope = {}) {
       sessions: sessions.length,
       attendanceRecorded: attendanceRecorded.length,
       pagesRecorded: attendanceRecorded.reduce((sum, a) => sum + Math.max(0, Number(a.pagesCount) || 0), 0),
+      tasmeeSecondsRecorded: attendanceRecorded.reduce((sum, a) => sum + Math.max(0, Number(a.tasmeeSeconds) || 0), 0),
+      tasmeeLabelRecorded: formatTasmeeDuration(
+        attendanceRecorded.reduce((sum, a) => sum + Math.max(0, Number(a.tasmeeSeconds) || 0), 0),
+      ),
       studentsRecorded: attendanceByStudent.length,
     },
   }
@@ -1181,6 +1205,10 @@ export async function buildGroupReport(kind, entityId, range = {}) {
       (a) => pickFirstDate(a.updatedAt, a.recordedAt, a.createdAt),
     )
     const pagesTotal = attendanceRows.reduce((sum, r) => sum + Math.max(0, Number(r.pagesCount) || 0), 0)
+    const sessionTasmeeTotal = sessions.reduce(
+      (sum, s) => sum + Math.max(0, Number(s.tasmeeTotalSeconds) || 0),
+      0,
+    )
     const sessionTitleMap = new Map(
       sessions.map((s) => [String(s.id), String(s.title || '').trim() || 'جلسة']),
     )
@@ -1193,12 +1221,19 @@ export async function buildGroupReport(kind, entityId, range = {}) {
     const userNameMap = await loadUserNamesByIds([...memberNameMap.keys(), ...extraUserIds])
     const enrichedAttendanceRows = attendanceRows.map((a) => {
       const uid = String(a.userId || '').trim()
+      const tasmeeSeconds = Math.max(0, Number(a.tasmeeSeconds) || 0)
       return {
         ...a,
         userName: memberNameMap.get(uid) || userNameMap.get(uid) || 'عضو',
         sessionTitle: sessionTitleMap.get(String(a.sessionId || '')) || 'جلسة',
+        tasmeeSeconds,
+        tasmeeLabel: formatTasmeeDuration(tasmeeSeconds),
       }
     })
+    const tasmeeSecondsTotal = enrichedAttendanceRows.reduce(
+      (sum, r) => sum + Math.max(0, Number(r.tasmeeSeconds) || 0),
+      0,
+    )
     const memberDetails = await Promise.all(
       (members || []).map(async (m) => {
         const memberUid = String(m.userId || '').trim()
@@ -1232,6 +1267,10 @@ export async function buildGroupReport(kind, entityId, range = {}) {
             .sort((a, b) => asMs(b) - asMs(a))[0] || '',
           attendanceRecordsInHalaka: memberAttendanceInHalaka.length,
           pagesInHalakaSessions: memberAttendanceInHalaka.reduce((sum, a) => sum + Math.max(0, Number(a.pagesCount) || 0), 0),
+          tasmeeSecondsInHalaka: memberAttendanceInHalaka.reduce((sum, a) => sum + Math.max(0, Number(a.tasmeeSeconds) || 0), 0),
+          tasmeeLabelInHalaka: formatTasmeeDuration(
+            memberAttendanceInHalaka.reduce((sum, a) => sum + Math.max(0, Number(a.tasmeeSeconds) || 0), 0),
+          ),
           latestAttendanceAt: memberAttendanceInHalaka
             .map((a) => pickFirstDate(a.updatedAt, a.recordedAt))
             .sort((a, b) => asMs(b) - asMs(a))[0] || '',
@@ -1253,13 +1292,21 @@ export async function buildGroupReport(kind, entityId, range = {}) {
           (b.pagesInHalakaSessions - a.pagesInHalakaSessions) ||
           (asMs(b.latestAttendanceAt) - asMs(a.latestAttendanceAt)),
       ),
-      sessions,
+      sessions: sessions.map((s) => ({
+        ...s,
+        tasmeeTotalSeconds: Math.max(0, Number(s.tasmeeTotalSeconds) || 0),
+        tasmeeLabel: formatTasmeeDuration(Math.max(0, Number(s.tasmeeTotalSeconds) || 0)),
+      })),
       attendanceRows: enrichedAttendanceRows,
       summary: {
         members: (members || []).length,
         sessions: sessions.length,
         attendance: enrichedAttendanceRows.length,
         pagesTotal,
+        tasmeeSecondsTotal,
+        tasmeeLabelTotal: formatTasmeeDuration(tasmeeSecondsTotal),
+        sessionTasmeeTotal,
+        sessionTasmeeLabel: formatTasmeeDuration(sessionTasmeeTotal),
       },
     }
   }

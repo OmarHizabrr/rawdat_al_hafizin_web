@@ -15,6 +15,7 @@ import {
   HALAKA_MEMBER_ROLES,
   HALAKA_SESSION_TYPES,
   closeHalakaSession,
+  formatTasmeeDuration,
   loadHalakat,
   loadHalakaSessions,
   saveHalakaSession,
@@ -224,6 +225,12 @@ export default function HalakaSessionsPage() {
                   <div className="rh-halaka-sessions__session-badges">
                     <span className="rh-plans__saved-badge">{sessionTypeLabel(s.sessionType, s.sessionTypeOtherLabel)}</span>
                     <span className="rh-plans__saved-badge">{s.status === 'closed' ? 'مغلقة' : 'مفتوحة'}</span>
+                    {s.tasmeeTimerStatus === 'running' ? (
+                      <span className="rh-plans__saved-badge rh-halaka-sessions__tasmee-badge--running">مؤقت يعمل</span>
+                    ) : null}
+                    {Math.max(0, Number(s.tasmeeTotalSeconds) || 0) > 0 ? (
+                      <span className="rh-plans__saved-badge">تسميع: {formatTasmeeDuration(s.tasmeeTotalSeconds)}</span>
+                    ) : null}
                   </div>
                   <span className="rh-halaka-sessions__session-dates">
                     {new Date(s.startedAt).toLocaleString('ar-SA')} — {new Date(s.endedAt).toLocaleString('ar-SA')}

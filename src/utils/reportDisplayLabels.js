@@ -1,5 +1,5 @@
 import { VOLUME_BY_ID } from '../data/volumes.js'
-import { HALAKA_ATTENDANCE_STATUSES } from './halakatStorage.js'
+import { HALAKA_ATTENDANCE_STATUSES, formatTasmeeDuration } from './halakatStorage.js'
 import { remoteTasmeeMediaLabelAr, remoteTasmeeProviderLabelAr } from './remoteTasmeeStorage.js'
 
 function joinArabicWithWa(parts) {
@@ -110,6 +110,13 @@ export function reportAttendanceStatusLabel(status) {
   if (s === HALAKA_ATTENDANCE_STATUSES.OTHER) return 'أخرى'
   return s || '—'
 }
+
+export function formatTasmeeDurationOrDash(seconds) {
+  const s = Math.max(0, Math.floor(Number(seconds) || 0))
+  return s > 0 ? formatTasmeeDuration(s) : '—'
+}
+
+export { formatTasmeeDuration }
 
 const NOTIFICATION_TYPE_LABELS = {
   application_submitted: 'طلب التحاق',

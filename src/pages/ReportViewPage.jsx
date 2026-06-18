@@ -835,6 +835,7 @@ export default function ReportViewPage() {
           pagesCount: r.pagesCount ?? "",
           fromPage: r.fromPage ?? "",
           toPage: r.toPage ?? "",
+          tasmeeLabel: r.tasmeeLabel || "—",
           recordedAt: formatArDateTime(r.recordedAt),
           recordedByName: r.recordedByName || "",
         })),
@@ -965,6 +966,7 @@ export default function ReportViewPage() {
           startedAt: formatArDateTime(s.startedAt),
           endedAt: formatArDateTime(s.endedAt),
           status: reportSessionStatusLabel(s.status),
+          tasmeeLabel: s.tasmeeLabel || "—",
         })),
       );
       addRows(
@@ -975,6 +977,7 @@ export default function ReportViewPage() {
             a.attendanceStatus,
           ),
           pagesCount: a.pagesCount ?? "",
+          tasmeeLabel: a.tasmeeLabel || "—",
           updatedAt: formatArDateTime(a.updatedAt),
         })),
       );
@@ -984,6 +987,7 @@ export default function ReportViewPage() {
           userName: reportPersonLabel(a.userName, a.userId),
           recordsCount: a.recordsCount ?? "",
           pagesTotal: a.pagesTotal ?? "",
+          tasmeeLabel: a.tasmeeLabel || "—",
           latestUpdatedAt: formatArDateTime(a.latestUpdatedAt),
         })),
       );
@@ -1052,6 +1056,7 @@ export default function ReportViewPage() {
             صفحات_الأوراد: r.pagesInAwrad ?? "",
             حضور_الحلقة: r.attendanceRecordsInHalaka ?? "",
             صفحات_الحلقة: r.pagesInHalakaSessions ?? "",
+            وقت_التسميع: r.tasmeeLabelInHalaka || "—",
             آخر_ورد: formatArDateTime(r.latestAwradAt),
             آخر_حضور: formatArDateTime(r.latestAttendanceAt),
           });
@@ -1063,6 +1068,7 @@ export default function ReportViewPage() {
             startedAt: formatArDateTime(s.startedAt),
             endedAt: formatArDateTime(s.endedAt),
             status: reportSessionStatusLabel(s.status),
+            tasmeeLabel: s.tasmeeLabel || "—",
           });
         }
         for (const a of reportData.attendanceRows || []) {
@@ -1078,6 +1084,7 @@ export default function ReportViewPage() {
             pagesCount: a.pagesCount ?? "",
             fromPage: a.fromPage ?? "",
             toPage: a.toPage ?? "",
+            tasmeeLabel: a.tasmeeLabel || "—",
           });
         }
       }
@@ -1752,6 +1759,14 @@ export default function ReportViewPage() {
                         <span>صفحات في الحلقات</span>
                       </div>
                       <div className="card rh-reports__kpi">
+                        <strong>
+                          {reportData.summary.halakaTasmeeLabel ||
+                            reportData.summary.halakaTasmeeSecondsRecorded ||
+                            0}
+                        </strong>
+                        <span>وقت التسميع في الحلقات</span>
+                      </div>
+                      <div className="card rh-reports__kpi">
                         <strong>{reportData.summary.awrad}</strong>
                         <span>{str("layout.nav_awrad")}</span>
                       </div>
@@ -1854,6 +1869,7 @@ export default function ReportViewPage() {
                         { key: "pagesCount", label: "الصفحات" },
                         { key: "fromPage", label: "من" },
                         { key: "toPage", label: "إلى" },
+                        { key: "tasmeeLabel", label: "وقت التسميع" },
                         { key: "recordedAt", label: "تاريخ التسجيل" },
                         { key: "recordedByName", label: "سجّله" },
                       ]}
@@ -1867,6 +1883,7 @@ export default function ReportViewPage() {
                         pagesCount: r.pagesCount ?? 0,
                         fromPage: r.fromPage ?? "—",
                         toPage: r.toPage ?? "—",
+                        tasmeeLabel: r.tasmeeLabel || "—",
                         recordedAt: formatArDateTime(r.recordedAt),
                         recordedByName: r.recordedByName || "—",
                       }))}
@@ -2167,6 +2184,14 @@ export default function ReportViewPage() {
                         <strong>{reportData.summary.pagesRecorded}</strong>
                         <span>{str("reports.kpi_pages")}</span>
                       </div>
+                      <div className="card rh-reports__kpi">
+                        <strong>
+                          {reportData.summary.tasmeeLabelRecorded ||
+                            reportData.summary.tasmeeSecondsRecorded ||
+                            0}
+                        </strong>
+                        <span>وقت التسميع المُسجَّل</span>
+                      </div>
                     </ReportKpiGrid>
                     <SectionTable
                       title="حلقات المعلم"
@@ -2272,6 +2297,7 @@ export default function ReportViewPage() {
                         { key: "startedAt", label: "البداية" },
                         { key: "endedAt", label: "النهاية" },
                         { key: "status", label: "الحالة" },
+                        { key: "tasmeeLabel", label: "وقت التسميع" },
                       ]}
                       rows={(reportData.sessions || []).map((s) => ({
                         halakaName: s.halakaName || "—",
@@ -2279,6 +2305,7 @@ export default function ReportViewPage() {
                         startedAt: formatArDateTime(s.startedAt),
                         endedAt: formatArDateTime(s.endedAt),
                         status: reportSessionStatusLabel(s.status),
+                        tasmeeLabel: s.tasmeeLabel || "—",
                       }))}
                     />
                     <SectionTable
@@ -2289,6 +2316,7 @@ export default function ReportViewPage() {
                         { key: "userName", label: "الطالب" },
                         { key: "attendanceStatusLabel", label: "الحضور" },
                         { key: "pagesCount", label: "الصفحات" },
+                        { key: "tasmeeLabel", label: "وقت التسميع" },
                         { key: "updatedAt", label: "آخر تحديث" },
                       ]}
                       rows={(reportData.attendanceRecorded || []).map((a) => ({
@@ -2298,6 +2326,7 @@ export default function ReportViewPage() {
                           a.attendanceStatus,
                         ),
                         pagesCount: a.pagesCount ?? 0,
+                        tasmeeLabel: a.tasmeeLabel || "—",
                         updatedAt: formatArDateTime(a.updatedAt),
                       }))}
                     />
@@ -2308,12 +2337,14 @@ export default function ReportViewPage() {
                         { key: "userName", label: "الطالب" },
                         { key: "recordsCount", label: "عدد التسجيلات" },
                         { key: "pagesTotal", label: "إجمالي الصفحات" },
+                        { key: "tasmeeLabel", label: "وقت التسميع" },
                         { key: "latestUpdatedAt", label: "آخر تحديث" },
                       ]}
                       rows={(reportData.attendanceByStudent || []).map((r) => ({
                         userName: reportPersonLabel(r.userName, r.userId),
                         recordsCount: r.recordsCount ?? 0,
                         pagesTotal: r.pagesTotal ?? 0,
+                        tasmeeLabel: r.tasmeeLabel || "—",
                         latestUpdatedAt: formatArDateTime(r.latestUpdatedAt),
                       }))}
                     />
@@ -2338,6 +2369,22 @@ export default function ReportViewPage() {
                           <div className="card rh-reports__kpi">
                             <strong>{reportData.summary.pagesTotal}</strong>
                             <span>{str("reports.kpi_pages")}</span>
+                          </div>
+                          <div className="card rh-reports__kpi">
+                            <strong>
+                              {reportData.summary.tasmeeLabelTotal ||
+                                reportData.summary.tasmeeSecondsTotal ||
+                                0}
+                            </strong>
+                            <span>وقت تسميع الطلاب</span>
+                          </div>
+                          <div className="card rh-reports__kpi">
+                            <strong>
+                              {reportData.summary.sessionTasmeeLabel ||
+                                reportData.summary.sessionTasmeeTotal ||
+                                0}
+                            </strong>
+                            <span>وقت تسميع الجلسات</span>
                           </div>
                         </>
                       )}
@@ -2633,6 +2680,10 @@ export default function ReportViewPage() {
                             key: "pagesInHalakaSessions",
                             label: "صفحاته في جلسات الحلقة",
                           },
+                          {
+                            key: "tasmeeLabelInHalaka",
+                            label: "وقت تسميعه في الحلقة",
+                          },
                           { key: "latestAttendanceAt", label: "آخر حضور" },
                         ]}
                         rows={(reportData.memberDetails || []).map((r) => ({
@@ -2646,6 +2697,7 @@ export default function ReportViewPage() {
                           latestAttendanceAt: formatArDateTime(
                             r.latestAttendanceAt,
                           ),
+                          tasmeeLabelInHalaka: r.tasmeeLabelInHalaka || "—",
                         }))}
                       />
                     )}
@@ -2659,12 +2711,14 @@ export default function ReportViewPage() {
                             { key: "startedAt", label: "البداية" },
                             { key: "endedAt", label: "النهاية" },
                             { key: "status", label: "الحالة" },
+                            { key: "tasmeeLabel", label: "وقت التسميع" },
                           ]}
                           rows={(reportData.sessions || []).map((s) => ({
                             title: s.title || "—",
                             startedAt: formatArDateTime(s.startedAt),
                             endedAt: formatArDateTime(s.endedAt),
                             status: reportSessionStatusLabel(s.status),
+                            tasmeeLabel: s.tasmeeLabel || "—",
                           }))}
                         />
                         <SectionTable
@@ -2677,6 +2731,7 @@ export default function ReportViewPage() {
                             { key: "pagesCount", label: "الصفحات" },
                             { key: "fromPage", label: "من" },
                             { key: "toPage", label: "إلى" },
+                            { key: "tasmeeLabel", label: "وقت التسميع" },
                           ]}
                           rows={(reportData.attendanceRows || []).map((a) => ({
                             sessionTitle: a.sessionTitle || "جلسة",
@@ -2693,6 +2748,7 @@ export default function ReportViewPage() {
                             pagesCount: a.pagesCount ?? 0,
                             fromPage: a.fromPage ?? "—",
                             toPage: a.toPage ?? "—",
+                            tasmeeLabel: a.tasmeeLabel || "—",
                           }))}
                         />
                       </>

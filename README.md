@@ -23,3 +23,7 @@ npm run build
 ### قواعد Firestore لواجبات الطلاب
 
 بعد إضافة ميزة **أقسام الواجبات**، أضف المقطع من الملف `firestore.homework.snippet` إلى قواعد Firestore في [Firebase Console](https://console.firebase.google.com/) (Firestore → Rules)، ثم انشر القواعد. لا تنشر المقطع وحده دون بقية قواعد المشروع.
+
+### قواعد Firestore لوقت التسميع في الحلقات
+
+بعد إضافة **مؤقت التسميع**، أضف المقطع من الملف `firestore.tasmee.snippet` إلى قواعد Firestore في [Firebase Console](https://console.firebase.google.com/) (Firestore → Rules)، ثم انشر القواعد. لا تنشر المقطع وحده دون بقية قواعد المشروع.

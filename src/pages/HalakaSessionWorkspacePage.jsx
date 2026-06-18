@@ -1,4 +1,4 @@
-import { ArrowRight, Ban, RotateCcw, Save, UserCheck, UserX } from 'lucide-react'
+import { ArrowRight, Ban, Clock, Pause, Play, RotateCcw, Save, UserCheck, UserX } from 'lucide-react'
 import { HapticLink } from '../ui/HapticLink.jsx'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useParams } from 'react-router-dom'
@@ -15,10 +15,19 @@ import {
   HALAKA_ATTENDANCE_STATUSES,
   HALAKA_MEMBER_ROLES,
   HALAKA_SESSION_TYPES,
+  addSessionTasmeeManualSeconds,
+  computeSessionTasmeeDisplaySeconds,
+  formatTasmeeDuration,
+  formatTasmeeHistoryType,
   loadHalakat,
   loadHalakatMembersWithProfiles,
   loadHalakaSessions,
   loadSessionAttendance,
+  parseTasmeeInput,
+  splitTasmeeSeconds,
+  startSessionTasmeeTimer,
+  stopSessionTasmeeTimer,
+  subscribeHalakaSession,
   upsertSessionAttendance,
 } from '../utils/halakatStorage.js'
 import { loadPlans } from '../utils/plansStorage.js'
@@ -70,6 +79,14 @@ export default function HalakaSessionWorkspacePage() {
   const [savingAll, setSavingAll] = useState(false)
   const [editingEntryByUser, setEditingEntryByUser] = useState({})
   const [loading, setLoading] = useState(true)
+  const [timerBusy, setTimerBusy] = useState(false)
+  const [sessionManualMin, setSessionManualMin] = useState('')
+  const [sessionManualSec, setSessionManualSec] = useState('')
+  const [showSessionManual, setShowSessionManual] = useState(false)
+  const [stopDistributeMode, setStopDistributeMode] = useState('none')
+  const [assignStudentUid, setAssignStudentUid] = useState('')
+  const [showSessionTasmeeHistory, setShowSessionTasmeeHistory] = useState(false)
+  const [timerNow, setTimerNow] = useState(() => Date.now())
 
   useEffect(() => {
     if (!user?.uid || !halakaId || !sessionId) return
@@ -87,6 +104,7 @@ export default function HalakaSessionWorkspacePage() {
         setAttendanceRows(
           members.map((m) => {
             const row = map.get(m.userId) || {}
+            const manualParts = splitTasmeeSeconds(row.tasmeeManualSeconds)
             return {
               userId: m.userId,
               displayName: m.displayName || m.userId,
@@ -99,6 +117,11 @@ export default function HalakaSessionWorkspacePage() {
               notes: row.notes || '',
               excludedFromSession: Boolean(row.excludedFromSession),
               entryHistory: Array.isArray(row.entryHistory) ? row.entryHistory : [],
+              tasmeeSeconds: Math.max(0, Number(row.tasmeeSeconds) || 0),
+              tasmeeAutoSeconds: Math.max(0, Number(row.tasmeeAutoSeconds) || 0),
+              tasmeeManualMin: manualParts.minutes || '',
+              tasmeeManualSec: manualParts.seconds || '',
+              tasmeeHistory: Array.isArray(row.tasmeeHistory) ? row.tasmeeHistory : [],
             }
           }),
         )
@@ -106,6 +129,55 @@ export default function HalakaSessionWorkspacePage() {
       })
       .finally(() => setLoading(false))
   }, [user?.uid, halakaId, sessionId])
+
+  useEffect(() => {
+    if (!halakaId || !sessionId) return undefined
+    return subscribeHalakaSession(
+      halakaId,
+      sessionId,
+      (nextSession) => {
+        if (nextSession) setSession(nextSession)
+      },
+      () => {},
+    )
+  }, [halakaId, sessionId])
+
+  useEffect(() => {
+    if (session?.tasmeeTimerStatus !== 'running') return undefined
+    const id = window.setInterval(() => setTimerNow(Date.now()), 1000)
+    return () => window.clearInterval(id)
+  }, [session?.tasmeeTimerStatus, session?.tasmeeTimerStartedAt])
+
+  const sessionTasmeeDisplaySeconds = useMemo(
+    () => computeSessionTasmeeDisplaySeconds(session, timerNow),
+    [session, timerNow],
+  )
+  const timerRunning = session?.tasmeeTimerStatus === 'running'
+
+  const refreshSession = useCallback(async () => {
+    const sessions = await loadHalakaSessions(halakaId)
+    setSession(sessions.find((x) => x.id === sessionId) || null)
+  }, [halakaId, sessionId])
+
+  const syncAttendanceTasmeeFromServer = useCallback(async () => {
+    const attendance = await loadSessionAttendance(halakaId, sessionId)
+    const attendanceMap = new Map(attendance.map((r) => [r.userId, r]))
+    setAttendanceRows((prev) =>
+      prev.map((x) => {
+        const saved = attendanceMap.get(x.userId)
+        if (!saved) return x
+        const manualParts = splitTasmeeSeconds(saved.tasmeeManualSeconds)
+        return {
+          ...x,
+          tasmeeSeconds: Math.max(0, Number(saved.tasmeeSeconds) || 0),
+          tasmeeAutoSeconds: Math.max(0, Number(saved.tasmeeAutoSeconds) || 0),
+          tasmeeManualMin: manualParts.minutes || '',
+          tasmeeManualSec: manualParts.seconds || '',
+          tasmeeHistory: Array.isArray(saved.tasmeeHistory) ? saved.tasmeeHistory : [],
+        }
+      }),
+    )
+  }, [halakaId, sessionId])
 
   const studentFetchKey = useMemo(
     () =>
@@ -167,10 +239,32 @@ export default function HalakaSessionWorkspacePage() {
     return stats
   }, [attendanceRows])
 
+  const eligibleTasmeeStudents = useMemo(
+    () =>
+      attendanceRows.filter(
+        (r) =>
+          r.role === HALAKA_MEMBER_ROLES.STUDENT &&
+          !r.excludedFromSession &&
+          r.attendanceStatus !== HALAKA_ATTENDANCE_STATUSES.ABSENT &&
+          r.attendanceStatus !== HALAKA_ATTENDANCE_STATUSES.EXCUSED,
+      ),
+    [attendanceRows],
+  )
+
+  const studentNameByUid = useMemo(
+    () => new Map(attendanceRows.map((r) => [r.userId, r.displayName || r.userId])),
+    [attendanceRows],
+  )
+
+  const sessionTasmeeHistory = useMemo(() => {
+    const list = Array.isArray(session?.tasmeeHistory) ? session.tasmeeHistory : []
+    return [...list].reverse().slice(0, 12)
+  }, [session?.tasmeeHistory])
+
   const rowPayload = (row) => {
     const fp = row.fromPage === '' ? null : Number(row.fromPage)
     const tp = row.toPage === '' ? null : Number(row.toPage)
-    return {
+    const payload = {
       attendanceStatus: row.attendanceStatus,
       memorizationVolumeId: row.memorizationVolumeId,
       fromPage: Number.isFinite(fp) && fp >= 1 ? fp : null,
@@ -178,6 +272,10 @@ export default function HalakaSessionWorkspacePage() {
       notes: row.notes,
       excludedFromSession: Boolean(row.excludedFromSession),
     }
+    if (row.role === HALAKA_MEMBER_ROLES.STUDENT) {
+      payload.tasmeeManualSeconds = parseTasmeeInput(row.tasmeeManualMin, row.tasmeeManualSec)
+    }
+    return payload
   }
   const buildEntryPayload = (row) => {
     const fp = Number(row.fromPage)
@@ -290,11 +388,122 @@ export default function HalakaSessionWorkspacePage() {
           n.delete(row.userId)
           return n
         })
+        if (row.role === HALAKA_MEMBER_ROLES.STUDENT) {
+          const manualSeconds = parseTasmeeInput(row.tasmeeManualMin, row.tasmeeManualSec)
+          setAttendanceRows((prev) =>
+            prev.map((x) =>
+              x.userId === row.userId
+                ? {
+                    ...x,
+                    tasmeeManualMin: splitTasmeeSeconds(manualSeconds).minutes || '',
+                    tasmeeManualSec: splitTasmeeSeconds(manualSeconds).seconds || '',
+                    tasmeeSeconds: manualSeconds + Math.max(0, Number(x.tasmeeAutoSeconds) || 0),
+                  }
+                : x,
+            ),
+          )
+        }
       } finally {
         setSavingRowId('')
       }
     },
-    [canWrite, halakaId, sessionId, user],
+    [canWrite, editingEntryByUser, halakaId, sessionId, user],
+  )
+  const handleTimerStart = useCallback(async () => {
+    if (!canWrite || !user?.uid || timerBusy) return
+    setTimerBusy(true)
+    try {
+      await startSessionTasmeeTimer(user, halakaId, sessionId)
+      await refreshSession()
+      toast.success('بدأ مؤقت التسميع.', 'مؤقت التسميع')
+    } catch (e) {
+      toast.error(e?.message === 'TIMER_ALREADY_RUNNING' ? 'المؤقت يعمل بالفعل.' : 'تعذر تشغيل المؤقت.', 'مؤقت التسميع')
+    } finally {
+      setTimerBusy(false)
+    }
+  }, [canWrite, halakaId, refreshSession, sessionId, timerBusy, toast, user])
+  const handleTimerStop = useCallback(async () => {
+    if (!canWrite || !user?.uid || timerBusy) return
+    if (stopDistributeMode === 'assign_student' && !assignStudentUid) {
+      toast.info('اختر الطالب قبل إيقاف المؤقت.', 'مؤقت التسميع')
+      return
+    }
+    setTimerBusy(true)
+    try {
+      const result = await stopSessionTasmeeTimer(user, halakaId, sessionId, {
+        distributeMode: stopDistributeMode === 'none' ? undefined : stopDistributeMode,
+        assignToStudentUid: stopDistributeMode === 'assign_student' ? assignStudentUid : undefined,
+      })
+      await syncAttendanceTasmeeFromServer()
+      if (stopDistributeMode === 'assign_student' && assignStudentUid) {
+        toast.success(
+          `أُوقف المؤقت وأُسند ${formatTasmeeDuration(result?.elapsedSeconds || 0)} إلى ${studentNameByUid.get(assignStudentUid) || 'الطالب'}.`,
+          'مؤقت التسميع',
+        )
+      } else if (stopDistributeMode === 'equal_present') {
+        toast.success(`أُوقف المؤقت ووُزّع ${formatTasmeeDuration(result?.elapsedSeconds || 0)} على الحاضرين.`, 'مؤقت التسميع')
+      } else {
+        toast.success(`أُوقف المؤقت (+${formatTasmeeDuration(result?.elapsedSeconds || 0)}).`, 'مؤقت التسميع')
+      }
+    } catch (e) {
+      toast.error(e?.message === 'TIMER_NOT_RUNNING' ? 'المؤقت غير شغّال.' : 'تعذر إيقاف المؤقت.', 'مؤقت التسميع')
+    } finally {
+      setTimerBusy(false)
+    }
+  }, [assignStudentUid, canWrite, halakaId, sessionId, stopDistributeMode, studentNameByUid, syncAttendanceTasmeeFromServer, timerBusy, toast, user])
+  const handleSessionManualAdd = useCallback(async () => {
+    if (!canWrite || !user?.uid || timerBusy) return
+    const seconds = parseTasmeeInput(sessionManualMin, sessionManualSec)
+    if (seconds <= 0) {
+      toast.info('أدخل وقتاً يدوياً صالحاً.', 'وقت التسميع')
+      return
+    }
+    setTimerBusy(true)
+    try {
+      await addSessionTasmeeManualSeconds(user, halakaId, sessionId, seconds)
+      await refreshSession()
+      setSessionManualMin('')
+      setSessionManualSec('')
+      setShowSessionManual(false)
+      toast.success(`أُضيف ${formatTasmeeDuration(seconds)} لإجمالي الجلسة.`, 'وقت التسميع')
+    } catch {
+      toast.error('تعذر إضافة الوقت اليدوي.', 'وقت التسميع')
+    } finally {
+      setTimerBusy(false)
+    }
+  }, [canWrite, halakaId, refreshSession, sessionId, sessionManualMin, sessionManualSec, timerBusy, toast, user])
+  const saveTasmeeRow = useCallback(
+    async (row) => {
+      if (!canWrite || !user?.uid || row.role !== HALAKA_MEMBER_ROLES.STUDENT) return
+      setSavingRowId(row.userId)
+      try {
+        const manualSeconds = parseTasmeeInput(row.tasmeeManualMin, row.tasmeeManualSec)
+        await upsertSessionAttendance(user, halakaId, sessionId, row.userId, {
+          tasmeeManualSeconds: manualSeconds,
+        })
+        const attendance = await loadSessionAttendance(halakaId, sessionId)
+        const saved = attendance.find((r) => r.userId === row.userId)
+        setAttendanceRows((prev) =>
+          prev.map((x) =>
+            x.userId === row.userId
+              ? {
+                  ...x,
+                  tasmeeManualMin: splitTasmeeSeconds(manualSeconds).minutes || '',
+                  tasmeeManualSec: splitTasmeeSeconds(manualSeconds).seconds || '',
+                  tasmeeSeconds: manualSeconds + Math.max(0, Number(x.tasmeeAutoSeconds) || 0),
+                  tasmeeHistory: Array.isArray(saved?.tasmeeHistory) ? saved.tasmeeHistory : x.tasmeeHistory,
+                }
+              : x,
+          ),
+        )
+        toast.success('تم حفظ وقت التسميع للطالب.', 'وقت التسميع')
+      } catch {
+        toast.error('تعذر حفظ وقت التسميع.', 'وقت التسميع')
+      } finally {
+        setSavingRowId('')
+      }
+    },
+    [canWrite, halakaId, sessionId, toast, user],
   )
   const saveAll = useCallback(async () => {
     if (!canWrite || dirtyRowIds.size === 0 || !user?.uid) return
@@ -361,6 +570,113 @@ export default function HalakaSessionWorkspacePage() {
           <div className="rh-halaka-sessions__stat"><span className="rh-halaka-sessions__stat-value">{summary.present}</span><span className="rh-halaka-sessions__stat-label">حاضر</span></div>
           <div className="rh-halaka-sessions__stat"><span className="rh-halaka-sessions__stat-value">{summary.absent}</span><span className="rh-halaka-sessions__stat-label">غائب</span></div>
           <div className="rh-halaka-sessions__stat"><span className="rh-halaka-sessions__stat-value">{summary.pages}</span><span className="rh-halaka-sessions__stat-label">صفحات مرصودة</span></div>
+          <div className="rh-halaka-sessions__stat"><span className="rh-halaka-sessions__stat-value">{formatTasmeeDuration(sessionTasmeeDisplaySeconds)}</span><span className="rh-halaka-sessions__stat-label">وقت التسميع</span></div>
+        </div>
+        <div className="rh-halaka-sessions__tasmee-bar">
+          <div className="rh-halaka-sessions__tasmee-display">
+            <RhIcon as={Clock} size={18} strokeWidth={RH_ICON_STROKE} />
+            <span className="rh-halaka-sessions__tasmee-time">{formatTasmeeDuration(sessionTasmeeDisplaySeconds)}</span>
+            <span className={`rh-plans__saved-badge${timerRunning ? ' rh-halaka-sessions__tasmee-badge--running' : ''}`}>
+              {timerRunning ? 'يعمل الآن' : 'متوقف'}
+            </span>
+          </div>
+          <div className="rh-halaka-sessions__tasmee-actions">
+            <Button
+              type="button"
+              variant={timerRunning ? 'secondary' : 'primary'}
+              icon={timerRunning ? Pause : Play}
+              loading={timerBusy}
+              disabled={!canWrite}
+              onClick={() => {
+                if (timerRunning && stopDistributeMode === 'assign_student' && !assignStudentUid) {
+                  toast.info('اختر الطالب قبل إيقاف المؤقت.', 'مؤقت التسميع')
+                  return
+                }
+                if (timerRunning) handleTimerStop()
+                else handleTimerStart()
+              }}
+            >
+              {timerRunning ? 'إيقاف المؤقت' : 'بدء المؤقت'}
+            </Button>
+            <Button
+              type="button"
+              variant="secondary"
+              icon={Clock}
+              disabled={!canWrite || timerBusy}
+              onClick={() => setShowSessionManual((v) => !v)}
+            >
+              إضافة وقت يدوي
+            </Button>
+          </div>
+          {timerRunning ? (
+            <div className="rh-halaka-sessions__tasmee-stop-options">
+              <label className="ui-field">
+                <span className="ui-field__label">عند الإيقاف</span>
+                <select
+                  className="ui-input"
+                  value={stopDistributeMode}
+                  disabled={!canWrite || timerBusy}
+                  onChange={(e) => {
+                    setStopDistributeMode(e.target.value)
+                    if (e.target.value !== 'assign_student') setAssignStudentUid('')
+                  }}
+                >
+                  <option value="none">إضافة للجلسة فقط</option>
+                  <option value="equal_present">توزيع بالتساوي على الحاضرين</option>
+                  <option value="assign_student">إسناد كامل لطالب محدد</option>
+                </select>
+              </label>
+              {stopDistributeMode === 'assign_student' ? (
+                <label className="ui-field">
+                  <span className="ui-field__label">الطالب</span>
+                  <select
+                    className="ui-input"
+                    value={assignStudentUid}
+                    disabled={!canWrite || timerBusy || eligibleTasmeeStudents.length === 0}
+                    onChange={(e) => setAssignStudentUid(e.target.value)}
+                  >
+                    <option value="">اختر الطالب</option>
+                    {eligibleTasmeeStudents.map((s) => (
+                      <option key={s.userId} value={s.userId}>
+                        {s.displayName}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              ) : null}
+            </div>
+          ) : null}
+          {sessionTasmeeHistory.length ? (
+            <div className="rh-halaka-sessions__tasmee-history-block">
+              <button
+                type="button"
+                className="rh-halaka-sessions__history-toggle"
+                onClick={() => setShowSessionTasmeeHistory((v) => !v)}
+              >
+                سجل وقت التسميع للجلسة ({sessionTasmeeHistory.length})
+              </button>
+              {showSessionTasmeeHistory ? (
+                <ul className="rh-halaka-sessions__tasmee-history-list">
+                  {sessionTasmeeHistory.map((h) => (
+                    <li key={h.id || `${h.at}_${h.type}`} className="rh-halaka-sessions__tasmee-history-item">
+                      {formatRecordedAt(h.at)} — {formatTasmeeHistoryType(h.type)}
+                      {Math.max(0, Number(h.seconds) || 0) > 0 ? ` — ${formatTasmeeDuration(h.seconds)}` : ''}
+                      {h.targetUid ? ` — ${studentNameByUid.get(h.targetUid) || h.targetUid}` : ''}
+                    </li>
+                  ))}
+                </ul>
+              ) : null}
+            </div>
+          ) : null}
+          {showSessionManual ? (
+            <div className="rh-halaka-sessions__tasmee-manual">
+              <TextField label="دقائق" type="number" min={0} value={sessionManualMin} onChange={(e) => setSessionManualMin(e.target.value)} />
+              <TextField label="ثوانٍ" type="number" min={0} max={59} value={sessionManualSec} onChange={(e) => setSessionManualSec(e.target.value)} />
+              <Button type="button" size="sm" variant="primary" icon={Save} loading={timerBusy} disabled={!canWrite} onClick={handleSessionManualAdd}>
+                إضافة للجلسة
+              </Button>
+            </div>
+          ) : null}
         </div>
         <div className="rh-halaka-sessions__toolbar">
           <Button type="button" variant="secondary" icon={Ban} disabled={!canWrite || savingAll} onClick={() => applyBulkPatch({ excludedFromSession: true })}>
@@ -401,6 +717,9 @@ export default function HalakaSessionWorkspacePage() {
                   {row.excludedFromSession ? <span className="rh-plans__saved-badge">مستثنى</span> : null}
                   {row.role === HALAKA_MEMBER_ROLES.STUDENT ? (
                     <span className="rh-plans__saved-badge">تسجيلات: {history.length} — صفحات: {historyPages}</span>
+                  ) : null}
+                  {row.role === HALAKA_MEMBER_ROLES.STUDENT && row.tasmeeSeconds > 0 ? (
+                    <span className="rh-plans__saved-badge rh-halaka-sessions__tasmee-badge">تسميع: {formatTasmeeDuration(row.tasmeeSeconds)}</span>
                   ) : null}
                   {dirtyRowIds.has(row.userId) ? <span className="rh-plans__saved-badge">غير محفوظ</span> : null}
                 </div>
@@ -452,6 +771,59 @@ export default function HalakaSessionWorkspacePage() {
                               ) : null}
                             </p>
                           ))}
+                        </div>
+                      ) : null}
+                      <div className="rh-halaka-sessions__field-row rh-halaka-sessions__tasmee-row">
+                        <TextField
+                          label="وقت تسميع (د)"
+                          type="number"
+                          min={0}
+                          value={row.tasmeeManualMin === '' ? '' : String(row.tasmeeManualMin)}
+                          disabled={!canWrite || row.excludedFromSession}
+                          onChange={(e) =>
+                            updateRowDraft(row.userId, {
+                              tasmeeManualMin: e.target.value === '' ? '' : Math.max(0, Math.floor(Number(e.target.value) || 0)),
+                            })
+                          }
+                        />
+                        <TextField
+                          label="وقت تسميع (ث)"
+                          type="number"
+                          min={0}
+                          max={59}
+                          value={row.tasmeeManualSec === '' ? '' : String(row.tasmeeManualSec)}
+                          disabled={!canWrite || row.excludedFromSession}
+                          onChange={(e) =>
+                            updateRowDraft(row.userId, {
+                              tasmeeManualSec: e.target.value === '' ? '' : Math.min(59, Math.max(0, Math.floor(Number(e.target.value) || 0))),
+                            })
+                          }
+                        />
+                      </div>
+                      <div className="rh-halaka-sessions__row-actions">
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="ghost"
+                          icon={Clock}
+                          loading={savingRowId === row.userId}
+                          disabled={!canWrite || row.excludedFromSession}
+                          onClick={() => saveTasmeeRow(row)}
+                        >
+                          حفظ وقت التسميع
+                        </Button>
+                      </div>
+                      {Array.isArray(row.tasmeeHistory) && row.tasmeeHistory.length ? (
+                        <div className="rh-halaka-sessions__tasmee-history">
+                          {row.tasmeeHistory
+                            .slice(-4)
+                            .reverse()
+                            .map((h) => (
+                              <p key={h.id || `${h.at}_${h.type}`} className="rh-halaka-sessions__history-item">
+                                {formatRecordedAt(h.at)} — {formatTasmeeHistoryType(h.type)}
+                                {Math.max(0, Number(h.seconds) || 0) > 0 ? ` — ${formatTasmeeDuration(h.seconds)}` : ''}
+                              </p>
+                            ))}
                         </div>
                       ) : null}
                     </>

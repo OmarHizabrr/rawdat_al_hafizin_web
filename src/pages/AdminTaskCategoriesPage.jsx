@@ -5,7 +5,8 @@ import { useEffect, useMemo, useState } from 'react'
 import { useAuth } from '../context/useAuth.js'
 import { useSiteContent } from '../context/useSiteContent.js'
 import {
-  deleteTaskCategory,
+  deleteTaskCategorySmart,
+  resolveTaskCategoriesForAdmin,
   saveTaskCategory,
   seedDefaultTaskCategories,
   subscribeTaskCategories,
@@ -45,11 +46,12 @@ export default function AdminTaskCategoriesPage() {
   }, [toast])
 
   const openAdd = () => {
+    const merged = resolveTaskCategoriesForAdmin(rows)
     setEditingId(null)
     setValue('')
     setLabel('')
     setHint('')
-    setOrder(rows.length ? Math.max(...rows.map((r) => r.order)) + 1 : 0)
+    setOrder(merged.length ? Math.max(...merged.map((r) => r.order)) + 1 : 0)
     setEnabled(true)
     setEditorOpen(true)
   }
@@ -93,8 +95,8 @@ export default function AdminTaskCategoriesPage() {
     if (!user || !deleting) return
     setDeleteSubmitting(true)
     try {
-      await deleteTaskCategory(user, deleting.id)
-      toast.info('تم حذف القسم.', '')
+      await deleteTaskCategorySmart(user, deleting)
+      toast.info(deleting.isDefault ? 'تم إخفاء القسم عن الطلاب.' : 'تم حذف القسم.', '')
       setDeleting(null)
     } catch {
       toast.warning('تعذّر الحذف.', 'تنبيه')
@@ -116,7 +118,10 @@ export default function AdminTaskCategoriesPage() {
     }
   }
 
-  const sorted = useMemo(() => [...rows].sort((a, b) => a.order - b.order || a.value.localeCompare(b.value)), [rows])
+  const sorted = useMemo(
+    () => resolveTaskCategoriesForAdmin(rows),
+    [rows],
+  )
 
   const crossItems = [
     { to: '/app/admin', label: str('layout.nav_admin') },
@@ -134,8 +139,8 @@ export default function AdminTaskCategoriesPage() {
         </div>
         <h1 className="rh-admin-plan-types__title">أقسام الواجبات</h1>
         <p className="rh-admin-plan-types__desc">
-          تظهر هذه الأقسام في صفحة الواجبات للطلاب. عند الضغط على أي قسم يُسجَّل إنجازه (نعم/لا) في تقرير الطالب.
-          يمكنك إضافة أقسام جديدة في أي وقت.
+          تظهر هذه الأقسام في صفحة الواجبات للطلاب. الأقسام الافتراضية (سماع، حفظ، تكرار، ربط) قابلة للتعديل والحذف
+          مباشرة — عند حذف قسم افتراضي يُخفى عن الطلاب ويمكن إعادة إظهاره من التعديل.
         </p>
         <div className="rh-admin-plan-types__toolbar">
           <Button type="button" variant="primary" icon={Plus} onClick={openAdd}>
@@ -161,31 +166,29 @@ export default function AdminTaskCategoriesPage() {
             </tr>
           </thead>
           <tbody>
-            {sorted.length === 0 ? (
-              <tr>
-                <td colSpan={5} className="rh-admin-plan-types__empty">
-                  لا توجد أقسام مخصّصة بعد — ستُستخدم الأقسام الافتراضية (سماع، حفظ، تكرار، ربط) حتى تضيف أقساماً أو
-                  تضغط «مزامنة الأقسام الافتراضية».
+            {sorted.map((r) => (
+              <tr key={r.id}>
+                <td>{r.order}</td>
+                <td>
+                  {r.label}
+                  {r.isDefault ? (
+                    <span className="rh-task-chip" style={{ marginInlineStart: '0.35rem' }}>
+                      افتراضي
+                    </span>
+                  ) : null}
+                </td>
+                <td className="rh-admin-plan-types__hint">{r.hint || '—'}</td>
+                <td>{r.enabled !== false ? 'ظاهر' : 'مخفي'}</td>
+                <td className="rh-admin-plan-types__actions">
+                  <Button type="button" variant="secondary" size="sm" icon={Pencil} onClick={() => openEdit(r)}>
+                    تعديل
+                  </Button>
+                  <Button type="button" variant="ghost" size="sm" icon={Trash2} onClick={() => setDeleting(r)}>
+                    حذف
+                  </Button>
                 </td>
               </tr>
-            ) : (
-              sorted.map((r) => (
-                <tr key={r.id}>
-                  <td>{r.order}</td>
-                  <td>{r.label}</td>
-                  <td className="rh-admin-plan-types__hint">{r.hint || '—'}</td>
-                  <td>{r.enabled !== false ? 'ظاهر' : 'مخفي'}</td>
-                  <td className="rh-admin-plan-types__actions">
-                    <Button type="button" variant="secondary" size="sm" icon={Pencil} onClick={() => openEdit(r)}>
-                      تعديل
-                    </Button>
-                    <Button type="button" variant="ghost" size="sm" icon={Trash2} onClick={() => setDeleting(r)}>
-                      حذف
-                    </Button>
-                  </td>
-                </tr>
-              ))
-            )}
+            ))}
           </tbody>
         </table>
       </div>
@@ -236,7 +239,9 @@ export default function AdminTaskCategoriesPage() {
         showClose={!deleteSubmitting}
       >
         <p className="rh-admin-users__warn">
-          سيتم حذف القسم «{deleting?.label}». التسجيلات السابقة قد تبقى في التقارير دون اسم قسم واضح.
+          {deleting?.isDefault
+            ? `سيتم إخفاء القسم «${deleting?.label}» عن الطلاب. يمكنك إعادة إظهاره لاحقاً من التعديل وتفعيل «ظاهر للطلاب».`
+            : `سيتم حذف القسم «${deleting?.label}». التسجيلات السابقة قد تبقى في التقارير دون اسم قسم واضح.`}
         </p>
         <div className="rh-admin-users__modal-actions">
           <Button type="button" variant="danger" icon={Trash2} loading={deleteSubmitting} onClick={handleDelete}>

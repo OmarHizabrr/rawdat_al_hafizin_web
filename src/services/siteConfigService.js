@@ -143,26 +143,58 @@ export function resolvePlanTypes(firestoreRows) {
 }
 
 export function resolveTaskCategories(firestoreRows) {
-  const source = firestoreRows?.length
-    ? firestoreRows
-    : DEFAULT_TASK_CATEGORIES.map((r, i) => ({
-        id: r.value,
-        value: r.value,
-        label: r.label,
-        hint: r.hint,
-        order: r.order ?? i,
-        enabled: true,
-      }))
-  return source
-    .filter((r) => r.enabled !== false)
-    .map((r) => ({
-      id: r.id,
-      value: r.value,
-      label: r.label,
-      hint: r.hint,
-      order: r.order,
-      enabled: r.enabled !== false,
-    }))
+  return mergeTaskCategoryRows(firestoreRows, { includeDisabled: false })
+}
+
+/** قائمة الإدارة — تتضمن الافتراضية حتى قبل مزامنة Firestore + الأقسام المخفية */
+export function resolveTaskCategoriesForAdmin(firestoreRows) {
+  return mergeTaskCategoryRows(firestoreRows, { includeDisabled: true })
+}
+
+export function isDefaultTaskCategoryValue(value) {
+  const v = String(value || '').trim()
+  return DEFAULT_TASK_CATEGORIES.some((d) => d.value === v)
+}
+
+function mergeTaskCategoryRows(firestoreRows, { includeDisabled = false } = {}) {
+  const list = firestoreRows || []
+  const byValue = new Map(list.map((r) => [String(r.value || r.id || '').trim(), r]))
+  const consumedIds = new Set()
+
+  const merged = DEFAULT_TASK_CATEGORIES.map((def, i) => {
+    const fs = byValue.get(def.value)
+    if (fs) {
+      consumedIds.add(fs.id)
+      return {
+        ...fs,
+        isDefault: true,
+        persisted: true,
+      }
+    }
+    return {
+      id: def.value,
+      value: def.value,
+      label: def.label,
+      hint: def.hint,
+      order: def.order ?? i,
+      enabled: true,
+      isDefault: true,
+      persisted: false,
+    }
+  })
+
+  for (const row of list) {
+    if (consumedIds.has(row.id)) continue
+    if (isDefaultTaskCategoryValue(row.value)) continue
+    merged.push({
+      ...row,
+      isDefault: false,
+      persisted: true,
+    })
+  }
+
+  const sorted = [...merged].sort((a, b) => (a.order ?? 0) - (b.order ?? 0) || String(a.value).localeCompare(String(b.value)))
+  return includeDisabled ? sorted : sorted.filter((r) => r.enabled !== false)
 }
 
 export async function savePlanType(actor, { docId, value, label, hint, order }) {
@@ -229,6 +261,24 @@ export async function saveTaskCategory(actor, { docId, value, label, hint, order
 
 export async function deleteTaskCategory(actor, taskCategoryId) {
   await firestoreApi.deleteData(firestoreApi.getTaskCategoryDoc(taskCategoryId))
+}
+
+/** حذف قسم — الافتراضية تُخفى (enabled: false) حتى لا تعود تلقائياً من القائمة الافتراضية */
+export async function deleteTaskCategorySmart(actor, row) {
+  const value = String(row?.value || row?.id || '').trim()
+  const isDefault = row?.isDefault === true || isDefaultTaskCategoryValue(value)
+  if (isDefault) {
+    await saveTaskCategory(actor, {
+      docId: row?.id || value,
+      value,
+      label: row?.label || value,
+      hint: row?.hint || '',
+      order: row?.order ?? 0,
+      enabled: false,
+    })
+    return
+  }
+  await deleteTaskCategory(actor, row.id)
 }
 
 export async function seedDefaultTaskCategories(actor) {
