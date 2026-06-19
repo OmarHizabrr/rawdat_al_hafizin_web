@@ -57,6 +57,7 @@ import {
   halakaSessionDisplay,
   halakaSessionDurationAr,
 } from '../utils/datePeriodAr.js'
+import { formatDateTimeMedium12Ar } from '../utils/formatDateTimeAr.js'
 import { leavingUserDeletesWholeGroup } from '../utils/groupMembership.js'
 import { mergeUserDirectoryRows } from '../utils/userDirectoryMerge.js'
 import { getImpersonateUid, withImpersonationQuery } from '../utils/impersonation.js'
@@ -1159,7 +1160,7 @@ export default function HalakatPage() {
                       <strong>{s.title || 'جلسة حلقة'}</strong>
                       <span className="rh-plans__saved-badge">{s.status === 'closed' ? 'مغلقة' : 'مفتوحة'}</span>
                       <span className="rh-plans__saved-meta">
-                        {new Date(s.startedAt).toLocaleString('ar-SA')} — {new Date(s.endedAt).toLocaleString('ar-SA')} (
+                        {formatDateTimeMedium12Ar(s.startedAt)} — {formatDateTimeMedium12Ar(s.endedAt)} (
                         {halakaSessionDurationAr(new Date(s.startedAt), new Date(s.endedAt))})
                       </span>
                     </div>
@@ -1464,12 +1465,12 @@ export default function HalakatPage() {
                         )}
                         {insight?.latestAwradAt && (
                           <div className="rh-members-chat__sub">
-                            آخر ورد: {new Date(insight.latestAwradAt).toLocaleString('ar-SA')}
+                            آخر ورد: {formatDateTimeMedium12Ar(insight.latestAwradAt)}
                           </div>
                         )}
                         {insight?.latestAttendanceAt && (
                           <div className="rh-members-chat__sub">
-                            آخر حضور/تسميع: {new Date(insight.latestAttendanceAt).toLocaleString('ar-SA')}
+                            آخر حضور/تسميع: {formatDateTimeMedium12Ar(insight.latestAttendanceAt)}
                           </div>
                         )}
                         <div className="rh-members-chat__actions">

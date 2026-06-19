@@ -68,6 +68,7 @@ import {
   localHijriYmd,
   parseHijriYmdString,
 } from "../utils/hijriDates.js";
+import { formatArDateTime, formatNowMedium12Ar } from "../utils/formatDateTimeAr.js";
 import { elementToPdfBlob, shareOrDownloadPdf } from "../utils/reportPdf.js";
 import {
   entityDetailsColumnsForKind,
@@ -209,12 +210,6 @@ function sortKindsForUser(kinds, user) {
     const ib = ADMIN_REPORT_KIND_ORDER.indexOf(b.value);
     return (ia < 0 ? 99 : ia) - (ib < 0 ? 99 : ib);
   });
-}
-
-function formatArDateTime(v) {
-  const d = new Date(String(v || ""));
-  if (Number.isNaN(d.getTime())) return "—";
-  return d.toLocaleString("ar-SA", { dateStyle: "medium", timeStyle: "short" });
 }
 
 function roleLabelAr(role) {
@@ -1199,10 +1194,7 @@ export default function ReportViewPage() {
       entityName: selectedEntityName,
       fromYmd: fromDate,
       toYmd: toDate,
-      issuedAt: new Date().toLocaleString("ar-SA", {
-        dateStyle: "medium",
-        timeStyle: "short",
-      }),
+      issuedAt: formatNowMedium12Ar(),
     }),
     [branding.siteTitle, kind, selectedEntityName, fromDate, toDate],
   );
@@ -1219,10 +1211,7 @@ export default function ReportViewPage() {
   }, [reportData, selectedEntityName, kind, fromDate, toDate]);
 
   const reportMetaItems = useMemo(() => {
-    const issuedAt = new Date().toLocaleString("ar-SA", {
-      dateStyle: "medium",
-      timeStyle: "short",
-    });
+    const issuedAt = formatNowMedium12Ar();
     const items = [
       {
         label: "نوع التقرير",
@@ -1685,10 +1674,7 @@ export default function ReportViewPage() {
                 metaItems={reportMetaItems}
                 footer={str("reports.print_footer", {
                   siteTitle: branding.siteTitle,
-                  date: new Date().toLocaleString("ar-SA", {
-                    dateStyle: "medium",
-                    timeStyle: "short",
-                  }),
+                  date: formatNowMedium12Ar(),
                 })}
                 headerClassName="rh-reports__capture-doc-head"
                 footerClassName="rh-reports__capture-doc-foot"

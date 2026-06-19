@@ -5,6 +5,7 @@ import { ar } from 'date-fns/locale'
 import 'react-datepicker/dist/react-datepicker.css'
 import '../styles/rh-datepicker.css'
 import { combineHijriYmdAndHHmm, localHijriYmd } from '../utils/hijriDates.js'
+import { formatTime12Ar } from '../utils/formatDateTimeAr.js'
 import { dateToHHmm, formatYmd, hhmmToTodayDate } from './rhPickerUtils.js'
 import { RhHijriDateField } from './RhHijriDateField.jsx'
 import { RhIcon, RH_ICON_STROKE } from './RhIcon.jsx'
@@ -57,7 +58,7 @@ export function RhTimePickerField({
           showTimeSelectOnly
           timeIntervals={timeIntervals}
           timeCaption="الوقت"
-          dateFormat="HH:mm"
+          dateFormat={(d) => (d ? formatTime12Ar(d) : '')}
           disabled={disabled}
           placeholderText={placeholderText || 'اختر الوقت…'}
           calendarClassName="rh-datepicker"

@@ -37,6 +37,7 @@ import {
   localYmd,
   planScheduleStartYmd,
 } from '../utils/planDailyQuota.js'
+import { formatHHmm12Ar } from '../utils/formatDateTimeAr.js'
 import { leavingUserDeletesWholeGroup } from '../utils/groupMembership.js'
 import { mergeUserDirectoryRows } from '../utils/userDirectoryMerge.js'
 import {
@@ -126,14 +127,10 @@ function createInitialVolumeState() {
   return Object.fromEntries(VOLUMES.map((v) => [v.id, { selected: false, pages: v.pages }]))
 }
 
-/** @param {string | null | undefined} hhmm قيمة input type="time" */
+/** @param {string | null | undefined} hhmm قيمة HH:mm */
 function formatReminderAr(hhmm) {
   if (!hhmm || typeof hhmm !== 'string') return null
-  const m = /^(\d{1,2}):(\d{2})$/.exec(hhmm.trim())
-  if (!m) return hhmm
-  const d = new Date()
-  d.setHours(Number(m[1]), Number(m[2]), 0, 0)
-  return d.toLocaleTimeString('ar-SA', { hour: 'numeric', minute: '2-digit' })
+  return formatHHmm12Ar(hhmm) || hhmm
 }
 
 const PP = PERMISSION_PAGE_IDS.plans

@@ -26,18 +26,13 @@ import { useSiteContent } from '../context/useSiteContent.js'
 import { useHidePlanNavigation } from '../hooks/useHidePlanNavigation.js'
 import { buildStudentProgressReport } from '../services/studentProgressService.js'
 import { EXAM_SELF_REPORT_ORDER, examSelfReportStatusLabel } from '../utils/examSelfReportLabels.js'
+import { formatArDateTime } from '../utils/formatDateTimeAr.js'
 import { getImpersonateUid, withImpersonationQuery } from '../utils/impersonation.js'
 import { HapticLink } from '../ui/HapticLink.jsx'
 import { Button, useToast } from '../ui/index.js'
 import { RhIcon, RH_ICON_STROKE } from '../ui/RhIcon.jsx'
 
 const REPORTS_PAGE = PERMISSION_PAGE_IDS.reports
-
-function formatArDateTime(value) {
-  const d = new Date(String(value || ''))
-  if (Number.isNaN(d.getTime())) return '—'
-  return d.toLocaleString('ar-SA', { dateStyle: 'medium', timeStyle: 'short' })
-}
 
 function ProgressBar({ percent, label }) {
   const pct = Math.min(100, Math.max(0, Number(percent) || 0))

@@ -50,6 +50,7 @@ import {
 import { leavingUserDeletesWholeGroup } from '../utils/groupMembership.js'
 import { mergeUserDirectoryRows } from '../utils/userDirectoryMerge.js'
 import { getImpersonateUid, withImpersonationQuery } from '../utils/impersonation.js'
+import { formatArDateTime, formatNowMedium12Ar } from '../utils/formatDateTimeAr.js'
 import {
   ACTIVITY_AUDIENCE_OPTIONS,
   ACTIVITY_KIND_OPTIONS,
@@ -61,6 +62,7 @@ import {
 import {
   Button,
   Modal,
+  RhDateTimePickerField,
   ScrollArea,
   SearchField,
   SearchableSelect,
@@ -76,19 +78,14 @@ function newId() {
 
 const PA = PERMISSION_PAGE_IDS.activities
 
-function isoToDatetimeLocal(iso) {
-  if (!iso) return ''
+function isoToDate(iso) {
+  if (!iso) return null
   const d = new Date(String(iso))
-  if (Number.isNaN(d.getTime())) return ''
-  const pad = (n) => String(n).padStart(2, '0')
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`
+  return Number.isNaN(d.getTime()) ? null : d
 }
 
-function datetimeLocalToIso(local) {
-  const s = String(local || '').trim()
-  if (!s) return ''
-  const d = new Date(s)
-  if (Number.isNaN(d.getTime())) return ''
+function dateToIso(d) {
+  if (!d || !(d instanceof Date) || Number.isNaN(d.getTime())) return ''
   return d.toISOString()
 }
 
@@ -179,10 +176,10 @@ export default function ActivitiesPage() {
   const [activityVisibility, setActivityVisibility] = useState('private')
   const [activityKind, setActivityKind] = useState('lecture')
   const [activityFormat, setActivityFormat] = useState('onsite')
-  const [startAtLocal, setStartAtLocal] = useState('')
-  const [endAtLocal, setEndAtLocal] = useState('')
+  const [startAtDate, setStartAtDate] = useState(null)
+  const [endAtDate, setEndAtDate] = useState(null)
   const [location, setLocation] = useState('')
-  const [registrationDeadlineLocal, setRegistrationDeadlineLocal] = useState('')
+  const [registrationDeadlineDate, setRegistrationDeadlineDate] = useState(null)
   const [maxParticipants, setMaxParticipants] = useState('')
   const [targetAudience, setTargetAudience] = useState('students')
   const [feeInfo, setFeeInfo] = useState('')
@@ -339,10 +336,10 @@ export default function ActivitiesPage() {
     setActivityVisibility('private')
     setActivityKind('lecture')
     setActivityFormat('onsite')
-    setStartAtLocal('')
-    setEndAtLocal('')
+    setStartAtDate(null)
+    setEndAtDate(null)
     setLocation('')
-    setRegistrationDeadlineLocal('')
+    setRegistrationDeadlineDate(null)
     setMaxParticipants('')
     setTargetAudience('students')
     setFeeInfo('')
@@ -365,10 +362,10 @@ export default function ActivitiesPage() {
     setActivityVisibility(row.activityVisibility === 'public' ? 'public' : 'private')
     setActivityKind(row.activityKind || 'lecture')
     setActivityFormat(['online', 'onsite', 'hybrid'].includes(row.activityFormat) ? row.activityFormat : 'onsite')
-    setStartAtLocal(isoToDatetimeLocal(row.startAt))
-    setEndAtLocal(isoToDatetimeLocal(row.endAt))
+    setStartAtDate(isoToDate(row.startAt))
+    setEndAtDate(isoToDate(row.endAt))
     setLocation(row.location || '')
-    setRegistrationDeadlineLocal(isoToDatetimeLocal(row.registrationDeadline))
+    setRegistrationDeadlineDate(isoToDate(row.registrationDeadline))
     setMaxParticipants(
       row.maxParticipants != null && Number.isFinite(Number(row.maxParticipants))
         ? String(row.maxParticipants)
@@ -399,10 +396,10 @@ export default function ActivitiesPage() {
       activityVisibility,
       activityKind,
       activityFormat,
-      startAt: datetimeLocalToIso(startAtLocal),
-      endAt: datetimeLocalToIso(endAtLocal),
+      startAt: dateToIso(startAtDate),
+      endAt: dateToIso(endAtDate),
       location: location.trim(),
-      registrationDeadline: datetimeLocalToIso(registrationDeadlineLocal),
+      registrationDeadline: dateToIso(registrationDeadlineDate),
       maxParticipants: maxP,
       targetAudience,
       feeInfo: feeInfo.trim(),
@@ -498,7 +495,7 @@ export default function ActivitiesPage() {
     return items
   }, [str, impersonateUid, appLink, canAccessPage, hidePlanNavigation])
 
-  const printedAt = new Date().toLocaleString('ar-SA', { dateStyle: 'medium', timeStyle: 'short' })
+  const printedAt = formatNowMedium12Ar()
   const printStamp = str('layout.print_doc_stamp', { date: printedAt, siteTitle: branding.siteTitle })
   const printFooter = str('layout.print_doc_footer', {
     siteTitle: branding.siteTitle,
@@ -710,7 +707,7 @@ export default function ActivitiesPage() {
                       {row.memberContributionUpdatedAt && (
                         <p className="ui-field__hint">
                           آخر تحديث للمساهمة:{' '}
-                          {new Date(row.memberContributionUpdatedAt).toLocaleString('ar-SA')}
+                          {formatArDateTime(row.memberContributionUpdatedAt)}
                         </p>
                       )}
                       <Button
@@ -837,48 +834,32 @@ export default function ActivitiesPage() {
             searchPlaceholder={str('activities.ui_select_search_ph')}
             emptyText={str('activities.ui_select_empty')}
           />
-          <div className="ui-field">
-            <label className="ui-field__label" htmlFor="act-start">
-              {str('activities.form_start_label')}
-            </label>
-            <input
-              id="act-start"
-              type="datetime-local"
-              className="ui-input"
-              value={startAtLocal}
-              onChange={(e) => setStartAtLocal(e.target.value)}
-            />
-          </div>
-          <div className="ui-field">
-            <label className="ui-field__label" htmlFor="act-end">
-              {str('activities.form_end_label')}
-            </label>
-            <input
-              id="act-end"
-              type="datetime-local"
-              className="ui-input"
-              value={endAtLocal}
-              onChange={(e) => setEndAtLocal(e.target.value)}
-            />
-          </div>
+          <RhDateTimePickerField
+            label={str('activities.form_start_label')}
+            id="act-start"
+            selected={startAtDate}
+            onChange={setStartAtDate}
+            maxDate={endAtDate || undefined}
+          />
+          <RhDateTimePickerField
+            label={str('activities.form_end_label')}
+            id="act-end"
+            selected={endAtDate}
+            onChange={setEndAtDate}
+            minDate={startAtDate || undefined}
+          />
           <TextField
             label={str('activities.form_location_label')}
             placeholder={str('activities.form_location_placeholder')}
             value={location}
             onChange={(e) => setLocation(e.target.value)}
           />
-          <div className="ui-field">
-            <label className="ui-field__label" htmlFor="act-reg">
-              {str('activities.form_registration_label')}
-            </label>
-            <input
-              id="act-reg"
-              type="datetime-local"
-              className="ui-input"
-              value={registrationDeadlineLocal}
-              onChange={(e) => setRegistrationDeadlineLocal(e.target.value)}
-            />
-          </div>
+          <RhDateTimePickerField
+            label={str('activities.form_registration_label')}
+            id="act-reg"
+            selected={registrationDeadlineDate}
+            onChange={setRegistrationDeadlineDate}
+          />
           <TextField
             label={str('activities.form_max_participants_label')}
             type="number"

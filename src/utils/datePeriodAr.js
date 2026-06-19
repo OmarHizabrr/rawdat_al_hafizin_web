@@ -1,3 +1,4 @@
+import { formatDateTimeMedium12Ar, formatHHmm12Ar } from './formatDateTimeAr.js'
 import { parseHijriYmdString } from './hijriDates.js'
 
 /** فرق أيام بين تاريخين هجريين YYYY-MM-DD (أم القرى)، شامل البداية والنهاية */
@@ -77,11 +78,6 @@ export function durationBetweenDatesAr(startDate, endDate) {
   return `${mm} دقيقة`
 }
 
-const dtFmt = /** @type {const} */ ({
-  dateStyle: 'medium',
-  timeStyle: 'short',
-})
-
 /**
  * عرض مواعيد الحلقة للبطاقات والاستكشاف (يدعم التخزين الجديد بتاريخ+وقت ISO والقديم بوقت فقط).
  * @param {Record<string, unknown>} h
@@ -95,8 +91,8 @@ export function halakaSessionDisplay(h) {
     if (!Number.isNaN(a.getTime()) && !Number.isNaN(b.getTime())) {
       return {
         mode: 'datetime',
-        startLabel: a.toLocaleString('ar-SA', dtFmt),
-        endLabel: b.toLocaleString('ar-SA', dtFmt),
+        startLabel: formatDateTimeMedium12Ar(a),
+        endLabel: formatDateTimeMedium12Ar(b),
         durationLabel: halakaSessionDurationAr(a, b),
       }
     }
@@ -106,8 +102,8 @@ export function halakaSessionDisplay(h) {
   if (st || et) {
     return {
       mode: 'time',
-      startLabel: st ? String(st) : '—',
-      endLabel: et ? String(et) : '—',
+      startLabel: st ? formatHHmm12Ar(String(st)) : '—',
+      endLabel: et ? formatHHmm12Ar(String(et)) : '—',
       durationLabel: sessionDurationLabelAr(String(st || '00:00'), String(et || '00:00')),
     }
   }

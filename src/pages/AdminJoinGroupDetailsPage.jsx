@@ -25,6 +25,7 @@ import {
   removeJoinGroupMember,
 } from '../services/joinGroupsService.js'
 import { Button, Modal, SearchField, useToast } from '../ui/index.js'
+import { formatArDateTime } from '../utils/formatDateTimeAr.js'
 import { RhIcon, RH_ICON_STROKE } from '../ui/RhIcon.jsx'
 
 function platformLabel(v) {
@@ -323,7 +324,7 @@ export default function AdminJoinGroupDetailsPage() {
                   </span>
                 </div>
                 <span className="rh-plans__saved-badge">
-                  {m.joinedAt ? new Date(m.joinedAt).toLocaleString('ar-SA') : '—'}
+                  {m.joinedAt ? formatArDateTime(m.joinedAt) : '—'}
                 </span>
                 <Button
                   type="button"
@@ -437,7 +438,7 @@ export default function AdminJoinGroupDetailsPage() {
                   </span>
                 </div>
                 <span className="rh-plans__saved-badge">
-                  {ev.at ? new Date(ev.at).toLocaleString('ar-SA') : '—'}
+                  {ev.at ? formatArDateTime(ev.at) : '—'}
                 </span>
               </li>
             ))}

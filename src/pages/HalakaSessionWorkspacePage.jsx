@@ -30,6 +30,7 @@ import {
   subscribeHalakaSession,
   upsertSessionAttendance,
 } from '../utils/halakatStorage.js'
+import { formatDateTimeMedium12Ar } from '../utils/formatDateTimeAr.js'
 import { loadPlans } from '../utils/plansStorage.js'
 import { exploreModalLink } from '../utils/exploreModalLink.js'
 
@@ -60,7 +61,7 @@ function memberRoleLabel(role) {
 }
 function formatRecordedAt(iso) {
   const t = Date.parse(String(iso || ''))
-  return Number.isFinite(t) ? new Date(t).toLocaleString('ar-SA') : ''
+  return Number.isFinite(t) ? formatDateTimeMedium12Ar(new Date(t)) : ''
 }
 
 export default function HalakaSessionWorkspacePage() {
@@ -562,7 +563,7 @@ export default function HalakaSessionWorkspacePage() {
 
       <section className="rh-settings-card">
         <p className="rh-settings-card__subtitle">
-          النوع: <strong>{sessionTypeLabel(session.sessionType, session.sessionTypeOtherLabel)}</strong> — {new Date(session.startedAt).toLocaleString('ar-SA')}
+          النوع: <strong>{sessionTypeLabel(session.sessionType, session.sessionTypeOtherLabel)}</strong> — {formatDateTimeMedium12Ar(session.startedAt)}
         </p>
         <div className="rh-halaka-sessions__stats">
           <div className="rh-halaka-sessions__stat"><span className="rh-halaka-sessions__stat-value">{summary.active}</span><span className="rh-halaka-sessions__stat-label">داخل العملية</span></div>

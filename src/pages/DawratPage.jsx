@@ -35,6 +35,7 @@ import { daysInclusiveYmd } from '../utils/datePeriodAr.js'
 import { leavingUserDeletesWholeGroup } from '../utils/groupMembership.js'
 import { mergeUserDirectoryRows } from '../utils/userDirectoryMerge.js'
 import { getImpersonateUid, withImpersonationQuery } from '../utils/impersonation.js'
+import { formatArDateTime } from '../utils/formatDateTimeAr.js'
 import {
   Button,
   Modal,
@@ -581,7 +582,7 @@ export default function DawratPage() {
                       {d.memberContributionUpdatedAt && (
                         <p className="ui-field__hint">
                           آخر تحديث للمساهمة:{' '}
-                          {new Date(d.memberContributionUpdatedAt).toLocaleString('ar-SA')}
+                          {formatArDateTime(d.memberContributionUpdatedAt)}
                         </p>
                       )}
                       <Button

@@ -6,6 +6,7 @@ import { PlanResourceLinksBlock } from '../PlanResourceLinksBlock.jsx'
 import { useSiteContent } from '../../context/useSiteContent.js'
 import { DAILY_LOGGING_STRICT_CARRYOVER } from '../../utils/planDailyQuota.js'
 import { halakaSessionDisplay } from '../../utils/datePeriodAr.js'
+import { formatHHmm12Ar } from '../../utils/formatDateTimeAr.js'
 import {
   activityAudienceLabel,
   activityFormatLabel,
@@ -53,11 +54,15 @@ function weekdayArrLabel(arr) {
 
 function formatReminderAr(hhmm) {
   if (!hhmm || typeof hhmm !== 'string') return null
-  const m = /^(\d{1,2}):(\d{2})$/.exec(hhmm.trim())
-  if (!m) return hhmm
-  const d = new Date()
-  d.setHours(Number(m[1]), Number(m[2]), 0, 0)
-  return d.toLocaleTimeString('ar-SA', { hour: 'numeric', minute: '2-digit' })
+  return formatHHmm12Ar(hhmm) || hhmm
+}
+
+function ExploreMetaTimestamps({ createdAt, updatedAt }) {
+  return (
+    <p className="rh-explore-plans__meta-muted">
+      أُنشئت: {formatActivityFirestoreMetaAr(createdAt)} · حُدّثت: {formatActivityFirestoreMetaAr(updatedAt)}
+    </p>
+  )
 }
 
 function dawraLines(p, listKey, textKey) {
@@ -304,10 +309,7 @@ export function ExplorePublicItemCard({
           </div>
         ) : null}
         <PlanResourceLinksBlock links={p.resourceLinks} />
-        <p className="rh-explore-plans__meta-muted">
-          أُنشئت: {p.createdAt ? String(p.createdAt) : '—'} · حُدّثت:{' '}
-          {p.updatedAt ? String(p.updatedAt) : '—'}
-        </p>
+        <ExploreMetaTimestamps createdAt={p.createdAt} updatedAt={p.updatedAt} />
       </ExploreCardShell>
     )
   }
@@ -348,10 +350,7 @@ export function ExplorePublicItemCard({
             </li>
           ) : null}
         </ul>
-        <p className="rh-explore-plans__meta-muted">
-          أُنشئت: {p.createdAt ? String(p.createdAt) : '—'} · حُدّثت:{' '}
-          {p.updatedAt ? String(p.updatedAt) : '—'}
-        </p>
+        <ExploreMetaTimestamps createdAt={p.createdAt} updatedAt={p.updatedAt} />
       </ExploreCardShell>
     )
   }
@@ -404,10 +403,7 @@ export function ExplorePublicItemCard({
             </HapticLink>
           </p>
         ) : null}
-        <p className="rh-explore-plans__meta-muted">
-          أُنشئت: {p.createdAt ? String(p.createdAt) : '—'} · حُدّثت:{' '}
-          {p.updatedAt ? String(p.updatedAt) : '—'}
-        </p>
+        <ExploreMetaTimestamps createdAt={p.createdAt} updatedAt={p.updatedAt} />
       </ExploreCardShell>
     )
   }
@@ -439,10 +435,7 @@ export function ExplorePublicItemCard({
         ) : null}
         {idLine}
         <CreatorBlock p={p} showCreator={showCreator} />
-        <p className="rh-explore-plans__meta-muted">
-          أُنشئت: {p.createdAt ? String(p.createdAt) : '—'} · حُدّثت:{' '}
-          {p.updatedAt ? String(p.updatedAt) : '—'}
-        </p>
+        <ExploreMetaTimestamps createdAt={p.createdAt} updatedAt={p.updatedAt} />
       </ExploreCardShell>
     )
   }
@@ -507,10 +500,7 @@ export function ExplorePublicItemCard({
             </ul>
           </div>
         ) : null}
-        <p className="rh-explore-plans__meta-muted">
-          أُنشئت: {p.createdAt ? String(p.createdAt) : '—'} · حُدّثت:{' '}
-          {p.updatedAt ? String(p.updatedAt) : '—'}
-        </p>
+        <ExploreMetaTimestamps createdAt={p.createdAt} updatedAt={p.updatedAt} />
       </ExploreCardShell>
     )
   }

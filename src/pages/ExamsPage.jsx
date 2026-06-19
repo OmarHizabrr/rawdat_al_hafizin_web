@@ -56,6 +56,7 @@ import {
 import { leavingUserDeletesWholeGroup } from '../utils/groupMembership.js'
 import { mergeUserDirectoryRows } from '../utils/userDirectoryMerge.js'
 import { getImpersonateUid, withImpersonationQuery } from '../utils/impersonation.js'
+import { formatArDateTime } from '../utils/formatDateTimeAr.js'
 import {
   Button,
   Modal,
@@ -616,7 +617,7 @@ export default function ExamsPage() {
                       />
                       {ex.examSelfReportUpdatedAt && (
                         <p className="ui-field__hint">
-                          آخر تحديث: {new Date(ex.examSelfReportUpdatedAt).toLocaleString('ar-SA')}
+                          آخر تحديث: {formatArDateTime(ex.examSelfReportUpdatedAt)}
                         </p>
                       )}
                       <Button

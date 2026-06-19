@@ -15,6 +15,7 @@ import {
   subscribeJoinGroups,
 } from '../services/joinGroupsService.js'
 import { joinGroupImageErrorMessage, uploadJoinGroupImage } from '../services/joinGroupMediaStorage.js'
+import { formatArDateTime } from '../utils/formatDateTimeAr.js'
 import { Button, Modal, ScrollArea, SearchField, TextAreaField, TextField, useToast } from '../ui/index.js'
 import { RhIcon, RH_ICON_STROKE } from '../ui/RhIcon.jsx'
 
@@ -392,7 +393,7 @@ export default function AdminJoinGroupsPage() {
                   </span>
                 </div>
                 <span className="rh-plans__saved-badge">
-                  {m.joinedAt ? new Date(m.joinedAt).toLocaleString('ar-SA') : '—'}
+                  {m.joinedAt ? formatArDateTime(m.joinedAt) : '—'}
                 </span>
               </li>
             ))}

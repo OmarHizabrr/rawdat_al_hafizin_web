@@ -1,3 +1,4 @@
+import { formatNowMedium12Ar } from './formatDateTimeAr.js'
 import { storePrintPayload } from './reportPrintPayload.js'
 
 /**
@@ -20,9 +21,7 @@ export function openReportPrintPage(payload, { autoPrint = false } = {}) {
 }
 
 export function buildPrintHeaderMeta(printContext) {
-  const issuedAt =
-    printContext?.issuedAt ||
-    new Date().toLocaleString('ar-SA', { dateStyle: 'medium', timeStyle: 'short' })
+  const issuedAt = printContext?.issuedAt || formatNowMedium12Ar()
   const meta = []
   if (printContext?.reportTypeLabel) {
     meta.push({ label: 'نوع التقرير', value: printContext.reportTypeLabel })
@@ -46,7 +45,7 @@ export function buildPrintHeaderLines(printContext) {
 }
 
 export function buildPrintFooterLine(printContext) {
-  const stamp = new Date().toLocaleString('ar-SA', { dateStyle: 'medium', timeStyle: 'short' })
+  const stamp = formatNowMedium12Ar()
   return printContext?.siteTitle ? `${printContext.siteTitle} · ${stamp}` : stamp
 }
 

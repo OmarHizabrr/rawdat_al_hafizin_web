@@ -1,3 +1,5 @@
+import { formatDateTimeMedium12Ar, formatDateTimeShort12Ar } from './formatDateTimeAr.js'
+
 /** تسميات أنواع الأنشطة وأشكالها والجمهور — مصدر واحد لصفحة الأنشطة واستكشافها. */
 
 export const ACTIVITY_KIND_OPTIONS = [
@@ -61,7 +63,7 @@ export function formatActivityDateTimeAr(value) {
     d = new Date(String(value))
   }
   if (!d || Number.isNaN(d.getTime())) return ''
-  return d.toLocaleString('ar-SA', { dateStyle: 'medium', timeStyle: 'short' })
+  return formatDateTimeMedium12Ar(d)
 }
 
 /** سطر مختصر لحقول الإنشاء/التحديث في البطاقات */
@@ -76,7 +78,7 @@ export function formatActivityFirestoreMetaAr(value) {
     d = new Date(String(value))
   }
   if (!d || Number.isNaN(d.getTime())) return '—'
-  return d.toLocaleString('ar-SA', { dateStyle: 'short', timeStyle: 'short' })
+  return formatDateTimeShort12Ar(d)
 }
 
 export function activityMemberCountBadge(count) {

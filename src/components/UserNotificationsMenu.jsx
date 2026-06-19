@@ -17,19 +17,13 @@ import {
 import { HapticLink } from '../ui/HapticLink.jsx'
 import { useOnClickOutside } from '../ui/hooks/useOnClickOutside.js'
 import { rhHapticChromeTap, rhHapticLight } from '../utils/haptics.js'
+import { formatWhen12Ar } from '../utils/formatDateTimeAr.js'
 import { RH_ICON_STROKE, RhIcon } from '../ui/RhIcon.jsx'
 
 const PN = PERMISSION_PAGE_IDS.notifications
 
 function formatWhen(iso) {
-  const t = Date.parse(String(iso || ''))
-  if (!Number.isFinite(t)) return ''
-  return new Date(t).toLocaleString('ar-SA', {
-    hour: '2-digit',
-    minute: '2-digit',
-    month: '2-digit',
-    day: '2-digit',
-  })
+  return formatWhen12Ar(iso)
 }
 
 export function UserNotificationsMenu({ user }) {

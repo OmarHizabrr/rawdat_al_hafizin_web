@@ -14,6 +14,7 @@ import {
   subscribeUserNotifications,
 } from '../services/userNotificationsService.js'
 import { getImpersonateUid, withImpersonationQuery } from '../utils/impersonation.js'
+import { formatWhen12Ar } from '../utils/formatDateTimeAr.js'
 import { canViewCreator } from '../utils/viewCreatorPermission.js'
 import { Button, useToast } from '../ui/index.js'
 import { RhIcon, RH_ICON_STROKE } from '../ui/RhIcon.jsx'
@@ -21,15 +22,7 @@ import { RhIcon, RH_ICON_STROKE } from '../ui/RhIcon.jsx'
 const PN = PERMISSION_PAGE_IDS.notifications
 
 function formatWhen(iso) {
-  const t = Date.parse(String(iso || ''))
-  if (!Number.isFinite(t)) return ''
-  return new Date(t).toLocaleString('ar-SA', {
-    hour: '2-digit',
-    minute: '2-digit',
-    month: '2-digit',
-    day: '2-digit',
-    year: 'numeric',
-  })
+  return formatWhen12Ar(iso)
 }
 
 export default function UserNotificationsPage() {

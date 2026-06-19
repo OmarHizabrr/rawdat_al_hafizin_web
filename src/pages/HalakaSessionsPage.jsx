@@ -10,6 +10,7 @@ import { useSiteContent } from '../context/useSiteContent.js'
 import { RhIcon, RH_ICON_STROKE } from '../ui/RhIcon.jsx'
 import { Button, Modal, RhDateTimePickerField, TextAreaField, TextField, useToast } from '../ui/index.js'
 import { halakaSessionDurationAr } from '../utils/datePeriodAr.js'
+import { formatDateTimeMedium12Ar } from '../utils/formatDateTimeAr.js'
 import { exploreModalLink } from '../utils/exploreModalLink.js'
 import {
   HALAKA_MEMBER_ROLES,
@@ -233,7 +234,7 @@ export default function HalakaSessionsPage() {
                     ) : null}
                   </div>
                   <span className="rh-halaka-sessions__session-dates">
-                    {new Date(s.startedAt).toLocaleString('ar-SA')} — {new Date(s.endedAt).toLocaleString('ar-SA')}
+                    {formatDateTimeMedium12Ar(s.startedAt)} — {formatDateTimeMedium12Ar(s.endedAt)}
                   </span>
                 </div>
                 <div className="rh-halaka-sessions__session-actions">
