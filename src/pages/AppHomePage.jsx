@@ -1,26 +1,14 @@
 import {
-  BookOpen,
-  CheckCircle2,
-  ChevronDown,
-  Coffee,
-  Flame,
-  Loader2,
-  NotebookPen,
-  Sparkles,
-  Sunrise,
   Bird,
+  Sparkles,
   UserPlus,
   X,
-  LayoutDashboard,
-  ListChecks,
 } from "lucide-react";
 import { HapticLink } from '../ui/HapticLink.jsx'
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useSearchParams } from 'react-router-dom';
 import { useSiteContent } from "../context/useSiteContent.js";
-import { HomeWirdCheckInModal } from "../components/HomeWirdCheckInModal.jsx";
-import { HomeWirdModal } from "../components/HomeWirdModal.jsx";
-import { pickHomeMotivationQuote } from "../data/homeMotivationQuotes.js";
+import { HomeTasksSummaryCard } from "../components/home/HomeTasksSummaryCard.jsx";
 import { PERMISSION_PAGE_IDS } from "../config/permissionRegistry.js";
 import { canViewCreator } from "../utils/viewCreatorPermission.js";
 import { isAdmin, normalizeRole } from "../config/roles.js";
@@ -28,26 +16,6 @@ import { useAuth } from "../context/useAuth.js";
 import { usePermissions } from "../context/usePermissions.js";
 import { firestoreApi } from "../services/firestoreApi.js";
 import { loadRecentStudentFeelings } from "../services/studentFeelingsService.js";
-import { setUserDefaultPlanId } from "../services/userService.js";
-import { addWird } from "../utils/awradStorage.js";
-import { useOnClickOutside } from "../ui/hooks/useOnClickOutside.js";
-import { loadPlans, subscribePlans } from "../utils/plansStorage.js";
-import { subscribeAwrad } from "../utils/awradStorage.js";
-import { buildAutoDefaultWirdAddRequest } from "../utils/autoLogDefaultWird.js";
-import {
-  getHomeWirdDashboardInsight,
-  getHomeWirdDayStatus,
-  getPagesLoggedOnPlanDay,
-  shouldShowHomeLogWirdCumulative,
-} from "../utils/homeWirdStatus.js";
-import {
-  isCheckinDismissedForDay,
-  isCheckinSnoozed,
-  setCheckinDismissNo,
-  setCheckinSnooze,
-} from "../utils/homeWirdCheckinStorage.js";
-import { localYmd } from "../utils/planDailyQuota.js";
-import { computePlanProgress } from "../utils/planProgress.js";
 import {
   JOIN_GROUP_GENDER,
   JOIN_GROUP_PLATFORM,
@@ -59,42 +27,17 @@ import {
   PROFILE_REQUEST_STATUS,
   loadMyProfileRequest,
 } from "../services/profileRequestService.js";
-import { hijriYmdToLocalNoonDate, prevHijriYmd } from "../utils/hijriDates.js";
-import {
-  isoFromLocalYmd,
-  maxAdditionalPagesForRecordingDay,
-  planAppliesToYmd,
-} from "../utils/planDailyQuota.js";
 import {
   getImpersonateUid,
   withImpersonationQuery,
 } from "../utils/impersonation.js";
-import { Button, Modal, useToast } from "../ui/index.js";
+import { Button, useToast } from "../ui/index.js";
 import {
   FEELINGS_FLIGHT_MODE,
   readFeelingsFlightMode,
 } from "../utils/feelingsFlightPrefs.js";
-import { RhIcon, RH_ICON_STROKE } from "../ui/RhIcon.jsx";
-import { useTasksStore } from "../stores/useTasksStore.js";
 
 const PH = PERMISSION_PAGE_IDS.home;
-const WEEKDAY_NAMES_AR = [
-  "الأحد",
-  "الإثنين",
-  "الثلاثاء",
-  "الأربعاء",
-  "الخميس",
-  "الجمعة",
-  "السبت",
-];
-
-const MOOD_BADGE_LABEL = {
-  rest: "يوم راحة",
-  done: "ممتاز!",
-  steady: "ثابت",
-  catchup: "لنلحق التأخر",
-  late: "حان التعويض",
-};
 
 const DISMISSED_BIRDS_KEY = "rh.home.dismissedBirdKeys";
 
@@ -125,21 +68,7 @@ function birdKey(feeling) {
   return `${feeling?.ownerUid || "u"}:${feeling?.id || ""}`;
 }
 
-function HomeDashMoodIcon({ mood }) {
-  const common = { size: 36, strokeWidth: 1.65 };
-  switch (mood) {
-    case "rest":
-      return <Coffee {...common} />;
-    case "done":
-      return <CheckCircle2 {...common} />;
-    case "late":
-      return <Flame {...common} />;
-    case "catchup":
-      return <Sunrise {...common} />;
-    default:
-      return <BookOpen {...common} />;
-  }
-}
+const BIRD_SWIPE_DISMISS_PX = 52;
 
 function hashSeed(text) {
   let h = 0;
@@ -189,38 +118,6 @@ function flightClassFromFeeling(feeling, idx) {
     ? "rh-home-feelings-birds__flight rh-home-feelings-birds__flight--reverse"
     : "rh-home-feelings-birds__flight";
 }
-
-function weekdayLabelFromHijriYmd(ymd) {
-  const d = hijriYmdToLocalNoonDate(ymd);
-  if (!d || Number.isNaN(d.getTime())) return "—";
-  return WEEKDAY_NAMES_AR[d.getDay()] || "—";
-}
-
-function buildBacklogDays(plan, awrad, todayYmd, maxDays = 21) {
-  if (!plan?.id || !todayYmd) return [];
-  const daily = Math.max(1, Number(plan.dailyPages) || 1);
-  const out = [];
-  let d = todayYmd;
-  for (let i = 0; i < maxDays; i += 1) {
-    if (!d) break;
-    if (planAppliesToYmd(plan, d)) {
-      const logged = getPagesLoggedOnPlanDay(plan, awrad, d);
-      const missing = Math.max(0, daily - logged);
-      if (missing > 0)
-        out.push({
-          ymd: d,
-          logged,
-          missing,
-          isToday: d === todayYmd,
-          weekdayLabel: weekdayLabelFromHijriYmd(d),
-        });
-    }
-    d = prevHijriYmd(d);
-  }
-  return out;
-}
-
-const BIRD_SWIPE_DISMISS_PX = 52;
 
 function FlyingFeelingBird({
   feeling,
@@ -336,7 +233,7 @@ export default function AppHomePage() {
   const { user } = useAuth();
   const toast = useToast();
   const { can, canAccessPage } = usePermissions();
-  const { typeLabel, branding, str } = useSiteContent();
+  const { branding, str } = useSiteContent();
   const { search } = useLocation();
   const [searchParams] = useSearchParams();
   const uidParam = searchParams.get("uid")?.trim() || "";
@@ -357,36 +254,17 @@ export default function AppHomePage() {
     [impersonateUid],
   );
 
-  const [plans, setPlans] = useState([]);
-  const [awrad, setAwrad] = useState([]);
   const [subjectProfile, setSubjectProfile] = useState(null);
-  const [planMenuOpen, setPlanMenuOpen] = useState(false);
-  const [selectPlanLoadingId, setSelectPlanLoadingId] = useState(null);
-  const planSwitchBusyRef = useRef(false);
-  const planMenuRef = useRef(null);
-  const [homeWirdOpen, setHomeWirdOpen] = useState(false);
-  const [homeWirdCheckInOpen, setHomeWirdCheckInOpen] = useState(false);
-  const [homeNow, setHomeNow] = useState(() => new Date());
   const [recentFeelings, setRecentFeelings] = useState([]);
   const [feelingsFlightMode, setFeelingsFlightMode] = useState(() =>
     readFeelingsFlightMode(),
   );
-  const [backfillBusyYmd, setBackfillBusyYmd] = useState("");
-  const [backlogConfirmYmd, setBacklogConfirmYmd] = useState("");
   const [pausedBirdIds, setPausedBirdIds] = useState({});
   const [activeFeelingDetail, setActiveFeelingDetail] = useState(null);
   const [dismissedBirdKeys, setDismissedBirdKeys] = useState(readDismissedBirdKeys);
-  const prevShouldOfferCheckInRef = useRef(false);
   const [joinGroups, setJoinGroups] = useState([]);
   const [groupStateById, setGroupStateById] = useState({});
   const [joiningGroupId, setJoiningGroupId] = useState("");
-
-  useOnClickOutside(planMenuRef, () => setPlanMenuOpen(false), planMenuOpen);
-
-  useEffect(() => {
-    const id = window.setInterval(() => setHomeNow(new Date()), 60_000);
-    return () => window.clearInterval(id);
-  }, []);
 
   useEffect(() => {
     document.title = actingAsUser
@@ -425,7 +303,7 @@ export default function AppHomePage() {
     return () => {
       cancelled = true;
     };
-  }, [awrad.length, plans.length]);
+  }, []);
 
   useEffect(() => {
     const unsub = subscribeJoinGroups(
@@ -437,9 +315,6 @@ export default function AppHomePage() {
 
   const impersonatedSubject =
     actingAsUser && contextUserId ? subjectProfile : null;
-  const hideHomePlanUi = Boolean(
-    actingAsUser ? impersonatedSubject?.hideHomePlanUi : user?.hideHomePlanUi,
-  );
   const effectiveUserGender = actingAsUser
     ? String(impersonatedSubject?.gender || "").trim()
     : String(user?.gender || "").trim();
@@ -462,17 +337,6 @@ export default function AppHomePage() {
   const shouldShowJoinGroups =
     normalizeRole(user?.role) === "student" &&
     effectiveProfileStatus === PROFILE_REQUEST_STATUS.APPROVED;
-
-  useEffect(() => {
-    if (!contextUserId) return undefined;
-    loadPlans(contextUserId).then(setPlans);
-    const unsubP = subscribePlans(contextUserId, setPlans);
-    const unsubA = subscribeAwrad(contextUserId, setAwrad);
-    return () => {
-      unsubP();
-      unsubA();
-    };
-  }, [contextUserId]);
 
   useEffect(() => {
     if (!contextUserId || joinGroups.length === 0) {
@@ -500,131 +364,13 @@ export default function AppHomePage() {
     };
   }, [joinGroups, contextUserId]);
 
-  const activePlanId = useMemo(() => {
-    const def = actingAsUser
-      ? impersonatedSubject?.defaultPlanId
-      : user?.defaultPlanId;
-    if (def && plans.some((p) => p.id === def)) return def;
-    return plans[0]?.id ?? "";
-  }, [
-    actingAsUser,
-    impersonatedSubject?.defaultPlanId,
-    user?.defaultPlanId,
-    plans,
-  ]);
-
-  const activePlan = useMemo(
-    () => plans.find((p) => p.id === activePlanId) ?? null,
-    [plans, activePlanId],
-  );
-
-  const progress = useMemo(
-    () => computePlanProgress(activePlan, awrad),
-    [activePlan, awrad],
-  );
-
-  const selectPlan = useCallback(
-    async (planId) => {
-      if (!user || !planId || planSwitchBusyRef.current) return;
-      planSwitchBusyRef.current = true;
-      setSelectPlanLoadingId(planId);
-      try {
-        await setUserDefaultPlanId(user, planId, {
-          targetUid: actingAsUser ? contextUserId : undefined,
-        });
-        if (actingAsUser) {
-          setSubjectProfile((p) => ({ ...(p || {}), defaultPlanId: planId }));
-        }
-        setPlanMenuOpen(false);
-      } catch {
-        /* يبقى الاختيار السابق */
-      } finally {
-        planSwitchBusyRef.current = false;
-        setSelectPlanLoadingId(null);
-      }
-    },
-    [user, actingAsUser, contextUserId],
-  );
-
   const name = actingAsUser
     ? impersonatedSubject?.displayName?.trim() ||
       str("app.home_greeting_user_fallback")
     : user?.displayName?.trim() || str("app.home_greeting_fallback");
-  const pct = progress?.progressPercent ?? 0;
 
-  const homeWirdStatus = useMemo(
-    () => getHomeWirdDayStatus(activePlan, awrad, homeNow),
-    [activePlan, awrad, homeNow],
-  );
-  const showHomeLogWirdCumulative = useMemo(
-    () =>
-      shouldShowHomeLogWirdCumulative(
-        activePlan,
-        awrad,
-        homeWirdStatus.todayYmd,
-      ),
-    [activePlan, awrad, homeWirdStatus.todayYmd],
-  );
-  const dashInsight = useMemo(
-    () => getHomeWirdDashboardInsight(activePlan, awrad, homeWirdStatus),
-    [activePlan, awrad, homeWirdStatus],
-  );
-  const homeMotivationQuote = useMemo(
-    () => pickHomeMotivationQuote(homeWirdStatus.todayYmd),
-    [homeWirdStatus.todayYmd],
-  );
-
-  const shouldOfferCheckIn = useMemo(() => {
-    homeNow.getTime();
-    if (!activePlan || !progress || !contextUserId) return false;
-    if (!can(PH, "home_log_wird")) return false;
-    if (!showHomeLogWirdCumulative) return false;
-    if (homeWirdOpen) return false;
-    if (!homeWirdStatus.appliesToday || homeWirdStatus.isComplete) return false;
-    const ymd = homeWirdStatus.todayYmd;
-    const planId = activePlan.id;
-    if (isCheckinDismissedForDay(contextUserId, ymd, planId)) return false;
-    if (isCheckinSnoozed(contextUserId, ymd, planId)) return false;
-    if (!buildAutoDefaultWirdAddRequest(activePlan, awrad, localYmd()).ok)
-      return false;
-    return true;
-  }, [
-    activePlan,
-    progress,
-    contextUserId,
-    can,
-    homeWirdOpen,
-    showHomeLogWirdCumulative,
-    homeWirdStatus.appliesToday,
-    homeWirdStatus.isComplete,
-    homeWirdStatus.todayYmd,
-    awrad,
-    homeNow,
-  ]);
-
-  useEffect(() => {
-    if (!shouldOfferCheckIn) {
-      setHomeWirdCheckInOpen(false);
-      prevShouldOfferCheckInRef.current = false;
-      return undefined;
-    }
-    if (!prevShouldOfferCheckInRef.current) {
-      prevShouldOfferCheckInRef.current = true;
-      const t = window.setTimeout(() => setHomeWirdCheckInOpen(true), 550);
-      return () => window.clearTimeout(t);
-    }
-    return undefined;
-  }, [shouldOfferCheckIn]);
-
-  const awradHref = appPath(
-    `/app/awrad?plan=${encodeURIComponent(activePlan?.id || "")}`,
-  );
   const canVisitFeelings = canAccessPage("feelings");
-  const canVisitAwradFromHome = canAccessPage("awrad") && can(PH, "home_footer_awrad_link");
-  const canVisitPlansFromHome = canAccessPage("plans") && can(PH, "home_quick_plans");
   const canVisitWorkspace = canAccessPage("home");
-  const openTaskCount = useTasksStore((s) => s.tasks.filter((t) => t.step !== "done").length);
-  const canBackfillWird = can(PH, "home_log_wird");
   const showFeelingAuthor = canViewCreator(can, PH);
   const canRenderFlights =
     canVisitFeelings &&
@@ -656,76 +402,6 @@ export default function AppHomePage() {
       window.removeEventListener("rh:feelings-flight-mode", onCustom);
     };
   }, []);
-
-  const backlogDays = useMemo(
-    () => buildBacklogDays(activePlan, awrad, homeWirdStatus.todayYmd, 21),
-    [activePlan, awrad, homeWirdStatus.todayYmd],
-  );
-
-  const markBacklogDone = useCallback(
-    async (targetYmd) => {
-      if (
-        !activePlan?.id ||
-        !contextUserId ||
-        !user ||
-        !targetYmd ||
-        backfillBusyYmd
-      )
-        return;
-      const daily = Math.max(1, Number(activePlan.dailyPages) || 1);
-      const logged = getPagesLoggedOnPlanDay(activePlan, awrad, targetYmd);
-      const missing = Math.max(0, daily - logged);
-      if (missing <= 0) {
-        toast.success("هذا اليوم مكتمل بالفعل.", "تم");
-        return;
-      }
-      const maxExtra = maxAdditionalPagesForRecordingDay(
-        activePlan,
-        awrad,
-        targetYmd,
-        {},
-      );
-      const pagesToAdd = Math.min(missing, maxExtra);
-      if (pagesToAdd <= 0) {
-        toast.warning(
-          "لا يمكن تسجيل هذا اليوم الآن لأن التعويض التراكمي مكتمل عبر الأيام التالية.",
-          "تنبيه",
-        );
-        return;
-      }
-      setBackfillBusyYmd(targetYmd);
-      try {
-        const nextFrom =
-          computePlanProgress(activePlan, awrad)?.nextFromPage ?? 1;
-        await addWird(
-          contextUserId,
-          {
-            planId: activePlan.id,
-            planName: activePlan.name,
-            mode: "count",
-            pagesCount: pagesToAdd,
-            fromPage: nextFrom,
-            toPage: nextFrom + pagesToAdd - 1,
-            recordedAt: isoFromLocalYmd(targetYmd),
-          },
-          user,
-          { allowCustomRecordedAt: true },
-        );
-        toast.success(
-          `تم تسجيل إنجاز يوم ${targetYmd} (${pagesToAdd} صفحة).`,
-          "بارك الله فيك",
-        );
-      } catch {
-        toast.warning(
-          "تعذّر تسجيل إنجاز اليوم السابق. حاول مرة أخرى.",
-          "تنبيه",
-        );
-      } finally {
-        setBackfillBusyYmd("");
-      }
-    },
-    [activePlan, contextUserId, user, backfillBusyYmd, awrad, toast],
-  );
 
   const onBirdSingleClick = useCallback((feeling) => {
     const key = `${feeling.ownerUid || "u"}:${feeling.id}`;
@@ -760,15 +436,6 @@ export default function AppHomePage() {
     });
   }, []);
 
-  const pendingBacklogDay = useMemo(
-    () => backlogDays.find((d) => d.ymd === backlogConfirmYmd) || null,
-    [backlogDays, backlogConfirmYmd],
-  );
-  const overdueSinceDay = useMemo(() => {
-    const pastDelayed = backlogDays.filter((d) => !d.isToday);
-    if (pastDelayed.length === 0) return null;
-    return pastDelayed[pastDelayed.length - 1];
-  }, [backlogDays]);
   const homeJoinGroups = useMemo(() => {
     if (!shouldShowJoinGroups) return [];
     const genderAllowed = (group) => {
@@ -927,462 +594,11 @@ export default function AppHomePage() {
         </div>
       ) : null}
 
-      {hideHomePlanUi ? (
-        <section className="card rh-home-dash-empty rh-home-dash-empty--app">
-          <div className="rh-home-dash-empty__inner">
-            <h2 className="rh-home-dash-empty__title">عرض الخطة متوقف</h2>
-            <p className="rh-home-dash-empty__text">
-              أوقفت عرض لوحة الخطة على الرئيسية من الإعدادات. لا تظهر هنا لوحة التقدم ولا تذكيرات الورد اليومية. يمكنك
-              متابعة خططك من «الخطط» في القائمة الجانبية، أو إعادة الإظهار على الرئيسية من الإعدادات إن سمح نوع
-              صلاحياتك.
-            </p>
-            {canVisitWorkspace && openTaskCount > 0 ? (
-              <HapticLink
-                className="rh-home-dash__btn rh-home-dash__btn--primary"
-                to={appPath("/app/tasks")}
-              >
-                <RhIcon as={ListChecks} size={20} strokeWidth={RH_ICON_STROKE} />
-                {str("app.home_cross_tasks", { count: openTaskCount })}
-              </HapticLink>
-            ) : null}
-          </div>
-        </section>
-      ) : activePlan && progress ? (
-        <section
-          className={`rh-home-dash rh-home-dash--app card rh-home-dash--mood-${dashInsight.mood}`}
-        >
-          <div className="rh-home-dash__glow" aria-hidden />
-          <div className="rh-home-dash__sparkles" aria-hidden />
+      {canVisitWorkspace && contextUserId ? (
+        <HomeTasksSummaryCard userId={contextUserId} impersonateUid={impersonateUid} />
+      ) : null}
 
-          <div className="rh-home-dash__head">
-            <p className="rh-home-dash__eyebrow">
-              {actingAsUser
-                ? str("app.home_plan_now_other")
-                : str("app.home_plan_now_you")}
-            </p>
-            <div className="rh-home-dash__picker-wrap" ref={planMenuRef}>
-              {can(PH, "home_switch_plan") ? (
-                <>
-                  <button
-                    type="button"
-                    className="rh-home-dash__picker"
-                    onClick={() => setPlanMenuOpen((o) => !o)}
-                    aria-expanded={planMenuOpen}
-                    aria-haspopup="listbox"
-                  >
-                    <span className="rh-home-dash__picker-name">
-                      {activePlan.name}
-                    </span>
-                    <span className="rh-home-dash__picker-meta">
-                      {typeLabel(activePlan.planType)} · {activePlan.dailyPages}{" "}
-                      ص/يوم
-                    </span>
-                    <ChevronDown
-                      size={20}
-                      strokeWidth={2}
-                      className={[
-                        "rh-home-dash__chevron",
-                        planMenuOpen ? "rh-home-dash__chevron--open" : "",
-                      ].join(" ")}
-                    />
-                  </button>
-                  {planMenuOpen && (
-                    <ul className="rh-home-dash__menu" role="listbox">
-                      {plans.map((p) => (
-                        <li
-                          key={p.id}
-                          role="option"
-                          aria-selected={p.id === activePlanId}
-                        >
-                          <button
-                            type="button"
-                            className={[
-                              "rh-home-dash__menu-item",
-                              p.id === activePlanId
-                                ? "rh-home-dash__menu-item--active"
-                                : "",
-                            ]
-                              .filter(Boolean)
-                              .join(" ")}
-                            disabled={selectPlanLoadingId !== null}
-                            aria-busy={
-                              selectPlanLoadingId === p.id || undefined
-                            }
-                            onClick={() => selectPlan(p.id)}
-                          >
-                            {selectPlanLoadingId === p.id ? (
-                              <RhIcon
-                                as={Loader2}
-                                size={20}
-                                strokeWidth={RH_ICON_STROKE}
-                                className="ui-btn__spinner"
-                              />
-                            ) : null}
-                            <strong>{p.name}</strong>
-                            <span>
-                              {typeLabel(p.planType)} — {p.totalTargetPages}{" "}
-                              صفحة
-                            </span>
-                          </button>
-                        </li>
-                      ))}
-                    </ul>
-                  )}
-                </>
-              ) : (
-                <div className="rh-home-dash__picker rh-home-dash__picker--static">
-                  <span className="rh-home-dash__picker-name">
-                    {activePlan.name}
-                  </span>
-                  <span className="rh-home-dash__picker-meta">
-                    {typeLabel(activePlan.planType)} · {activePlan.dailyPages}{" "}
-                    ص/يوم
-                  </span>
-                </div>
-              )}
-            </div>
-          </div>
-
-          <div className="rh-home-dash__hero">
-            <div className="rh-home-dash__hero-icon-wrap">
-              <span className="rh-home-dash__hero-ring" aria-hidden />
-              <div className="rh-home-dash__hero-icon" aria-hidden>
-                <HomeDashMoodIcon mood={dashInsight.mood} />
-              </div>
-            </div>
-            <div className="rh-home-dash__hero-body">
-              <span
-                className={`rh-home-dash__mood-badge rh-home-dash__mood-badge--${dashInsight.mood}`}
-              >
-                {MOOD_BADGE_LABEL[dashInsight.mood]}
-              </span>
-              {dashInsight.mood === "rest" || dashInsight.owedPages <= 0 ? (
-                <div className="rh-home-dash__metric rh-home-dash__metric--soft">
-                  <span className="rh-home-dash__metric-val">
-                    {pct.toFixed(0)}%
-                  </span>
-                  <span className="rh-home-dash__metric-label">
-                    إنجاز الخطة الكلي
-                  </span>
-                </div>
-              ) : (
-                <div
-                  className={[
-                    "rh-home-dash__metric",
-                    dashInsight.mood === "late"
-                      ? "rh-home-dash__metric--pulse"
-                      : "",
-                  ]
-                    .filter(Boolean)
-                    .join(" ")}
-                >
-                  <span className="rh-home-dash__metric-val">
-                    {dashInsight.owedPages}
-                  </span>
-                  <span className="rh-home-dash__metric-label">
-                    صفحة متأخرة تراكمياً
-                  </span>
-                  {overdueSinceDay ? (
-                    <span className="rh-home-dash__metric-since">
-                      متأخر منذ: {overdueSinceDay.weekdayLabel} —{" "}
-                      {overdueSinceDay.ymd}
-                    </span>
-                  ) : null}
-                </div>
-              )}
-              <h2 className="rh-home-dash__title">{dashInsight.headline}</h2>
-              {dashInsight.detailLines.length > 0 ? (
-                <ul className="rh-home-dash__bullets">
-                  {dashInsight.detailLines.map((line) => (
-                    <li key={line}>{line}</li>
-                  ))}
-                </ul>
-              ) : null}
-            </div>
-          </div>
-
-          {(dashInsight.yesterdayApplies || dashInsight.todayApplies) && (
-            <div className="rh-home-dash__timeline">
-              {dashInsight.yesterdayApplies ? (
-                <div className="rh-home-dash__daychip">
-                  <span className="rh-home-dash__daychip-label">أمس</span>
-                  <span className="rh-home-dash__daychip-val">
-                    {dashInsight.yesterdayLogged} / {dashInsight.dailyPages}{" "}
-                    صفحة
-                  </span>
-                </div>
-              ) : null}
-              {dashInsight.todayApplies ? (
-                <div className="rh-home-dash__daychip rh-home-dash__daychip--today">
-                  <span className="rh-home-dash__daychip-label">اليوم</span>
-                  <span className="rh-home-dash__daychip-val">
-                    {dashInsight.todayLogged} / {dashInsight.dailyPages} صفحة
-                  </span>
-                </div>
-              ) : null}
-            </div>
-          )}
-
-          {canBackfillWird && backlogDays.length > 0 ? (
-            <div className="rh-home-dash__backlog">
-              <p className="rh-home-dash__backlog-title">
-                أيام تحتاج إنجاز/تعويض — اضغط (تأكيد الإنجاز)
-              </p>
-              <div className="rh-home-dash__backlog-list">
-                {backlogDays.slice(0, 8).map((d) => (
-                  <button
-                    key={d.ymd}
-                    type="button"
-                    className={[
-                      "rh-home-dash__backlog-item",
-                      d.isToday
-                        ? "rh-home-dash__backlog-item--waiting"
-                        : d.missing > 0
-                          ? "rh-home-dash__backlog-item--pending"
-                          : "",
-                      backfillBusyYmd === d.ymd
-                        ? "rh-home-dash__backlog-item--busy"
-                        : "",
-                    ]
-                      .filter(Boolean)
-                      .join(" ")}
-                    onClick={() => setBacklogConfirmYmd(d.ymd)}
-                    disabled={
-                      backfillBusyYmd !== "" && backfillBusyYmd !== d.ymd
-                    }
-                  >
-                    <span className="rh-home-dash__backlog-date">
-                      {d.weekdayLabel} — {d.ymd}
-                    </span>
-                    <span className="rh-home-dash__backlog-missing">
-                      المتبقي: {d.missing} صفحة
-                    </span>
-                    {!d.isToday ? (
-                      <span className="rh-home-dash__backlog-since">
-                        متأخر منذ: {d.weekdayLabel} — {d.ymd}
-                      </span>
-                    ) : null}
-                    <span className="rh-home-dash__backlog-state">
-                      {d.isToday ? "بانتظار إكمال اليوم" : d.missing > 0 ? "متأخر — لم يُنجز بعد" : "مكتمل"}
-                    </span>
-                    <span className="rh-home-dash__backlog-cta">
-                      <CheckCircle2 size={15} strokeWidth={2} />
-                      {backfillBusyYmd === d.ymd
-                        ? "جارٍ التسجيل…"
-                        : d.isToday
-                          ? "إكمال ورد اليوم"
-                          : "تأكيد الإنجاز"}
-                    </span>
-                  </button>
-                ))}
-              </div>
-            </div>
-          ) : null}
-
-          <div className="rh-home-dash__progress">
-            <div className="rh-home-dash__progress-head">
-              <span className="rh-home-dash__progress-pct">
-                {pct.toFixed(1)}%
-              </span>
-              <span className="rh-home-dash__progress-label">
-                {str("app.home_progress_label")}
-              </span>
-            </div>
-            <div className="rh-home-dash__bar">
-              <div
-                className="rh-home-dash__bar-fill"
-                style={{ width: `${Math.min(100, pct)}%` }}
-              />
-            </div>
-            <div className="rh-home-dash__stats">
-              <div>
-                <span className="rh-home-dash__stat-num">
-                  {progress.achievedPages} / {progress.targetPages || "—"}
-                </span>
-                <span className="rh-home-dash__stat-key">منجز</span>
-              </div>
-              <div>
-                <span className="rh-home-dash__stat-num">
-                  {progress.remainingPages}
-                </span>
-                <span className="rh-home-dash__stat-key">متبقٍ</span>
-              </div>
-              <div>
-                <span className="rh-home-dash__stat-num">
-                  {progress.reachedPage || 0}
-                </span>
-                <span className="rh-home-dash__stat-key">آخر صفحة</span>
-              </div>
-              <div>
-                <span className="rh-home-dash__stat-num">
-                  {progress.nextFromPage}
-                </span>
-                <span className="rh-home-dash__stat-key">التالي من</span>
-              </div>
-            </div>
-          </div>
-
-          <p className="rh-home-dash__quote" role="note">
-            «{homeMotivationQuote}»
-          </p>
-
-          <div className="rh-home-dash__actions">
-            {canVisitWorkspace ? (
-              <HapticLink
-                className="rh-home-dash__btn rh-home-dash__btn--secondary"
-                to={appPath("/app/dashboard")}
-              >
-                <RhIcon as={LayoutDashboard} size={20} strokeWidth={RH_ICON_STROKE} />
-                {str("app.home_cross_dashboard")}
-              </HapticLink>
-            ) : null}
-            {canVisitWorkspace ? (
-              <HapticLink
-                className={[
-                  "rh-home-dash__btn",
-                  openTaskCount > 0 ? "rh-home-dash__btn--primary" : "rh-home-dash__btn--secondary",
-                ].join(" ")}
-                to={appPath("/app/tasks")}
-              >
-                <RhIcon as={ListChecks} size={20} strokeWidth={RH_ICON_STROKE} />
-                {openTaskCount > 0
-                  ? str("app.home_cross_tasks", { count: openTaskCount })
-                  : str("layout.nav_tasks")}
-              </HapticLink>
-            ) : null}
-            {canVisitAwradFromHome ? (
-              <HapticLink
-                className="rh-home-dash__btn rh-home-dash__btn--secondary"
-                to={awradHref}
-              >
-                صفحة الأوراد — تفاصيل كاملة
-              </HapticLink>
-            ) : null}
-            {canVisitFeelings ? (
-              <HapticLink
-                className="rh-home-dash__btn rh-home-dash__btn--secondary"
-                to={appPath("/app/feelings")}
-              >
-                <Bird size={20} strokeWidth={1.75} />
-                مشاعر الطلاب
-              </HapticLink>
-            ) : null}
-            {can(PH, "home_footer_plans_link") ? (
-              <HapticLink
-                className="rh-home-dash__link-quiet"
-                to={appPath("/app/plans")}
-              >
-                إدارة الخطط والافتراضية
-              </HapticLink>
-            ) : null}
-          </div>
-
-          <HomeWirdModal
-            open={
-              homeWirdOpen &&
-              can(PH, "home_log_wird") &&
-              showHomeLogWirdCumulative
-            }
-            onClose={() => setHomeWirdOpen(false)}
-            activePlan={activePlan}
-            awrad={awrad}
-            contextUserId={contextUserId}
-            user={user}
-          />
-          <Modal
-            open={Boolean(backlogConfirmYmd)}
-            onClose={() => {
-              if (!backfillBusyYmd) setBacklogConfirmYmd("");
-            }}
-            title="تأكيد إنجاز الورد"
-            size="sm"
-            className="rh-home-backlog-confirm"
-            contentClassName="rh-home-backlog-confirm__sheet"
-          >
-            <div className="rh-home-backlog-confirm__body">
-              <p className="rh-home-backlog-confirm__text">
-                هل أنت متأكد أنك أنجزت ورد يوم{" "}
-                <strong>
-                  {pendingBacklogDay?.weekdayLabel} — {pendingBacklogDay?.ymd}
-                </strong>
-                ؟
-              </p>
-              <p className="rh-home-backlog-confirm__hint">
-                سيتم تسجيل الإنجاز مباشرة في هذا التاريخ.
-              </p>
-              <div className="rh-home-backlog-confirm__actions">
-                <Button
-                  type="button"
-                  icon={CheckCircle2}
-                  onClick={async () => {
-                    if (!pendingBacklogDay?.ymd) return;
-                    await markBacklogDone(pendingBacklogDay.ymd);
-                    setBacklogConfirmYmd("");
-                  }}
-                  disabled={Boolean(backfillBusyYmd)}
-                  loading={Boolean(backfillBusyYmd)}
-                >
-                  تأكيد الإنجاز
-                </Button>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  icon={X}
-                  onClick={() => setBacklogConfirmYmd("")}
-                  disabled={Boolean(backfillBusyYmd)}
-                >
-                  إلغاء
-                </Button>
-              </div>
-            </div>
-          </Modal>
-          <HomeWirdCheckInModal
-            open={
-              homeWirdCheckInOpen &&
-              shouldOfferCheckIn &&
-              can(PH, "home_log_wird")
-            }
-            onClose={() => setHomeWirdCheckInOpen(false)}
-            activePlan={activePlan}
-            awrad={awrad}
-            contextUserId={contextUserId}
-            user={user}
-            onSnooze={() => {
-              setCheckinSnooze(
-                contextUserId,
-                homeWirdStatus.todayYmd,
-                activePlan.id,
-              );
-            }}
-            onDismissNo={() => {
-              setCheckinDismissNo(
-                contextUserId,
-                homeWirdStatus.todayYmd,
-                activePlan.id,
-              );
-            }}
-          />
-        </section>
-      ) : (
-        <section className="card rh-home-dash-empty rh-home-dash-empty--app">
-          <div className="rh-home-dash-empty__inner">
-            <h2 className="rh-home-dash-empty__title">ابدأ بخطة ورد</h2>
-            <p className="rh-home-dash-empty__text">
-              عند إنشاء خطة حفظ أو مراجعة تظهر هنا لوحة تفاعلية: التأخر
-              التراكمي، أمس واليوم، ونسبة الإنجاز.
-            </p>
-            {canVisitPlansFromHome ? (
-              <HapticLink
-                className="rh-home-dash__btn rh-home-dash__btn--primary"
-                to={appPath("/app/plans")}
-              >
-                الانتقال إلى الخطط
-              </HapticLink>
-            ) : null}
-          </div>
-        </section>
-      )}
-      {homeJoinGroups.length > 0 ? (
+            {homeJoinGroups.length > 0 ? (
         <section className="card rh-home-join-groups">
           <div className="rh-settings-card__head">
             <h2 className="rh-settings-card__title">مجموعات الانضمام</h2>

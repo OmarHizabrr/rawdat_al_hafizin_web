@@ -4,6 +4,7 @@
 @import './styles/app-mobile.css';
 @import './styles/platform-polish.css';
 @import './styles/student-workspace.css';
+@import './styles/home-tasks-summary.css';
 
 * {
   box-sizing: border-box;

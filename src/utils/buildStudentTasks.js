@@ -78,7 +78,7 @@ export function buildStudentTasks(workspace = {}) {
       step,
       dueLabel: dueLabelForPlanWird(plan, awrad),
       category: 'حفظ',
-      to: '/app/awrad',
+      to: '/app/tasks',
       priority: step === 'done' ? 3 : step === 'in_progress' ? 1 : 2,
     })
   }

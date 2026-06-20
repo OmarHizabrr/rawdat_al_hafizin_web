@@ -1,6 +1,7 @@
 import { Link, useLocation } from 'react-router-dom'
-import { ArrowLeft, ArrowRight } from 'lucide-react'
+import { ArrowRight } from 'lucide-react'
 import { HomeworkCategoriesPanel } from '../components/tasks/HomeworkCategoriesPanel.jsx'
+import { SyncedTasksList } from '../components/tasks/SyncedTasksList.jsx'
 import { useAuth } from '../context/useAuth.js'
 import { useSiteContent } from '../context/useSiteContent.js'
 import { getImpersonateUid, withImpersonationQuery } from '../utils/impersonation.js'
@@ -13,7 +14,7 @@ export default function TasksPage() {
   const impersonateUid = getImpersonateUid(user, search)
   const contextUserId = impersonateUid || user?.uid || ''
   const dashboardPath = withImpersonationQuery('/app/dashboard', impersonateUid)
-  const homePath = withImpersonationQuery('/app', impersonateUid)
+  const defaultPlanId = impersonateUid ? '' : user?.defaultPlanId || ''
 
   return (
     <div className="rh-student-workspace" dir="rtl">
@@ -35,9 +36,14 @@ export default function TasksPage() {
           <HomeworkCategoriesPanel userId={contextUserId} />
         </div>
 
+        <SyncedTasksList
+          userId={contextUserId}
+          impersonateUid={impersonateUid}
+          defaultPlanId={defaultPlanId}
+        />
+
         <footer className="rh-student-workspace__footer" style={{ justifyContent: 'center' }}>
-          <Link to={homePath} className="rh-student-workspace__footer-link">
-            <RhIcon as={ArrowLeft} size={16} strokeWidth={RH_ICON_STROKE} />
+          <Link to={withImpersonationQuery('/app', impersonateUid)} className="rh-student-workspace__footer-link">
             {str('tasks.back_home')}
           </Link>
         </footer>

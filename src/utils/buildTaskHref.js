@@ -5,7 +5,7 @@ export function buildTaskHref(task, impersonateUid = '') {
   if (!task) return ''
   let path = task.to || ''
   if (task.source === 'plan' && task.sourceId) {
-    path = `/app/awrad?plan=${encodeURIComponent(task.sourceId)}`
+    path = `/app/tasks?task=${encodeURIComponent(`plan-wird:${task.sourceId}`)}`
   } else if (task.source === 'exam' && task.sourceId) {
     path = `/app/exams?exam=${encodeURIComponent(task.sourceId)}`
   } else if (task.source === 'activity' && task.sourceId) {

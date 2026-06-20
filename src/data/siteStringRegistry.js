@@ -120,7 +120,7 @@ export const SITE_STRING_REGISTRY = [
     key: 'tasks.lead',
     group: 'الواجبات',
     label: 'الواجبات: الوصف',
-    defaultValue: 'سجّل إنجاز واجباتك اليومية — اضغط على أي قسم وأجب بنعم أو لا.',
+    defaultValue: 'المكان الوحيد لعرض وتسجيل واجباتك — الأقسام اليومية، أوراد الخطط، والمهام المرتبطة بخططك وحلقاتك.',
   },
   { key: 'tasks.updating', group: 'الواجبات', label: 'الواجبات: جاري التحديث', defaultValue: 'تحديث…' },
   {
@@ -395,6 +395,42 @@ export const SITE_STRING_REGISTRY = [
   { key: 'app.home_plan_now_you', group: 'التطبيق', label: 'الرئيسية: تسمية خطتك الآن', defaultValue: 'خطتك الآن' },
   { key: 'app.home_plan_now_other', group: 'التطبيق', label: 'الرئيسية: تسمية خطته الآن', defaultValue: 'خطته الآن' },
   { key: 'app.home_progress_label', group: 'التطبيق', label: 'الرئيسية: تسمية نسبة الإنجاز', defaultValue: 'إنجاز الخطة' },
+  {
+    key: 'app.home_tasks_summary_title',
+    group: 'التطبيق',
+    label: 'الرئيسية: ملخص الواجبات — العنوان',
+    defaultValue: 'واجباتك اليوم',
+  },
+  {
+    key: 'app.home_tasks_summary_lead',
+    group: 'التطبيق',
+    label: 'الرئيسية: ملخص الواجبات — الوصف',
+    defaultValue: 'سجّل إنجازك من صفحة الواجبات — هنا ملخص سريع فقط.',
+  },
+  {
+    key: 'app.home_tasks_summary_count',
+    group: 'التطبيق',
+    label: 'الرئيسية: ملخص الواجبات — العدد',
+    defaultValue: 'واجب اليوم',
+  },
+  {
+    key: 'app.home_tasks_summary_done',
+    group: 'التطبيق',
+    label: 'الرئيسية: ملخص الواجبات — نسبة الإنجاز',
+    defaultValue: 'نسبة الإنجاز',
+  },
+  {
+    key: 'app.home_tasks_summary_late',
+    group: 'التطبيق',
+    label: 'الرئيسية: ملخص الواجبات — نسبة التخلف',
+    defaultValue: 'نسبة التخلف',
+  },
+  {
+    key: 'app.home_tasks_summary_empty',
+    group: 'التطبيق',
+    label: 'الرئيسية: ملخص الواجبات — لا واجبات',
+    defaultValue: 'لا توجد واجبات اليوم — انضم لخطة أو حلقة ليظهر واجبك تلقائياً.',
+  },
   { key: 'app.home_menu_awrad_link', group: 'التطبيق', label: 'الرئيسية: رابط أوراد من القائمة', defaultValue: 'أوراد' },
 
   { key: 'activities.doc_title', group: 'الأنشطة', label: 'عنوان المتصفح — عادي', defaultValue: 'الأنشطة — {siteTitle}' },
