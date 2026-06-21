@@ -1,5 +1,6 @@
 import { firestoreApi } from '../services/firestoreApi.js'
 import { leavingUserDeletesWholeGroup } from './groupMembership.js'
+import { hijriYmdToLocalNoonDate, localHijriYmd } from './hijriDates.js'
 
 /** أدوار عضو الحلقة — members/{halakaId}/members/{uid} */
 export const HALAKA_MEMBER_ROLES = {
@@ -106,12 +107,117 @@ async function syncHalakaMemberCount(halakaId) {
   const ref = canonicalRef(halakaId)
   const canon = await firestoreApi.getData(ref)
   if (!canon) return
-  const n = await firestoreApi.getSubCollectionCount('members', halakaId, 'members')
+  const memberDocs = await firestoreApi.getDocuments(firestoreApi.getPlanMembersCollection(halakaId))
+  const memberCount = memberDocs.length
+  let studentCount = 0
+  for (const d of memberDocs) {
+    if (normalizeHalakaRole(d.data()?.role) === HALAKA_MEMBER_ROLES.STUDENT) studentCount += 1
+  }
   await firestoreApi.updateData({
     docRef: ref,
-    data: { memberCount: n },
+    data: { memberCount, studentCount },
     userData: {},
   })
+}
+
+/** عدد طلاب الحلقة (دور student فقط) */
+export function countHalakaStudents(members = []) {
+  return members.filter((m) => normalizeHalakaRole(m?.role) === HALAKA_MEMBER_ROLES.STUDENT).length
+}
+
+/** يوم الجلسة هجرياً من وقت البداية — للربط بسجل الحضور اليومي */
+export function sessionDayYmdFromStartedAt(startedAt) {
+  const t = Date.parse(String(startedAt || ''))
+  if (!Number.isFinite(t)) return ''
+  return localHijriYmd(new Date(t))
+}
+
+export function formatHalakaSessionDayLabel(sessionDayYmd) {
+  if (!sessionDayYmd || typeof sessionDayYmd !== 'string') return '—'
+  const d = hijriYmdToLocalNoonDate(sessionDayYmd.trim())
+  if (!d || Number.isNaN(d.getTime())) return sessionDayYmd
+  try {
+    return new Intl.DateTimeFormat('ar-SA-u-ca-islamic-umalqura', {
+      weekday: 'long',
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric',
+    }).format(d)
+  } catch {
+    return sessionDayYmd
+  }
+}
+
+/** ملخص حضور/غياب الطلاب لجلسة واحدة */
+export function summarizeHalakaSessionAttendance(members = [], attendanceRows = []) {
+  const students = members.filter((m) => normalizeHalakaRole(m?.role) === HALAKA_MEMBER_ROLES.STUDENT)
+  const attByUid = new Map((attendanceRows || []).map((r) => [r.userId, r]))
+  const summary = {
+    studentCount: students.length,
+    present: 0,
+    absent: 0,
+    excused: 0,
+    late: 0,
+    permitted: 0,
+    other: 0,
+    excluded: 0,
+    notRecorded: 0,
+  }
+  for (const student of students) {
+    const row = attByUid.get(student.userId)
+    if (!row) {
+      summary.notRecorded += 1
+      continue
+    }
+    if (row.excludedFromSession) {
+      summary.excluded += 1
+      continue
+    }
+    const st = String(row.attendanceStatus || HALAKA_ATTENDANCE_STATUSES.PRESENT)
+    if (st === HALAKA_ATTENDANCE_STATUSES.PRESENT) summary.present += 1
+    else if (st === HALAKA_ATTENDANCE_STATUSES.ABSENT) summary.absent += 1
+    else if (st === HALAKA_ATTENDANCE_STATUSES.EXCUSED) summary.excused += 1
+    else if (st === HALAKA_ATTENDANCE_STATUSES.LATE) summary.late += 1
+    else if (st === HALAKA_ATTENDANCE_STATUSES.PERMITTED) summary.permitted += 1
+    else summary.other += 1
+  }
+  return summary
+}
+
+/** سطر عرض مختصر: اليوم + حضور/غياب */
+export function formatSessionAttendanceLine(session, fallbackStudentCount = 0) {
+  const s = session?.attendanceSummary
+  const day = session?.sessionDayYmd ? formatHalakaSessionDayLabel(session.sessionDayYmd) : ''
+  if (!s) {
+    return day ? `${day} — لم يُسجَّل حضور بعد` : 'لم يُسجَّل حضور بعد'
+  }
+  const total = s.studentCount ?? fallbackStudentCount
+  const bits = [`${total} طالب`, `${s.present ?? 0} حاضر`, `${s.absent ?? 0} غائب`]
+  if (s.excused > 0) bits.push(`${s.excused} بعذر`)
+  if (s.late > 0) bits.push(`${s.late} متأخر`)
+  if (s.permitted > 0) bits.push(`${s.permitted} مستأذن`)
+  return day ? `${day} — ${bits.join(' · ')}` : bits.join(' · ')
+}
+
+export async function syncSessionAttendanceSummary(halakaId, sessionId) {
+  if (!halakaId || !sessionId) return null
+  const session = await firestoreApi.getData(sessionRef(halakaId, sessionId))
+  if (!session) return null
+  const members = await loadHalakatMembers(halakaId)
+  const attendance = await loadSessionAttendance(halakaId, sessionId)
+  const attendanceSummary = summarizeHalakaSessionAttendance(members, attendance)
+  const sessionDayYmd = session.sessionDayYmd || sessionDayYmdFromStartedAt(session.startedAt)
+  const nowIso = new Date().toISOString()
+  await firestoreApi.updateData({
+    docRef: sessionRef(halakaId, sessionId),
+    data: {
+      sessionDayYmd,
+      attendanceSummary: { ...attendanceSummary, updatedAt: nowIso },
+      updatedAt: nowIso,
+    },
+    userData: {},
+  })
+  return { sessionDayYmd, attendanceSummary }
 }
 
 async function mergeMirrorDocs(mirrorDocs) {
@@ -677,6 +783,7 @@ export async function saveHalakaSession(actorUser, halakaId, sessionInput) {
     sessionTypeOtherLabel: String(sessionInput?.sessionTypeOtherLabel || '').trim(),
     startedAt,
     endedAt,
+    sessionDayYmd: sessionDayYmdFromStartedAt(startedAt),
     durationMinutes: durationMinutes(startedAt, endedAt),
     notes: String(sessionInput?.notes || '').trim(),
     status: sessionInput?.status === 'closed' ? 'closed' : 'open',
@@ -706,6 +813,7 @@ export async function closeHalakaSession(actorUser, halakaId, sessionId, userDat
     data: { status: 'closed', updatedAt: new Date().toISOString() },
     userData,
   })
+  await syncSessionAttendanceSummary(halakaId, sessionId)
 }
 
 export async function loadSessionAttendance(halakaId, sessionId) {
@@ -714,11 +822,14 @@ export async function loadSessionAttendance(halakaId, sessionId) {
   return docs.map((d) => ({ userId: d.id, ...d.data() }))
 }
 
-export async function upsertSessionAttendance(actorUser, halakaId, sessionId, studentUid, input) {
+export async function upsertSessionAttendance(actorUser, halakaId, sessionId, studentUid, input, options = {}) {
   if (!actorUser?.uid || !halakaId || !sessionId || !studentUid) return
   const actorRole = await assertHalakaManager(actorUser.uid, halakaId)
   const actorMem = await firestoreApi.getData(memberRef(halakaId, actorUser.uid))
   const targetMem = await firestoreApi.getData(memberRef(halakaId, studentUid))
+  const sessionDoc = await firestoreApi.getData(sessionRef(halakaId, sessionId))
+  const sessionDayYmd =
+    sessionDoc?.sessionDayYmd || sessionDayYmdFromStartedAt(sessionDoc?.startedAt) || localHijriYmd()
   const currentAttendance = await firestoreApi.getData(attendanceRef(halakaId, sessionId, studentUid))
   if (!targetMem) throw new Error('NOT_MEMBER')
   if (
@@ -826,6 +937,8 @@ export async function upsertSessionAttendance(actorUser, halakaId, sessionId, st
   const data = {
     halakaId,
     sessionId,
+    sessionDayYmd,
+    attendanceDayYmd: sessionDayYmd,
     attendanceStatus: finalStatus,
     memorizationVolumeId: String(input?.memorizationVolumeId ?? base?.memorizationVolumeId ?? '').trim(),
     excludedFromSession: Boolean(input?.excludedFromSession ?? base?.excludedFromSession),
@@ -847,6 +960,9 @@ export async function upsertSessionAttendance(actorUser, halakaId, sessionId, st
     merge: true,
     userData: actorUser,
   })
+  if (options.syncSummary !== false) {
+    await syncSessionAttendanceSummary(halakaId, sessionId)
+  }
 }
 
 export { normalizeHalakaRole, canManageRole, assertCanAssignRole }

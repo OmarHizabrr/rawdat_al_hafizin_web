@@ -68,7 +68,15 @@ export function RhHijriDateField({
   const wrapRef = useRef(null)
   const [open, setOpen] = useState(false)
 
-  const selectedCd = useMemo(() => parseHijriYmdString(value || ''), [value])
+  const selectedCd = useMemo(() => {
+    const ymd =
+      typeof value === 'string'
+        ? value
+        : value instanceof Date && !Number.isNaN(value.getTime())
+          ? localHijriYmd(value)
+          : ''
+    return parseHijriYmdString(ymd || '')
+  }, [value])
   const [viewMonth, setViewMonth] = useState(
     () => parseHijriYmdString(localHijriYmd()) || new CalendarDate(HIJRI, 1445, 9, 1),
   )
@@ -141,9 +149,15 @@ export function RhHijriDateField({
   )
 
   const displayLabel = useMemo(() => {
-    if (!value || !selectedCd) return ''
-    const d = hijriYmdToLocalNoonDate(value)
-    if (!d) return value
+    const ymd =
+      typeof value === 'string'
+        ? value
+        : value instanceof Date && !Number.isNaN(value.getTime())
+          ? localHijriYmd(value)
+          : ''
+    if (!ymd || !selectedCd) return ''
+    const d = hijriYmdToLocalNoonDate(ymd)
+    if (!d) return ymd
     try {
       return new Intl.DateTimeFormat('ar-SA-u-ca-islamic-umalqura', {
         weekday: 'short',
@@ -152,7 +166,7 @@ export function RhHijriDateField({
         year: 'numeric',
       }).format(d)
     } catch {
-      return value
+      return ymd
     }
   }, [value, selectedCd])
 

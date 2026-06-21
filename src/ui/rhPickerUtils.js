@@ -13,8 +13,9 @@ export function formatYmd(d) {
 
 /** @param {string} hhmm */
 export function hhmmToTodayDate(hhmm) {
-  const raw = (hhmm || '12:00').trim()
-  const m = /^(\d{1,2}):(\d{2})$/.exec(raw)
+  if (hhmm instanceof Date && !Number.isNaN(hhmm.getTime())) return hhmm
+  const raw = typeof hhmm === 'string' ? hhmm.trim() : ''
+  const m = /^(\d{1,2}):(\d{2})$/.exec(raw || '12:00')
   const d = new Date()
   if (!m) {
     d.setHours(12, 0, 0, 0)

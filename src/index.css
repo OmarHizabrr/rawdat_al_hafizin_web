@@ -5328,6 +5328,15 @@ html:not([data-theme='dark']) .rh-segment__btn--active .rh-segment__label {
   word-break: break-word;
 }
 
+.rh-halaka-sessions__session-attendance {
+  display: block;
+  margin-top: var(--rh-space-1);
+  font-size: var(--rh-text-sm);
+  font-weight: 600;
+  color: var(--rh-primary);
+  line-height: var(--rh-leading-normal);
+}
+
 .rh-halaka-sessions__session-actions {
   display: flex;
   flex-wrap: wrap;

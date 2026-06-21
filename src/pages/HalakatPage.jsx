@@ -38,6 +38,7 @@ import {
   HALAKA_MEMBER_ROLES,
   addUserToHalaka,
   closeHalakaSession,
+  formatSessionAttendanceLine,
   joinPublicHalaka,
   loadHalakat,
   loadHalakatMembersWithProfiles,
@@ -800,6 +801,11 @@ export default function HalakatPage() {
                       <span className="rh-plans__saved-badge">
                         {h.genderType === 'women' ? 'نساء' : 'رجال'}
                       </span>
+                      {Number(h.studentCount) > 0 || Number(h.memberCount) > 0 ? (
+                        <span className="rh-plans__saved-badge">
+                          {Number(h.studentCount) > 0 ? h.studentCount : h.memberCount} طالب
+                        </span>
+                      ) : null}
                     </span>
                   </div>
                 </div>
@@ -1162,6 +1168,9 @@ export default function HalakatPage() {
                       <span className="rh-plans__saved-meta">
                         {formatDateTimeMedium12Ar(s.startedAt)} — {formatDateTimeMedium12Ar(s.endedAt)} (
                         {halakaSessionDurationAr(new Date(s.startedAt), new Date(s.endedAt))})
+                      </span>
+                      <span className="rh-plans__saved-meta">
+                        {formatSessionAttendanceLine(s, sessionsModalHalaka?.studentCount)}
                       </span>
                     </div>
                     <div className="rh-members-chat__actions">

@@ -19,6 +19,10 @@ import {
   computeSessionTasmeeDisplaySeconds,
   formatTasmeeDuration,
   formatTasmeeHistoryType,
+  formatHalakaSessionDayLabel,
+  countHalakaStudents,
+  summarizeHalakaSessionAttendance,
+  syncSessionAttendanceSummary,
   loadHalakat,
   loadHalakatMembersWithProfiles,
   loadHalakaSessions,
@@ -74,6 +78,7 @@ export default function HalakaSessionWorkspacePage() {
   const [halaka, setHalaka] = useState(null)
   const [session, setSession] = useState(null)
   const [attendanceRows, setAttendanceRows] = useState([])
+  const [studentCount, setStudentCount] = useState(0)
   const [studentContexts, setStudentContexts] = useState({})
   const [dirtyRowIds, setDirtyRowIds] = useState(() => new Set())
   const [savingRowId, setSavingRowId] = useState('')
@@ -101,6 +106,7 @@ export default function HalakaSessionWorkspacePage() {
       .then(([halakat, sessions, attendance, members]) => {
         setHalaka(halakat.find((x) => x.id === halakaId) || null)
         setSession(sessions.find((x) => x.id === sessionId) || null)
+        setStudentCount(countHalakaStudents(members))
         const map = new Map(attendance.map((r) => [r.userId, r]))
         setAttendanceRows(
           members.map((m) => {
@@ -224,20 +230,30 @@ export default function HalakaSessionWorkspacePage() {
   ]
 
   const summary = useMemo(() => {
-    const stats = { active: 0, excluded: 0, present: 0, absent: 0, pages: 0 }
+    const memberRows = attendanceRows.map((r) => ({ userId: r.userId, role: r.role }))
+    const attRows = attendanceRows.map((r) => ({
+      userId: r.userId,
+      attendanceStatus: r.attendanceStatus,
+      excludedFromSession: r.excludedFromSession,
+    }))
+    const studentStats = summarizeHalakaSessionAttendance(memberRows, attRows)
+    let pages = 0
     for (const r of attendanceRows) {
-      if (r.excludedFromSession) {
-        stats.excluded += 1
-        continue
-      }
-      stats.active += 1
-      if (r.attendanceStatus === HALAKA_ATTENDANCE_STATUSES.PRESENT) stats.present += 1
-      if (r.attendanceStatus === HALAKA_ATTENDANCE_STATUSES.ABSENT) stats.absent += 1
+      if (r.role !== HALAKA_MEMBER_ROLES.STUDENT || r.excludedFromSession) continue
       const fp = Number(r.fromPage)
       const tp = Number(r.toPage)
-      if (Number.isFinite(fp) && Number.isFinite(tp) && tp >= fp) stats.pages += tp - fp + 1
+      if (Number.isFinite(fp) && Number.isFinite(tp) && tp >= fp) pages += tp - fp + 1
     }
-    return stats
+    return {
+      studentCount: studentStats.studentCount,
+      present: studentStats.present,
+      absent: studentStats.absent,
+      excused: studentStats.excused,
+      late: studentStats.late,
+      excluded: studentStats.excluded,
+      notRecorded: studentStats.notRecorded,
+      pages,
+    }
   }, [attendanceRows])
 
   const eligibleTasmeeStudents = useMemo(
@@ -302,14 +318,15 @@ export default function HalakaSessionWorkspacePage() {
     setAttendanceRows((prev) => prev.map((x) => (x.userId === uid ? { ...x, ...patch } : x)))
     setDirtyRowIds((prev) => new Set(prev).add(uid))
   }, [])
-  const applyBulkPatch = useCallback((patch, { includeExcluded = true } = {}) => {
+  const applyBulkPatch = useCallback((patch, { includeExcluded = true, studentsOnly = false } = {}) => {
     setAttendanceRows((prev) => {
       const updated = prev.map((x) => {
+        if (studentsOnly && x.role !== HALAKA_MEMBER_ROLES.STUDENT) return x
         if (!includeExcluded && x.excludedFromSession) return x
         return { ...x, ...patch }
       })
       const ids = updated
-        .filter((x) => includeExcluded || !x.excludedFromSession)
+        .filter((x) => (!studentsOnly || x.role === HALAKA_MEMBER_ROLES.STUDENT) && (includeExcluded || !x.excludedFromSession))
         .map((x) => x.userId)
       setDirtyRowIds((d) => {
         const next = new Set(d)
@@ -511,7 +528,21 @@ export default function HalakaSessionWorkspacePage() {
     setSavingAll(true)
     try {
       for (const row of attendanceRows.filter((x) => dirtyRowIds.has(x.userId))) {
-        await upsertSessionAttendance(user, halakaId, sessionId, row.userId, rowPayload(row))
+        await upsertSessionAttendance(user, halakaId, sessionId, row.userId, rowPayload(row), {
+          syncSummary: false,
+        })
+      }
+      const synced = await syncSessionAttendanceSummary(halakaId, sessionId)
+      if (synced?.attendanceSummary) {
+        setSession((prev) =>
+          prev
+            ? {
+                ...prev,
+                sessionDayYmd: synced.sessionDayYmd,
+                attendanceSummary: synced.attendanceSummary,
+              }
+            : prev,
+        )
       }
       setDirtyRowIds(new Set())
       toast.success('تم حفظ تعديلات الجلسة.', 'تم')
@@ -563,13 +594,20 @@ export default function HalakaSessionWorkspacePage() {
 
       <section className="rh-settings-card">
         <p className="rh-settings-card__subtitle">
-          النوع: <strong>{sessionTypeLabel(session.sessionType, session.sessionTypeOtherLabel)}</strong> — {formatDateTimeMedium12Ar(session.startedAt)}
+          يوم الجلسة:{' '}
+          <strong>{formatHalakaSessionDayLabel(session.sessionDayYmd || '')}</strong>
+          {' — '}
+          النوع: <strong>{sessionTypeLabel(session.sessionType, session.sessionTypeOtherLabel)}</strong>
+          {' — '}
+          {formatDateTimeMedium12Ar(session.startedAt)}
         </p>
         <div className="rh-halaka-sessions__stats">
-          <div className="rh-halaka-sessions__stat"><span className="rh-halaka-sessions__stat-value">{summary.active}</span><span className="rh-halaka-sessions__stat-label">داخل العملية</span></div>
-          <div className="rh-halaka-sessions__stat"><span className="rh-halaka-sessions__stat-value">{summary.excluded}</span><span className="rh-halaka-sessions__stat-label">مستثنى</span></div>
+          <div className="rh-halaka-sessions__stat"><span className="rh-halaka-sessions__stat-value">{summary.studentCount || studentCount}</span><span className="rh-halaka-sessions__stat-label">طلاب الحلقة</span></div>
           <div className="rh-halaka-sessions__stat"><span className="rh-halaka-sessions__stat-value">{summary.present}</span><span className="rh-halaka-sessions__stat-label">حاضر</span></div>
           <div className="rh-halaka-sessions__stat"><span className="rh-halaka-sessions__stat-value">{summary.absent}</span><span className="rh-halaka-sessions__stat-label">غائب</span></div>
+          <div className="rh-halaka-sessions__stat"><span className="rh-halaka-sessions__stat-value">{summary.excused}</span><span className="rh-halaka-sessions__stat-label">بعذر</span></div>
+          <div className="rh-halaka-sessions__stat"><span className="rh-halaka-sessions__stat-value">{summary.late}</span><span className="rh-halaka-sessions__stat-label">متأخر</span></div>
+          <div className="rh-halaka-sessions__stat"><span className="rh-halaka-sessions__stat-value">{summary.excluded}</span><span className="rh-halaka-sessions__stat-label">مستثنى</span></div>
           <div className="rh-halaka-sessions__stat"><span className="rh-halaka-sessions__stat-value">{summary.pages}</span><span className="rh-halaka-sessions__stat-label">صفحات مرصودة</span></div>
           <div className="rh-halaka-sessions__stat"><span className="rh-halaka-sessions__stat-value">{formatTasmeeDuration(sessionTasmeeDisplaySeconds)}</span><span className="rh-halaka-sessions__stat-label">وقت التسميع</span></div>
         </div>
@@ -686,11 +724,11 @@ export default function HalakaSessionWorkspacePage() {
           <Button type="button" variant="secondary" icon={RotateCcw} disabled={!canWrite || savingAll} onClick={() => applyBulkPatch({ excludedFromSession: false })}>
             إلغاء استثناء الكل
           </Button>
-          <Button type="button" variant="secondary" icon={UserCheck} disabled={!canWrite || savingAll} onClick={() => applyBulkPatch({ attendanceStatus: HALAKA_ATTENDANCE_STATUSES.PRESENT }, { includeExcluded: false })}>
-            الكل حاضر
+          <Button type="button" variant="secondary" icon={UserCheck} disabled={!canWrite || savingAll} onClick={() => applyBulkPatch({ attendanceStatus: HALAKA_ATTENDANCE_STATUSES.PRESENT }, { includeExcluded: false, studentsOnly: true })}>
+            كل الطلاب حاضر
           </Button>
-          <Button type="button" variant="secondary" icon={UserX} disabled={!canWrite || savingAll} onClick={() => applyBulkPatch({ attendanceStatus: HALAKA_ATTENDANCE_STATUSES.ABSENT }, { includeExcluded: false })}>
-            الكل غائب
+          <Button type="button" variant="secondary" icon={UserX} disabled={!canWrite || savingAll} onClick={() => applyBulkPatch({ attendanceStatus: HALAKA_ATTENDANCE_STATUSES.ABSENT }, { includeExcluded: false, studentsOnly: true })}>
+            كل الطلاب غائب
           </Button>
           <Button type="button" variant="primary" icon={Save} loading={savingAll} disabled={!canWrite || dirtyRowIds.size === 0} onClick={saveAll}>
             حفظ الكل ({dirtyRowIds.size})

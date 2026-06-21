@@ -16,6 +16,9 @@ import {
   HALAKA_MEMBER_ROLES,
   HALAKA_SESSION_TYPES,
   closeHalakaSession,
+  countHalakaStudents,
+  formatSessionAttendanceLine,
+  loadHalakatMembersWithProfiles,
   formatTasmeeDuration,
   loadHalakat,
   loadHalakaSessions,
@@ -43,6 +46,7 @@ export default function HalakaSessionsPage() {
 
   const [halaka, setHalaka] = useState(null)
   const [sessions, setSessions] = useState([])
+  const [studentCount, setStudentCount] = useState(0)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [closingId, setClosingId] = useState('')
@@ -62,11 +66,18 @@ export default function HalakaSessionsPage() {
   useEffect(() => {
     if (!user?.uid || !halakaId) return
     setLoading(true)
-    Promise.all([loadHalakat(user.uid), loadHalakaSessions(halakaId)])
-      .then(([halakat, sessionRows]) => {
+    Promise.all([
+      loadHalakat(user.uid),
+      loadHalakaSessions(halakaId),
+      loadHalakatMembersWithProfiles(halakaId),
+    ])
+      .then(([halakat, sessionRows, members]) => {
         const h = halakat.find((x) => x.id === halakaId) || null
         setHalaka(h)
         setSessions(sessionRows)
+        setStudentCount(
+          Number(h?.studentCount) > 0 ? Number(h.studentCount) : countHalakaStudents(members),
+        )
       })
       .finally(() => setLoading(false))
   }, [user?.uid, halakaId])
@@ -115,7 +126,9 @@ export default function HalakaSessionsPage() {
         <div className="rh-plans__hero-head">
           <div>
             <h1 className="rh-plans__title">جلسات الحلقة: {halaka.name}</h1>
-            <p className="rh-plans__desc rh-halaka-sessions__lead">أنشئ جلسة ثم انقر أيقونة العين للدخول إلى صفحة الجلسة المستقلة.</p>
+            <p className="rh-plans__desc rh-halaka-sessions__lead">
+              أنشئ جلسة لكل يوم حلقة — يُسجَّل الحضور والغياب في يومها. انقر أيقونة العين للدخول إلى صفحة الجلسة.
+            </p>
             <CrossNav items={crossItems} className="rh-plans__cross" />
           </div>
           <HapticLink to="/app/halakat" className="rh-halaka-sessions__hero-back ui-btn ui-btn--secondary">
@@ -124,6 +137,19 @@ export default function HalakaSessionsPage() {
           </HapticLink>
         </div>
       </header>
+
+      <section className="rh-settings-card">
+        <div className="rh-halaka-sessions__stats">
+          <div className="rh-halaka-sessions__stat">
+            <span className="rh-halaka-sessions__stat-value">{studentCount}</span>
+            <span className="rh-halaka-sessions__stat-label">عدد طلاب الحلقة</span>
+          </div>
+          <div className="rh-halaka-sessions__stat">
+            <span className="rh-halaka-sessions__stat-value">{sessions.length}</span>
+            <span className="rh-halaka-sessions__stat-label">جلسات مسجّلة</span>
+          </div>
+        </div>
+      </section>
 
       <section className="rh-settings-card">
         <div className="rh-settings-card__head">
@@ -235,6 +261,9 @@ export default function HalakaSessionsPage() {
                   </div>
                   <span className="rh-halaka-sessions__session-dates">
                     {formatDateTimeMedium12Ar(s.startedAt)} — {formatDateTimeMedium12Ar(s.endedAt)}
+                  </span>
+                  <span className="rh-halaka-sessions__session-attendance">
+                    {formatSessionAttendanceLine(s, studentCount)}
                   </span>
                 </div>
                 <div className="rh-halaka-sessions__session-actions">

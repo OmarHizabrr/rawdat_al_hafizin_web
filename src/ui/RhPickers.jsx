@@ -1,5 +1,5 @@
 import { Clock } from 'lucide-react'
-import { useCallback, useId, useMemo } from 'react'
+import { forwardRef, useCallback, useId, useMemo } from 'react'
 import DatePicker, { registerLocale } from 'react-datepicker'
 import { ar } from 'date-fns/locale'
 import 'react-datepicker/dist/react-datepicker.css'
@@ -15,6 +15,36 @@ registerLocale('ar', ar)
 function pickerInputClass() {
   return ['ui-date-field__input', 'rh-picker-input'].filter(Boolean).join(' ')
 }
+
+/** react-datepicker يتوقع dateFormat كنص — نعرض 12 ساعة عربياً عبر customInput */
+const ArabicTimeInput = forwardRef(function ArabicTimeInput(
+  { value, onClick, className, id, disabled, placeholder, 'aria-describedby': describedBy, 'aria-invalid': invalid },
+  ref,
+) {
+  const display = useMemo(() => {
+    if (!value || typeof value !== 'string') return ''
+    const m = /^(\d{1,2}):(\d{2})$/.exec(value.trim())
+    if (!m) return value
+    const d = new Date()
+    d.setHours(Number(m[1]), Number(m[2]), 0, 0)
+    return formatTime12Ar(d)
+  }, [value])
+
+  return (
+    <input
+      ref={ref}
+      id={id}
+      className={className}
+      value={display}
+      onClick={onClick}
+      readOnly
+      disabled={disabled}
+      placeholder={placeholder}
+      aria-describedby={describedBy}
+      aria-invalid={invalid}
+    />
+  )
+})
 
 /** حقل تاريخ هجري (أم القرى). القيمة والتخزين: YYYY-MM-DD هجري. */
 export function RhDatePickerField(props) {
@@ -58,7 +88,10 @@ export function RhTimePickerField({
           showTimeSelectOnly
           timeIntervals={timeIntervals}
           timeCaption="الوقت"
-          dateFormat={(d) => (d ? formatTime12Ar(d) : '')}
+          dateFormat="HH:mm"
+          customInput={
+            <ArabicTimeInput placeholder={placeholderText || 'اختر الوقت…'} />
+          }
           disabled={disabled}
           placeholderText={placeholderText || 'اختر الوقت…'}
           calendarClassName="rh-datepicker"
