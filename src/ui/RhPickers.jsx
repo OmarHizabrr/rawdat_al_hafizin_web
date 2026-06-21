@@ -1,11 +1,10 @@
 import { Clock } from 'lucide-react'
-import { forwardRef, useCallback, useId, useMemo } from 'react'
+import { useCallback, useId, useMemo } from 'react'
 import DatePicker, { registerLocale } from 'react-datepicker'
 import { ar } from 'date-fns/locale'
 import 'react-datepicker/dist/react-datepicker.css'
 import '../styles/rh-datepicker.css'
 import { combineHijriYmdAndHHmm, localHijriYmd } from '../utils/hijriDates.js'
-import { formatTime12Ar } from '../utils/formatDateTimeAr.js'
 import { dateToHHmm, formatYmd, hhmmToTodayDate } from './rhPickerUtils.js'
 import { RhHijriDateField } from './RhHijriDateField.jsx'
 import { RhIcon, RH_ICON_STROKE } from './RhIcon.jsx'
@@ -16,35 +15,8 @@ function pickerInputClass() {
   return ['ui-date-field__input', 'rh-picker-input'].filter(Boolean).join(' ')
 }
 
-/** react-datepicker يتوقع dateFormat كنص — نعرض 12 ساعة عربياً عبر customInput */
-const ArabicTimeInput = forwardRef(function ArabicTimeInput(
-  { value, onClick, className, id, disabled, placeholder, 'aria-describedby': describedBy, 'aria-invalid': invalid },
-  ref,
-) {
-  const display = useMemo(() => {
-    if (!value || typeof value !== 'string') return ''
-    const m = /^(\d{1,2}):(\d{2})$/.exec(value.trim())
-    if (!m) return value
-    const d = new Date()
-    d.setHours(Number(m[1]), Number(m[2]), 0, 0)
-    return formatTime12Ar(d)
-  }, [value])
-
-  return (
-    <input
-      ref={ref}
-      id={id}
-      className={className}
-      value={display}
-      onClick={onClick}
-      readOnly
-      disabled={disabled}
-      placeholder={placeholder}
-      aria-describedby={describedBy}
-      aria-invalid={invalid}
-    />
-  )
-})
+/** تنسيق 12 ساعة عربي (ص/م) — dateFormat للحقل، timeFormat لقائمة النافذة */
+const TIME_PICKER_FORMAT = 'h:mm aa'
 
 /** حقل تاريخ هجري (أم القرى). القيمة والتخزين: YYYY-MM-DD هجري. */
 export function RhDatePickerField(props) {
@@ -88,10 +60,8 @@ export function RhTimePickerField({
           showTimeSelectOnly
           timeIntervals={timeIntervals}
           timeCaption="الوقت"
-          dateFormat="HH:mm"
-          customInput={
-            <ArabicTimeInput placeholder={placeholderText || 'اختر الوقت…'} />
-          }
+          dateFormat={TIME_PICKER_FORMAT}
+          timeFormat={TIME_PICKER_FORMAT}
           disabled={disabled}
           placeholderText={placeholderText || 'اختر الوقت…'}
           calendarClassName="rh-datepicker"
