@@ -18,7 +18,8 @@ export default function DashboardPage() {
   const { search } = useLocation()
   const impersonateUid = getImpersonateUid(user, search)
   const tasksPath = useMemo(() => withImpersonationQuery('/app/tasks', impersonateUid), [impersonateUid])
-  const { ready: permReady, canAccessPage } = usePermissions()
+  const { ready: permReady, canAccessPage, can } = usePermissions()
+  const DASHBOARD_PAGE = 'dashboard'
 
   const tasks = useTasksStore((s) => s.tasks)
   const loading = useTasksStore((s) => s.workspaceLoading)
@@ -32,6 +33,9 @@ export default function DashboardPage() {
     const inProgress = tasks.filter((t) => t.step === 'in_progress').length
     return { total, done, inProgress }
   }, [tasks])
+
+  const showTasksCta = isAdmin(user) || can(DASHBOARD_PAGE, 'dashboard_tasks_cta')
+  const showUrgentTasks = isAdmin(user) || can(DASHBOARD_PAGE, 'dashboard_urgent_tasks')
 
   const visibleMenuItems = useMemo(() => {
     const visible = (item) =>
@@ -70,13 +74,15 @@ export default function DashboardPage() {
               <h1 className="rh-student-workspace__title">{str('layout.nav_my_board')}</h1>
               <p className="rh-student-workspace__lead">{str('dashboard.lead')}</p>
             </div>
-            <Link to={tasksPath} className="rh-student-workspace__cta">
-              <RhIcon as={ListChecks} size={18} strokeWidth={RH_ICON_STROKE} />
-              {str('layout.nav_tasks')}
-              {openTaskCount > 0 ? (
-                <span className="rh-student-workspace__cta-badge">{openTaskCount}</span>
-              ) : null}
-            </Link>
+            {showTasksCta ? (
+              <Link to={tasksPath} className="rh-student-workspace__cta">
+                <RhIcon as={ListChecks} size={18} strokeWidth={RH_ICON_STROKE} />
+                {str('layout.nav_tasks')}
+                {openTaskCount > 0 ? (
+                  <span className="rh-student-workspace__cta-badge">{openTaskCount}</span>
+                ) : null}
+              </Link>
+            ) : null}
           </div>
 
           {loading ? (
@@ -102,7 +108,7 @@ export default function DashboardPage() {
           )}
         </header>
 
-        {!loading && openTaskCount > 0 ? (
+        {!loading && openTaskCount > 0 && showUrgentTasks ? (
           <DashboardUrgentTasks tasks={tasks} impersonateUid={impersonateUid} str={str} />
         ) : null}
 
@@ -116,17 +122,19 @@ export default function DashboardPage() {
           </div>
         </section>
 
-        <footer className="rh-student-workspace__footer">
-          <p className="rh-student-workspace__footer-text">
-            {openTaskCount > 0
-              ? str('dashboard.footer_pending', { count: openTaskCount })
-              : str('dashboard.footer_all_clear')}
-          </p>
-          <Link to={tasksPath} className="rh-student-workspace__footer-link">
-            {str('dashboard.footer_go_tasks')}
-            <RhIcon as={ArrowRight} size={16} strokeWidth={RH_ICON_STROKE} />
-          </Link>
-        </footer>
+        {showTasksCta ? (
+          <footer className="rh-student-workspace__footer">
+            <p className="rh-student-workspace__footer-text">
+              {openTaskCount > 0
+                ? str('dashboard.footer_pending', { count: openTaskCount })
+                : str('dashboard.footer_all_clear')}
+            </p>
+            <Link to={tasksPath} className="rh-student-workspace__footer-link">
+              {str('dashboard.footer_go_tasks')}
+              <RhIcon as={ArrowRight} size={16} strokeWidth={RH_ICON_STROKE} />
+            </Link>
+          </footer>
+        ) : null}
       </div>
     </div>
   )

@@ -3,6 +3,7 @@ import { ArrowRight } from 'lucide-react'
 import { HomeworkCategoriesPanel } from '../components/tasks/HomeworkCategoriesPanel.jsx'
 import { SyncedTasksList } from '../components/tasks/SyncedTasksList.jsx'
 import { useAuth } from '../context/useAuth.js'
+import { usePermissions } from '../context/usePermissions.js'
 import { useSiteContent } from '../context/useSiteContent.js'
 import { getImpersonateUid, withImpersonationQuery } from '../utils/impersonation.js'
 import { RhIcon, RH_ICON_STROKE } from '../ui/RhIcon.jsx'
@@ -10,20 +11,24 @@ import { RhIcon, RH_ICON_STROKE } from '../ui/RhIcon.jsx'
 export default function TasksPage() {
   const { user } = useAuth()
   const { str } = useSiteContent()
+  const { canAccessPage } = usePermissions()
   const { search } = useLocation()
   const impersonateUid = getImpersonateUid(user, search)
   const contextUserId = impersonateUid || user?.uid || ''
   const dashboardPath = withImpersonationQuery('/app/dashboard', impersonateUid)
+  const canVisitDashboard = canAccessPage('dashboard')
   const defaultPlanId = impersonateUid ? '' : user?.defaultPlanId || ''
 
   return (
     <div className="rh-student-workspace" dir="rtl">
       <div className="rh-student-workspace__inner">
         <header>
-          <Link to={dashboardPath} className="rh-student-workspace__back-link">
-            <RhIcon as={ArrowRight} size={16} strokeWidth={RH_ICON_STROKE} />
-            {str('layout.nav_my_board')}
-          </Link>
+          {canVisitDashboard ? (
+            <Link to={dashboardPath} className="rh-student-workspace__back-link">
+              <RhIcon as={ArrowRight} size={16} strokeWidth={RH_ICON_STROKE} />
+              {str('layout.nav_my_board')}
+            </Link>
+          ) : null}
           <div className="rh-student-workspace__section-head">
             <div>
               <h1 className="rh-student-workspace__title">{str('layout.nav_tasks')}</h1>

@@ -13,6 +13,7 @@ const VIEW_CREATOR_ACTION_DEF = {
 
 export const PERMISSION_PAGE_IDS = {
   home: 'home',
+  dashboard: 'dashboard',
   welcome: 'welcome',
   plans: 'plans',
   plans_explore: 'plans_explore',
@@ -55,6 +56,15 @@ export const PERMISSION_PAGES = [
       { id: 'home_footer_awrad_link', label: 'رابط «صفحة الأوراد لهذه الخطة»' },
       { id: 'home_footer_plans_link', label: 'رابط «تعديل الخطط وتعيين الافتراضية»' },
       VIEW_CREATOR_ACTION_DEF,
+    ],
+  },
+  {
+    id: PERMISSION_PAGE_IDS.dashboard,
+    path: '/app/dashboard',
+    label: 'لوحتي (لوحة التحكم)',
+    actions: [
+      { id: 'dashboard_tasks_cta', label: 'زر/رابط الانتقال إلى الواجبات في الرأس والتذييل' },
+      { id: 'dashboard_urgent_tasks', label: 'قسم «واجبات تحتاج متابعة»' },
     ],
   },
   {

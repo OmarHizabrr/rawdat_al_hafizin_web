@@ -121,7 +121,7 @@ export default function App() {
                   />
                   <Route path="/app" element={<MainLayout />}>
                     <Route index element={<PageGuard pageId="home"><AppHomePage /></PageGuard>} />
-                    <Route path="dashboard" element={<PageGuard pageId="home"><DashboardPage /></PageGuard>} />
+                    <Route path="dashboard" element={<PageGuard pageId="dashboard"><DashboardPage /></PageGuard>} />
                     <Route path="tasks" element={<PageGuard pageId="home"><TasksPage /></PageGuard>} />
                     <Route path="welcome" element={<PageGuard pageId="welcome"><WelcomePage /></PageGuard>} />
                     <Route
