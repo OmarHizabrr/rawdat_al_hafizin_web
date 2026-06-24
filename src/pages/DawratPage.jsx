@@ -660,6 +660,7 @@ export default function DawratPage() {
           }
         }}
         size="lg"
+        contentClassName="ui-modal__content--plan-members"
         closeOnBackdrop={!saveBusy}
         closeOnEsc={!saveBusy}
         showClose={!saveBusy}

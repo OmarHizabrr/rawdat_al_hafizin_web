@@ -364,7 +364,7 @@ export default function AdminUserTypesPage() {
           حذف «{deleteTarget?.name || deleteTarget?.id}» قد يترك مستخدمين بنوع غير مسجّل. عدِل إسنادهم من صفحة
           المستخدمين.
         </p>
-        <div className="rh-admin-users__modal-actions">
+        <div className="rh-modal-footer rh-admin-users__modal-actions">
           <Button type="button" variant="danger" icon={Trash2} loading={busyDelete} onClick={confirmDelete}>
             حذف
           </Button>

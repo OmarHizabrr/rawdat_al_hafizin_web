@@ -198,10 +198,12 @@ export default function AdminTaskCategoriesPage() {
         title={editingId ? 'تعديل قسم الواجب' : 'قسم واجب جديد'}
         onClose={() => !saveSubmitting && setEditorOpen(false)}
         size="sm"
+        contentClassName="ui-modal__content--plan-members"
         closeOnBackdrop={!saveSubmitting}
         closeOnEsc={!saveSubmitting}
         showClose={!saveSubmitting}
       >
+        <div className="ui-modal__body">
         <TextField label="الاسم الظاهر للطلاب" value={label} onChange={(e) => setLabel(e.target.value)} placeholder="مثال: سماع" />
         <TextField label="وصف قصير (اختياري)" value={hint} onChange={(e) => setHint(e.target.value)} placeholder="يظهر تحت الاسم في صفحة الواجبات" />
         <NumberStepField label="ترتيب الظهور" value={order} onChange={setOrder} min={0} max={999} step={1} />
@@ -219,7 +221,8 @@ export default function AdminTaskCategoriesPage() {
             dir="ltr"
           />
         </AdminAdvancedPanel>
-        <div className="rh-admin-users__modal-actions">
+        </div>
+        <div className="rh-modal-footer rh-admin-users__modal-actions">
           <Button type="button" variant="primary" icon={Save} loading={saveSubmitting} onClick={handleSave}>
             حفظ
           </Button>
@@ -243,7 +246,7 @@ export default function AdminTaskCategoriesPage() {
             ? `سيتم إخفاء القسم «${deleting?.label}» عن الطلاب. يمكنك إعادة إظهاره لاحقاً من التعديل وتفعيل «ظاهر للطلاب».`
             : `سيتم حذف القسم «${deleting?.label}». التسجيلات السابقة قد تبقى في التقارير دون اسم قسم واضح.`}
         </p>
-        <div className="rh-admin-users__modal-actions">
+        <div className="rh-modal-footer rh-admin-users__modal-actions">
           <Button type="button" variant="danger" icon={Trash2} loading={deleteSubmitting} onClick={handleDelete}>
             حذف
           </Button>

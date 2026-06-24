@@ -234,6 +234,7 @@ export function HomeWirdModal({ open, onClose, activePlan, awrad, contextUserId,
       title={`تسجيل ورد — ${activePlan.name}`}
       onClose={cancel}
       size="md"
+      contentClassName="ui-modal__content--plan-members"
       closeOnBackdrop={!wirdSubmitting}
       closeOnEsc={!wirdSubmitting}
       showClose={!wirdSubmitting}

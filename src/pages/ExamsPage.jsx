@@ -708,6 +708,7 @@ export default function ExamsPage() {
           }
         }}
         size="lg"
+        contentClassName="ui-modal__content--plan-members"
         closeOnBackdrop={!saveBusy}
         closeOnEsc={!saveBusy}
         showClose={!saveBusy}

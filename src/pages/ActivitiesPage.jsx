@@ -789,6 +789,7 @@ export default function ActivitiesPage() {
           }
         }}
         size="lg"
+        contentClassName="ui-modal__content--plan-members"
         closeOnBackdrop={!saveBusy}
         closeOnEsc={!saveBusy}
         showClose={!saveBusy}

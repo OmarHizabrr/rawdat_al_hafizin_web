@@ -279,6 +279,7 @@ export default function AdminJoinGroupsPage() {
         title={editingRow ? 'تعديل المجموعة' : 'إضافة مجموعة'}
         onClose={() => !busy && setEditorOpen(false)}
         size="lg"
+        contentClassName="ui-modal__content--plan-members"
         closeOnBackdrop={!busy}
         closeOnEsc={!busy}
         showClose={!busy}

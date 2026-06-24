@@ -123,7 +123,7 @@ export function HomeWirdCheckInModal({
         </p>
       </div>
 
-      <div className="rh-checkin-modal__actions">
+      <div className="rh-modal-footer rh-checkin-modal__actions">
         <Button
           type="button"
           className="rh-checkin-modal__btn-yes"

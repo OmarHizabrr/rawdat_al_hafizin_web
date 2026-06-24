@@ -603,6 +603,7 @@ export default function AwradPage() {
         title={editingWirdId ? 'تعديل تسجيل الورد' : 'إضافة ورد جديد'}
         onClose={cancelEdit}
         size="md"
+        contentClassName="ui-modal__content--plan-members"
         closeOnBackdrop={!wirdSubmitting}
         closeOnEsc={!wirdSubmitting}
         showClose={!wirdSubmitting}

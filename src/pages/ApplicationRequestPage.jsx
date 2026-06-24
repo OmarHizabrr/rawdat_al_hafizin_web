@@ -249,7 +249,7 @@ export default function ApplicationRequestPage() {
           يمكنك مراجعة الإشعارات في أي وقت من صفحة{' '}
           <HapticLink to="/app/notifications">إشعارات المنصة</HapticLink>.
         </p>
-        <div className="rh-admin-users__modal-actions">
+        <div className="rh-modal-footer rh-admin-users__modal-actions">
           <Button type="button" variant="primary" icon={Check} onClick={() => setShowRejectedModal(false)}>
             فهمت
           </Button>

@@ -1066,6 +1066,7 @@ export default function PlansPage() {
           resetForm()
         }}
         size="md"
+        contentClassName="ui-modal__content--plan-members"
         closeOnBackdrop={!savePlanSubmitting}
         closeOnEsc={!savePlanSubmitting}
         showClose={!savePlanSubmitting}

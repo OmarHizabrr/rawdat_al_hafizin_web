@@ -416,7 +416,7 @@ export default function AdminApplicationRequestsPage() {
             الطالب: {deleteTarget.fullName || '—'} — {deleteTarget.email || deleteTarget.userId}
           </p>
         ) : null}
-        <div className="rh-admin-users__modal-actions">
+        <div className="rh-modal-footer rh-admin-users__modal-actions">
           <Button
             type="button"
             variant="danger"
@@ -443,7 +443,9 @@ export default function AdminApplicationRequestsPage() {
           }
         }}
         size="lg"
+        contentClassName="ui-modal__content--plan-members"
       >
+        <div className="ui-modal__body">
         {editForm ? (
           <ApplicationFormRenderer
             fields={applicationFormFields}
@@ -452,7 +454,8 @@ export default function AdminApplicationRequestsPage() {
             quranIncludeZero
           />
         ) : null}
-        <div className="rh-admin-users__modal-actions">
+        </div>
+        <div className="rh-modal-footer rh-admin-users__modal-actions">
           <Button type="button" variant="primary" icon={Save} loading={busyId === editingRow?.userId} onClick={onSaveEdit}>
             حفظ التعديلات
           </Button>
@@ -501,7 +504,7 @@ export default function AdminApplicationRequestsPage() {
             rows={3}
           />
         ) : null}
-        <div className="rh-admin-users__modal-actions">
+        <div className="rh-modal-footer rh-admin-users__modal-actions">
           <Button type="button" variant="primary" icon={CheckCircle2} onClick={onApprove} loading={busyId === approvingRow?.userId}>
             تأكيد القبول
           </Button>
@@ -549,7 +552,7 @@ export default function AdminApplicationRequestsPage() {
             rows={3}
           />
         ) : null}
-        <div className="rh-admin-users__modal-actions">
+        <div className="rh-modal-footer rh-admin-users__modal-actions">
           <Button type="button" variant="danger" icon={XCircle} onClick={onReject} loading={busyId === rejectingRow?.userId}>
             تأكيد الرفض
           </Button>

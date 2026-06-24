@@ -289,6 +289,7 @@ export function PlanWirdTaskDetail({
         }}
         title="تأكيد إنجاز الورد"
         size="sm"
+        contentClassName="ui-modal__content--plan-members"
       >
         <p>
           هل أنت متأكد أنك أنجزت ورد يوم{' '}
@@ -297,7 +298,7 @@ export function PlanWirdTaskDetail({
           </strong>
           ؟
         </p>
-        <div className="rh-task-actions" style={{ marginTop: 'var(--rh-space-4)' }}>
+        <div className="rh-modal-footer rh-task-actions" style={{ marginTop: 'var(--rh-space-4)' }}>
           <Button
             type="button"
             icon={CheckCircle2}

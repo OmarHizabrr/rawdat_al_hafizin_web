@@ -673,6 +673,7 @@ export default function RemoteTasmeePage() {
           }
         }}
         size="lg"
+        contentClassName="ui-modal__content--plan-members"
         closeOnBackdrop={!saveBusy}
         closeOnEsc={!saveBusy}
         showClose={!saveBusy}

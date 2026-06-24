@@ -554,7 +554,7 @@ export default function AdminBrandingPage() {
           سيتم ملء هذا النموذج بالقيم الافتراضية (الاسم، العنوان، الوصف، بدون شعار مخصّص، بدون ألوان مخصّصة). لن تُحفظ
           التغييرات حتى تضغط «حفظ التغييرات».
         </p>
-        <div className="rh-admin-users__modal-actions">
+        <div className="rh-modal-footer rh-admin-users__modal-actions">
           <Button type="button" variant="danger" icon={RotateCcw} onClick={resetEntireFormToProgramDefaults}>
             نعم، صفّر النموذج
           </Button>
