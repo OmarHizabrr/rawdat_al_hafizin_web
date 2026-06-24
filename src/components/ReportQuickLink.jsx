@@ -38,7 +38,7 @@ export function ReportQuickLink({
   return (
     <HapticLink
       to={appLink(reportViewPath({ kind, entityId: id }))}
-      className={className}
+      className={['rh-report-quick-link', className].filter(Boolean).join(' ')}
       title={title || label}
     >
       <RhIcon as={FileText} size={iconOnly ? 18 : 16} strokeWidth={RH_ICON_STROKE} />

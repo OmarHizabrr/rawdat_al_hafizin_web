@@ -906,24 +906,24 @@ export default function ActivitiesPage() {
               <span className="rh-segment__hint">{str('activities.visibility_public_hint')}</span>
             </button>
           </div>
-          <div className="rh-plans__editor-actions">
-            <Button type="button" variant="primary" icon={Save} loading={saveBusy} onClick={handleSave}>
-              {str('activities.modal_save')}
-            </Button>
-            <Button
-              type="button"
-              variant="ghost"
-              icon={X}
-              disabled={saveBusy}
-              onClick={() => {
-                setEditorOpen(false)
-                setEditingId(null)
-              }}
-            >
-              {str('activities.modal_cancel')}
-            </Button>
-          </div>
         </ScrollArea>
+        <div className="rh-plans__editor-actions">
+          <Button type="button" variant="primary" icon={Save} loading={saveBusy} onClick={handleSave}>
+            {str('activities.modal_save')}
+          </Button>
+          <Button
+            type="button"
+            variant="ghost"
+            icon={X}
+            disabled={saveBusy}
+            onClick={() => {
+              setEditorOpen(false)
+              setEditingId(null)
+            }}
+          >
+            {str('activities.modal_cancel')}
+          </Button>
+        </div>
       </Modal>
 
       <Modal

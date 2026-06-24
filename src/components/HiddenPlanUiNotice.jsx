@@ -8,7 +8,7 @@ export function HiddenPlanUiNotice({ variant = 'self', className = '' }) {
   if (variant === 'adminViewing') {
     return (
       <p
-        className={['rh-plans__admin-banner', className].filter(Boolean).join(' ')}
+        className={['rh-plans__status-notice', className].filter(Boolean).join(' ')}
         role="status"
       >
         هذا المستخدم أوقف عرض لوحة الخطة على الرئيسية؛ يمكنك متابعة إدارته هنا كمشرف.
@@ -16,7 +16,7 @@ export function HiddenPlanUiNotice({ variant = 'self', className = '' }) {
     )
   }
   return (
-    <p className={['rh-plans__admin-banner', className].filter(Boolean).join(' ')} role="status">
+    <p className={['rh-plans__status-notice', className].filter(Boolean).join(' ')} role="status">
       أوقفت عرض لوحة الخطة على الرئيسية. ما زال بإمكانك إدارة خططك من هذه الصفحة أو من «الخطط» في القائمة.
       لإعادة اللوحة على الرئيسية، انتقل إلى{' '}
       <HapticLink to="/app/settings">الإعدادات</HapticLink>

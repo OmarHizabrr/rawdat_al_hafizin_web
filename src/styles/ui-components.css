@@ -1001,7 +1001,7 @@ html[data-theme='dark'] .rh-themed-scroll::-webkit-scrollbar-thumb:hover {
     padding-inline: max(var(--rh-space-2), env(safe-area-inset-left, 0px))
       max(var(--rh-space-2), env(safe-area-inset-right, 0px));
     align-items: stretch;
-    justify-content: flex-start;
+    justify-content: flex-end;
     min-height: 100dvh;
     min-height: 100svh;
   }
@@ -1011,9 +1011,17 @@ html[data-theme='dark'] .rh-themed-scroll::-webkit-scrollbar-thumb:hover {
     max-width: none;
     max-height: min(94dvh, calc(100svh - 2 * var(--rh-space-3)));
     margin-block: 0;
-    border-radius: var(--rh-radius-lg);
+    margin-top: auto;
+    border-end-start-radius: 0;
+    border-end-end-radius: 0;
+    border-bottom-left-radius: 0;
+    border-bottom-right-radius: 0;
+    border-radius: var(--rh-radius-xl) var(--rh-radius-xl) 0 0;
     padding: var(--rh-space-3);
     min-width: 0;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
   }
 
   .ui-modal__content--plan-members {
@@ -1021,8 +1029,21 @@ html[data-theme='dark'] .rh-themed-scroll::-webkit-scrollbar-thumb:hover {
   }
 
   .ui-modal__head {
+    position: sticky;
+    top: 0;
+    z-index: 5;
     gap: var(--rh-space-2);
-    align-items: flex-start;
+    align-items: center;
+    flex-shrink: 0;
+    margin-bottom: var(--rh-space-3);
+    margin-inline: calc(-1 * var(--rh-space-3));
+    margin-top: calc(-1 * var(--rh-space-3));
+    padding: var(--rh-space-3);
+    padding-top: max(var(--rh-space-3), env(safe-area-inset-top, 0px));
+    background: color-mix(in srgb, var(--rh-surface) 94%, var(--rh-bg));
+    border-bottom: 1px solid color-mix(in srgb, var(--rh-border) 88%, transparent);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
   }
 
   .ui-modal__title {
@@ -1040,7 +1061,25 @@ html[data-theme='dark'] .rh-themed-scroll::-webkit-scrollbar-thumb:hover {
     min-height: 2.75rem;
     width: 2.75rem;
     height: 2.75rem;
+    border: 1px solid color-mix(in srgb, var(--rh-border) 90%, transparent);
+    background: color-mix(in srgb, var(--rh-surface-tint) 85%, var(--rh-surface));
+    color: var(--rh-text);
+    border-radius: var(--rh-radius-md);
     -webkit-tap-highlight-color: color-mix(in srgb, var(--rh-primary) 15%, transparent);
+    touch-action: manipulation;
+  }
+
+  .ui-modal__close:active {
+    transform: scale(0.96);
+  }
+
+  .ui-btn {
+    min-height: 2.75rem;
+    touch-action: manipulation;
+  }
+
+  .ui-btn:active:not(:disabled):not(.ui-btn--loading) {
+    transform: scale(0.98);
   }
 }
 

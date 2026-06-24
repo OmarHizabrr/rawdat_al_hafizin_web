@@ -109,7 +109,7 @@ export default function HalakaSessionWorkspacePage() {
   const [showTasmeePanel, setShowTasmeePanel] = useState(false)
   const [showBulkToolbar, setShowBulkToolbar] = useState(false)
   const [showStatsPanel, setShowStatsPanel] = useState(
-    () => typeof window !== 'undefined' && window.matchMedia('(min-width: 681px)').matches,
+    () => typeof window !== 'undefined' && window.matchMedia('(min-width: 900px)').matches,
   )
   const [studentFilterQuery, setStudentFilterQuery] = useState('')
 

@@ -747,20 +747,20 @@ export default function AwradPage() {
             </div>
           )}
 
-          <div className="rh-awrad__actions">
-            <Button
-              type="button"
-              icon={editingWirdId ? Save : Plus}
-              onClick={submitWird}
-              loading={wirdSubmitting}
-            >
-              {editingWirdId ? 'حفظ التعديل' : 'إضافة الورد'}
-            </Button>
-            <Button type="button" variant="ghost" icon={X} onClick={cancelEdit} disabled={wirdSubmitting}>
-              إلغاء
-            </Button>
-          </div>
         </ScrollArea>
+        <div className="rh-awrad__actions">
+          <Button
+            type="button"
+            icon={editingWirdId ? Save : Plus}
+            onClick={submitWird}
+            loading={wirdSubmitting}
+          >
+            {editingWirdId ? 'حفظ التعديل' : 'إضافة الورد'}
+          </Button>
+          <Button type="button" variant="ghost" icon={X} onClick={cancelEdit} disabled={wirdSubmitting}>
+            إلغاء
+          </Button>
+        </div>
       </Modal>
 
       <Modal

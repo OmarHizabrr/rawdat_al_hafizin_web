@@ -159,7 +159,9 @@ export default function RemoteTasmeeBroadcastPage() {
     return (
       <div className="rh-plans">
         <p className="rh-plans__empty">لم يُعثر على هذا البث.</p>
-        <HapticLink to={appLink('/app/remote-tasmee')}>العودة للقائمة</HapticLink>
+        <HapticLink to={appLink('/app/remote-tasmee')} className="rh-nav-back-link">
+          العودة للقائمة
+        </HapticLink>
       </div>
     )
   }

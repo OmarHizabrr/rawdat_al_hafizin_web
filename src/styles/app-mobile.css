@@ -8,6 +8,443 @@
     overflow-x: clip;
   }
 
+  /* ——— موبايل: بدون اختصارات تنقل — التنقل عبر الشريط السفلي و«المزيد» ——— */
+  .rh-cross-nav,
+  .rh-reports-hub__shortcut,
+  .rh-plans__admin-banner,
+  .rh-app-home__impersonation,
+  .rh-service-page__impersonation-links,
+  .rh-student-workspace__back-link,
+  .rh-student-workspace__cta,
+  .rh-student-workspace__footer-link,
+  .rh-student-workspace__footer:not(:has(.rh-student-workspace__footer-text)),
+  .rh-student-progress__back,
+  .rh-admin-plan-types__back,
+  .rh-admin-program-blocks__back,
+  .rh-nav-back-link,
+  .rh-halaka-sessions__hero-back,
+  .foundation-back,
+  .foundation-service-links,
+  .foundation-page .footer,
+  .rh-profile-card-panel,
+  .rh-feelings-feed__hint a,
+  .rh-members-chat__actions--card > .ui-btn--ghost.ui-btn--sm,
+  .rh-member-progress-tools .rh-report-quick-link {
+    display: none !important;
+  }
+
+  .rh-plans__status-notice a {
+    display: none !important;
+  }
+
+  /* أبطال الصفحات — أخف بعد إزالة شريط الاختصارات */
+  .rh-plans__hero,
+  .rh-student-workspace__hero,
+  .rh-service-page__hero,
+  .rh-admin-dashboard__hero,
+  .rh-feelings-page__hero,
+  .rh-inquiries-hero {
+    padding-block: var(--rh-space-3);
+  }
+
+  .rh-plans__desc,
+  .rh-student-workspace__lead,
+  .rh-service-page__lead {
+    font-size: var(--rh-text-sm);
+    line-height: 1.55;
+  }
+
+  .rh-plans__title,
+  .rh-student-workspace__title {
+    font-size: clamp(1.15rem, 4.5vw, 1.45rem);
+  }
+
+  .rh-student-workspace__hero-top {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .rh-student-workspace__kpis {
+    margin-top: var(--rh-space-3);
+    gap: var(--rh-space-2);
+  }
+
+  .rh-student-workspace__menu-grid {
+    gap: var(--rh-space-2);
+  }
+
+  .rh-admin-dashboard__grid {
+    gap: var(--rh-space-2);
+  }
+
+  /* بطاقات القائمة — نمط تطبيقات (صف أفقي مضغوط) */
+  .rh-student-workspace__menu-card {
+    flex-direction: row;
+    align-items: center;
+    gap: var(--rh-space-3);
+    height: auto;
+    min-height: 3.65rem;
+    padding: var(--rh-space-3);
+    border-radius: var(--rh-radius-lg);
+  }
+
+  .rh-student-workspace__menu-card:hover {
+    transform: none;
+  }
+
+  .rh-student-workspace__menu-card-top {
+    flex-shrink: 0;
+  }
+
+  .rh-student-workspace__menu-card > div:nth-child(2) {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .rh-student-workspace__menu-desc {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  .rh-student-workspace__menu-cta {
+    display: none;
+  }
+
+  .rh-admin-dashboard__card {
+    min-height: 3.65rem;
+    padding: var(--rh-space-3);
+    flex-direction: row;
+    align-items: center;
+    gap: var(--rh-space-3);
+  }
+
+  .rh-admin-dashboard__card:hover {
+    transform: none;
+  }
+
+  .rh-admin-dashboard__card-icon {
+    flex-shrink: 0;
+  }
+
+  .rh-admin-dashboard__card-title {
+    flex: 1;
+    min-width: 0;
+    font-size: var(--rh-text-base);
+    margin: 0;
+  }
+
+  .rh-admin-dashboard__card-desc,
+  .rh-admin-dashboard__card-cta {
+    display: none;
+  }
+
+  .rh-reports-hub__cards {
+    gap: var(--rh-space-2);
+  }
+
+  .rh-reports-hub__card {
+    min-height: 3.5rem;
+    padding: var(--rh-space-3);
+  }
+
+  .rh-plans__hero-head {
+    grid-template-columns: 1fr;
+    gap: var(--rh-space-3);
+  }
+
+  .rh-plans__hero-actions {
+    flex-direction: column;
+    align-items: stretch;
+    justify-self: stretch;
+    width: 100%;
+    gap: var(--rh-space-2);
+  }
+
+  .rh-plans__hero-actions .ui-btn,
+  .rh-plans__add-btn {
+    width: 100%;
+    justify-content: center;
+    min-height: var(--rh-mob-touch);
+  }
+
+  .rh-plans__saved-head {
+    flex-wrap: wrap;
+    gap: var(--rh-space-2);
+  }
+
+  .rh-plans__daily-row,
+  .rh-plans__dates-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .rh-student-workspace__inner {
+    gap: var(--rh-space-4);
+  }
+
+  .rh-student-workspace__section-head {
+    gap: var(--rh-space-2);
+  }
+
+  .rh-settings-header {
+    margin-bottom: var(--rh-space-4);
+  }
+
+  .rh-home-join-groups__item {
+    flex-direction: column;
+    align-items: stretch;
+    text-align: start;
+  }
+
+  .rh-home-join-groups__item .ui-btn {
+    width: 100%;
+    justify-content: center;
+  }
+
+  /* ——— أزرار الحفظ والإغلاق — موبايل ——— */
+  :root {
+    --rh-mob-touch: 2.75rem;
+  }
+
+  .rh-plans__actions,
+  .rh-plans__editor-actions,
+  .rh-admin-users__modal-actions,
+  .rh-settings-profile-form__actions,
+  .rh-halaka-sessions__modal-actions,
+  .rh-halaka-sessions__modal-actions-bar,
+  .rh-awrad__actions,
+  .rh-feelings__actions,
+  .rh-app-request-actions,
+  .rh-admin-program-blocks__actions,
+  .rh-admin-applications__save-actions,
+  .rh-reports__filters-actions,
+  .rh-home-backlog-confirm__actions,
+  .rh-checkin-modal__actions,
+  .foundation-actions,
+  .foundation-button-row,
+  .rh-homework-categories__actions,
+  .rh-admin-branding__toolbar,
+  .rh-admin-branding__theme-actions,
+  .rh-contact-bulk__footer,
+  .rh-plans__card-actions {
+    flex-direction: column-reverse;
+    align-items: stretch;
+    gap: var(--rh-space-2);
+  }
+
+  .rh-plans__actions .ui-btn,
+  .rh-plans__editor-actions .ui-btn,
+  .rh-admin-users__modal-actions .ui-btn,
+  .rh-settings-profile-form__actions .ui-btn,
+  .rh-halaka-sessions__modal-actions .ui-btn,
+  .rh-halaka-sessions__modal-actions-bar .ui-btn,
+  .rh-awrad__actions .ui-btn,
+  .rh-feelings__actions .ui-btn,
+  .rh-app-request-actions .ui-btn,
+  .rh-admin-program-blocks__actions .ui-btn,
+  .rh-admin-applications__save-actions .ui-btn,
+  .rh-reports__filters-actions .ui-btn,
+  .rh-home-backlog-confirm__actions .ui-btn,
+  .rh-checkin-modal__actions .ui-btn,
+  .foundation-actions .ui-btn,
+  .foundation-button-row .ui-btn,
+  .rh-homework-categories__actions .ui-btn,
+  .rh-admin-branding__toolbar .ui-btn,
+  .rh-admin-branding__theme-actions .ui-btn,
+  .rh-contact-bulk__footer .ui-btn,
+  .rh-plans__card-actions .ui-btn {
+    width: 100%;
+    min-height: var(--rh-mob-touch);
+    justify-content: center;
+  }
+
+  /* شريط إجراءات لاصق أسفل النافذة المنبثقة */
+  .ui-modal .rh-plans__actions,
+  .ui-modal .rh-plans__editor-actions,
+  .ui-modal .rh-admin-users__modal-actions,
+  .ui-modal .rh-halaka-sessions__modal-actions,
+  .ui-modal .rh-halaka-sessions__modal-actions-bar,
+  .ui-modal .rh-settings-profile-form__actions,
+  .ui-modal .rh-app-request-actions,
+  .ui-modal .rh-checkin-modal__actions,
+  .ui-modal .rh-awrad__actions,
+  .ui-modal .rh-home-backlog-confirm__actions {
+    flex-shrink: 0;
+    position: sticky;
+    bottom: 0;
+    z-index: 4;
+    margin-top: auto;
+    margin-inline: calc(-1 * var(--rh-space-3));
+    margin-bottom: calc(-1 * var(--rh-space-3));
+    padding: var(--rh-space-3);
+    padding-bottom: max(var(--rh-space-3), env(safe-area-inset-bottom, 0px));
+    background: color-mix(in srgb, var(--rh-surface) 96%, transparent);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border-top: 1px solid color-mix(in srgb, var(--rh-border) 85%, transparent);
+    box-shadow: 0 -10px 28px rgba(0, 0, 0, 0.07);
+  }
+
+  .ui-modal__content--plan-members .rh-plans__actions,
+  .ui-modal__content--halaka-workspace .rh-halaka-sessions__modal-actions,
+  .ui-modal__content--explore .rh-plans__actions {
+    margin-inline: 0;
+    margin-bottom: 0;
+    padding-inline: var(--rh-space-3);
+  }
+
+  .ui-modal__content > .rh-plans__editor-scroll.ui-scroll,
+  .ui-modal__content > .ui-scroll.rh-plans__editor-scroll {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-x: hidden;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .rh-halaka-sessions__modal-next-hint {
+    width: 100%;
+    text-align: center;
+    margin: 0;
+    font-size: var(--rh-text-xs);
+    color: var(--rh-text-muted);
+    order: 1;
+  }
+
+  /* جلسات الحلقة — بطاقات الطلاب وأدوات مضغوطة */
+  .rh-halaka-sessions .rh-plans__hero-head {
+    grid-template-columns: 1fr;
+  }
+
+  .rh-halaka-sessions__students-head {
+    flex-direction: column;
+    align-items: stretch;
+    gap: var(--rh-space-2);
+  }
+
+  .rh-halaka-sessions__students-search {
+    max-width: none;
+    width: 100%;
+  }
+
+  .rh-halaka-sessions__attendee-list {
+    gap: var(--rh-space-2);
+  }
+
+  .rh-halaka-sessions__attendee-summary {
+    padding: var(--rh-space-3);
+  }
+
+  .rh-halaka-sessions__attendee-actions .ui-btn {
+    flex: 1 1 auto;
+    min-width: 0;
+    justify-content: center;
+  }
+
+  .rh-halaka-sessions__stats-toggle {
+    display: inline-flex;
+    width: 100%;
+    min-height: var(--rh-mob-touch);
+    justify-content: center;
+  }
+
+  .rh-halaka-sessions__stats-wrap:not(.rh-halaka-sessions__stats-wrap--open) .rh-halaka-sessions__stats--collapsible {
+    display: none;
+  }
+
+  .rh-halaka-sessions__stats {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--rh-space-2);
+  }
+
+  .rh-halaka-sessions__attendance-chips {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--rh-space-2);
+    width: 100%;
+  }
+
+  .rh-halaka-sessions__attendance-chip {
+    min-height: var(--rh-mob-touch);
+    justify-content: center;
+    text-align: center;
+  }
+
+  .rh-halaka-sessions__row-actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .rh-halaka-sessions__row-actions .ui-btn {
+    width: 100%;
+    min-height: var(--rh-mob-touch);
+    justify-content: center;
+  }
+
+  .rh-halaka-sessions__toolbar,
+  .rh-halaka-sessions__tasmee-actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .rh-halaka-sessions__toolbar .ui-btn,
+  .rh-halaka-sessions__tasmee-actions .ui-btn {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .rh-halaka-sessions__page-actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .rh-halaka-sessions__page-actions .ui-btn {
+    width: 100%;
+    justify-content: center;
+  }
+
+  /* بطاقات الخطط والحلقات */
+  .rh-plans__saved-list {
+    grid-template-columns: 1fr;
+    gap: var(--rh-space-2);
+  }
+
+  .rh-plans__saved-card {
+    padding: var(--rh-space-3);
+  }
+
+  .rh-explore-plans__grid {
+    grid-template-columns: 1fr;
+    gap: var(--rh-space-2);
+  }
+
+  /* صفحة الترحيب — محتوى فقط */
+  .rh-app-welcome__intro {
+    padding: var(--rh-space-3);
+  }
+
+  .rh-app-welcome__intro .lead {
+    font-size: var(--rh-text-sm);
+    line-height: 1.6;
+  }
+
+  /* الملف الشخصي */
+  .rh-profile-hero {
+    padding: var(--rh-space-4) var(--rh-space-3);
+  }
+
+  .rh-profile-hero__inner {
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+  }
+
+  .rh-profile-hero__roles {
+    justify-content: center;
+  }
+
   .rh-topbar {
     padding-inline-start: max(var(--rh-space-2), env(safe-area-inset-left, 0px));
     padding-inline-end: max(var(--rh-space-2), env(safe-area-inset-right, 0px));
@@ -130,11 +567,14 @@
   }
 
   .rh-settings-profile-form__actions {
-    flex-direction: column;
+    flex-direction: column-reverse;
     align-items: stretch;
+    gap: var(--rh-space-2);
   }
 
   .rh-settings-profile-form__actions .ui-btn {
+    width: 100%;
+    min-height: 2.75rem;
     justify-content: center;
   }
 
@@ -179,18 +619,6 @@
   .rh-peek-btn {
     min-width: 2.75rem;
     min-height: 2.75rem;
-  }
-
-  /* روابط التنقل داخل الصفحات */
-  .rh-cross-nav {
-    gap: var(--rh-space-2);
-  }
-
-  .rh-cross-nav__link {
-    min-height: 2.5rem;
-    max-width: 100%;
-    white-space: normal;
-    overflow-wrap: anywhere;
   }
 
   /* بطاقات التواصل */
@@ -310,6 +738,231 @@
   .rh-home-dash__backlog-list {
     grid-template-columns: 1fr;
   }
+
+  /* ——— بطاقات وصفحات إضافية ——— */
+  .rh-members-chat__item,
+  .rh-members-chat__item--card {
+    flex-wrap: wrap;
+    align-items: flex-start;
+    gap: var(--rh-space-2);
+    padding: var(--rh-space-3);
+  }
+
+  .rh-members-chat__actions:not(.rh-members-chat__actions--card):not(.rh-members-chat__actions--peek) {
+    width: 100%;
+    justify-content: stretch;
+  }
+
+  .rh-members-chat__actions:not(.rh-members-chat__actions--card):not(.rh-members-chat__actions--peek) .ui-btn {
+    flex: 1 1 auto;
+    min-height: var(--rh-mob-touch);
+    justify-content: center;
+  }
+
+  .rh-members-chat__actions--role {
+    width: 100%;
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .rh-members-chat__actions--role .ui-btn {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .rh-halaka-member-card__insights {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .rh-admin-users__grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  .rh-admin-users__row--actions,
+  .rh-admin-users__bulk-actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .rh-admin-users__row--actions .ui-btn,
+  .rh-admin-users__bulk-actions .ui-btn {
+    width: 100%;
+    justify-content: center;
+    min-height: var(--rh-mob-touch);
+  }
+
+  .rh-admin-users__select {
+    min-height: var(--rh-mob-touch);
+    width: 100%;
+  }
+
+  .rh-reports__filters-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .rh-reports__range-presets .ui-btn {
+    flex: 1 1 calc(50% - var(--rh-space-2));
+    justify-content: center;
+    min-height: var(--rh-mob-touch);
+  }
+
+  .rh-reports__table-wrap,
+  .rh-admin-plan-types__table-wrap {
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior-x: contain;
+    border-radius: var(--rh-radius-md);
+  }
+
+  .rh-reports__table {
+    font-size: var(--rh-text-xs);
+  }
+
+  .rh-reports__table th,
+  .rh-reports__table td {
+    padding: var(--rh-space-2);
+    overflow-wrap: anywhere;
+  }
+
+  .rh-student-progress__profile {
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+  }
+
+  .rh-student-progress__tabs {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .rh-student-progress__stats {
+    grid-template-columns: 1fr;
+  }
+
+  .rh-student-progress__overview-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .rh-student-progress__card-actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .rh-student-progress__card-actions .ui-btn {
+    width: 100%;
+    justify-content: center;
+    min-height: var(--rh-mob-touch);
+  }
+
+  .rh-inq-card {
+    padding: var(--rh-space-3);
+  }
+
+  .rh-inq-card__btn-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .rh-inq-card__btn-row .ui-btn {
+    width: 100%;
+    min-height: var(--rh-mob-touch);
+    justify-content: center;
+  }
+
+  .rh-inq-admin-row {
+    min-height: var(--rh-mob-touch);
+    padding: var(--rh-space-3);
+  }
+
+  .rh-notifications-page .rh-settings-header > div {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .rh-notifications-page .rh-settings-header .ui-btn {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .rh-notifications-page__list .rh-notify__item {
+    padding: var(--rh-space-3);
+  }
+
+  .rh-notifications-page .rh-notify__meta {
+    flex-direction: column;
+    align-items: stretch;
+    gap: var(--rh-space-2);
+  }
+
+  .rh-notify__mark,
+  .rh-notifications-page__delete {
+    min-height: var(--rh-mob-touch) !important;
+    width: 100%;
+    justify-content: center;
+  }
+
+  .rh-homework-categories__grid {
+    grid-template-columns: 1fr;
+    gap: var(--rh-space-2);
+  }
+
+  .rh-homework-categories__card {
+    min-height: 3.25rem;
+    flex-direction: row;
+    justify-content: flex-start;
+    text-align: start;
+    padding: var(--rh-space-3);
+  }
+
+  .rh-homework-categories__card:hover:not(:disabled) {
+    transform: none;
+  }
+
+  .rh-task-actions {
+    flex-direction: column;
+    align-items: stretch;
+    width: 100%;
+  }
+
+  .rh-task-actions .ui-btn,
+  .rh-task-actions a {
+    width: 100%;
+    justify-content: center;
+    min-height: var(--rh-mob-touch);
+  }
+
+  .rh-student-workspace__urgent-item {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .rh-app-request__meta {
+    flex-direction: column;
+    align-items: stretch;
+    gap: var(--rh-space-2);
+  }
+
+  .rh-app-request-actions {
+    flex-direction: column-reverse;
+    align-items: stretch;
+  }
+
+  .rh-explore-plans__card:hover,
+  .rh-explore-modal__card:hover,
+  .rh-plans__saved-card:hover,
+  .rh-admin-users__card:hover,
+  .rh-inq-card:hover,
+  .rh-student-progress__overview-card:hover {
+    transform: none;
+  }
+
+  .rh-settings-header > div:has(.rh-settings-title) {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .rh-settings-header > div:has(.rh-settings-title) .ui-btn {
+    width: 100%;
+    justify-content: center;
+  }
 }
 
 @media (max-width: 520px) {
@@ -348,13 +1001,6 @@
   .rh-contact-bulk__title,
   .rh-contact-phones__title {
     font-size: 1rem;
-  }
-
-  .rh-cross-nav__link {
-    width: 100%;
-    justify-content: center;
-    text-align: center;
-    min-height: 2.65rem;
   }
 
   .rh-contact-phones__actions {

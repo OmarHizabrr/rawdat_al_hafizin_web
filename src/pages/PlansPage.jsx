@@ -1492,6 +1492,8 @@ export default function PlansPage() {
             </p>
           </>
         )}
+            </section>
+        </ScrollArea>
         <div className="rh-plans__actions">
           <Button type="button" variant="primary" icon={Save} onClick={handleSavePlan} loading={savePlanSubmitting}>
             {editingPlanId ? 'حفظ التعديلات' : 'حفظ الخطة'}
@@ -1513,8 +1515,6 @@ export default function PlansPage() {
             إغلاق
           </Button>
         </div>
-            </section>
-        </ScrollArea>
       </Modal>
 
       <Modal

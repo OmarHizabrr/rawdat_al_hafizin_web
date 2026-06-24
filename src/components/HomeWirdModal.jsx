@@ -362,15 +362,15 @@ export function HomeWirdModal({ open, onClose, activePlan, awrad, contextUserId,
           </div>
         )}
 
-        <div className="rh-awrad__actions">
-          <Button type="button" icon={Plus} onClick={submitWird} loading={wirdSubmitting}>
-            إضافة الورد
-          </Button>
-          <Button type="button" variant="ghost" icon={X} onClick={cancel} disabled={wirdSubmitting}>
-            إلغاء
-          </Button>
-        </div>
       </ScrollArea>
+      <div className="rh-awrad__actions">
+        <Button type="button" icon={Plus} onClick={submitWird} loading={wirdSubmitting}>
+          إضافة الورد
+        </Button>
+        <Button type="button" variant="ghost" icon={X} onClick={cancel} disabled={wirdSubmitting}>
+          إلغاء
+        </Button>
+      </div>
     </Modal>
   )
 }

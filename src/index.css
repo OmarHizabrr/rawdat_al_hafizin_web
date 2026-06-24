@@ -6126,7 +6126,7 @@ html:not([data-theme='dark']) .rh-segment__btn--active .rh-segment__label {
   min-height: var(--rh-halaka-sessions-touch);
 }
 
-@media (min-width: 681px) {
+@media (min-width: 900px) {
   .rh-halaka-sessions__stats-wrap .rh-halaka-sessions__stats--collapsible {
     display: grid;
   }
@@ -6143,7 +6143,7 @@ html:not([data-theme='dark']) .rh-segment__btn--active .rh-segment__label {
   }
 }
 
-@media (max-width: 680px) {
+@media (max-width: 899px) {
   .rh-halaka-sessions__hero-back {
     width: 100%;
     justify-content: center;
@@ -7034,12 +7034,25 @@ html:not([data-theme='dark']) .rh-segment__btn--active .rh-segment__label {
   font-size: var(--rh-text-sm);
 }
 
+.rh-plans__status-notice {
+  margin-top: var(--rh-space-3);
+  font-size: var(--rh-text-sm);
+  line-height: 1.6;
+  color: var(--rh-text-muted);
+  padding: var(--rh-space-2) var(--rh-space-3);
+  border-radius: var(--rh-radius-md);
+  background: color-mix(in srgb, var(--rh-info-bg) 55%, var(--rh-surface));
+  border: 1px solid color-mix(in srgb, var(--rh-info) 18%, var(--rh-border));
+}
+
+.rh-plans__status-notice a,
 .rh-plans__admin-banner a {
   font-weight: 600;
   color: var(--rh-primary);
   text-decoration: none;
 }
 
+.rh-plans__status-notice a:hover,
 .rh-plans__admin-banner a:hover {
   text-decoration: underline;
 }

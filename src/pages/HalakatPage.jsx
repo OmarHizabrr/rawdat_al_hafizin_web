@@ -999,15 +999,15 @@ export default function HalakatPage() {
             />
           </div>
           <p className="ui-field__hint">المدة: {durationLabel}</p>
-          <div className="rh-plans__actions">
-            <Button type="button" variant="primary" icon={Save} onClick={handleSave} loading={saveBusy}>
-              حفظ
-            </Button>
-            <Button type="button" variant="ghost" icon={X} onClick={() => setEditorOpen(false)} disabled={saveBusy}>
-              إلغاء
-            </Button>
-          </div>
         </ScrollArea>
+        <div className="rh-plans__actions">
+          <Button type="button" variant="primary" icon={Save} onClick={handleSave} loading={saveBusy}>
+            حفظ
+          </Button>
+          <Button type="button" variant="ghost" icon={X} onClick={() => setEditorOpen(false)} disabled={saveBusy}>
+            إلغاء
+          </Button>
+        </div>
       </Modal>
 
       <Modal

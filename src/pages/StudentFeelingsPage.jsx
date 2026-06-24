@@ -315,7 +315,9 @@ export default function StudentFeelingsPage() {
         <p className="rh-feelings-feed__hint">
           يمكن لصاحب المشاركة تعديلها أو حذفها، ويمكن للمشرف إدارة المشاركات مباشرة أو عند العمل نيابة عن المستخدم.
           {' '}
-          <HapticLink to={appLink('/app')}>العودة للرئيسية</HapticLink>
+          <HapticLink to={appLink('/app')} className="rh-nav-back-link">
+            العودة للرئيسية
+          </HapticLink>
         </p>
       </section>
     </div>

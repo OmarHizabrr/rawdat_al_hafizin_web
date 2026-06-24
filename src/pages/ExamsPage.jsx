@@ -826,25 +826,25 @@ export default function ExamsPage() {
               <span className="rh-segment__hint">تظهر في استكشاف الاختبارات؛ الانضمام بالرمز</span>
             </button>
           </div>
-          <div className="rh-plans__editor-actions">
-            <Button type="button" variant="primary" icon={Save} loading={saveBusy} onClick={handleSave}>
-              حفظ
-            </Button>
-            <Button
-              type="button"
-              variant="ghost"
-              icon={X}
-              disabled={saveBusy}
-              onClick={() => {
-                setEditorOpen(false)
-                setEditingId(null)
-                setVolumeRows([])
-              }}
-            >
-              إلغاء
-            </Button>
-          </div>
         </ScrollArea>
+        <div className="rh-plans__editor-actions">
+          <Button type="button" variant="primary" icon={Save} loading={saveBusy} onClick={handleSave}>
+            حفظ
+          </Button>
+          <Button
+            type="button"
+            variant="ghost"
+            icon={X}
+            disabled={saveBusy}
+            onClick={() => {
+              setEditorOpen(false)
+              setEditingId(null)
+              setVolumeRows([])
+            }}
+          >
+            إلغاء
+          </Button>
+        </div>
       </Modal>
 
       <Modal

@@ -336,11 +336,11 @@ export default function AdminJoinGroupsPage() {
               </select>
             </div>
           </div>
-          <div className="rh-plans__actions">
-            <Button type="button" variant="primary" icon={Save} loading={busy} onClick={onSave}>حفظ</Button>
-            <Button type="button" variant="ghost" icon={X} disabled={busy} onClick={() => setEditorOpen(false)}>إلغاء</Button>
-          </div>
         </ScrollArea>
+        <div className="rh-plans__actions">
+          <Button type="button" variant="primary" icon={Save} loading={busy} onClick={onSave}>حفظ</Button>
+          <Button type="button" variant="ghost" icon={X} disabled={busy} onClick={() => setEditorOpen(false)}>إلغاء</Button>
+        </div>
       </Modal>
 
       <Modal

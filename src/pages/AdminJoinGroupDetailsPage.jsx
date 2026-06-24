@@ -189,7 +189,7 @@ export default function AdminJoinGroupDetailsPage() {
       <section className="card">
         <p>لم يتم العثور على المجموعة المطلوبة.</p>
         <div className="rh-plans__actions">
-          <Button type="button" icon={ArrowLeft} onClick={() => navigate('/app/admin/groups')}>
+          <Button type="button" variant="secondary" icon={ArrowLeft} className="rh-nav-back-link" onClick={() => navigate('/app/admin/groups')}>
             العودة لإدارة المجموعات
           </Button>
         </div>
@@ -222,7 +222,7 @@ export default function AdminJoinGroupDetailsPage() {
         </div>
         {group.description ? <p className="rh-plans__saved-desc">{group.description}</p> : null}
         <div className="rh-admin-users__row--actions">
-          <Button type="button" variant="secondary" icon={ArrowRight} onClick={() => navigate('/app/admin/groups')}>
+          <Button type="button" variant="secondary" icon={ArrowRight} className="rh-nav-back-link" onClick={() => navigate('/app/admin/groups')}>
             العودة
           </Button>
           <Button
@@ -348,7 +348,9 @@ export default function AdminJoinGroupDetailsPage() {
           </ul>
         )}
         <div className="rh-plans__actions">
-          <HapticLink to="/app/admin/groups">عودة إلى القائمة</HapticLink>
+          <HapticLink to="/app/admin/groups" className="rh-nav-back-link">
+            عودة إلى القائمة
+          </HapticLink>
           <Button type="button" variant="ghost" icon={RefreshCw} onClick={() => toast.success('تم تحديث البيانات.', 'تم')}>
             تحديث يدوي
           </Button>

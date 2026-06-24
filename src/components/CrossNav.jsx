@@ -18,6 +18,7 @@ import {
 } from 'lucide-react'
 import { useLocation } from 'react-router-dom'
 import { useAuth } from '../context/useAuth.js'
+import { useMobileLayout } from '../hooks/useMobileLayout.js'
 import { HapticNavLink } from '../ui/HapticLink.jsx'
 import { getImpersonateUid, withImpersonationQuery } from '../utils/impersonation.js'
 import { RH_ICON_STROKE, RhIcon } from '../ui/RhIcon.jsx'
@@ -58,8 +59,9 @@ export function CrossNav({ items = [], className = '' }) {
   const { user } = useAuth()
   const { search } = useLocation()
   const impersonateUid = getImpersonateUid(user, search)
+  const isMobile = useMobileLayout()
 
-  if (!items.length) return null
+  if (!items.length || isMobile) return null
   return (
     <nav
       className={['rh-cross-nav', className].filter(Boolean).join(' ')}
