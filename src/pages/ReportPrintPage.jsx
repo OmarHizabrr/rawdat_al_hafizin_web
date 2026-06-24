@@ -184,9 +184,18 @@ export default function ReportPrintPage() {
   const brandTitle = payload.brandTitle || branding.siteTitle
   const footerLine = payload.footerLine || ''
   const logoSrc = branding.logoSrc
+  const isLandscape = payload.pageOrientation === 'landscape'
+  const introMeta = payload.introMeta || []
 
   return (
-    <div className="rh-report-print">
+    <div
+      className={[
+        'rh-report-print',
+        isLandscape ? 'rh-report-print--landscape' : '',
+      ]
+        .filter(Boolean)
+        .join(' ')}
+    >
       <div className="rh-report-print__toolbar no-print">
         <p className="rh-report-print__toolbar-title">{payload.documentTitle}</p>
         <p className="rh-report-print__toolbar-hint">معاينة قبل الطباعة — راجع التقرير ثم اضغط «طباعة».</p>
@@ -217,6 +226,13 @@ export default function ReportPrintPage() {
             </div>
             {headerMeta.length ? <PrintMetaGrid items={headerMeta} /> : null}
           </header>
+
+          {introMeta.length ? (
+            <section className="rh-report-print__intro">
+              <h2 className="rh-report-print__intro-title">معلومات الحلقة</h2>
+              <PrintMetaGrid items={introMeta} />
+            </section>
+          ) : null}
 
           <PrintExecutiveSummary summary={payload.executiveSummary} />
 

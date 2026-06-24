@@ -4,12 +4,14 @@ import { loadAwrad } from '../utils/awradStorage.js'
 import { loadPlanMembersWithProfiles } from '../utils/plansStorage.js'
 import {
   HALAKA_MEMBER_ROLES,
+  HALAKA_ATTENDANCE_STATUSES,
   loadHalakaSessions,
   loadHalakatMembersWithProfiles,
   loadSessionAttendance,
   formatHalakaSessionDayLabel,
   formatTasmeeDuration,
   normalizeHalakaRole,
+  sessionDayYmdFromStartedAt,
 } from '../utils/halakatStorage.js'
 import { loadExamMembersWithProfiles } from '../utils/examsStorage.js'
 import { loadActivityMembersWithProfiles } from '../utils/activitiesStorage.js'
@@ -17,12 +19,18 @@ import { loadDawratMembersWithProfiles } from '../utils/dawratStorage.js'
 import { loadRemoteTasmeeMembersWithProfiles } from '../utils/remoteTasmeeStorage.js'
 import { computePlanProgress } from '../utils/planProgress.js'
 import {
+  formatHalakaSessionHijriDateLabel,
+  formatHalakaSessionWeekdayLabel,
+  formatHalakaVolumeLabel,
+  formatHalakaWeekdaysLabel,
   formatHalakaEntryHistoryForReport,
   formatHalakaMemorizationRange,
-  formatHalakaVolumeLabel,
   formatMemberPlansVolumesForReport,
   formatPlanVolumesForReport,
+  formatReportSessionDurationFromIso,
+  listHalakaMemorizationLines,
 } from '../utils/reportDisplayLabels.js'
+import { halakaSessionDisplay } from '../utils/datePeriodAr.js'
 import { REPORT_SCOPE_ALL } from '../config/reportKinds.js'
 import { HALAKA_TASKS_LIMIT, pickRelevantHalakaSession } from '../utils/halakaAttendanceTask.js'
 import { buildStudentTasks } from '../utils/buildStudentTasks.js'
@@ -1178,15 +1186,21 @@ function buildHalakaSessionStudentRows(sessions, members, attendanceBySession, u
     const sessionId = String(session.id || '')
     const attRows = sessionAttendanceMap.get(sessionId) || []
     const attByUid = new Map(attRows.map((r) => [String(r.userId || '').trim(), r]))
+    const sessionDayYmd =
+      String(session.sessionDayYmd || '').trim() || sessionDayYmdFromStartedAt(session.startedAt) || ''
     const sessionMeta = {
       sessionId,
       sessionTitle: String(session.title || '').trim() || 'جلسة',
+      sessionDayYmd,
+      sessionWeekdayLabel: formatHalakaSessionWeekdayLabel(sessionDayYmd),
+      sessionDateLabel: formatHalakaSessionHijriDateLabel(sessionDayYmd),
+      sessionDayLabel: sessionDayYmd ? formatHalakaSessionDayLabel(sessionDayYmd) : '—',
       sessionStartedAt: session.startedAt || '',
       sessionEndedAt: session.endedAt || '',
       sessionStatus: session.status || '',
+      sessionDurationLabel: formatReportSessionDurationFromIso(session.startedAt, session.endedAt),
       sessionTasmeeSeconds: Math.max(0, Number(session.tasmeeTotalSeconds) || 0),
       sessionTasmeeLabel: formatTasmeeDuration(Math.max(0, Number(session.tasmeeTotalSeconds) || 0)),
-      sessionDayLabel: session.sessionDayYmd ? formatHalakaSessionDayLabel(session.sessionDayYmd) : '—',
     }
     const targets = students.length
       ? students
@@ -1200,23 +1214,54 @@ function buildHalakaSessionStudentRows(sessions, members, attendanceBySession, u
     for (const student of targets) {
       const uid = String(student.userId || '').trim()
       const row = attByUid.get(uid)
-      rows.push({
+      const base = {
         ...sessionMeta,
         userId: uid,
         userName: memberNameMap.get(uid) || userNameMap?.get(uid) || student.displayName || uid,
         excludedFromSession: Boolean(row?.excludedFromSession),
-        attendanceStatus: row ? String(row.attendanceStatus || '') : 'not_recorded',
-        pagesCount: Math.max(0, Number(row?.pagesCount) || 0),
-        fromPage: row?.fromPage ?? null,
-        toPage: row?.toPage ?? null,
-        memorizationVolumeLabel: formatHalakaVolumeLabel(row?.memorizationVolumeId),
-        memorizationRange: formatHalakaMemorizationRange(row?.fromPage, row?.toPage, row?.pagesCount),
+        attendanceStatus: !row
+          ? 'not_recorded'
+          : String(row.attendanceStatus || '').trim() || HALAKA_ATTENDANCE_STATUSES.PRESENT,
         tasmeeSeconds: Math.max(0, Number(row?.tasmeeSeconds) || 0),
         tasmeeLabel: formatTasmeeDuration(Math.max(0, Number(row?.tasmeeSeconds) || 0)),
-        notes: String(row?.notes || '').trim(),
-        entriesSummary: formatHalakaEntryHistoryForReport(row?.entryHistory),
         recordedAt: pickFirstDate(row?.updatedAt, row?.recordedAt),
-      })
+      }
+      const memLines = listHalakaMemorizationLines(row)
+      if (!row) {
+        rows.push({
+          ...base,
+          batchLabel: '',
+          memorizationVolumeLabel: '—',
+          fromPage: null,
+          toPage: null,
+          pagesCount: 0,
+          notes: '',
+        })
+        continue
+      }
+      if (!memLines.length) {
+        rows.push({
+          ...base,
+          batchLabel: '',
+          memorizationVolumeLabel: '—',
+          fromPage: null,
+          toPage: null,
+          pagesCount: 0,
+          notes: String(row.notes || '').trim(),
+        })
+        continue
+      }
+      for (const mem of memLines) {
+        rows.push({
+          ...base,
+          batchLabel: mem.batchLabel,
+          memorizationVolumeLabel: mem.memorizationVolumeLabel,
+          fromPage: mem.fromPage,
+          toPage: mem.toPage,
+          pagesCount: mem.pagesCount,
+          notes: mem.notes || String(row.notes || '').trim(),
+        })
+      }
     }
   }
   return rows
@@ -1376,6 +1421,14 @@ export async function buildGroupReport(kind, entityId, range = {}) {
       entityDetails: {
         ...baseDetails,
         location: entity.location || '',
+        description: String(entity.description || '').trim(),
+        genderLabel: entity.genderType === 'women' ? 'نساء' : 'رجال',
+        tasmeeWeekdaysLabel: formatHalakaWeekdaysLabel(entity.tasmeeWeekdays),
+        reviewWeekdaysLabel: formatHalakaWeekdaysLabel(entity.reviewWeekdays),
+        sessionScheduleLabel: (() => {
+          const disp = halakaSessionDisplay(entity)
+          return disp ? `${disp.startLabel} — ${disp.endLabel}` : ''
+        })(),
       },
       members: members || [],
       memberDetails: [...memberDetails].sort(

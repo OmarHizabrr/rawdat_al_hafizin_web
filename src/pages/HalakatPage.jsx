@@ -22,7 +22,7 @@ import { useLocation, useSearchParams } from 'react-router-dom'
 import { CrossNav } from '../components/CrossNav.jsx'
 import { PeekButton } from '../components/PeekButton.jsx'
 import { PERMISSION_PAGE_IDS } from '../config/permissionRegistry.js'
-import { isAdmin } from '../config/roles.js'
+import { isAdmin, normalizeRole as normalizePlatformRole, roleLabel as platformRoleLabel } from '../config/roles.js'
 import { useAuth } from '../context/useAuth.js'
 import { usePermissions } from '../context/usePermissions.js'
 import { useSiteContent } from '../context/useSiteContent.js'
@@ -169,6 +169,43 @@ const PH = PERMISSION_PAGE_IDS.halakat
 
 const SESSION_PERIOD = { CUSTOM: 'custom', MORNING: 'morning', EVENING: 'evening' }
 
+const PICKER_ROLE_FILTER_ALL = 'all'
+
+function MemberRoleFilterChips({ value, onChange, options, resultCount }) {
+  return (
+    <div className="rh-member-role-filter">
+      <div className="rh-member-role-filter__row">
+        <span className="rh-member-role-filter__label">فلتر الدور</span>
+        <div className="rh-member-role-filter__chips" role="tablist" aria-label="فلتر الدور">
+          {options.map(({ id, label, count }) => (
+            <button
+              key={id}
+              type="button"
+              role="tab"
+              aria-selected={value === id}
+              className={[
+                'rh-member-role-filter__chip',
+                value === id ? 'rh-member-role-filter__chip--active' : '',
+              ]
+                .filter(Boolean)
+                .join(' ')}
+              onClick={() => onChange(id)}
+            >
+              <span>{label}</span>
+              {typeof count === 'number' ? (
+                <span className="rh-member-role-filter__badge">{count}</span>
+              ) : null}
+            </button>
+          ))}
+        </div>
+      </div>
+      {typeof resultCount === 'number' ? (
+        <p className="rh-member-role-filter__meta">{resultCount} نتيجة معروضة</p>
+      ) : null}
+    </div>
+  )
+}
+
 export default function HalakatPage() {
   const { user } = useAuth()
   const { can, canAccessPage } = usePermissions()
@@ -219,6 +256,7 @@ export default function HalakatPage() {
   const [membersInsightsByUid, setMembersInsightsByUid] = useState({})
   const [directoryUsers, setDirectoryUsers] = useState([])
   const [memberPickerQuery, setMemberPickerQuery] = useState('')
+  const [pickerRoleFilter, setPickerRoleFilter] = useState('student')
   const [membersRoleFilter, setMembersRoleFilter] = useState(HALAKA_MEMBER_ROLES.STUDENT)
   const [addingMemberUid, setAddingMemberUid] = useState('')
   const [memberRowBusy, setMemberRowBusy] = useState(null)
@@ -550,9 +588,23 @@ export default function HalakatPage() {
     [directoryUsers, memberDirectoryExtras],
   )
 
+  const pickerRoleCounts = useMemo(() => {
+    const counts = { all: mergedDirectoryUsers.length, student: 0, teacher: 0, admin: 0 }
+    for (const u of mergedDirectoryUsers) {
+      const role = normalizePlatformRole(u.role)
+      if (role === 'student') counts.student += 1
+      else if (role === 'teacher') counts.teacher += 1
+      else if (role === 'admin') counts.admin += 1
+    }
+    return counts
+  }, [mergedDirectoryUsers])
+
   const filteredPickerUsers = useMemo(() => {
     const q = memberPickerQuery.trim().toLowerCase()
     let list = mergedDirectoryUsers
+    if (pickerRoleFilter !== PICKER_ROLE_FILTER_ALL) {
+      list = list.filter((u) => normalizePlatformRole(u.role) === pickerRoleFilter)
+    }
     if (q) {
       list = list.filter((u) => {
         const hay = `${u.displayName || ''} ${u.email || ''} ${u.uid || ''}`.toLowerCase()
@@ -565,7 +617,7 @@ export default function HalakatPage() {
       if (aAdded !== bAdded) return aAdded ? 1 : -1
       return (a.displayName || a.uid || '').localeCompare(b.displayName || b.uid || '', 'ar')
     })
-  }, [mergedDirectoryUsers, memberPickerQuery, memberUidSet])
+  }, [mergedDirectoryUsers, memberPickerQuery, memberUidSet, pickerRoleFilter])
 
   const filteredMembersList = useMemo(() => {
     if (membersRoleFilter === 'all') return membersList
@@ -1175,6 +1227,7 @@ export default function HalakatPage() {
           setMembersModal(null)
           setMembersList([])
           setMemberPickerQuery('')
+          setPickerRoleFilter('student')
           setMembersRoleFilter(HALAKA_MEMBER_ROLES.STUDENT)
         }}
         size="lg"
@@ -1199,6 +1252,17 @@ export default function HalakatPage() {
                 تظهر القائمة من مستخدمي المنصة مع دمج حسابك والأعضاء المعروضين أدناه (بمن فيهم مديرو النظام) حتى لا يُستبعد
                 أحد.
               </p>
+              <MemberRoleFilterChips
+                value={pickerRoleFilter}
+                onChange={setPickerRoleFilter}
+                resultCount={filteredPickerUsers.length}
+                options={[
+                  { id: 'student', label: 'طلاب', count: pickerRoleCounts.student },
+                  { id: 'teacher', label: 'معلمون', count: pickerRoleCounts.teacher },
+                  { id: 'admin', label: 'إداريون', count: pickerRoleCounts.admin },
+                  { id: PICKER_ROLE_FILTER_ALL, label: 'الكل', count: pickerRoleCounts.all },
+                ]}
+              />
               <SearchField
                 label="بحث"
                 value={memberPickerQuery}
@@ -1210,7 +1274,11 @@ export default function HalakatPage() {
                     جاري تحميل المستخدمين…
                   </p>
                 ) : filteredPickerUsers.length === 0 ? (
-                  <p className="rh-plan-members-picker__empty">لا نتائج مطابقة للبحث.</p>
+                  <p className="rh-plan-members-picker__empty">
+                    {memberPickerQuery.trim()
+                      ? 'لا نتائج مطابقة للبحث.'
+                      : 'لا يوجد مستخدمون بهذا الدور.'}
+                  </p>
                 ) : (
                 <ul className="rh-plan-members-picker__list">
                   {filteredPickerUsers.map((u) => {
@@ -1250,7 +1318,11 @@ export default function HalakatPage() {
                           </span>
                           <span className="rh-plan-members-pick__body">
                             <span className="rh-plan-members-pick__name">{name}</span>
-                            <span className="rh-plan-members-pick__sub">{u.email || u.uid}</span>
+                            <span className="rh-plan-members-pick__sub">
+                              {u.email || u.uid}
+                              {' · '}
+                              {platformRoleLabel(u.role)}
+                            </span>
                           </span>
                           {added && <span className="rh-plan-members-pick__badge">مضاف</span>}
                           {busy && <span className="rh-plan-members-pick__busy">…</span>}
@@ -1265,38 +1337,17 @@ export default function HalakatPage() {
           )}
           <section className="rh-plan-members-modal__section rh-plan-members-modal__section--members">
             <h3 className="rh-plan-members-modal__heading">الأعضاء</h3>
-            <div className="rh-halaka-members-filter">
-              <p className="rh-plans__field-label">عرض حسب الدور</p>
-              <div className="rh-segment rh-segment--halaka-members">
-                {[
-                  { id: HALAKA_MEMBER_ROLES.STUDENT, label: 'طلاب', count: membersRoleCounts.student },
-                  { id: HALAKA_MEMBER_ROLES.TEACHER, label: 'معلمون', count: membersRoleCounts.teacher },
-                  { id: HALAKA_MEMBER_ROLES.SUPERVISOR, label: 'مشرفون', count: membersRoleCounts.supervisor },
-                  { id: 'all', label: 'الكل', count: membersRoleCounts.all },
-                ].map(({ id, label, count }) => (
-                  <button
-                    key={id}
-                    type="button"
-                    className={[
-                      'rh-segment__btn',
-                      membersRoleFilter === id ? 'rh-segment__btn--active' : '',
-                    ]
-                      .filter(Boolean)
-                      .join(' ')}
-                    onClick={() => setMembersRoleFilter(id)}
-                  >
-                    <span className="rh-segment__label">
-                      {label}
-                      {count > 0 ? ` (${count})` : ''}
-                    </span>
-                  </button>
-                ))}
-              </div>
-              <p className="rh-halaka-members-filter__count">
-                {filteredMembersList.length} عضو معروض
-                {membersRoleFilter === HALAKA_MEMBER_ROLES.STUDENT ? ' — الطلاب افتراضياً' : ''}
-              </p>
-            </div>
+            <MemberRoleFilterChips
+              value={membersRoleFilter}
+              onChange={setMembersRoleFilter}
+              resultCount={filteredMembersList.length}
+              options={[
+                { id: HALAKA_MEMBER_ROLES.STUDENT, label: 'طلاب', count: membersRoleCounts.student },
+                { id: HALAKA_MEMBER_ROLES.TEACHER, label: 'معلمون', count: membersRoleCounts.teacher },
+                { id: HALAKA_MEMBER_ROLES.SUPERVISOR, label: 'مشرفون', count: membersRoleCounts.supervisor },
+                { id: 'all', label: 'الكل', count: membersRoleCounts.all },
+              ]}
+            />
             {membersLoading ? (
               <p className="rh-plans__members-loading">جاري التحميل…</p>
             ) : filteredMembersList.length === 0 ? (

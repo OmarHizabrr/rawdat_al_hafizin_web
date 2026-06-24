@@ -5299,25 +5299,87 @@ html:not([data-theme='dark']) .rh-segment__btn--active .rh-segment__label {
   border-top: 1px solid color-mix(in srgb, var(--rh-border) 50%, transparent);
 }
 
-.rh-halaka-members-filter {
+.rh-member-role-filter {
   margin-bottom: var(--rh-space-3);
 }
 
-.rh-halaka-members-filter__count {
-  margin: var(--rh-space-2) 0 0;
-  font-size: var(--rh-text-xs);
-  color: var(--rh-text-muted);
-}
-
-.rh-segment--halaka-members {
+.rh-member-role-filter__row {
   display: flex;
   flex-wrap: wrap;
-  gap: var(--rh-space-2);
+  align-items: center;
+  gap: var(--rh-space-2) var(--rh-space-3);
 }
 
-.rh-segment--halaka-members .rh-segment__btn {
+.rh-member-role-filter__label {
+  margin: 0;
+  font-size: var(--rh-text-xs);
+  font-weight: 600;
+  color: var(--rh-text-muted);
+  flex-shrink: 0;
+}
+
+.rh-member-role-filter__chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
   flex: 1 1 auto;
-  min-width: 4.75rem;
+}
+
+.rh-member-role-filter__chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.3rem 0.6rem;
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, var(--rh-border) 85%, transparent);
+  background: var(--rh-surface);
+  color: var(--rh-text-muted);
+  font: inherit;
+  font-size: var(--rh-text-xs);
+  line-height: 1.2;
+  cursor: pointer;
+  transition:
+    border-color 0.15s ease,
+    background-color 0.15s ease,
+    color 0.15s ease;
+}
+
+.rh-member-role-filter__chip:hover {
+  border-color: color-mix(in srgb, var(--rh-primary) 35%, var(--rh-border));
+  color: var(--rh-text);
+}
+
+.rh-member-role-filter__chip--active {
+  border-color: color-mix(in srgb, var(--rh-primary) 55%, var(--rh-border));
+  background: color-mix(in srgb, var(--rh-primary-muted) 32%, var(--rh-surface));
+  color: var(--rh-text);
+  font-weight: 600;
+}
+
+.rh-member-role-filter__chip:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--rh-primary) 55%, transparent);
+  outline-offset: 2px;
+}
+
+.rh-member-role-filter__badge {
+  min-width: 1.15rem;
+  padding: 0.05rem 0.35rem;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--rh-primary-muted) 40%, transparent);
+  font-size: 0.65rem;
+  font-weight: 700;
+  text-align: center;
+  color: var(--rh-text);
+}
+
+.rh-member-role-filter__chip--active .rh-member-role-filter__badge {
+  background: color-mix(in srgb, var(--rh-primary) 22%, var(--rh-surface));
+}
+
+.rh-member-role-filter__meta {
+  margin: 0.45rem 0 0;
+  font-size: var(--rh-text-xs);
+  color: var(--rh-text-muted);
 }
 
 @media (max-width: 520px) {
@@ -5330,8 +5392,13 @@ html:not([data-theme='dark']) .rh-segment__btn--active .rh-segment__label {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 
-  .rh-segment--halaka-members .rh-segment__btn {
-    flex: 1 1 calc(50% - var(--rh-space-2));
+  .rh-member-role-filter__row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .rh-member-role-filter__chips {
+    justify-content: flex-start;
   }
 }
 
@@ -11816,6 +11883,99 @@ a.rh-peek-btn {
   .rh-print-capture .rh-print-doc__footer {
     display: block;
   }
+}
+
+.rh-reports__halaka-header {
+  margin-bottom: var(--rh-space-3);
+}
+
+.rh-reports__halaka-meta {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(11rem, 1fr));
+  gap: var(--rh-space-2) var(--rh-space-4);
+  margin: 0;
+}
+
+.rh-reports__halaka-meta-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  min-width: 0;
+}
+
+.rh-reports__halaka-meta-item dt {
+  margin: 0;
+  font-size: var(--rh-text-xs);
+  color: var(--rh-text-muted);
+  font-weight: 600;
+}
+
+.rh-reports__halaka-meta-item dd {
+  margin: 0;
+  font-size: var(--rh-text-sm);
+  color: var(--rh-text);
+  word-break: break-word;
+}
+
+.rh-reports__table--halaka-sessions {
+  font-size: 0.78rem;
+}
+
+.rh-reports__table--halaka-sessions th,
+.rh-reports__table--halaka-sessions td {
+  padding: 0.45rem 0.35rem;
+  vertical-align: top;
+}
+
+.rh-reports__attendance-pill {
+  display: inline-block;
+  padding: 0.12rem 0.45rem;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  line-height: 1.35;
+  white-space: nowrap;
+}
+
+.rh-reports__attendance-pill--present {
+  background: color-mix(in srgb, #16a34a 18%, var(--rh-surface));
+  color: #15803d;
+}
+
+.rh-reports__attendance-pill--absent {
+  background: color-mix(in srgb, #dc2626 16%, var(--rh-surface));
+  color: #b91c1c;
+}
+
+.rh-reports__attendance-pill--late {
+  background: color-mix(in srgb, #d97706 18%, var(--rh-surface));
+  color: #b45309;
+}
+
+.rh-reports__attendance-pill--excused,
+.rh-reports__attendance-pill--permitted {
+  background: color-mix(in srgb, #2563eb 14%, var(--rh-surface));
+  color: #1d4ed8;
+}
+
+.rh-reports__attendance-pill--other {
+  background: color-mix(in srgb, var(--rh-muted) 22%, var(--rh-surface));
+  color: var(--rh-text-muted);
+}
+
+.rh-reports__attendance-pill--excluded {
+  background: color-mix(in srgb, #7c3aed 14%, var(--rh-surface));
+  color: #6d28d9;
+}
+
+.rh-reports__attendance-pill--not_recorded {
+  background: color-mix(in srgb, var(--rh-border) 35%, var(--rh-surface));
+  color: var(--rh-text-muted);
+  font-weight: 600;
+}
+
+.rh-reports__table--halaka-sessions td:nth-child(5) {
+  min-width: 5.5rem;
 }
 
 .rh-reports__table td,

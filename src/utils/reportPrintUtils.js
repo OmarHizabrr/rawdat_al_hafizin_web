@@ -59,7 +59,7 @@ export function buildPrintFooterLine(printContext) {
  * @param {{ autoPrint?: boolean }} [options]
  */
 export function printMultiSectionReport(
-  { documentTitle, sections, kpis, printContext, executiveSummary },
+  { documentTitle, sections, kpis, printContext, executiveSummary, pageOrientation, introMeta },
   options,
 ) {
   const printable = (sections || []).filter((s) => s?.rows?.length)
@@ -77,6 +77,9 @@ export function printMultiSectionReport(
       executiveSummary: executiveSummary || null,
       kpis: kpis || [],
       sections: printable,
+      pageOrientation:
+        pageOrientation || printable.find((s) => s.pageOrientation === 'landscape')?.pageOrientation || 'portrait',
+      introMeta: introMeta || printable.find((s) => s.introMeta?.length)?.introMeta || null,
     },
     options,
   )
@@ -90,7 +93,10 @@ export function printMultiSectionReport(
  * @param {object} [p.printContext]
  * @param {{ autoPrint?: boolean }} [options]
  */
-export function printSingleTable({ title, columns, rows, printContext }, options) {
+export function printSingleTable(
+  { title, columns, rows, printContext, pageOrientation, introMeta },
+  options,
+) {
   if (!rows?.length) return false
 
   return openReportPrintPage(
@@ -102,6 +108,8 @@ export function printSingleTable({ title, columns, rows, printContext }, options
       footerLine: buildPrintFooterLine(printContext),
       executiveSummary: null,
       kpis: [],
+      pageOrientation: pageOrientation || 'portrait',
+      introMeta: introMeta || null,
       sections: [{ title, columns, rows }],
     },
     options,

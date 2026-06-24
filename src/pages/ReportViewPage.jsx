@@ -75,7 +75,10 @@ import {
   formatEntityDetailsForReport,
   formatPlanVolumesForReport,
   reportAttendanceStatusLabel,
-  reportHalakaStudentSessionStatusLabel,
+  formatHalakaAttendanceDisplay,
+  HALAKA_SESSION_STUDENT_TABLE_COLUMNS,
+  formatHalakaSessionStudentRowsForDisplay,
+  buildHalakaReportHeaderItems,
   reportMediaTypeLabel,
   reportNotificationTypeLabel,
   reportPersonLabel,
@@ -236,9 +239,16 @@ function mapMembershipDisplayRow(r, { withJoined = false } = {}) {
   return row;
 }
 
-function printSingleTable(title, columns, rows, printContext) {
+function printSingleTable(title, columns, rows, printContext, options = {}) {
   printSingleTableDoc(
-    { title, columns, rows, printContext },
+    {
+      title,
+      columns,
+      rows,
+      printContext,
+      pageOrientation: options.pageOrientation,
+      introMeta: options.introMeta,
+    },
     { autoPrint: false },
   );
 }
@@ -336,6 +346,9 @@ function SectionTable({
   printContext: printContextProp,
   tabId = "all",
   ignoreTabFilter = false,
+  printLandscape = false,
+  printIntroMeta = null,
+  tableClassName = "",
 }) {
   const ctxPrint = useContext(ReportPrintContext);
   const printContext = printContextProp ?? ctxPrint;
@@ -364,14 +377,27 @@ function SectionTable({
             variant="ghost"
             size="sm"
             icon={Printer}
-            onClick={() => printSingleTable(title, columns, rows, printContext)}
+            onClick={() =>
+              printSingleTable(title, columns, rows, printContext, {
+                pageOrientation: printLandscape ? "landscape" : "portrait",
+                introMeta: printIntroMeta,
+              })
+            }
           >
             طباعة الجدول
           </Button>
         </div>
       </div>
       <div className="rh-admin-plan-types__table-wrap">
-        <table className="rh-admin-plan-types__table rh-reports__table">
+        <table
+          className={[
+            "rh-admin-plan-types__table",
+            "rh-reports__table",
+            tableClassName,
+          ]
+            .filter(Boolean)
+            .join(" ")}
+        >
           <thead>
             <tr>
               {columns.map((c) => (
@@ -383,9 +409,24 @@ function SectionTable({
           <tbody>
             {rows.map((row, i) => (
               <tr key={`${title}-${i}`}>
-                {columns.map((c) => (
-                  <td key={c.key}>{row[c.key] ?? "—"}</td>
-                ))}
+                {columns.map((c) => {
+                  const value = row[c.key] ?? "—";
+                  if (
+                    c.key === "attendanceStatusLabel" &&
+                    row.attendanceStatusKey
+                  ) {
+                    return (
+                      <td key={c.key}>
+                        <span
+                          className={`rh-reports__attendance-pill rh-reports__attendance-pill--${row.attendanceStatusKey}`}
+                        >
+                          {value}
+                        </span>
+                      </td>
+                    );
+                  }
+                  return <td key={c.key}>{value}</td>;
+                })}
                 {actions && <td className="no-print">{actions(row)}</td>}
               </tr>
             ))}
@@ -1058,21 +1099,27 @@ export default function ReportViewPage() {
           });
         }
         for (const r of reportData.sessionStudentRows || []) {
+          const display = formatHalakaSessionStudentRowsForDisplay([r], {
+            formatDateTime: formatArDateTime,
+          })[0];
           rows.push({
             القسم: "تفاصيل الجلسات والطلاب",
-            الجلسة: r.sessionTitle || "",
-            يوم_الجلسة: r.sessionDayLabel || "—",
-            بداية_الجلسة: formatArDateTime(r.sessionStartedAt),
-            نهاية_الجلسة: formatArDateTime(r.sessionEndedAt),
-            تسميع_الجلسة: r.sessionTasmeeLabel || "—",
-            الطالب: reportPersonLabel(r.userName, r.userId),
-            الحضور: reportHalakaStudentSessionStatusLabel(r),
-            المجلد: r.memorizationVolumeLabel || "—",
-            الحفظ: r.memorizationRange || "—",
-            دفعات_الحفظ: r.entriesSummary || "—",
-            وقت_تسميع_الطالب: r.tasmeeLabel || "—",
-            الملاحظات: r.notes || "—",
-            آخر_تسجيل: formatArDateTime(r.recordedAt),
+            الجلسة: display.sessionTitle,
+            اليوم: display.sessionWeekdayLabel,
+            التاريخ: display.sessionDateLabel,
+            بداية_الجلسة: display.sessionStartedAt,
+            نهاية_الجلسة: display.sessionEndedAt,
+            مدة_الجلسة: display.sessionDurationLabel,
+            تسميع_الجلسة: display.sessionTasmeeLabel,
+            الطالب: display.userName,
+            الحضور: display.attendanceStatusLabel,
+            الدفعة: display.batchLabel,
+            المجلد: display.memorizationVolumeLabel,
+            من_صفحة: display.fromPage,
+            إلى_صفحة: display.toPage,
+            عدد_الصفحات: display.pagesCount,
+            وقت_تسميع_الطالب: display.tasmeeLabel,
+            الملاحظات: display.notes,
           });
         }
         for (const s of reportData.sessions || []) {
@@ -1259,6 +1306,19 @@ export default function ReportViewPage() {
     }
     return map;
   }, [reportData?.members]);
+
+  const halakaReportHeaderItems = useMemo(() => {
+    if (reportData?.kind !== "halaka") return [];
+    return buildHalakaReportHeaderItems(reportData);
+  }, [reportData]);
+
+  const halakaSessionStudentDisplayRows = useMemo(() => {
+    if (!reportData?.sessionStudentRows?.length) return [];
+    return formatHalakaSessionStudentRowsForDisplay(
+      reportData.sessionStudentRows,
+      { formatDateTime: formatArDateTime },
+    );
+  }, [reportData?.sessionStudentRows]);
   const viewLinkByKind = useCallback(
     (k, id) => {
       if (!id) return "";
@@ -2708,37 +2768,32 @@ export default function ReportViewPage() {
                     )}
                     {reportData.kind === "halaka" && (
                       <>
+                        {halakaReportHeaderItems.length > 0 ? (
+                          <section className="rh-settings-card rh-reports__halaka-header">
+                            <h3 className="rh-settings-card__title">
+                              معلومات الحلقة
+                            </h3>
+                            <dl className="rh-reports__halaka-meta">
+                              {halakaReportHeaderItems.map((item) => (
+                                <div
+                                  key={item.label}
+                                  className="rh-reports__halaka-meta-item"
+                                >
+                                  <dt>{item.label}</dt>
+                                  <dd>{item.value ?? "—"}</dd>
+                                </div>
+                              ))}
+                            </dl>
+                          </section>
+                        ) : null}
                         <SectionTable
                           title="تفاصيل الجلسات والطلاب"
                           tabId="sessions"
-                          columns={[
-                            { key: "sessionTitle", label: "الجلسة" },
-                            { key: "sessionDayLabel", label: "اليوم" },
-                            { key: "sessionStartedAt", label: "البداية" },
-                            { key: "sessionEndedAt", label: "النهاية" },
-                            { key: "sessionTasmeeLabel", label: "تسميع الجلسة" },
-                            { key: "userName", label: "الطالب" },
-                            { key: "attendanceStatusLabel", label: "الحضور" },
-                            { key: "memorizationVolumeLabel", label: "المجلد" },
-                            { key: "memorizationRange", label: "الحفظ" },
-                            { key: "entriesSummary", label: "دفعات الحفظ" },
-                            { key: "tasmeeLabel", label: "تسميع الطالب" },
-                            { key: "notes", label: "الملاحظات" },
-                          ]}
-                          rows={(reportData.sessionStudentRows || []).map((r) => ({
-                            sessionTitle: r.sessionTitle || "—",
-                            sessionDayLabel: r.sessionDayLabel || "—",
-                            sessionStartedAt: formatArDateTime(r.sessionStartedAt),
-                            sessionEndedAt: formatArDateTime(r.sessionEndedAt),
-                            sessionTasmeeLabel: r.sessionTasmeeLabel || "—",
-                            userName: reportPersonLabel(r.userName, r.userId),
-                            attendanceStatusLabel: reportHalakaStudentSessionStatusLabel(r),
-                            memorizationVolumeLabel: r.memorizationVolumeLabel || "—",
-                            memorizationRange: r.memorizationRange || "—",
-                            entriesSummary: r.entriesSummary || "—",
-                            tasmeeLabel: r.tasmeeLabel || "—",
-                            notes: r.notes || "—",
-                          }))}
+                          printLandscape
+                          printIntroMeta={halakaReportHeaderItems}
+                          tableClassName="rh-reports__table--halaka-sessions"
+                          columns={HALAKA_SESSION_STUDENT_TABLE_COLUMNS}
+                          rows={halakaSessionStudentDisplayRows}
                         />
                         <SectionTable
                           title="جلسات الحلقة"
@@ -2766,7 +2821,7 @@ export default function ReportViewPage() {
                             { key: "sessionStartedAt", label: "بداية الجلسة" },
                             { key: "sessionEndedAt", label: "نهاية الجلسة" },
                             { key: "userName", label: "العضو" },
-                            { key: "attendanceStatusLabel", label: "الحضور" },
+                            { key: "attendanceStatusLabel", label: "حالة الحضور" },
                             { key: "memorizationVolumeLabel", label: "المجلد" },
                             { key: "memorizationRange", label: "الحفظ" },
                             { key: "entriesSummary", label: "دفعات الحفظ" },
@@ -2784,9 +2839,7 @@ export default function ReportViewPage() {
                                 ),
                               a.userId,
                             ),
-                            attendanceStatusLabel: reportAttendanceStatusLabel(
-                              a.attendanceStatus,
-                            ),
+                            ...formatHalakaAttendanceDisplay(a),
                             memorizationVolumeLabel: a.memorizationVolumeLabel || "—",
                             memorizationRange: a.memorizationRange || "—",
                             entriesSummary: a.entriesSummary || "—",
