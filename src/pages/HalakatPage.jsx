@@ -1,7 +1,6 @@
 import {
   BookOpen,
   CalendarPlus,
-  Eye,
   GraduationCap,
   Lock,
   Pencil,
@@ -21,6 +20,7 @@ import { useMemberProgressSummaries } from '../hooks/useMemberProgressSummaries.
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useLocation, useSearchParams } from 'react-router-dom'
 import { CrossNav } from '../components/CrossNav.jsx'
+import { PeekButton } from '../components/PeekButton.jsx'
 import { PERMISSION_PAGE_IDS } from '../config/permissionRegistry.js'
 import { isAdmin } from '../config/roles.js'
 import { useAuth } from '../context/useAuth.js'
@@ -34,7 +34,6 @@ import { firestoreApi } from '../services/firestoreApi.js'
 import { subscribeAllUsers } from '../services/adminUsersService.js'
 import { buildGroupReport } from '../services/reportsService.js'
 import {
-  HALAKA_ATTENDANCE_STATUSES,
   HALAKA_MEMBER_ROLES,
   addUserToHalaka,
   closeHalakaSession,
@@ -43,14 +42,12 @@ import {
   loadHalakat,
   loadHalakatMembersWithProfiles,
   loadHalakaSessions,
-  loadSessionAttendance,
   removeHalakaForUser,
   removeHalakaMember,
   saveHalakat,
   saveHalakaSession,
   setHalakaMemberRole,
   subscribeHalakat,
-  upsertSessionAttendance,
 } from '../utils/halakatStorage.js'
 import { combineHijriYmdAndHHmm } from '../utils/hijriDates.js'
 import {
@@ -74,8 +71,6 @@ import {
 } from '../ui/index.js'
 import { formatYmd } from '../ui/rhPickerUtils.js'
 import { RhIcon, RH_ICON_STROKE } from '../ui/RhIcon.jsx'
-import { VOLUMES, VOLUME_BY_ID } from '../data/volumes.js'
-
 const WEEKDAYS = [
   { d: 0, label: 'الأحد' },
   { d: 1, label: 'الإثنين' },
@@ -140,15 +135,6 @@ function canAssignRole(actorRole, targetRole, nextRole) {
     canManageRole(actor, next) &&
     (ROLE_RANK[next] || 0) < (ROLE_RANK[actor] || 0)
   )
-}
-
-function attendanceStatusLabel(status) {
-  if (status === HALAKA_ATTENDANCE_STATUSES.PRESENT) return 'حاضر'
-  if (status === HALAKA_ATTENDANCE_STATUSES.ABSENT) return 'غائب'
-  if (status === HALAKA_ATTENDANCE_STATUSES.EXCUSED) return 'غياب بعذر'
-  if (status === HALAKA_ATTENDANCE_STATUSES.PERMITTED) return 'مستأذن'
-  if (status === HALAKA_ATTENDANCE_STATUSES.LATE) return 'متأخر'
-  return 'أخرى'
 }
 
 function weekdayArrLabel(arr) {
@@ -247,9 +233,7 @@ export default function HalakatPage() {
   const [sessionEditorTitle, setSessionEditorTitle] = useState('')
   const [sessionEditorNotes, setSessionEditorNotes] = useState('')
   const [sessionSaveBusy, setSessionSaveBusy] = useState(false)
-  const [activeSession, setActiveSession] = useState(null)
-  const [sessionAttendanceRows, setSessionAttendanceRows] = useState([])
-  const [sessionAttendanceBusy, setSessionAttendanceBusy] = useState(false)
+  const [showNewSessionForm, setShowNewSessionForm] = useState(false)
   const [sessionCloseBusyId, setSessionCloseBusyId] = useState('')
 
   useEffect(() => {
@@ -324,47 +308,13 @@ export default function HalakatPage() {
   useEffect(() => {
     if (!sessionsModalHalaka?.id) {
       setSessionsList([])
-      setActiveSession(null)
-      setSessionAttendanceRows([])
       return
     }
     setSessionsLoading(true)
     loadHalakaSessions(sessionsModalHalaka.id)
-      .then((rows) => {
-        setSessionsList(rows)
-        if (rows.length > 0 && !activeSession) setActiveSession(rows[0])
-      })
+      .then((rows) => setSessionsList(rows))
       .finally(() => setSessionsLoading(false))
-  }, [sessionsModalHalaka?.id, activeSession])
-
-  useEffect(() => {
-    if (!sessionsModalHalaka?.id || !activeSession?.id) {
-      setSessionAttendanceRows([])
-      return
-    }
-    setSessionAttendanceBusy(true)
-    Promise.all([
-      loadSessionAttendance(sessionsModalHalaka.id, activeSession.id),
-      loadHalakatMembersWithProfiles(sessionsModalHalaka.id),
-    ])
-      .then(([attendanceRows, memberRows]) => {
-        const map = new Map(attendanceRows.map((r) => [r.userId, r]))
-        const rows = memberRows.map((m) => {
-          const a = map.get(m.userId) || {}
-          return {
-            userId: m.userId,
-            displayName: m.displayName || m.userId,
-            role: m.role,
-            attendanceStatus: a.attendanceStatus || HALAKA_ATTENDANCE_STATUSES.PRESENT,
-            memorizationVolumeId: a.memorizationVolumeId || '',
-            memorizedAmount: Number(a.memorizedAmount || 0),
-            notes: a.notes || '',
-          }
-        })
-        setSessionAttendanceRows(rows)
-      })
-      .finally(() => setSessionAttendanceBusy(false))
-  }, [sessionsModalHalaka?.id, activeSession?.id])
+  }, [sessionsModalHalaka?.id])
 
   useEffect(() => {
     if (!membersModal?.id || !user?.uid) {
@@ -644,51 +594,10 @@ export default function HalakatPage() {
     try {
       const rows = await loadHalakaSessions(sessionsModalHalaka.id)
       setSessionsList(rows)
-      if (rows.length > 0 && !activeSession) setActiveSession(rows[0])
-      if (activeSession?.id) {
-        const same = rows.find((r) => r.id === activeSession.id)
-        if (same) setActiveSession(same)
-      }
     } finally {
       setSessionsLoading(false)
     }
-  }, [sessionsModalHalaka?.id, activeSession])
-
-  const saveSessionRow = useCallback(
-    async (row) => {
-      if (!user || !sessionsModalHalaka?.id || !activeSession?.id) return
-      await upsertSessionAttendance(user, sessionsModalHalaka.id, activeSession.id, row.userId, {
-        attendanceStatus: row.attendanceStatus,
-        memorizationVolumeId: row.memorizationVolumeId,
-        memorizedAmount: row.memorizedAmount,
-        memorizedUnit: 'pages',
-        notes: row.notes,
-      })
-    },
-    [user, sessionsModalHalaka?.id, activeSession?.id],
-  )
-
-  const sessionSummary = useMemo(() => {
-    const stats = {
-      total: sessionAttendanceRows.length,
-      present: 0,
-      absent: 0,
-      excused: 0,
-      permitted: 0,
-      late: 0,
-      other: 0,
-    }
-    const volumeTotals = {}
-    for (const row of sessionAttendanceRows) {
-      const s = row.attendanceStatus || HALAKA_ATTENDANCE_STATUSES.OTHER
-      if (s in stats) stats[s] += 1
-      else stats.other += 1
-      const vid = String(row.memorizationVolumeId || '').trim()
-      if (!vid) continue
-      volumeTotals[vid] = (volumeTotals[vid] || 0) + Number(row.memorizedAmount || 0)
-    }
-    return { stats, volumeTotals }
-  }, [sessionAttendanceRows])
+  }, [sessionsModalHalaka?.id])
 
   const crossItems = useMemo(() => {
     const items = [
@@ -1065,91 +974,111 @@ export default function HalakatPage() {
         open={Boolean(sessionsModalHalaka)}
         title={sessionsModalHalaka ? `جلسات الحلقة: ${sessionsModalHalaka.name}` : ''}
         onClose={() => {
-          if (sessionSaveBusy || sessionAttendanceBusy) return
+          if (sessionSaveBusy) return
           setSessionsModalHalaka(null)
           setSessionsList([])
-          setActiveSession(null)
-          setSessionAttendanceRows([])
+          setShowNewSessionForm(false)
         }}
         size="lg"
-        closeOnBackdrop={!sessionSaveBusy && !sessionAttendanceBusy}
-        closeOnEsc={!sessionSaveBusy && !sessionAttendanceBusy}
-        showClose={!sessionSaveBusy && !sessionAttendanceBusy}
+        closeOnBackdrop={!sessionSaveBusy}
+        closeOnEsc={!sessionSaveBusy}
+        showClose={!sessionSaveBusy}
       >
         <div className="rh-plan-members-modal__body">
+          <p className="rh-halaka-sessions__callout">
+            التحضير والتسجيل من صفحة الجلسة المستقلة — افتح جلسة واحدة في كل مرة عبر أيقونة العين.
+          </p>
           <section className="rh-plan-members-modal__section">
-            <h3 className="rh-plan-members-modal__heading">فتح جلسة جديدة</h3>
-            <div className="rh-plans__dates-grid">
-              <TextField
-                label="عنوان الجلسة (اختياري)"
-                value={sessionEditorTitle}
-                onChange={(e) => setSessionEditorTitle(e.target.value)}
-              />
-              <TextAreaField
-                label="ملاحظات عامة"
-                rows={2}
-                value={sessionEditorNotes}
-                onChange={(e) => setSessionEditorNotes(e.target.value)}
-              />
-            </div>
-            <div className="rh-plans__dates-grid">
-              <RhDateTimePickerField
-                label="بداية الجلسة"
-                selected={sessionEditorStart}
-                onChange={(d) => d && setSessionEditorStart(d)}
-                maxDate={sessionEditorEnd || undefined}
-                timeIntervals={5}
-              />
-              <RhDateTimePickerField
-                label="نهاية الجلسة"
-                selected={sessionEditorEnd}
-                onChange={(d) => d && setSessionEditorEnd(d)}
-                minDate={sessionEditorStart || undefined}
-                timeIntervals={5}
-              />
-            </div>
-            <p className="ui-field__hint">
-              مدة الجلسة: {halakaSessionDurationAr(sessionEditorStart, sessionEditorEnd)}
-            </p>
-            <div className="rh-plans__actions">
+            <div className="rh-settings-card__head">
+              <h3 className="rh-plan-members-modal__heading">فتح جلسة جديدة</h3>
               <Button
                 type="button"
-                variant="primary"
-                icon={CalendarPlus}
-                loading={sessionSaveBusy}
+                size="sm"
+                variant="secondary"
+                icon={showNewSessionForm ? X : Plus}
                 disabled={!canWriteSessionRows}
-                onClick={async () => {
-                  if (!user || !sessionsModalHalaka?.id) return
-                  if (
-                    !sessionEditorStart ||
-                    !sessionEditorEnd ||
-                    sessionEditorEnd.getTime() <= sessionEditorStart.getTime()
-                  ) {
-                    toast.warning('تاريخ ووقت نهاية الجلسة يجب أن يكونا بعد البداية.', '')
-                    return
-                  }
-                  setSessionSaveBusy(true)
-                  try {
-                    const savedSession = await saveHalakaSession(user, sessionsModalHalaka.id, {
-                      title: sessionEditorTitle,
-                      startedAt: sessionEditorStart.toISOString(),
-                      endedAt: sessionEditorEnd.toISOString(),
-                      notes: sessionEditorNotes,
-                      status: 'open',
-                    })
-                    await refreshSessions()
-                    setActiveSession(savedSession)
-                    toast.success('تم فتح الجلسة.', 'تم')
-                  } catch {
-                    toast.warning('تعذّر فتح الجلسة.', '')
-                  } finally {
-                    setSessionSaveBusy(false)
-                  }
-                }}
+                onClick={() => setShowNewSessionForm((v) => !v)}
               >
-                فتح جلسة
+                {showNewSessionForm ? 'إخفاء النموذج' : 'إضافة جلسة'}
               </Button>
             </div>
+            {showNewSessionForm ? (
+              <>
+                <div className="rh-plans__dates-grid">
+                  <TextField
+                    label="عنوان الجلسة (اختياري)"
+                    value={sessionEditorTitle}
+                    onChange={(e) => setSessionEditorTitle(e.target.value)}
+                  />
+                  <TextAreaField
+                    label="ملاحظات عامة"
+                    rows={2}
+                    value={sessionEditorNotes}
+                    onChange={(e) => setSessionEditorNotes(e.target.value)}
+                  />
+                </div>
+                <div className="rh-plans__dates-grid">
+                  <RhDateTimePickerField
+                    label="بداية الجلسة"
+                    selected={sessionEditorStart}
+                    onChange={(d) => d && setSessionEditorStart(d)}
+                    maxDate={sessionEditorEnd || undefined}
+                    timeIntervals={5}
+                  />
+                  <RhDateTimePickerField
+                    label="نهاية الجلسة"
+                    selected={sessionEditorEnd}
+                    onChange={(d) => d && setSessionEditorEnd(d)}
+                    minDate={sessionEditorStart || undefined}
+                    timeIntervals={5}
+                  />
+                </div>
+                <p className="ui-field__hint">
+                  مدة الجلسة: {halakaSessionDurationAr(sessionEditorStart, sessionEditorEnd)}
+                </p>
+                <div className="rh-plans__actions">
+                  <Button
+                    type="button"
+                    variant="primary"
+                    icon={CalendarPlus}
+                    loading={sessionSaveBusy}
+                    disabled={!canWriteSessionRows}
+                    onClick={async () => {
+                      if (!user || !sessionsModalHalaka?.id) return
+                      if (
+                        !sessionEditorStart ||
+                        !sessionEditorEnd ||
+                        sessionEditorEnd.getTime() <= sessionEditorStart.getTime()
+                      ) {
+                        toast.warning('تاريخ ووقت نهاية الجلسة يجب أن يكونا بعد البداية.', '')
+                        return
+                      }
+                      setSessionSaveBusy(true)
+                      try {
+                        await saveHalakaSession(user, sessionsModalHalaka.id, {
+                          title: sessionEditorTitle,
+                          startedAt: sessionEditorStart.toISOString(),
+                          endedAt: sessionEditorEnd.toISOString(),
+                          notes: sessionEditorNotes,
+                          status: 'open',
+                        })
+                        await refreshSessions()
+                        setShowNewSessionForm(false)
+                        toast.success('تم فتح الجلسة. افتحها من أيقونة العين للتحضير.', 'تم')
+                      } catch {
+                        toast.warning('تعذّر فتح الجلسة.', '')
+                      } finally {
+                        setSessionSaveBusy(false)
+                      }
+                    }}
+                  >
+                    فتح جلسة
+                  </Button>
+                </div>
+              </>
+            ) : (
+              <p className="rh-plans__saved-meta">اضغط «إضافة جلسة» لإظهار نموذج الفتح.</p>
+            )}
           </section>
 
           <section className="rh-plan-members-modal__section">
@@ -1173,16 +1102,11 @@ export default function HalakatPage() {
                         {formatSessionAttendanceLine(s, sessionsModalHalaka?.studentCount)}
                       </span>
                     </div>
-                    <div className="rh-members-chat__actions">
-                      <Button
-                        type="button"
-                        size="sm"
-                        variant={activeSession?.id === s.id ? 'secondary' : 'ghost'}
-                        icon={Eye}
-                        onClick={() => setActiveSession(s)}
-                      >
-                        فتح التفاصيل
-                      </Button>
+                    <div className="rh-members-chat__actions rh-members-chat__actions--peek">
+                      <PeekButton
+                        to={appLink(`/app/halakat/${sessionsModalHalaka.id}/sessions/${s.id}`)}
+                        title="فتح صفحة التحضير والتسجيل"
+                      />
                       {s.status !== 'closed' && (
                         <Button
                           type="button"
@@ -1205,7 +1129,7 @@ export default function HalakatPage() {
                             }
                           }}
                         >
-                          إغلاق الجلسة
+                          إغلاق
                         </Button>
                       )}
                     </div>
@@ -1214,156 +1138,6 @@ export default function HalakatPage() {
               </ul>
             )}
           </section>
-
-          {activeSession && (
-            <section className="rh-plan-members-modal__section">
-              <h3 className="rh-plan-members-modal__heading">تفاصيل الجلسة: {activeSession.title || 'جلسة حلقة'}</h3>
-              <p className="rh-plans__saved-meta">
-                {activeSession.notes || 'لا توجد ملاحظات عامة.'}
-              </p>
-              <div className="rh-plans__saved-meta">
-                <strong>تقرير سريع:</strong> إجمالي {sessionSummary.stats.total} طالب — حاضر {sessionSummary.stats.present}،
-                غائب {sessionSummary.stats.absent}، بعذر {sessionSummary.stats.excused}، مستأذن {sessionSummary.stats.permitted}
-                ، متأخر {sessionSummary.stats.late}، أخرى {sessionSummary.stats.other}.
-              </div>
-              {Object.keys(sessionSummary.volumeTotals).length > 0 && (
-                <ul className="rh-plans__saved-meta">
-                  {Object.entries(sessionSummary.volumeTotals).map(([vid, amount]) => (
-                    <li key={vid}>
-                      {VOLUME_BY_ID[vid]?.label || vid}: {amount} صفحة
-                    </li>
-                  ))}
-                </ul>
-              )}
-              {sessionAttendanceBusy ? (
-                <p>جاري تحميل سجلات الحضور…</p>
-              ) : (
-                <ul className="rh-members-chat-list">
-                  {sessionAttendanceRows.map((row) => {
-                    const isSelf = row.userId === user?.uid
-                    const disabledRow =
-                      !canWriteSessionRows || (!isSelf && !canManageRole(activeHalakaRole, row.role))
-                    const isStudentSelf = row.userId === viewUserId && normalizeRole(row.role) === HALAKA_MEMBER_ROLES.STUDENT
-                    return (
-                      <li key={row.userId} className="rh-members-chat__item">
-                        <div className="rh-members-chat__main">
-                          <strong>
-                            {row.displayName} {isStudentSelf ? '(سجلي)' : ''}
-                          </strong>
-                          <span className="rh-plans__saved-badge">{roleLabel(row.role)}</span>
-                        </div>
-                        <div style={{ display: 'grid', gap: '0.4rem', width: '100%' }}>
-                          <label className="ui-field__label">
-                            الحالة
-                            <select
-                              className="ui-input"
-                              value={row.attendanceStatus}
-                              disabled={disabledRow}
-                              onChange={(e) => {
-                                const value = e.target.value
-                                setSessionAttendanceRows((prev) =>
-                                  prev.map((x) =>
-                                    x.userId === row.userId ? { ...x, attendanceStatus: value } : x,
-                                  ),
-                                )
-                              }}
-                              onBlur={async () => {
-                                if (disabledRow) return
-                                try {
-                                  await saveSessionRow(row)
-                                } catch {
-                                  toast.warning('تعذّر حفظ الحضور.', '')
-                                }
-                              }}
-                            >
-                              {Object.values(HALAKA_ATTENDANCE_STATUSES).map((s) => (
-                                <option key={s} value={s}>
-                                  {attendanceStatusLabel(s)}
-                                </option>
-                              ))}
-                            </select>
-                          </label>
-                          <div className="rh-plans__dates-grid">
-                            <label className="ui-field__label">
-                              المجلد
-                              <select
-                                className="ui-input"
-                                value={row.memorizationVolumeId}
-                                disabled={disabledRow}
-                                onChange={(e) => {
-                                  const value = e.target.value
-                                  setSessionAttendanceRows((prev) =>
-                                    prev.map((x) =>
-                                      x.userId === row.userId ? { ...x, memorizationVolumeId: value } : x,
-                                    ),
-                                  )
-                                }}
-                                onBlur={async () => {
-                                  if (disabledRow) return
-                                  try {
-                                    await saveSessionRow(row)
-                                  } catch {
-                                    toast.warning('تعذّر حفظ المجلد.', '')
-                                  }
-                                }}
-                              >
-                                <option value="">—</option>
-                                {VOLUMES.map((v) => (
-                                  <option key={v.id} value={v.id}>
-                                    {v.label}
-                                  </option>
-                                ))}
-                              </select>
-                            </label>
-                            <TextField
-                              label="المقدار (صفحات)"
-                              type="number"
-                              value={String(row.memorizedAmount || 0)}
-                              disabled={disabledRow}
-                              onChange={(e) => {
-                                const value = Number(e.target.value || 0)
-                                setSessionAttendanceRows((prev) =>
-                                  prev.map((x) => (x.userId === row.userId ? { ...x, memorizedAmount: value } : x)),
-                                )
-                              }}
-                              onBlur={async () => {
-                                if (disabledRow) return
-                                try {
-                                  await saveSessionRow(row)
-                                } catch {
-                                  toast.warning('تعذّر حفظ المقدار.', '')
-                                }
-                              }}
-                            />
-                          </div>
-                          <TextAreaField
-                            label="ملاحظات"
-                            rows={2}
-                            value={row.notes}
-                            disabled={disabledRow}
-                            onChange={(e) => {
-                              const value = e.target.value
-                              setSessionAttendanceRows((prev) =>
-                                prev.map((x) => (x.userId === row.userId ? { ...x, notes: value } : x)),
-                              )
-                            }}
-                            onBlur={async () => {
-                              if (disabledRow) return
-                              try {
-                                await saveSessionRow(row)
-                              } catch {
-                                toast.warning('تعذّر حفظ الملاحظات.', '')
-                              }
-                            }}
-                          />
-                        </div>
-                      </li>
-                    )
-                  })}
-                </ul>
-              )}
-            </section>
-          )}
         </div>
       </Modal>
 

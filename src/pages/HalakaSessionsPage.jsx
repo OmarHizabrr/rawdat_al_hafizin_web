@@ -156,7 +156,7 @@ export default function HalakaSessionsPage() {
           <h2 className="rh-settings-card__title">إدارة فتح الجلسات</h2>
         </div>
         <p className="rh-settings-card__subtitle">فتح جلسة من النافذة المنبثقة، ثم إدارة التحضير والتغييب من صفحة مستقلة لكل جلسة.</p>
-        <div className="rh-plans__actions">
+        <div className="rh-plans__actions rh-halaka-sessions__page-actions">
           <Button type="button" variant="primary" icon={Plus} disabled={!canWrite} onClick={() => setSessionModalOpen(true)}>
             إضافة جلسة
           </Button>
@@ -192,7 +192,7 @@ export default function HalakaSessionsPage() {
           <RhDateTimePickerField label="النهاية" selected={end} onChange={(d) => d && setEnd(d)} minDate={start} timeIntervals={5} />
         </div>
         <p className="ui-field__hint">المدة: {halakaSessionDurationAr(start, end)}</p>
-        <div className="rh-plans__actions">
+        <div className="rh-plans__actions rh-halaka-sessions__modal-actions-bar">
           <Button
             type="button"
             variant="primary"
@@ -266,7 +266,7 @@ export default function HalakaSessionsPage() {
                     {formatSessionAttendanceLine(s, studentCount)}
                   </span>
                 </div>
-                <div className="rh-halaka-sessions__session-actions">
+                <div className="rh-halaka-sessions__session-actions rh-halaka-sessions__session-actions--peek">
                   <PeekButton
                     to={`/app/halakat/${halakaId}/sessions/${s.id}`}
                     title="فتح صفحة الجلسة المستقلة"

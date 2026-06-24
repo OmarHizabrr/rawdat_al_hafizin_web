@@ -1,4 +1,4 @@
-import { ArrowRight, Ban, Clock, Pause, Play, RotateCcw, Save, UserCheck, UserX } from 'lucide-react'
+import { ArrowRight, Ban, ChevronDown, Clock, Pause, Play, Plus, RotateCcw, Save, UserCheck, UserX, X } from 'lucide-react'
 import { HapticLink } from '../ui/HapticLink.jsx'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useParams } from 'react-router-dom'
@@ -8,7 +8,7 @@ import { usePermissions } from '../context/usePermissions.js'
 import { useSiteContent } from '../context/useSiteContent.js'
 import { VOLUMES, VOLUME_BY_ID } from '../data/volumes.js'
 import { RhIcon, RH_ICON_STROKE } from '../ui/RhIcon.jsx'
-import { Button, TextAreaField, TextField, useToast } from '../ui/index.js'
+import { Button, Modal, SearchField, TextAreaField, TextField, useToast } from '../ui/index.js'
 import { loadAwrad } from '../utils/awradStorage.js'
 import { aggregateVolumeProgress, lastWirdOverlappingVolume } from '../utils/halakaVolumeProgress.js'
 import {
@@ -67,6 +67,18 @@ function formatRecordedAt(iso) {
   const t = Date.parse(String(iso || ''))
   return Number.isFinite(t) ? formatDateTimeMedium12Ar(new Date(t)) : ''
 }
+function isRecordableStudent(row) {
+  if (!row || row.role !== HALAKA_MEMBER_ROLES.STUDENT || row.excludedFromSession) return false
+  if (row.attendanceStatus === HALAKA_ATTENDANCE_STATUSES.ABSENT) return false
+  if (row.attendanceStatus === HALAKA_ATTENDANCE_STATUSES.EXCUSED) return false
+  return true
+}
+function getNextRecordableStudentUid(currentUid, rows) {
+  const eligible = rows.filter(isRecordableStudent)
+  const idx = eligible.findIndex((r) => r.userId === currentUid)
+  if (idx < 0 || idx >= eligible.length - 1) return ''
+  return eligible[idx + 1].userId
+}
 
 export default function HalakaSessionWorkspacePage() {
   const { halakaId, sessionId } = useParams()
@@ -93,6 +105,13 @@ export default function HalakaSessionWorkspacePage() {
   const [assignStudentUid, setAssignStudentUid] = useState('')
   const [showSessionTasmeeHistory, setShowSessionTasmeeHistory] = useState(false)
   const [timerNow, setTimerNow] = useState(() => Date.now())
+  const [activeStudentUid, setActiveStudentUid] = useState('')
+  const [showTasmeePanel, setShowTasmeePanel] = useState(false)
+  const [showBulkToolbar, setShowBulkToolbar] = useState(false)
+  const [showStatsPanel, setShowStatsPanel] = useState(
+    () => typeof window !== 'undefined' && window.matchMedia('(min-width: 681px)').matches,
+  )
+  const [studentFilterQuery, setStudentFilterQuery] = useState('')
 
   useEffect(() => {
     if (!user?.uid || !halakaId || !sessionId) return
@@ -186,21 +205,16 @@ export default function HalakaSessionWorkspacePage() {
     )
   }, [halakaId, sessionId])
 
-  const studentFetchKey = useMemo(
-    () =>
-      attendanceRows
-        .filter((r) => r.role === HALAKA_MEMBER_ROLES.STUDENT)
-        .map((r) => r.userId)
-        .sort()
-        .join(','),
-    [attendanceRows],
-  )
+  useEffect(() => {
+    if (session?.tasmeeTimerStatus === 'running') setShowTasmeePanel(true)
+  }, [session?.tasmeeTimerStatus])
+
+  const studentFetchKey = activeStudentUid
   useEffect(() => {
     if (!studentFetchKey) return
-    const ids = studentFetchKey.split(',').filter(Boolean)
     let cancelled = false
-    Promise.all(ids.map(async (uid) => [uid, { plans: await loadPlans(uid), awrad: await loadAwrad(uid) }])).then((rows) => {
-      if (!cancelled) setStudentContexts(Object.fromEntries(rows))
+    Promise.all([loadPlans(studentFetchKey), loadAwrad(studentFetchKey)]).then(([plans, awrad]) => {
+      if (!cancelled) setStudentContexts((prev) => ({ ...prev, [studentFetchKey]: { plans, awrad } }))
     })
     return () => {
       cancelled = true
@@ -278,6 +292,75 @@ export default function HalakaSessionWorkspacePage() {
     return [...list].reverse().slice(0, 12)
   }, [session?.tasmeeHistory])
 
+  const activeRow = useMemo(
+    () => (activeStudentUid ? attendanceRows.find((r) => r.userId === activeStudentUid) || null : null),
+    [activeStudentUid, attendanceRows],
+  )
+
+  const quickAttendanceStatuses = useMemo(
+    () => [
+      HALAKA_ATTENDANCE_STATUSES.PRESENT,
+      HALAKA_ATTENDANCE_STATUSES.ABSENT,
+      HALAKA_ATTENDANCE_STATUSES.LATE,
+      HALAKA_ATTENDANCE_STATUSES.EXCUSED,
+    ],
+    [],
+  )
+
+  const filteredAttendanceRows = useMemo(() => {
+    const q = studentFilterQuery.trim().toLowerCase()
+    if (!q) return attendanceRows
+    return attendanceRows.filter((r) => (r.displayName || r.userId).toLowerCase().includes(q))
+  }, [attendanceRows, studentFilterQuery])
+
+  const nextRecordableUid = useMemo(() => {
+    if (!activeStudentUid) return ''
+    return getNextRecordableStudentUid(activeStudentUid, attendanceRows)
+  }, [activeStudentUid, attendanceRows])
+
+  const nextRecordableName = useMemo(() => {
+    if (!nextRecordableUid) return ''
+    return attendanceRows.find((r) => r.userId === nextRecordableUid)?.displayName || ''
+  }, [attendanceRows, nextRecordableUid])
+
+  useEffect(() => {
+    if (!activeStudentUid) return undefined
+    const id = window.requestAnimationFrame(() => {
+      document.getElementById(`halaka-attendee-${activeStudentUid}`)?.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
+    })
+    return () => window.cancelAnimationFrame(id)
+  }, [activeStudentUid])
+
+  const closeStudentModal = useCallback(() => {
+    if (savingRowId) return
+    setActiveStudentUid('')
+    setEditingEntryByUser((prev) => {
+      if (!activeStudentUid || !prev[activeStudentUid]) return prev
+      const next = { ...prev }
+      delete next[activeStudentUid]
+      return next
+    })
+  }, [activeStudentUid, savingRowId])
+
+  const openStudentModal = useCallback(
+    (uid) => {
+      if (activeStudentUid && activeStudentUid !== uid && dirtyRowIds.has(activeStudentUid)) {
+        toast.info('احفظ أو أغلق سجل الطالب الحالي قبل فتح طالب آخر.', 'سجل الطالب')
+        return
+      }
+      if (activeStudentUid && activeStudentUid !== uid) {
+        setEditingEntryByUser((prev) => {
+          if (!prev[activeStudentUid]) return prev
+          const next = { ...prev }
+          delete next[activeStudentUid]
+          return next
+        })
+      }
+      setActiveStudentUid(uid)
+    },
+    [activeStudentUid, dirtyRowIds, toast],
+  )
+
   const rowPayload = (row) => {
     const fp = row.fromPage === '' ? null : Number(row.fromPage)
     const tp = row.toPage === '' ? null : Number(row.toPage)
@@ -318,6 +401,26 @@ export default function HalakaSessionWorkspacePage() {
     setAttendanceRows((prev) => prev.map((x) => (x.userId === uid ? { ...x, ...patch } : x)))
     setDirtyRowIds((prev) => new Set(prev).add(uid))
   }, [])
+  const quickSetAttendance = useCallback(
+    async (row, status) => {
+      if (!canWrite || !user?.uid || row.attendanceStatus === status) return
+      setAttendanceRows((prev) =>
+        prev.map((x) => (x.userId === row.userId ? { ...x, attendanceStatus: status } : x)),
+      )
+      setSavingRowId(row.userId)
+      try {
+        await upsertSessionAttendance(user, halakaId, sessionId, row.userId, { attendanceStatus: status })
+      } catch {
+        setAttendanceRows((prev) =>
+          prev.map((x) => (x.userId === row.userId ? { ...x, attendanceStatus: row.attendanceStatus } : x)),
+        )
+        toast.error('تعذر حفظ الحضور.', 'التحضير')
+      } finally {
+        setSavingRowId('')
+      }
+    },
+    [canWrite, halakaId, sessionId, toast, user],
+  )
   const applyBulkPatch = useCallback((patch, { includeExcluded = true, studentsOnly = false } = {}) => {
     setAttendanceRows((prev) => {
       const updated = prev.map((x) => {
@@ -338,15 +441,18 @@ export default function HalakaSessionWorkspacePage() {
   }, [])
   const saveRow = useCallback(
     async (row) => {
-      if (!canWrite || !user?.uid) return
+      if (!canWrite || !user?.uid) return false
+      const isEditing = Boolean(editingEntryByUser[row.userId])
+      const entryPayload = row.role === HALAKA_MEMBER_ROLES.STUDENT ? buildEntryPayload(row) : null
+      const isNewBatch = Boolean(entryPayload) && !isEditing
+      const nextUid = isNewBatch ? getNextRecordableStudentUid(row.userId, attendanceRows) : ''
       setSavingRowId(row.userId)
       try {
-        const entryPayload = row.role === HALAKA_MEMBER_ROLES.STUDENT ? buildEntryPayload(row) : null
         await upsertSessionAttendance(user, halakaId, sessionId, row.userId, {
           ...rowPayload(row),
-          appendEntry: Boolean(entryPayload) && !editingEntryByUser[row.userId],
+          appendEntry: Boolean(entryPayload) && !isEditing,
           entryPayload,
-          updateEntry: editingEntryByUser[row.userId]
+          updateEntry: isEditing
             ? {
                 id: editingEntryByUser[row.userId],
                 memorizationVolumeId: row.memorizationVolumeId,
@@ -356,7 +462,7 @@ export default function HalakaSessionWorkspacePage() {
               }
             : null,
         })
-        if (editingEntryByUser[row.userId] && entryPayload) {
+        if (isEditing && entryPayload) {
           setAttendanceRows((prev) =>
             prev.map((x) =>
               x.userId === row.userId
@@ -374,6 +480,7 @@ export default function HalakaSessionWorkspacePage() {
             ),
           )
           setEditingEntryByUser((prev) => ({ ...prev, [row.userId]: '' }))
+          toast.success('تم تحديث الدفعة.', 'تم')
         } else if (entryPayload) {
           const nextRange = nextSuggestedRange(entryPayload.fromPage, entryPayload.toPage, VOLUME_BY_ID[entryPayload.memorizationVolumeId]?.pages || 0)
           setAttendanceRows((prev) =>
@@ -421,11 +528,33 @@ export default function HalakaSessionWorkspacePage() {
             ),
           )
         }
+        if (isNewBatch) {
+          if (nextUid) {
+            const nextName = attendanceRows.find((r) => r.userId === nextUid)?.displayName || 'الطالب'
+            setActiveStudentUid(nextUid)
+            setEditingEntryByUser((prev) => {
+              if (!prev[row.userId]) return prev
+              const next = { ...prev }
+              delete next[row.userId]
+              return next
+            })
+            toast.success(`تم التسجيل. التالي: ${nextName}`, 'تم')
+          } else {
+            setActiveStudentUid('')
+            toast.success('تم تسجيل الدفعة. انتهت قائمة الطلاب.', 'تم')
+          }
+        } else if (!isEditing) {
+          setActiveStudentUid('')
+        }
+        return true
+      } catch {
+        toast.error('تعذر حفظ السجل.', 'تم')
+        return false
       } finally {
         setSavingRowId('')
       }
     },
-    [canWrite, editingEntryByUser, halakaId, sessionId, user],
+    [attendanceRows, canWrite, editingEntryByUser, halakaId, sessionId, toast, user],
   )
   const handleTimerStart = useCallback(async () => {
     if (!canWrite || !user?.uid || timerBusy) return
@@ -582,7 +711,7 @@ export default function HalakaSessionWorkspacePage() {
         <div className="rh-plans__hero-head">
           <div>
             <h1 className="rh-plans__title">صفحة الجلسة: {session.title || 'جلسة حلقة'}</h1>
-            <p className="rh-plans__desc rh-halaka-sessions__lead">صفحة مستقلة للتحضير والتغييب مع إمكانية استثناء أي عضو من عملية الجلسة.</p>
+            <p className="rh-plans__desc rh-halaka-sessions__lead">سجّل حضور الطلاب من البطاقات، ثم افتح سجل كل طالب على حدة لتسجيل الحفظ والتسميع دون ازدحام الشاشة.</p>
             <CrossNav items={crossItems} className="rh-plans__cross" />
           </div>
           <HapticLink to={`/app/halakat/${halakaId}/sessions`} className="rh-halaka-sessions__hero-back ui-btn ui-btn--secondary">
@@ -593,7 +722,7 @@ export default function HalakaSessionWorkspacePage() {
       </header>
 
       <section className="rh-settings-card">
-        <p className="rh-settings-card__subtitle">
+        <p className="rh-settings-card__subtitle rh-halaka-sessions__session-subtitle">
           يوم الجلسة:{' '}
           <strong>{formatHalakaSessionDayLabel(session.sessionDayYmd || '')}</strong>
           {' — '}
@@ -601,7 +730,32 @@ export default function HalakaSessionWorkspacePage() {
           {' — '}
           {formatDateTimeMedium12Ar(session.startedAt)}
         </p>
-        <div className="rh-halaka-sessions__stats">
+        <div
+          className={[
+            'rh-halaka-sessions__stats-wrap',
+            showStatsPanel ? 'rh-halaka-sessions__stats-wrap--open' : '',
+          ]
+            .filter(Boolean)
+            .join(' ')}
+        >
+          <button
+            type="button"
+            className="rh-halaka-sessions__stats-toggle"
+            onClick={() => setShowStatsPanel((v) => !v)}
+            aria-expanded={showStatsPanel}
+          >
+            <RhIcon
+              as={ChevronDown}
+              size={16}
+              strokeWidth={RH_ICON_STROKE}
+              className={showStatsPanel ? 'rh-halaka-sessions__panel-toggle--open' : ''}
+            />
+            <span>
+              ملخص الجلسة — حاضر <strong>{summary.present}</strong> · غائب <strong>{summary.absent}</strong> ·{' '}
+              {summary.pages} صفحة
+            </span>
+          </button>
+          <div className="rh-halaka-sessions__stats rh-halaka-sessions__stats--collapsible">
           <div className="rh-halaka-sessions__stat"><span className="rh-halaka-sessions__stat-value">{summary.studentCount || studentCount}</span><span className="rh-halaka-sessions__stat-label">طلاب الحلقة</span></div>
           <div className="rh-halaka-sessions__stat"><span className="rh-halaka-sessions__stat-value">{summary.present}</span><span className="rh-halaka-sessions__stat-label">حاضر</span></div>
           <div className="rh-halaka-sessions__stat"><span className="rh-halaka-sessions__stat-value">{summary.absent}</span><span className="rh-halaka-sessions__stat-label">غائب</span></div>
@@ -610,15 +764,28 @@ export default function HalakaSessionWorkspacePage() {
           <div className="rh-halaka-sessions__stat"><span className="rh-halaka-sessions__stat-value">{summary.excluded}</span><span className="rh-halaka-sessions__stat-label">مستثنى</span></div>
           <div className="rh-halaka-sessions__stat"><span className="rh-halaka-sessions__stat-value">{summary.pages}</span><span className="rh-halaka-sessions__stat-label">صفحات مرصودة</span></div>
           <div className="rh-halaka-sessions__stat"><span className="rh-halaka-sessions__stat-value">{formatTasmeeDuration(sessionTasmeeDisplaySeconds)}</span><span className="rh-halaka-sessions__stat-label">وقت التسميع</span></div>
+          </div>
         </div>
-        <div className="rh-halaka-sessions__tasmee-bar">
+        <div className="rh-halaka-sessions__tasmee-bar rh-halaka-sessions__tasmee-bar--compact">
           <div className="rh-halaka-sessions__tasmee-display">
             <RhIcon as={Clock} size={18} strokeWidth={RH_ICON_STROKE} />
             <span className="rh-halaka-sessions__tasmee-time">{formatTasmeeDuration(sessionTasmeeDisplaySeconds)}</span>
             <span className={`rh-plans__saved-badge${timerRunning ? ' rh-halaka-sessions__tasmee-badge--running' : ''}`}>
               {timerRunning ? 'يعمل الآن' : 'متوقف'}
             </span>
+            <Button
+              type="button"
+              size="sm"
+              variant="ghost"
+              icon={ChevronDown}
+              className={showTasmeePanel ? 'rh-halaka-sessions__panel-toggle rh-halaka-sessions__panel-toggle--open' : 'rh-halaka-sessions__panel-toggle'}
+              onClick={() => setShowTasmeePanel((v) => !v)}
+            >
+              {showTasmeePanel ? 'إخفاء أدوات التسميع' : 'أدوات التسميع'}
+            </Button>
           </div>
+          {showTasmeePanel ? (
+            <>
           <div className="rh-halaka-sessions__tasmee-actions">
             <Button
               type="button"
@@ -716,7 +883,19 @@ export default function HalakaSessionWorkspacePage() {
               </Button>
             </div>
           ) : null}
+            </>
+          ) : null}
         </div>
+        <div className="rh-halaka-sessions__toolbar-wrap">
+          <button
+            type="button"
+            className="rh-halaka-sessions__toolbar-toggle"
+            onClick={() => setShowBulkToolbar((v) => !v)}
+          >
+            <RhIcon as={ChevronDown} size={16} strokeWidth={RH_ICON_STROKE} className={showBulkToolbar ? 'rh-halaka-sessions__panel-toggle--open' : ''} />
+            أدوات المجموعة {dirtyRowIds.size > 0 ? `(${dirtyRowIds.size} غير محفوظ)` : ''}
+          </button>
+          {showBulkToolbar ? (
         <div className="rh-halaka-sessions__toolbar">
           <Button type="button" variant="secondary" icon={Ban} disabled={!canWrite || savingAll} onClick={() => applyBulkPatch({ excludedFromSession: true })}>
             استثناء الكل
@@ -734,143 +913,114 @@ export default function HalakaSessionWorkspacePage() {
             حفظ الكل ({dirtyRowIds.size})
           </Button>
         </div>
-        <p className="rh-halaka-sessions__callout">تخطيط العمل الجماعي: عدّل عدة أعضاء بسرعة (استثناء/حضور/صفحات) ثم احفظ دفعة واحدة.</p>
+          ) : null}
+        </div>
+        <p className="rh-halaka-sessions__callout">اضغط أزرار الحضور للحفظ الفوري، ثم «تسجيل» لفتح سجل الطالب للحفظ والتسميع.</p>
+        <div className="rh-halaka-sessions__students-head">
+          <h2 className="rh-halaka-sessions__students-title">
+            قائمة الأعضاء
+            <span className="rh-halaka-sessions__students-count">{attendanceRows.length}</span>
+          </h2>
+          <SearchField
+            className="rh-halaka-sessions__students-search"
+            label="بحث عن طالب"
+            placeholder="اسم الطالب…"
+            value={studentFilterQuery}
+            onChange={(e) => setStudentFilterQuery(e.target.value)}
+          />
+        </div>
+        {filteredAttendanceRows.length === 0 ? (
+          <p className="rh-halaka-sessions__empty">لا يوجد عضو مطابق للبحث.</p>
+        ) : (
         <ul className="rh-halaka-sessions__attendee-list">
-          {attendanceRows.map((row) => {
+          {filteredAttendanceRows.map((row) => {
             const isStudent = row.role === HALAKA_MEMBER_ROLES.STUDENT
-            const volId = row.memorizationVolumeId
-            const ctx = studentContexts[row.userId]
-            const agg = volId && ctx ? aggregateVolumeProgress(volId, ctx.plans, ctx.awrad) : null
-            const lastW = volId && ctx ? lastWirdOverlappingVolume(volId, ctx.plans, ctx.awrad) : null
-            const cap = volId ? VOLUME_BY_ID[volId]?.pages || 0 : 0
             const history = Array.isArray(row.entryHistory) ? row.entryHistory : []
             const historyPages = history.reduce((sum, h) => sum + Math.max(0, Number(h.pagesCount) || 0), 0)
+            const lastEntry = history.length ? history[history.length - 1] : null
             return (
-              <li key={row.userId} className={['rh-halaka-sessions__attendee', row.excludedFromSession ? 'rh-halaka-sessions__attendee--excluded' : ''].filter(Boolean).join(' ')}>
-                <div className="rh-halaka-sessions__attendee-head">
-                  <span className="rh-halaka-sessions__avatar" aria-hidden>
-                    {row.photoURL ? <img src={row.photoURL} alt="" loading="lazy" /> : (row.displayName || row.userId).trim().slice(0, 1)}
-                  </span>
-                  <span className="rh-halaka-sessions__attendee-name">{row.displayName}</span>
-                  <span className="rh-plans__saved-badge">{memberRoleLabel(row.role)}</span>
-                  {row.excludedFromSession ? <span className="rh-plans__saved-badge">مستثنى</span> : null}
-                  {row.role === HALAKA_MEMBER_ROLES.STUDENT ? (
-                    <span className="rh-plans__saved-badge">تسجيلات: {history.length} — صفحات: {historyPages}</span>
-                  ) : null}
-                  {row.role === HALAKA_MEMBER_ROLES.STUDENT && row.tasmeeSeconds > 0 ? (
-                    <span className="rh-plans__saved-badge rh-halaka-sessions__tasmee-badge">تسميع: {formatTasmeeDuration(row.tasmeeSeconds)}</span>
-                  ) : null}
-                  {dirtyRowIds.has(row.userId) ? <span className="rh-plans__saved-badge">غير محفوظ</span> : null}
-                </div>
-                <div className="rh-halaka-sessions__attendee-form">
-                  <label className="ui-field"><span className="ui-field__label">استثناء من العملية</span><select className="ui-input" value={row.excludedFromSession ? 'yes' : 'no'} disabled={!canWrite} onChange={(e) => updateRowDraft(row.userId, { excludedFromSession: e.target.value === 'yes' })}><option value="no">مشارك</option><option value="yes">مستثنى</option></select></label>
-                  <label className="ui-field"><span className="ui-field__label">الحضور</span><select className="ui-input" value={row.attendanceStatus} disabled={!canWrite || row.excludedFromSession} onChange={(e) => updateRowDraft(row.userId, { attendanceStatus: e.target.value })}>{Object.values(HALAKA_ATTENDANCE_STATUSES).map((s) => <option key={s} value={s}>{attendanceStatusLabel(s)}</option>)}</select></label>
-                  {isStudent && !row.excludedFromSession ? (
-                    <>
-                      <label className="ui-field"><span className="ui-field__label">المجلد</span><select className="ui-input" value={volId} disabled={!canWrite} onChange={(e) => updateRowDraft(row.userId, { memorizationVolumeId: e.target.value })}><option value="">اختر المجلد</option>{VOLUMES.map((v) => <option key={v.id} value={v.id}>{v.label}</option>)}</select></label>
-                      {volId ? <p className="ui-field__hint">صفحات الكتاب: {VOLUME_BY_ID[volId]?.pages || 0}{agg ? ` — من الخطط: ${agg.totalPagesSum}` : ''}</p> : null}
-                      <div className="rh-halaka-sessions__field-row">
-                        <TextField label="من صفحة" type="number" min={1} max={cap || undefined} value={row.fromPage === '' ? '' : String(row.fromPage)} onChange={(e) => updateRowDraft(row.userId, { fromPage: e.target.value === '' ? '' : Math.min(Math.max(1, Number(e.target.value)), cap || 999999) })} />
-                        <TextField label="إلى صفحة" type="number" min={1} max={cap || undefined} value={row.toPage === '' ? '' : String(row.toPage)} onChange={(e) => updateRowDraft(row.userId, { toPage: e.target.value === '' ? '' : Math.min(Math.max(1, Number(e.target.value)), cap || 999999) })} />
-                      </div>
-                      {lastW ? <p className="ui-field__hint">آخر ورد: من {lastW.localFrom} إلى {lastW.localTo} — {lastW.planName} — {formatRecordedAt(lastW.recordedAt)}</p> : null}
-                      {history.length ? (
-                        <div className="rh-halaka-sessions__history">
-                          {history.slice(-4).reverse().map((h) => (
-                            <p key={h.id || `${h.recordedAt}_${h.fromPage}_${h.toPage}`} className="rh-halaka-sessions__history-item">
-                              {formatRecordedAt(h.recordedAt)} — {VOLUME_BY_ID[h.memorizationVolumeId]?.label || h.memorizationVolumeId}:
-                              {' '}من {h.fromPage} إلى {h.toPage} ({h.pagesCount} ص)
-                              {canWrite ? (
-                                <>
-                                  {' — '}
-                                  <button
-                                    type="button"
-                                    className="rh-halaka-sessions__history-btn"
-                                    onClick={() => {
-                                      updateRowDraft(row.userId, {
-                                        memorizationVolumeId: h.memorizationVolumeId || row.memorizationVolumeId,
-                                        fromPage: h.fromPage ?? '',
-                                        toPage: h.toPage ?? '',
-                                        notes: h.notes || '',
-                                      })
-                                      setEditingEntryByUser((prev) => ({ ...prev, [row.userId]: h.id || '' }))
-                                    }}
-                                  >
-                                    تعديل
-                                  </button>
-                                  {' / '}
-                                  <button
-                                    type="button"
-                                    className="rh-halaka-sessions__history-btn rh-halaka-sessions__history-btn--danger"
-                                    onClick={() => deleteEntry(row, h.id)}
-                                  >
-                                    حذف
-                                  </button>
-                                </>
-                              ) : null}
-                            </p>
-                          ))}
-                        </div>
-                      ) : null}
-                      <div className="rh-halaka-sessions__field-row rh-halaka-sessions__tasmee-row">
-                        <TextField
-                          label="وقت تسميع (د)"
-                          type="number"
-                          min={0}
-                          value={row.tasmeeManualMin === '' ? '' : String(row.tasmeeManualMin)}
-                          disabled={!canWrite || row.excludedFromSession}
-                          onChange={(e) =>
-                            updateRowDraft(row.userId, {
-                              tasmeeManualMin: e.target.value === '' ? '' : Math.max(0, Math.floor(Number(e.target.value) || 0)),
-                            })
-                          }
-                        />
-                        <TextField
-                          label="وقت تسميع (ث)"
-                          type="number"
-                          min={0}
-                          max={59}
-                          value={row.tasmeeManualSec === '' ? '' : String(row.tasmeeManualSec)}
-                          disabled={!canWrite || row.excludedFromSession}
-                          onChange={(e) =>
-                            updateRowDraft(row.userId, {
-                              tasmeeManualSec: e.target.value === '' ? '' : Math.min(59, Math.max(0, Math.floor(Number(e.target.value) || 0))),
-                            })
-                          }
-                        />
-                      </div>
-                      <div className="rh-halaka-sessions__row-actions">
-                        <Button
-                          type="button"
-                          size="sm"
-                          variant="ghost"
-                          icon={Clock}
-                          loading={savingRowId === row.userId}
-                          disabled={!canWrite || row.excludedFromSession}
-                          onClick={() => saveTasmeeRow(row)}
+              <li
+                key={row.userId}
+                id={`halaka-attendee-${row.userId}`}
+                className={[
+                  'rh-halaka-sessions__attendee',
+                  'rh-halaka-sessions__attendee--compact',
+                  isStudent ? 'rh-halaka-sessions__attendee--student' : '',
+                  row.excludedFromSession ? 'rh-halaka-sessions__attendee--excluded' : '',
+                  dirtyRowIds.has(row.userId) ? 'rh-halaka-sessions__attendee--dirty' : '',
+                  activeStudentUid === row.userId ? 'rh-halaka-sessions__attendee--active' : '',
+                ]
+                  .filter(Boolean)
+                  .join(' ')}
+              >
+                <div className="rh-halaka-sessions__attendee-summary">
+                  <div className="rh-halaka-sessions__attendee-head">
+                    <span className="rh-halaka-sessions__avatar" aria-hidden>
+                      {row.photoURL ? <img src={row.photoURL} alt="" loading="lazy" /> : (row.displayName || row.userId).trim().slice(0, 1)}
+                    </span>
+                    <div className="rh-halaka-sessions__attendee-meta">
+                      <span className="rh-halaka-sessions__attendee-name">{row.displayName}</span>
+                      <div className="rh-halaka-sessions__attendee-badges">
+                        <span className="rh-plans__saved-badge">{memberRoleLabel(row.role)}</span>
+                        <span
+                          className={[
+                            'rh-plans__saved-badge',
+                            `rh-halaka-sessions__status-badge rh-halaka-sessions__status-badge--${row.attendanceStatus}`,
+                          ].join(' ')}
                         >
-                          حفظ وقت التسميع
-                        </Button>
+                          {attendanceStatusLabel(row.attendanceStatus)}
+                        </span>
+                        {row.excludedFromSession ? <span className="rh-plans__saved-badge">مستثنى</span> : null}
+                        {dirtyRowIds.has(row.userId) ? <span className="rh-plans__saved-badge">غير محفوظ</span> : null}
                       </div>
-                      {Array.isArray(row.tasmeeHistory) && row.tasmeeHistory.length ? (
-                        <div className="rh-halaka-sessions__tasmee-history">
-                          {row.tasmeeHistory
-                            .slice(-4)
-                            .reverse()
-                            .map((h) => (
-                              <p key={h.id || `${h.at}_${h.type}`} className="rh-halaka-sessions__history-item">
-                                {formatRecordedAt(h.at)} — {formatTasmeeHistoryType(h.type)}
-                                {Math.max(0, Number(h.seconds) || 0) > 0 ? ` — ${formatTasmeeDuration(h.seconds)}` : ''}
-                              </p>
-                            ))}
-                        </div>
+                      {isStudent && !row.excludedFromSession ? (
+                        <p className="rh-halaka-sessions__attendee-stats">
+                          {history.length > 0 ? (
+                            <>
+                              {history.length} تسجيل — {historyPages} صفحة
+                              {lastEntry
+                                ? ` — آخر: ${VOLUME_BY_ID[lastEntry.memorizationVolumeId]?.label || ''} (${lastEntry.fromPage}–${lastEntry.toPage})`
+                                : ''}
+                            </>
+                          ) : (
+                            'لم يُسجَّل حفظ بعد'
+                          )}
+                          {row.tasmeeSeconds > 0 ? ` — تسميع: ${formatTasmeeDuration(row.tasmeeSeconds)}` : ''}
+                        </p>
                       ) : null}
-                    </>
+                    </div>
+                  </div>
+                  {!row.excludedFromSession ? (
+                    <div className="rh-halaka-sessions__attendance-chips" role="group" aria-label="الحضور السريع">
+                      {quickAttendanceStatuses.map((status) => (
+                        <button
+                          key={status}
+                          type="button"
+                          className={[
+                            'rh-halaka-sessions__attendance-chip',
+                            row.attendanceStatus === status ? 'rh-halaka-sessions__attendance-chip--active' : '',
+                            savingRowId === row.userId ? 'rh-halaka-sessions__attendance-chip--saving' : '',
+                          ]
+                            .filter(Boolean)
+                            .join(' ')}
+                          disabled={!canWrite || savingRowId === row.userId}
+                          onClick={() => quickSetAttendance(row, status)}
+                        >
+                          {attendanceStatusLabel(status)}
+                        </button>
+                      ))}
+                    </div>
                   ) : null}
-                  <TextAreaField label="ملاحظات" rows={2} value={row.notes} disabled={!canWrite} onChange={(e) => updateRowDraft(row.userId, { notes: e.target.value })} />
-                  <div className="rh-halaka-sessions__row-actions">
-                    <Button type="button" size="sm" variant="secondary" icon={Save} loading={savingRowId === row.userId} disabled={!canWrite || !dirtyRowIds.has(row.userId)} onClick={() => saveRow(row)}>
-                      {row.role === HALAKA_MEMBER_ROLES.STUDENT ? (editingEntryByUser[row.userId] ? 'حفظ تعديل الدفعة' : 'حفظ + تسجيل دفعة') : 'حفظ'}
+                  <div className="rh-halaka-sessions__attendee-actions">
+                    <Button
+                      type="button"
+                      variant="primary"
+                      size="sm"
+                      icon={Plus}
+                      disabled={!canWrite}
+                      onClick={() => openStudentModal(row.userId)}
+                    >
+                      {isStudent ? 'تسجيل' : 'تحضير'}
                     </Button>
                   </div>
                 </div>
@@ -878,7 +1028,251 @@ export default function HalakaSessionWorkspacePage() {
             )
           })}
         </ul>
+        )}
       </section>
+
+      <Modal
+        open={Boolean(activeRow)}
+        title={activeRow ? `سجل: ${activeRow.displayName}` : ''}
+        onClose={closeStudentModal}
+        size="lg"
+        className="rh-halaka-sessions-student-modal"
+        closeOnBackdrop={!savingRowId}
+        closeOnEsc={!savingRowId}
+        showClose={!savingRowId}
+        contentClassName="rh-halaka-sessions__student-modal"
+      >
+        {activeRow ? (() => {
+          const row = activeRow
+          const isStudent = row.role === HALAKA_MEMBER_ROLES.STUDENT
+          const volId = row.memorizationVolumeId
+          const ctx = studentContexts[row.userId]
+          const agg = volId && ctx ? aggregateVolumeProgress(volId, ctx.plans, ctx.awrad) : null
+          const lastW = volId && ctx ? lastWirdOverlappingVolume(volId, ctx.plans, ctx.awrad) : null
+          const cap = volId ? VOLUME_BY_ID[volId]?.pages || 0 : 0
+          const history = Array.isArray(row.entryHistory) ? row.entryHistory : []
+          return (
+            <div className="rh-halaka-sessions__attendee-form rh-halaka-sessions__attendee-form--modal">
+              <div className="rh-halaka-sessions__attendee-form-body">
+              <label className="ui-field">
+                <span className="ui-field__label">استثناء من العملية</span>
+                <select
+                  className="ui-input"
+                  value={row.excludedFromSession ? 'yes' : 'no'}
+                  disabled={!canWrite}
+                  onChange={(e) => updateRowDraft(row.userId, { excludedFromSession: e.target.value === 'yes' })}
+                >
+                  <option value="no">مشارك</option>
+                  <option value="yes">مستثنى</option>
+                </select>
+              </label>
+              <label className="ui-field">
+                <span className="ui-field__label">الحضور</span>
+                <select
+                  className="ui-input"
+                  value={row.attendanceStatus}
+                  disabled={!canWrite || row.excludedFromSession}
+                  onChange={(e) => updateRowDraft(row.userId, { attendanceStatus: e.target.value })}
+                >
+                  {Object.values(HALAKA_ATTENDANCE_STATUSES).map((s) => (
+                    <option key={s} value={s}>
+                      {attendanceStatusLabel(s)}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              {isStudent && !row.excludedFromSession ? (
+                <>
+                  <label className="ui-field">
+                    <span className="ui-field__label">المجلد</span>
+                    <select
+                      className="ui-input"
+                      value={volId}
+                      disabled={!canWrite}
+                      onChange={(e) => updateRowDraft(row.userId, { memorizationVolumeId: e.target.value })}
+                    >
+                      <option value="">اختر المجلد</option>
+                      {VOLUMES.map((v) => (
+                        <option key={v.id} value={v.id}>
+                          {v.label}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                  {volId ? (
+                    <p className="ui-field__hint">
+                      صفحات الكتاب: {VOLUME_BY_ID[volId]?.pages || 0}
+                      {agg ? ` — من الخطط: ${agg.totalPagesSum}` : ''}
+                    </p>
+                  ) : null}
+                  <div className="rh-halaka-sessions__field-row">
+                    <TextField
+                      label="من صفحة"
+                      type="number"
+                      min={1}
+                      max={cap || undefined}
+                      value={row.fromPage === '' ? '' : String(row.fromPage)}
+                      onChange={(e) =>
+                        updateRowDraft(row.userId, {
+                          fromPage: e.target.value === '' ? '' : Math.min(Math.max(1, Number(e.target.value)), cap || 999999),
+                        })
+                      }
+                    />
+                    <TextField
+                      label="إلى صفحة"
+                      type="number"
+                      min={1}
+                      max={cap || undefined}
+                      value={row.toPage === '' ? '' : String(row.toPage)}
+                      onChange={(e) =>
+                        updateRowDraft(row.userId, {
+                          toPage: e.target.value === '' ? '' : Math.min(Math.max(1, Number(e.target.value)), cap || 999999),
+                        })
+                      }
+                    />
+                  </div>
+                  {lastW ? (
+                    <p className="ui-field__hint">
+                      آخر ورد: من {lastW.localFrom} إلى {lastW.localTo} — {lastW.planName} — {formatRecordedAt(lastW.recordedAt)}
+                    </p>
+                  ) : null}
+                  {history.length ? (
+                    <div className="rh-halaka-sessions__history">
+                      <p className="ui-field__label">تسجيلات الجلسة</p>
+                      {history
+                        .slice(-4)
+                        .reverse()
+                        .map((h) => (
+                          <p key={h.id || `${h.recordedAt}_${h.fromPage}_${h.toPage}`} className="rh-halaka-sessions__history-item">
+                            {formatRecordedAt(h.recordedAt)} — {VOLUME_BY_ID[h.memorizationVolumeId]?.label || h.memorizationVolumeId}:
+                            {' '}من {h.fromPage} إلى {h.toPage} ({h.pagesCount} ص)
+                            {canWrite ? (
+                              <>
+                                {' — '}
+                                <button
+                                  type="button"
+                                  className="rh-halaka-sessions__history-btn"
+                                  onClick={() => {
+                                    updateRowDraft(row.userId, {
+                                      memorizationVolumeId: h.memorizationVolumeId || row.memorizationVolumeId,
+                                      fromPage: h.fromPage ?? '',
+                                      toPage: h.toPage ?? '',
+                                      notes: h.notes || '',
+                                    })
+                                    setEditingEntryByUser((prev) => ({ ...prev, [row.userId]: h.id || '' }))
+                                  }}
+                                >
+                                  تعديل
+                                </button>
+                                {' / '}
+                                <button
+                                  type="button"
+                                  className="rh-halaka-sessions__history-btn rh-halaka-sessions__history-btn--danger"
+                                  onClick={() => deleteEntry(row, h.id)}
+                                >
+                                  حذف
+                                </button>
+                              </>
+                            ) : null}
+                          </p>
+                        ))}
+                    </div>
+                  ) : null}
+                  <div className="rh-halaka-sessions__field-row rh-halaka-sessions__tasmee-row">
+                    <TextField
+                      label="وقت تسميع (د)"
+                      type="number"
+                      min={0}
+                      value={row.tasmeeManualMin === '' ? '' : String(row.tasmeeManualMin)}
+                      disabled={!canWrite || row.excludedFromSession}
+                      onChange={(e) =>
+                        updateRowDraft(row.userId, {
+                          tasmeeManualMin: e.target.value === '' ? '' : Math.max(0, Math.floor(Number(e.target.value) || 0)),
+                        })
+                      }
+                    />
+                    <TextField
+                      label="وقت تسميع (ث)"
+                      type="number"
+                      min={0}
+                      max={59}
+                      value={row.tasmeeManualSec === '' ? '' : String(row.tasmeeManualSec)}
+                      disabled={!canWrite || row.excludedFromSession}
+                      onChange={(e) =>
+                        updateRowDraft(row.userId, {
+                          tasmeeManualSec: e.target.value === '' ? '' : Math.min(59, Math.max(0, Math.floor(Number(e.target.value) || 0))),
+                        })
+                      }
+                    />
+                  </div>
+                  <div className="rh-halaka-sessions__row-actions">
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="ghost"
+                      icon={Clock}
+                      loading={savingRowId === row.userId}
+                      disabled={!canWrite || row.excludedFromSession}
+                      onClick={() => saveTasmeeRow(row)}
+                    >
+                      حفظ وقت التسميع
+                    </Button>
+                  </div>
+                  {Array.isArray(row.tasmeeHistory) && row.tasmeeHistory.length ? (
+                    <div className="rh-halaka-sessions__tasmee-history">
+                      {row.tasmeeHistory
+                        .slice(-4)
+                        .reverse()
+                        .map((h) => (
+                          <p key={h.id || `${h.at}_${h.type}`} className="rh-halaka-sessions__history-item">
+                            {formatRecordedAt(h.at)} — {formatTasmeeHistoryType(h.type)}
+                            {Math.max(0, Number(h.seconds) || 0) > 0 ? ` — ${formatTasmeeDuration(h.seconds)}` : ''}
+                          </p>
+                        ))}
+                    </div>
+                  ) : null}
+                </>
+              ) : isStudent && row.excludedFromSession ? (
+                <p className="rh-halaka-sessions__non-student-hint">هذا الطالب مستثنى من عملية الجلسة. ألغِ الاستثناء لتسجيل الحفظ.</p>
+              ) : !isStudent ? (
+                <p className="rh-halaka-sessions__non-student-hint">تحضير حضور العضو غير الطالب — لا يُسجَّل حفظ له.</p>
+              ) : null}
+              <TextAreaField
+                label="ملاحظات"
+                rows={2}
+                value={row.notes}
+                disabled={!canWrite}
+                onChange={(e) => updateRowDraft(row.userId, { notes: e.target.value })}
+              />
+              </div>
+              <div className="rh-halaka-sessions__modal-actions">
+                {nextRecordableUid && activeRow?.role === HALAKA_MEMBER_ROLES.STUDENT && !editingEntryByUser[row.userId] ? (
+                  <p className="rh-halaka-sessions__modal-next-hint">بعد الحفظ: {nextRecordableName || 'الطالب التالي'}</p>
+                ) : null}
+                <Button
+                  type="button"
+                  variant="primary"
+                  icon={Save}
+                  loading={savingRowId === row.userId}
+                  disabled={!canWrite || !dirtyRowIds.has(row.userId)}
+                  onClick={() => saveRow(row)}
+                >
+                  {row.role === HALAKA_MEMBER_ROLES.STUDENT
+                    ? editingEntryByUser[row.userId]
+                      ? 'حفظ تعديل الدفعة'
+                      : nextRecordableUid
+                        ? 'حفظ والتالي'
+                        : 'حفظ وإنهاء'
+                    : 'حفظ'}
+                </Button>
+                <Button type="button" variant="ghost" icon={X} disabled={savingRowId === row.userId} onClick={closeStudentModal}>
+                  إغلاق
+                </Button>
+              </div>
+            </div>
+          )
+        })() : null}
+      </Modal>
     </div>
   )
 }
