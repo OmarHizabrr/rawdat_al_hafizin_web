@@ -867,6 +867,76 @@
   padding: var(--rh-space-4);
 }
 
+/** نافذة سجل طالب الجلسة — رأس ثابت وجسم قابل للتمرير وشريط حفظ ثابت */
+.ui-modal__content.rh-halaka-sessions__student-modal {
+  max-height: min(94dvh, calc(100svh - 2 * var(--rh-space-3)));
+  overflow: hidden;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.ui-modal__content.rh-halaka-sessions__student-modal .ui-modal__head {
+  position: sticky;
+  top: 0;
+  z-index: 3;
+  flex-shrink: 0;
+  margin: 0;
+  padding: var(--rh-space-3);
+  background: color-mix(in srgb, var(--rh-surface) 94%, var(--rh-bg));
+  border-bottom: 1px solid var(--rh-border);
+}
+
+.ui-modal__content.rh-halaka-sessions__student-modal .rh-halaka-sessions__attendee-form--modal {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.ui-modal__content.rh-halaka-sessions__student-modal .rh-halaka-sessions__attendee-form-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  padding: var(--rh-space-3);
+}
+
+.ui-modal__content.rh-halaka-sessions__student-modal .rh-halaka-sessions__modal-actions {
+  flex-shrink: 0;
+  margin-top: auto;
+  margin-inline: 0;
+  margin-bottom: 0;
+}
+
+/** جسم نافذة قابل للتمرير (موبايل وكل الأحجام) */
+.ui-modal__body {
+  flex: 1 1 auto;
+  min-height: 0;
+  min-width: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+}
+
+.ui-modal__content:has(> .ui-modal__body) {
+  overflow: hidden;
+  padding: 0;
+}
+
+.ui-modal__content:has(> .ui-modal__body) > .ui-modal__head {
+  margin: 0;
+  padding: var(--rh-space-3);
+  padding-top: max(var(--rh-space-3), env(safe-area-inset-top, 0px));
+}
+
+.ui-modal__content:has(> .ui-modal__body) > .ui-modal__body {
+  padding: var(--rh-space-3);
+}
+
 .ui-modal__head {
   display: flex;
   align-items: center;
@@ -1004,6 +1074,8 @@ html[data-theme='dark'] .rh-themed-scroll::-webkit-scrollbar-thumb:hover {
     justify-content: flex-end;
     min-height: 100dvh;
     min-height: 100svh;
+    overflow: hidden;
+    overflow-y: hidden;
   }
 
   .ui-modal__content {

@@ -1245,7 +1245,7 @@ export default function HalakaSessionWorkspacePage() {
                 onChange={(e) => updateRowDraft(row.userId, { notes: e.target.value })}
               />
               </div>
-              <div className="rh-halaka-sessions__modal-actions">
+              <div className="rh-modal-footer rh-halaka-sessions__modal-actions">
                 {nextRecordableUid && activeRow?.role === HALAKA_MEMBER_ROLES.STUDENT && !editingEntryByUser[row.userId] ? (
                   <p className="rh-halaka-sessions__modal-next-hint">بعد الحفظ: {nextRecordableName || 'الطالب التالي'}</p>
                 ) : null}

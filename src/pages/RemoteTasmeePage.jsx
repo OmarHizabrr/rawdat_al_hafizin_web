@@ -794,7 +794,7 @@ export default function RemoteTasmeePage() {
             </button>
           </div>
         </ScrollArea>
-        <div className="rh-plans__editor-actions">
+        <div className="rh-modal-footer rh-plans__editor-actions">
           <Button type="button" variant="primary" icon={Save} loading={saveBusy} onClick={handleSave}>
             حفظ
           </Button>
@@ -831,7 +831,7 @@ export default function RemoteTasmeePage() {
             ? 'حذف البث نهائياً لجميع الأعضاء؟'
             : 'مغادرة هذا البث؟'}
         </p>
-        <div className="rh-plans__editor-actions">
+        <div className="rh-modal-footer rh-plans__editor-actions">
           <Button type="button" variant="danger" icon={Check} loading={deleteBusy} onClick={doDelete}>
             تأكيد
           </Button>

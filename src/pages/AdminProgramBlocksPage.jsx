@@ -325,8 +325,9 @@ export default function AdminProgramBlocksPage() {
         )}
       </div>
 
-      <Modal open={editorOpen} onClose={() => setEditorOpen(false)} title={draft.id ? 'تعديل قسم' : 'قسم جديد'}>
-        <div className="rh-admin-program-blocks__form">
+      <Modal open={editorOpen} onClose={() => setEditorOpen(false)} title={draft.id ? 'تعديل قسم' : 'قسم جديد'} size="lg" contentClassName="ui-modal__content--plan-members">
+        <div className="rh-plan-members-modal__body">
+          <div className="rh-admin-program-blocks__form">
           <TextField
             label="عنوان القسم"
             value={draft.title}
@@ -365,20 +366,21 @@ export default function AdminProgramBlocksPage() {
             min={0}
             max={999}
           />
-          <div className="rh-admin-program-blocks__form-actions">
-            <Button type="button" variant="primary" icon={Save} loading={saveSubmitting} onClick={() => void handleSaveDraft()}>
-              حفظ
-            </Button>
-            <Button type="button" variant="ghost" icon={X} disabled={saveSubmitting} onClick={() => setEditorOpen(false)}>
-              إلغاء
-            </Button>
           </div>
+        </div>
+        <div className="rh-modal-footer rh-admin-program-blocks__form-actions">
+          <Button type="button" variant="primary" icon={Save} loading={saveSubmitting} onClick={() => void handleSaveDraft()}>
+            حفظ
+          </Button>
+          <Button type="button" variant="ghost" icon={X} disabled={saveSubmitting} onClick={() => setEditorOpen(false)}>
+            إلغاء
+          </Button>
         </div>
       </Modal>
 
       <Modal open={Boolean(deleting)} onClose={() => setDeleting(null)} title="حذف القسم">
         <p>هل تريد حذف «{deleting?.title}»؟</p>
-        <div className="rh-admin-program-blocks__form-actions">
+        <div className="rh-modal-footer rh-admin-program-blocks__form-actions">
           <Button type="button" variant="danger" icon={Trash2} loading={deleteSubmitting} onClick={() => void handleDelete()}>
             حذف
           </Button>

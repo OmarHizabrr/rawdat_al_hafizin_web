@@ -337,7 +337,7 @@ export default function AdminJoinGroupsPage() {
             </div>
           </div>
         </ScrollArea>
-        <div className="rh-plans__actions">
+        <div className="rh-modal-footer rh-plans__actions">
           <Button type="button" variant="primary" icon={Save} loading={busy} onClick={onSave}>حفظ</Button>
           <Button type="button" variant="ghost" icon={X} disabled={busy} onClick={() => setEditorOpen(false)}>إلغاء</Button>
         </div>
@@ -350,7 +350,7 @@ export default function AdminJoinGroupsPage() {
         size="sm"
       >
         <p className="rh-plans__warn rh-plans__warn--confirm">هل تريد حذف هذه المجموعة نهائياً؟</p>
-        <div className="rh-plans__actions">
+        <div className="rh-modal-footer rh-plans__actions">
           <Button type="button" variant="danger" icon={Trash2} onClick={async () => {
             if (!deletingRow || !user?.uid) return
             setBusy(true)

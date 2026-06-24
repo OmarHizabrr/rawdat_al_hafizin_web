@@ -629,10 +629,12 @@ export default function AdminUsersPage() {
           setDisplayModalUser(null)
         }}
         size="sm"
+        contentClassName="ui-modal__content--plan-members"
         closeOnBackdrop={!(displayModalUser && (busyUid === displayModalUser?.uid || displayModalBusyKind))}
         closeOnEsc={!(displayModalUser && (busyUid === displayModalUser?.uid || displayModalBusyKind))}
         showClose={!(displayModalUser && (busyUid === displayModalUser?.uid || displayModalBusyKind))}
       >
+        <div className="ui-modal__body">
         <p className="rh-admin-users__profile-meta">
           الاسم يظهر داخل المنصة. الصورة تُرفع وتُحدَّث في الملف الشخصي. حساب Google يبقى كما هو.
         </p>
@@ -658,7 +660,8 @@ export default function AdminUsersPage() {
           disabled={Boolean(displayModalBusyKind)}
           busy={Boolean(displayModalBusyKind)}
         />
-        <div className="rh-admin-users__modal-actions rh-admin-users__modal-actions--wrap">
+        </div>
+        <div className="rh-modal-footer rh-admin-users__modal-actions rh-admin-users__modal-actions--wrap">
           <Button
             type="button"
             variant="primary"
@@ -681,8 +684,6 @@ export default function AdminUsersPage() {
           >
             رفع الصورة المختارة
           </Button>
-        </div>
-        <div className="rh-admin-users__modal-actions">
           <Button
             type="button"
             variant="ghost"
@@ -711,7 +712,7 @@ export default function AdminUsersPage() {
         <p className="rh-admin-users__warn-name">
           <strong>{deleteTarget?.displayName || deleteTarget?.email}</strong>
         </p>
-        <div className="rh-admin-users__modal-actions">
+        <div className="rh-modal-footer rh-admin-users__modal-actions">
           <Button
             type="button"
             variant="danger"
@@ -743,7 +744,7 @@ export default function AdminUsersPage() {
         showClose={!bulkBusy}
       >
         <p className="rh-admin-users__warn">{bulkConfirm?.body}</p>
-        <div className="rh-admin-users__modal-actions">
+        <div className="rh-modal-footer rh-admin-users__modal-actions">
           <Button type="button" variant="primary" icon={Check} loading={bulkBusy} onClick={confirmBulkUpdate}>
             نعم، نفّذ
           </Button>

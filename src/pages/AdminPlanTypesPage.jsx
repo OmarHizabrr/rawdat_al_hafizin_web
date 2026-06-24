@@ -184,10 +184,12 @@ export default function AdminPlanTypesPage() {
         title={editingId ? 'تعديل نوع الخطة' : 'نوع خطة جديد'}
         onClose={() => !saveSubmitting && setEditorOpen(false)}
         size="sm"
+        contentClassName="ui-modal__content--plan-members"
         closeOnBackdrop={!saveSubmitting}
         closeOnEsc={!saveSubmitting}
         showClose={!saveSubmitting}
       >
+        <div className="ui-modal__body">
         <TextField label="الاسم الظاهر للطلاب" value={label} onChange={(e) => setLabel(e.target.value)} placeholder="مثال: خطة حفظ" />
         <TextField label="وصف قصير (اختياري)" value={hint} onChange={(e) => setHint(e.target.value)} placeholder="يظهر تحت الاسم عند اختيار النوع" />
         <NumberStepField label="ترتيب الظهور" value={order} onChange={setOrder} min={0} max={999} step={1} />
@@ -201,7 +203,8 @@ export default function AdminPlanTypesPage() {
             dir="ltr"
           />
         </AdminAdvancedPanel>
-        <div className="rh-admin-users__modal-actions">
+        </div>
+        <div className="rh-modal-footer rh-admin-users__modal-actions">
           <Button type="button" variant="primary" icon={Save} loading={saveSubmitting} onClick={handleSave}>
             حفظ
           </Button>
@@ -221,7 +224,7 @@ export default function AdminPlanTypesPage() {
         showClose={!deleteSubmitting}
       >
         <p className="rh-admin-users__warn">سيتم حذف النوع «{deleting?.label}». الخطط القديمة قد تظهر بدون اسم نوع إن لم يُعاد ربطها.</p>
-        <div className="rh-admin-users__modal-actions">
+        <div className="rh-modal-footer rh-admin-users__modal-actions">
           <Button type="button" variant="danger" icon={Trash2} loading={deleteSubmitting} onClick={handleDelete}>
             حذف
           </Button>

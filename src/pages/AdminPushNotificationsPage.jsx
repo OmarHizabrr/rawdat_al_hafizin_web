@@ -238,16 +238,19 @@ export default function AdminPushNotificationsPage() {
         title={target ? `إشعار إلى: ${target.displayName || target.email || target.uid}` : ''}
         onClose={() => !sending && setTarget(null)}
         size="sm"
+        contentClassName="ui-modal__content--plan-members"
         closeOnBackdrop={!sending}
         closeOnEsc={!sending}
         showClose={!sending}
       >
+        <div className="ui-modal__body">
         <TextField label="عنوان الإشعار" value={title} onChange={(e) => setTitle(e.target.value)} required />
         <TextAreaField label="نص الإشعار" value={body} onChange={(e) => setBody(e.target.value)} rows={5} required />
         <p className="rh-settings-footnote" style={{ marginTop: 0 }}>
           يُسجَّل الإشعار في حساب المستخدم، ويُرسل إلى هاتفه إن كانت الإشعارات مفعّلة.
         </p>
-        <div className="rh-admin-users__modal-actions">
+        </div>
+        <div className="rh-modal-footer rh-admin-users__modal-actions">
           <Button type="button" variant="primary" icon={Send} loading={sending} onClick={() => void onSend()}>
             إرسال
           </Button>

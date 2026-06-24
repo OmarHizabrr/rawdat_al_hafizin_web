@@ -827,7 +827,7 @@ export default function ExamsPage() {
             </button>
           </div>
         </ScrollArea>
-        <div className="rh-plans__editor-actions">
+        <div className="rh-modal-footer rh-plans__editor-actions">
           <Button type="button" variant="primary" icon={Save} loading={saveBusy} onClick={handleSave}>
             حفظ
           </Button>
@@ -863,7 +863,7 @@ export default function ExamsPage() {
             ? 'حذف المجموعة نهائياً لجميع الأعضاء؟'
             : 'مغادرة هذه المجموعة؟'}
         </p>
-        <div className="rh-plans__editor-actions">
+        <div className="rh-modal-footer rh-plans__editor-actions">
           <Button type="button" variant="danger" icon={Check} loading={deleteBusy} onClick={doDelete}>
             تأكيد
           </Button>

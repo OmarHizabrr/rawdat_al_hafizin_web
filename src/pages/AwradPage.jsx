@@ -748,7 +748,7 @@ export default function AwradPage() {
           )}
 
         </ScrollArea>
-        <div className="rh-awrad__actions">
+        <div className="rh-modal-footer rh-awrad__actions">
           <Button
             type="button"
             icon={editingWirdId ? Save : Plus}
@@ -775,7 +775,7 @@ export default function AwradPage() {
         <p className="rh-plans__warn rh-plans__warn--confirm">
           سيتم حذف هذا التسجيل نهائياً. هل أنت متأكد؟
         </p>
-        <div className="rh-awrad__actions">
+        <div className="rh-modal-footer rh-awrad__actions">
           <Button
             type="button"
             variant="danger"

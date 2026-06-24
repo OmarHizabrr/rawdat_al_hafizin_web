@@ -207,6 +207,7 @@
     --rh-mob-touch: 2.75rem;
   }
 
+  .rh-modal-footer,
   .rh-plans__actions,
   .rh-plans__editor-actions,
   .rh-admin-users__modal-actions,
@@ -217,6 +218,7 @@
   .rh-feelings__actions,
   .rh-app-request-actions,
   .rh-admin-program-blocks__actions,
+  .rh-admin-program-blocks__form-actions,
   .rh-admin-applications__save-actions,
   .rh-reports__filters-actions,
   .rh-home-backlog-confirm__actions,
@@ -233,6 +235,7 @@
     gap: var(--rh-space-2);
   }
 
+  .rh-modal-footer .ui-btn,
   .rh-plans__actions .ui-btn,
   .rh-plans__editor-actions .ui-btn,
   .rh-admin-users__modal-actions .ui-btn,
@@ -243,6 +246,7 @@
   .rh-feelings__actions .ui-btn,
   .rh-app-request-actions .ui-btn,
   .rh-admin-program-blocks__actions .ui-btn,
+  .rh-admin-program-blocks__form-actions .ui-btn,
   .rh-admin-applications__save-actions .ui-btn,
   .rh-reports__filters-actions .ui-btn,
   .rh-home-backlog-confirm__actions .ui-btn,
@@ -253,13 +257,15 @@
   .rh-admin-branding__toolbar .ui-btn,
   .rh-admin-branding__theme-actions .ui-btn,
   .rh-contact-bulk__footer .ui-btn,
-  .rh-plans__card-actions .ui-btn {
+  .rh-plans__card-actions .ui-btn,
+  .rh-modal-footer a.ui-btn {
     width: 100%;
     min-height: var(--rh-mob-touch);
     justify-content: center;
   }
 
-  /* شريط إجراءات لاصق أسفل النافذة المنبثقة */
+  /* شريط إجراءات ثابت أسفل النافذة المنبثقة */
+  .ui-modal .rh-modal-footer,
   .ui-modal .rh-plans__actions,
   .ui-modal .rh-plans__editor-actions,
   .ui-modal .rh-admin-users__modal-actions,
@@ -269,14 +275,15 @@
   .ui-modal .rh-app-request-actions,
   .ui-modal .rh-checkin-modal__actions,
   .ui-modal .rh-awrad__actions,
-  .ui-modal .rh-home-backlog-confirm__actions {
+  .ui-modal .rh-home-backlog-confirm__actions,
+  .ui-modal .rh-admin-program-blocks__form-actions,
+  .ui-modal .rh-homework-categories__actions,
+  .ui-modal .rh-feelings__actions {
     flex-shrink: 0;
-    position: sticky;
-    bottom: 0;
     z-index: 4;
     margin-top: auto;
-    margin-inline: calc(-1 * var(--rh-space-3));
-    margin-bottom: calc(-1 * var(--rh-space-3));
+    margin-inline: 0;
+    margin-bottom: 0;
     padding: var(--rh-space-3);
     padding-bottom: max(var(--rh-space-3), env(safe-area-inset-bottom, 0px));
     background: color-mix(in srgb, var(--rh-surface) 96%, transparent);
@@ -286,22 +293,67 @@
     box-shadow: 0 -10px 28px rgba(0, 0, 0, 0.07);
   }
 
+  .ui-modal__content:not(:has(> .ui-modal__body)):not(.rh-halaka-sessions__student-modal) .rh-modal-footer,
+  .ui-modal__content:not(:has(> .ui-modal__body)):not(.rh-halaka-sessions__student-modal) .rh-plans__actions,
+  .ui-modal__content:not(:has(> .ui-modal__body)):not(.rh-halaka-sessions__student-modal) .rh-plans__editor-actions,
+  .ui-modal__content:not(:has(> .ui-modal__body)):not(.rh-halaka-sessions__student-modal) .rh-admin-users__modal-actions,
+  .ui-modal__content:not(:has(> .ui-modal__body)):not(.rh-halaka-sessions__student-modal) .rh-admin-program-blocks__form-actions {
+    margin-inline: calc(-1 * var(--rh-space-3));
+    margin-bottom: calc(-1 * var(--rh-space-3));
+  }
+
   .ui-modal__content--plan-members .rh-plans__actions,
+  .ui-modal__content--plan-members .rh-modal-footer,
+  .ui-modal__content.rh-halaka-sessions__student-modal .rh-halaka-sessions__modal-actions,
   .ui-modal__content--halaka-workspace .rh-halaka-sessions__modal-actions,
-  .ui-modal__content--explore .rh-plans__actions {
+  .ui-modal__content--explore .rh-plans__actions,
+  .ui-modal__content:has(> .ui-modal__body) .rh-modal-footer,
+  .ui-modal__content:has(> .ui-modal__body) .rh-plans__actions,
+  .ui-modal__content:has(> .ui-modal__body) .rh-admin-users__modal-actions,
+  .ui-modal__content:has(> .ui-modal__body) .rh-admin-program-blocks__form-actions {
     margin-inline: 0;
     margin-bottom: 0;
     padding-inline: var(--rh-space-3);
   }
 
+  .ui-modal .rh-admin-users__modal-actions--wrap + .rh-admin-users__modal-actions {
+    margin-top: calc(-1 * var(--rh-space-2));
+    padding-top: 0;
+    border-top: none;
+    box-shadow: none;
+    background: transparent;
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+  }
+
   .ui-modal__content > .rh-plans__editor-scroll.ui-scroll,
-  .ui-modal__content > .ui-scroll.rh-plans__editor-scroll {
+  .ui-modal__content > .ui-scroll.rh-plans__editor-scroll,
+  .ui-modal__content > .ui-modal__body,
+  .ui-modal__content > .ui-modal__scroll,
+  .ui-modal__content .rh-plan-members-modal__body {
     flex: 1 1 auto;
     min-height: 0;
     overflow-x: hidden;
     overflow-y: auto;
     overscroll-behavior: contain;
     -webkit-overflow-scrolling: touch;
+  }
+
+  .ui-modal__content.rh-halaka-sessions__student-modal .rh-halaka-sessions__modal-actions {
+    margin-inline: 0 !important;
+    margin-bottom: 0 !important;
+    position: relative;
+  }
+
+  .ui-modal__content.rh-halaka-sessions__student-modal .rh-halaka-sessions__row-actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .ui-modal__content.rh-halaka-sessions__student-modal .rh-halaka-sessions__row-actions .ui-btn {
+    width: 100%;
+    min-height: var(--rh-mob-touch);
+    justify-content: center;
   }
 
   .rh-halaka-sessions__modal-next-hint {

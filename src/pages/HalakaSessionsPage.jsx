@@ -8,7 +8,7 @@ import { useAuth } from '../context/useAuth.js'
 import { usePermissions } from '../context/usePermissions.js'
 import { useSiteContent } from '../context/useSiteContent.js'
 import { RhIcon, RH_ICON_STROKE } from '../ui/RhIcon.jsx'
-import { Button, Modal, RhDateTimePickerField, TextAreaField, TextField, useToast } from '../ui/index.js'
+import { Button, Modal, RhDateTimePickerField, ScrollArea, TextAreaField, TextField, useToast } from '../ui/index.js'
 import { halakaSessionDurationAr } from '../utils/datePeriodAr.js'
 import { formatDateTimeMedium12Ar } from '../utils/formatDateTimeAr.js'
 import { exploreModalLink } from '../utils/exploreModalLink.js'
@@ -168,31 +168,34 @@ export default function HalakaSessionsPage() {
         title="إضافة جلسة جديدة"
         onClose={() => !saving && setSessionModalOpen(false)}
         size="lg"
+        contentClassName="ui-modal__content--plan-members"
         closeOnBackdrop={!saving}
         closeOnEsc={!saving}
         showClose={!saving}
       >
-        <TextField label="عنوان الجلسة (اختياري)" value={title} onChange={(e) => setTitle(e.target.value)} />
-        <label className="ui-field">
-          <span className="ui-field__label">نوع الجلسة</span>
-          <select className="ui-input" value={sessionType} onChange={(e) => setSessionType(e.target.value)} disabled={!canWrite || saving}>
-            <option value={HALAKA_SESSION_TYPES.MEMORIZATION}>حفظ</option>
-            <option value={HALAKA_SESSION_TYPES.REVIEW}>مراجعة</option>
-            <option value={HALAKA_SESSION_TYPES.CONSOLIDATION}>تثبيت</option>
-            <option value={HALAKA_SESSION_TYPES.READING}>قراءة</option>
-            <option value={HALAKA_SESSION_TYPES.OTHER}>أخرى</option>
-          </select>
-        </label>
-        {sessionType === HALAKA_SESSION_TYPES.OTHER && (
-          <TextField label="وصف النوع الآخر" value={sessionTypeOther} onChange={(e) => setSessionTypeOther(e.target.value)} />
-        )}
-        <TextAreaField label="ملاحظات" rows={2} value={notes} onChange={(e) => setNotes(e.target.value)} />
-        <div className="rh-plans__dates-grid">
-          <RhDateTimePickerField label="البداية" selected={start} onChange={(d) => d && setStart(d)} maxDate={end} timeIntervals={5} />
-          <RhDateTimePickerField label="النهاية" selected={end} onChange={(d) => d && setEnd(d)} minDate={start} timeIntervals={5} />
-        </div>
-        <p className="ui-field__hint">المدة: {halakaSessionDurationAr(start, end)}</p>
-        <div className="rh-plans__actions rh-halaka-sessions__modal-actions-bar">
+        <ScrollArea className="ui-modal__scroll rh-plans__editor-scroll" padded>
+          <TextField label="عنوان الجلسة (اختياري)" value={title} onChange={(e) => setTitle(e.target.value)} />
+          <label className="ui-field">
+            <span className="ui-field__label">نوع الجلسة</span>
+            <select className="ui-input" value={sessionType} onChange={(e) => setSessionType(e.target.value)} disabled={!canWrite || saving}>
+              <option value={HALAKA_SESSION_TYPES.MEMORIZATION}>حفظ</option>
+              <option value={HALAKA_SESSION_TYPES.REVIEW}>مراجعة</option>
+              <option value={HALAKA_SESSION_TYPES.CONSOLIDATION}>تثبيت</option>
+              <option value={HALAKA_SESSION_TYPES.READING}>قراءة</option>
+              <option value={HALAKA_SESSION_TYPES.OTHER}>أخرى</option>
+            </select>
+          </label>
+          {sessionType === HALAKA_SESSION_TYPES.OTHER && (
+            <TextField label="وصف النوع الآخر" value={sessionTypeOther} onChange={(e) => setSessionTypeOther(e.target.value)} />
+          )}
+          <TextAreaField label="ملاحظات" rows={2} value={notes} onChange={(e) => setNotes(e.target.value)} />
+          <div className="rh-plans__dates-grid">
+            <RhDateTimePickerField label="البداية" selected={start} onChange={(d) => d && setStart(d)} maxDate={end} timeIntervals={5} />
+            <RhDateTimePickerField label="النهاية" selected={end} onChange={(d) => d && setEnd(d)} minDate={start} timeIntervals={5} />
+          </div>
+          <p className="ui-field__hint">المدة: {halakaSessionDurationAr(start, end)}</p>
+        </ScrollArea>
+        <div className="rh-modal-footer rh-plans__actions rh-halaka-sessions__modal-actions-bar">
           <Button
             type="button"
             variant="primary"

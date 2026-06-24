@@ -396,7 +396,7 @@ export default function AdminApplicationFormPage() {
         )}
       </div>
 
-      <Modal open={editorOpen} onClose={() => setEditorOpen(false)} title={draft.label ? 'تعديل حقل' : 'حقل جديد'} size="lg">
+      <Modal open={editorOpen} onClose={() => setEditorOpen(false)} title={draft.label ? 'تعديل حقل' : 'حقل جديد'} size="lg" contentClassName="ui-modal__content--plan-members">
         <div className="rh-admin-app-form-fields__editor">
           <div className="rh-admin-program-blocks__form rh-admin-app-form-fields__editor-form">
           <TextField
@@ -489,14 +489,6 @@ export default function AdminApplicationFormPage() {
               dir="ltr"
             />
           </AdminAdvancedPanel>
-          <div className="rh-admin-program-blocks__form-actions">
-            <Button type="button" variant="primary" icon={Save} loading={saveSubmitting} onClick={() => void handleSaveDraft()}>
-              حفظ
-            </Button>
-            <Button type="button" variant="ghost" icon={X} disabled={saveSubmitting} onClick={() => setEditorOpen(false)}>
-              إلغاء
-            </Button>
-          </div>
           </div>
 
           {previewField?.label ? (
@@ -511,6 +503,14 @@ export default function AdminApplicationFormPage() {
               />
             </aside>
           ) : null}
+        </div>
+        <div className="rh-modal-footer rh-admin-program-blocks__form-actions">
+          <Button type="button" variant="primary" icon={Save} loading={saveSubmitting} onClick={() => void handleSaveDraft()}>
+            حفظ
+          </Button>
+          <Button type="button" variant="ghost" icon={X} disabled={saveSubmitting} onClick={() => setEditorOpen(false)}>
+            إلغاء
+          </Button>
         </div>
       </Modal>
 
@@ -548,7 +548,7 @@ export default function AdminApplicationFormPage() {
             user={user}
           />
         </div>
-        <div className="rh-admin-program-blocks__form-actions">
+        <div className="rh-modal-footer rh-admin-program-blocks__form-actions">
           <HapticLink to="/app/application" className="ui-btn ui-btn--secondary">
             فتح صفحة الطلب
           </HapticLink>
@@ -560,7 +560,7 @@ export default function AdminApplicationFormPage() {
 
       <Modal open={Boolean(deleting)} onClose={() => setDeleting(null)} title="حذف الحقل">
         <p>حذف «{deleting?.label}»؟ لن تُحذف بيانات الطلاب المحفوظة سابقاً.</p>
-        <div className="rh-admin-program-blocks__form-actions">
+        <div className="rh-modal-footer rh-admin-program-blocks__form-actions">
           <Button type="button" variant="danger" icon={Trash2} loading={deleteSubmitting} onClick={() => void handleDelete()}>
             حذف
           </Button>

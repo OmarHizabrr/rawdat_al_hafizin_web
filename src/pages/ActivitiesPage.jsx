@@ -907,7 +907,7 @@ export default function ActivitiesPage() {
             </button>
           </div>
         </ScrollArea>
-        <div className="rh-plans__editor-actions">
+        <div className="rh-modal-footer rh-plans__editor-actions">
           <Button type="button" variant="primary" icon={Save} loading={saveBusy} onClick={handleSave}>
             {str('activities.modal_save')}
           </Button>
@@ -942,7 +942,7 @@ export default function ActivitiesPage() {
             ? str('activities.delete_confirm_owner')
             : str('activities.delete_confirm_leave')}
         </p>
-        <div className="rh-plans__editor-actions">
+        <div className="rh-modal-footer rh-plans__editor-actions">
           <Button type="button" variant="danger" icon={Check} loading={deleteBusy} onClick={doDelete}>
             {str('activities.delete_confirm_submit')}
           </Button>

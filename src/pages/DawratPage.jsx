@@ -805,7 +805,7 @@ export default function DawratPage() {
             </Button>
           </div>
         </ScrollArea>
-        <div className="rh-plans__actions">
+        <div className="rh-modal-footer rh-plans__actions">
           <Button type="button" variant="primary" icon={Save} onClick={handleSave} loading={saveBusy}>
             حفظ
           </Button>
@@ -830,7 +830,7 @@ export default function DawratPage() {
             ? 'حذف الدورة للجميع؟'
             : 'مغادرة الدورة من قائمتك فقط؟'}
         </p>
-        <div className="rh-plans__actions">
+        <div className="rh-modal-footer rh-plans__actions">
           <Button type="button" variant="danger" icon={Trash2} loading={deleteBusy} onClick={doDelete}>
             {deleting &&
             leavingUserDeletesWholeGroup(viewUserId, deleting.ownerUid, deleting.dawraRole, DAWRA_MEMBER_ROLES)

@@ -368,7 +368,7 @@ export default function AdminJoinGroupDetailsPage() {
           <strong>{pendingRemoveMember?.displayName || pendingRemoveMember?.userId || '—'}</strong>
           {' '}من هذه المجموعة؟
         </p>
-        <div className="rh-plans__actions">
+        <div className="rh-modal-footer rh-plans__actions">
           <Button
             type="button"
             variant="danger"

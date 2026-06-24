@@ -120,7 +120,7 @@ export function HomeworkCategoriesPanel({ userId, readOnly = false }) {
         <p className="rh-homework-categories__prompt">
           {str('tasks.homework_prompt', { label: pendingCategory?.label || '' })}
         </p>
-        <div className="rh-homework-categories__actions">
+        <div className="rh-modal-footer rh-homework-categories__actions">
           <Button
             type="button"
             variant="primary"

@@ -363,7 +363,7 @@ export function HomeWirdModal({ open, onClose, activePlan, awrad, contextUserId,
         )}
 
       </ScrollArea>
-      <div className="rh-awrad__actions">
+      <div className="rh-modal-footer rh-awrad__actions">
         <Button type="button" icon={Plus} onClick={submitWird} loading={wirdSubmitting}>
           إضافة الورد
         </Button>

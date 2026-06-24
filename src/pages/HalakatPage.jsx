@@ -1000,7 +1000,7 @@ export default function HalakatPage() {
           </div>
           <p className="ui-field__hint">المدة: {durationLabel}</p>
         </ScrollArea>
-        <div className="rh-plans__actions">
+        <div className="rh-modal-footer rh-plans__actions">
           <Button type="button" variant="primary" icon={Save} onClick={handleSave} loading={saveBusy}>
             حفظ
           </Button>
@@ -1030,7 +1030,7 @@ export default function HalakatPage() {
             ? 'حذف الحلقة نهائياً عن الجميع؟'
             : 'مغادرة الحلقة من قائمتك فقط؟'}
         </p>
-        <div className="rh-plans__actions">
+        <div className="rh-modal-footer rh-plans__actions">
           <Button type="button" variant="danger" icon={Trash2} loading={deleteBusy} onClick={doDelete}>
             {deleting &&
             leavingUserDeletesWholeGroup(
@@ -1058,6 +1058,7 @@ export default function HalakatPage() {
           setShowNewSessionForm(false)
         }}
         size="lg"
+        contentClassName="ui-modal__content--plan-members"
         closeOnBackdrop={!sessionSaveBusy}
         closeOnEsc={!sessionSaveBusy}
         showClose={!sessionSaveBusy}
@@ -1114,45 +1115,6 @@ export default function HalakatPage() {
                 <p className="ui-field__hint">
                   مدة الجلسة: {halakaSessionDurationAr(sessionEditorStart, sessionEditorEnd)}
                 </p>
-                <div className="rh-plans__actions">
-                  <Button
-                    type="button"
-                    variant="primary"
-                    icon={CalendarPlus}
-                    loading={sessionSaveBusy}
-                    disabled={!canWriteSessionRows}
-                    onClick={async () => {
-                      if (!user || !sessionsModalHalaka?.id) return
-                      if (
-                        !sessionEditorStart ||
-                        !sessionEditorEnd ||
-                        sessionEditorEnd.getTime() <= sessionEditorStart.getTime()
-                      ) {
-                        toast.warning('تاريخ ووقت نهاية الجلسة يجب أن يكونا بعد البداية.', '')
-                        return
-                      }
-                      setSessionSaveBusy(true)
-                      try {
-                        await saveHalakaSession(user, sessionsModalHalaka.id, {
-                          title: sessionEditorTitle,
-                          startedAt: sessionEditorStart.toISOString(),
-                          endedAt: sessionEditorEnd.toISOString(),
-                          notes: sessionEditorNotes,
-                          status: 'open',
-                        })
-                        await refreshSessions()
-                        setShowNewSessionForm(false)
-                        toast.success('تم فتح الجلسة. افتحها من أيقونة العين للتحضير.', 'تم')
-                      } catch {
-                        toast.warning('تعذّر فتح الجلسة.', '')
-                      } finally {
-                        setSessionSaveBusy(false)
-                      }
-                    }}
-                  >
-                    فتح جلسة
-                  </Button>
-                </div>
               </>
             ) : (
               <p className="rh-plans__saved-meta">اضغط «إضافة جلسة» لإظهار نموذج الفتح.</p>
@@ -1217,6 +1179,47 @@ export default function HalakatPage() {
             )}
           </section>
         </div>
+        {showNewSessionForm ? (
+          <div className="rh-modal-footer rh-plans__actions">
+            <Button
+              type="button"
+              variant="primary"
+              icon={CalendarPlus}
+              loading={sessionSaveBusy}
+              disabled={!canWriteSessionRows}
+              onClick={async () => {
+                if (!user || !sessionsModalHalaka?.id) return
+                if (
+                  !sessionEditorStart ||
+                  !sessionEditorEnd ||
+                  sessionEditorEnd.getTime() <= sessionEditorStart.getTime()
+                ) {
+                  toast.warning('تاريخ ووقت نهاية الجلسة يجب أن يكونا بعد البداية.', '')
+                  return
+                }
+                setSessionSaveBusy(true)
+                try {
+                  await saveHalakaSession(user, sessionsModalHalaka.id, {
+                    title: sessionEditorTitle,
+                    startedAt: sessionEditorStart.toISOString(),
+                    endedAt: sessionEditorEnd.toISOString(),
+                    notes: sessionEditorNotes,
+                    status: 'open',
+                  })
+                  await refreshSessions()
+                  setShowNewSessionForm(false)
+                  toast.success('تم فتح الجلسة. افتحها من أيقونة العين للتحضير.', 'تم')
+                } catch {
+                  toast.warning('تعذّر فتح الجلسة.', '')
+                } finally {
+                  setSessionSaveBusy(false)
+                }
+              }}
+            >
+              فتح جلسة
+            </Button>
+          </div>
+        ) : null}
       </Modal>
 
       <Modal
