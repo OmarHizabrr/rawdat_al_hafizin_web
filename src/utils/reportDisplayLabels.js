@@ -108,7 +108,46 @@ export function reportAttendanceStatusLabel(status) {
   if (s === HALAKA_ATTENDANCE_STATUSES.PERMITTED) return 'مستأذن'
   if (s === HALAKA_ATTENDANCE_STATUSES.LATE) return 'متأخر'
   if (s === HALAKA_ATTENDANCE_STATUSES.OTHER) return 'أخرى'
+  if (s === 'not_recorded') return 'لم يُسجَّل'
   return s || '—'
+}
+
+export function formatHalakaVolumeLabel(volumeId) {
+  const id = String(volumeId || '').trim()
+  if (!id) return '—'
+  return VOLUME_BY_ID[id]?.label || id
+}
+
+export function formatHalakaMemorizationRange(fromPage, toPage, pagesCount) {
+  const fp = Number(fromPage)
+  const tp = Number(toPage)
+  if (Number.isFinite(fp) && Number.isFinite(tp) && tp >= fp) {
+    return `${fp}–${tp} (${tp - fp + 1} صفحة)`
+  }
+  const pages = Math.max(0, Number(pagesCount) || 0)
+  return pages > 0 ? `${pages} صفحة` : '—'
+}
+
+/** ملخص دفعات الحفظ في جلسة واحدة (للتقارير) */
+export function formatHalakaEntryHistoryForReport(entryHistory) {
+  const entries = Array.isArray(entryHistory) ? entryHistory.filter(Boolean) : []
+  if (!entries.length) return '—'
+  return entries
+    .map((entry) => {
+      const vol = formatHalakaVolumeLabel(entry.memorizationVolumeId)
+      const range = formatHalakaMemorizationRange(entry.fromPage, entry.toPage, entry.pagesCount)
+      const notes = String(entry.notes || '').trim()
+      const parts = [vol !== '—' ? vol : '', range !== '—' ? range : ''].filter(Boolean)
+      const base = parts.length ? parts.join(' — ') : '—'
+      return notes ? `${base} (${notes})` : base
+    })
+    .join(' | ')
+}
+
+export function reportHalakaStudentSessionStatusLabel(row) {
+  if (!row) return 'لم يُسجَّل'
+  if (row.excludedFromSession) return 'مستثنى من الجلسة'
+  return reportAttendanceStatusLabel(row.attendanceStatus)
 }
 
 export function formatTasmeeDurationOrDash(seconds) {

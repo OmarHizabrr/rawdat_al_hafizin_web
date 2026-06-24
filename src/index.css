@@ -5236,6 +5236,105 @@ html:not([data-theme='dark']) .rh-segment__btn--active .rh-segment__label {
   }
 }
 
+.rh-members-chat-list--halaka {
+  gap: var(--rh-space-3);
+}
+
+.rh-members-chat__item--card {
+  align-items: flex-start;
+  flex-wrap: wrap;
+}
+
+.rh-members-chat__main--wide {
+  flex: 1 1 12rem;
+  min-width: min(100%, 14rem);
+}
+
+.rh-halaka-member-card__insights {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(5.5rem, 1fr));
+  gap: var(--rh-space-2);
+  margin-top: var(--rh-space-2);
+  padding: var(--rh-space-2) var(--rh-space-3);
+  border-radius: var(--rh-radius-md);
+  background: color-mix(in srgb, var(--rh-surface) 88%, var(--rh-primary-muted));
+  border: 1px solid color-mix(in srgb, var(--rh-border) 65%, transparent);
+}
+
+.rh-halaka-member-card__stat {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  font-size: var(--rh-text-xs);
+  color: var(--rh-text-muted);
+  text-align: center;
+}
+
+.rh-halaka-member-card__stat strong {
+  font-size: var(--rh-text-sm);
+  font-weight: 700;
+  color: var(--rh-text);
+}
+
+.rh-halaka-member-card__dates {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--rh-space-2) var(--rh-space-3);
+  margin-top: var(--rh-space-2);
+  font-size: var(--rh-text-xs);
+  color: var(--rh-text-muted);
+}
+
+.rh-members-chat__actions--card {
+  width: 100%;
+  margin-top: var(--rh-space-2);
+  padding-top: var(--rh-space-2);
+  border-top: 1px solid color-mix(in srgb, var(--rh-border) 70%, transparent);
+}
+
+.rh-members-chat__actions--role {
+  width: 100%;
+  justify-content: flex-end;
+  padding-top: var(--rh-space-2);
+  border-top: 1px solid color-mix(in srgb, var(--rh-border) 50%, transparent);
+}
+
+.rh-halaka-members-filter {
+  margin-bottom: var(--rh-space-3);
+}
+
+.rh-halaka-members-filter__count {
+  margin: var(--rh-space-2) 0 0;
+  font-size: var(--rh-text-xs);
+  color: var(--rh-text-muted);
+}
+
+.rh-segment--halaka-members {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--rh-space-2);
+}
+
+.rh-segment--halaka-members .rh-segment__btn {
+  flex: 1 1 auto;
+  min-width: 4.75rem;
+}
+
+@media (max-width: 520px) {
+  .rh-members-chat__item--card .rh-members-chat__avatar {
+    width: 3.25rem;
+    height: 3.25rem;
+  }
+
+  .rh-halaka-member-card__insights {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .rh-segment--halaka-members .rh-segment__btn {
+    flex: 1 1 calc(50% - var(--rh-space-2));
+  }
+}
+
 /* ——— صفحة جلسات الحلقة (ويب + لمس) ——— */
 .rh-halaka-sessions {
   --rh-halaka-sessions-touch: 2.75rem;

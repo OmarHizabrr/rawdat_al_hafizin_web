@@ -219,6 +219,7 @@ export default function HalakatPage() {
   const [membersInsightsByUid, setMembersInsightsByUid] = useState({})
   const [directoryUsers, setDirectoryUsers] = useState([])
   const [memberPickerQuery, setMemberPickerQuery] = useState('')
+  const [membersRoleFilter, setMembersRoleFilter] = useState(HALAKA_MEMBER_ROLES.STUDENT)
   const [addingMemberUid, setAddingMemberUid] = useState('')
   const [memberRowBusy, setMemberRowBusy] = useState(null)
   const [sessionsModalHalaka, setSessionsModalHalaka] = useState(null)
@@ -566,6 +567,24 @@ export default function HalakatPage() {
     })
   }, [mergedDirectoryUsers, memberPickerQuery, memberUidSet])
 
+  const filteredMembersList = useMemo(() => {
+    if (membersRoleFilter === 'all') return membersList
+    const target = normalizeRole(membersRoleFilter)
+    return membersList.filter((row) => normalizeRole(row.role) === target)
+  }, [membersList, membersRoleFilter])
+
+  const membersRoleCounts = useMemo(() => {
+    const counts = { all: membersList.length, student: 0, teacher: 0, supervisor: 0, owner: 0 }
+    for (const row of membersList) {
+      const role = normalizeRole(row.role)
+      if (role === HALAKA_MEMBER_ROLES.STUDENT) counts.student += 1
+      else if (role === HALAKA_MEMBER_ROLES.TEACHER) counts.teacher += 1
+      else if (role === HALAKA_MEMBER_ROLES.SUPERVISOR) counts.supervisor += 1
+      else if (role === HALAKA_MEMBER_ROLES.OWNER) counts.owner += 1
+    }
+    return counts
+  }, [membersList])
+
   const refreshMembers = () => {
     if (!membersModal?.id) return
     setMembersLoading(true)
@@ -745,6 +764,13 @@ export default function HalakatPage() {
                   الرمز: <code className="rh-plans__plan-id">{h.id}</code>
                 </p>
                 <div className="rh-plans__saved-actions">
+                  <ReportQuickLink
+                    kind="halaka"
+                    entityId={h.id}
+                    label="تقرير"
+                    title="تقرير الحلقة — الجلسات والحضور والتسميع"
+                    className="ui-btn ui-btn--secondary ui-btn--sm"
+                  />
                   {canOpenSessions(h) && (
                     <HapticLink
                       to={appLink(`/app/halakat/${encodeURIComponent(h.id)}/sessions`)}
@@ -1149,6 +1175,7 @@ export default function HalakatPage() {
           setMembersModal(null)
           setMembersList([])
           setMemberPickerQuery('')
+          setMembersRoleFilter(HALAKA_MEMBER_ROLES.STUDENT)
         }}
         size="lg"
         contentClassName="ui-modal__content--plan-members"
@@ -1189,6 +1216,8 @@ export default function HalakatPage() {
                   {filteredPickerUsers.map((u) => {
                     const added = memberUidSet.has(u.uid)
                     const busy = addingMemberUid === u.uid
+                    const name = u.displayName?.trim() || 'بدون اسم'
+                    const initial = name.charAt(0)
                     return (
                       <li key={u.uid} className="rh-plan-members-picker__item-wrap">
                         <button
@@ -1212,8 +1241,19 @@ export default function HalakatPage() {
                             }
                           }}
                         >
-                          <span className="rh-plan-members-pick__name">{u.displayName || u.uid}</span>
+                          <span className="rh-plan-members-pick__avatar" aria-hidden>
+                            {u.photoURL ? (
+                              <img src={u.photoURL} alt="" width={44} height={44} />
+                            ) : (
+                              initial
+                            )}
+                          </span>
+                          <span className="rh-plan-members-pick__body">
+                            <span className="rh-plan-members-pick__name">{name}</span>
+                            <span className="rh-plan-members-pick__sub">{u.email || u.uid}</span>
+                          </span>
                           {added && <span className="rh-plan-members-pick__badge">مضاف</span>}
+                          {busy && <span className="rh-plan-members-pick__busy">…</span>}
                         </button>
                       </li>
                     )
@@ -1223,40 +1263,130 @@ export default function HalakatPage() {
               </ScrollArea>
             </section>
           )}
-          <section className="rh-plan-members-modal__section">
+          <section className="rh-plan-members-modal__section rh-plan-members-modal__section--members">
             <h3 className="rh-plan-members-modal__heading">الأعضاء</h3>
+            <div className="rh-halaka-members-filter">
+              <p className="rh-plans__field-label">عرض حسب الدور</p>
+              <div className="rh-segment rh-segment--halaka-members">
+                {[
+                  { id: HALAKA_MEMBER_ROLES.STUDENT, label: 'طلاب', count: membersRoleCounts.student },
+                  { id: HALAKA_MEMBER_ROLES.TEACHER, label: 'معلمون', count: membersRoleCounts.teacher },
+                  { id: HALAKA_MEMBER_ROLES.SUPERVISOR, label: 'مشرفون', count: membersRoleCounts.supervisor },
+                  { id: 'all', label: 'الكل', count: membersRoleCounts.all },
+                ].map(({ id, label, count }) => (
+                  <button
+                    key={id}
+                    type="button"
+                    className={[
+                      'rh-segment__btn',
+                      membersRoleFilter === id ? 'rh-segment__btn--active' : '',
+                    ]
+                      .filter(Boolean)
+                      .join(' ')}
+                    onClick={() => setMembersRoleFilter(id)}
+                  >
+                    <span className="rh-segment__label">
+                      {label}
+                      {count > 0 ? ` (${count})` : ''}
+                    </span>
+                  </button>
+                ))}
+              </div>
+              <p className="rh-halaka-members-filter__count">
+                {filteredMembersList.length} عضو معروض
+                {membersRoleFilter === HALAKA_MEMBER_ROLES.STUDENT ? ' — الطلاب افتراضياً' : ''}
+              </p>
+            </div>
             {membersLoading ? (
-              <p>جاري التحميل…</p>
+              <p className="rh-plans__members-loading">جاري التحميل…</p>
+            ) : filteredMembersList.length === 0 ? (
+              <p className="rh-plans__members-loading">
+                {membersList.length === 0
+                  ? 'لا يوجد أعضاء مسجّلون بعد.'
+                  : 'لا يوجد أعضاء بهذا الدور.'}
+              </p>
             ) : (
-              <ul className="rh-members-chat-list">
-                {membersList.map((row) => {
+              <ul className="rh-members-chat-list rh-members-chat-list--halaka">
+                {filteredMembersList.map((row) => {
                   const isOwner = row.role === HALAKA_MEMBER_ROLES.OWNER
                   const actorRole = normalizeRole(membersModal?.halakaRole)
                   const insight = membersInsightsByUid[row.userId] || null
+                  const name = row.displayName?.trim() || row.userId
+                  const initial = (name || '?').charAt(0)
                   return (
-                    <li key={row.userId} className="rh-members-chat__item">
-                      <div className="rh-members-chat__main">
-                        <strong>{row.displayName || row.userId}</strong>
-                        <span className="rh-plans__saved-badge">{roleLabel(row.role)}</span>
+                    <li key={row.userId} className="rh-members-chat__item rh-members-chat__item--card">
+                      <span className="rh-members-chat__avatar" aria-hidden>
+                        {row.photoURL ? (
+                          <img src={row.photoURL} alt="" width={48} height={48} />
+                        ) : (
+                          initial
+                        )}
+                      </span>
+                      <div className="rh-members-chat__main rh-members-chat__main--wide">
+                        <div className="rh-members-chat__title-row">
+                          <strong className="rh-members-chat__name">{name}</strong>
+                          <span className="rh-plans__saved-badge">{roleLabel(row.role)}</span>
+                        </div>
                         <span className="rh-members-chat__sub">{row.email || row.userId}</span>
                         {insight && (
-                          <div className="rh-members-chat__sub">
-                            خطط: {insight.plansCount} · حلقات: {insight.halakatCount} · أنشطة: {insight.activitiesCount}
-                            {' · '}اختبارات: {insight.examsCount} · دورات: {insight.dawratCount} · أوراد: {insight.awradCount}
-                            {' · '}صفحات الأوراد: {insight.pagesInAwrad} · حضور الحلقة: {insight.attendanceRecordsInHalaka}
+                          <div className="rh-halaka-member-card__insights">
+                            <div className="rh-halaka-member-card__stat">
+                              <strong>{insight.plansCount ?? 0}</strong>
+                              <span>خطط</span>
+                            </div>
+                            <div className="rh-halaka-member-card__stat">
+                              <strong>{insight.halakatCount ?? 0}</strong>
+                              <span>حلقات</span>
+                            </div>
+                            <div className="rh-halaka-member-card__stat">
+                              <strong>{insight.activitiesCount ?? 0}</strong>
+                              <span>أنشطة</span>
+                            </div>
+                            <div className="rh-halaka-member-card__stat">
+                              <strong>{insight.examsCount ?? 0}</strong>
+                              <span>اختبارات</span>
+                            </div>
+                            <div className="rh-halaka-member-card__stat">
+                              <strong>{insight.dawratCount ?? 0}</strong>
+                              <span>دورات</span>
+                            </div>
+                            <div className="rh-halaka-member-card__stat">
+                              <strong>{insight.awradCount ?? 0}</strong>
+                              <span>أوراد</span>
+                            </div>
+                            <div className="rh-halaka-member-card__stat">
+                              <strong>{insight.pagesInAwrad ?? 0}</strong>
+                              <span>صفحات الأوراد</span>
+                            </div>
+                            <div className="rh-halaka-member-card__stat">
+                              <strong>{insight.attendanceRecordsInHalaka ?? 0}</strong>
+                              <span>حضور الحلقة</span>
+                            </div>
+                            {insight.pagesInHalakaSessions > 0 ? (
+                              <div className="rh-halaka-member-card__stat">
+                                <strong>{insight.pagesInHalakaSessions}</strong>
+                                <span>صفحات الجلسات</span>
+                              </div>
+                            ) : null}
+                            {insight.tasmeeLabelInHalaka && insight.tasmeeLabelInHalaka !== '—' ? (
+                              <div className="rh-halaka-member-card__stat">
+                                <strong>{insight.tasmeeLabelInHalaka}</strong>
+                                <span>تسميع الحلقة</span>
+                              </div>
+                            ) : null}
                           </div>
                         )}
-                        {insight?.latestAwradAt && (
-                          <div className="rh-members-chat__sub">
-                            آخر ورد: {formatDateTimeMedium12Ar(insight.latestAwradAt)}
+                        {(insight?.latestAwradAt || insight?.latestAttendanceAt) && (
+                          <div className="rh-halaka-member-card__dates">
+                            {insight.latestAwradAt ? (
+                              <span>آخر ورد: {formatDateTimeMedium12Ar(insight.latestAwradAt)}</span>
+                            ) : null}
+                            {insight.latestAttendanceAt ? (
+                              <span>آخر حضور: {formatDateTimeMedium12Ar(insight.latestAttendanceAt)}</span>
+                            ) : null}
                           </div>
                         )}
-                        {insight?.latestAttendanceAt && (
-                          <div className="rh-members-chat__sub">
-                            آخر حضور/تسميع: {formatDateTimeMedium12Ar(insight.latestAttendanceAt)}
-                          </div>
-                        )}
-                        <div className="rh-members-chat__actions">
+                        <div className="rh-members-chat__actions rh-members-chat__actions--card">
                           <MemberProgressTools
                             userId={row.userId}
                             summary={memberProgressByUid[row.userId]}
@@ -1291,7 +1421,7 @@ export default function HalakatPage() {
                         </div>
                       </div>
                       {!isOwner && (
-                        <div className="rh-members-chat__actions">
+                        <div className="rh-members-chat__actions rh-members-chat__actions--role">
                           {can(PH, 'halaka_member_promote') && (
                             <>
                               <Button

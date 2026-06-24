@@ -75,6 +75,7 @@ import {
   formatEntityDetailsForReport,
   formatPlanVolumesForReport,
   reportAttendanceStatusLabel,
+  reportHalakaStudentSessionStatusLabel,
   reportMediaTypeLabel,
   reportNotificationTypeLabel,
   reportPersonLabel,
@@ -1054,6 +1055,24 @@ export default function ReportViewPage() {
             وقت_التسميع: r.tasmeeLabelInHalaka || "—",
             آخر_ورد: formatArDateTime(r.latestAwradAt),
             آخر_حضور: formatArDateTime(r.latestAttendanceAt),
+          });
+        }
+        for (const r of reportData.sessionStudentRows || []) {
+          rows.push({
+            القسم: "تفاصيل الجلسات والطلاب",
+            الجلسة: r.sessionTitle || "",
+            يوم_الجلسة: r.sessionDayLabel || "—",
+            بداية_الجلسة: formatArDateTime(r.sessionStartedAt),
+            نهاية_الجلسة: formatArDateTime(r.sessionEndedAt),
+            تسميع_الجلسة: r.sessionTasmeeLabel || "—",
+            الطالب: reportPersonLabel(r.userName, r.userId),
+            الحضور: reportHalakaStudentSessionStatusLabel(r),
+            المجلد: r.memorizationVolumeLabel || "—",
+            الحفظ: r.memorizationRange || "—",
+            دفعات_الحفظ: r.entriesSummary || "—",
+            وقت_تسميع_الطالب: r.tasmeeLabel || "—",
+            الملاحظات: r.notes || "—",
+            آخر_تسجيل: formatArDateTime(r.recordedAt),
           });
         }
         for (const s of reportData.sessions || []) {
@@ -2690,6 +2709,38 @@ export default function ReportViewPage() {
                     {reportData.kind === "halaka" && (
                       <>
                         <SectionTable
+                          title="تفاصيل الجلسات والطلاب"
+                          tabId="sessions"
+                          columns={[
+                            { key: "sessionTitle", label: "الجلسة" },
+                            { key: "sessionDayLabel", label: "اليوم" },
+                            { key: "sessionStartedAt", label: "البداية" },
+                            { key: "sessionEndedAt", label: "النهاية" },
+                            { key: "sessionTasmeeLabel", label: "تسميع الجلسة" },
+                            { key: "userName", label: "الطالب" },
+                            { key: "attendanceStatusLabel", label: "الحضور" },
+                            { key: "memorizationVolumeLabel", label: "المجلد" },
+                            { key: "memorizationRange", label: "الحفظ" },
+                            { key: "entriesSummary", label: "دفعات الحفظ" },
+                            { key: "tasmeeLabel", label: "تسميع الطالب" },
+                            { key: "notes", label: "الملاحظات" },
+                          ]}
+                          rows={(reportData.sessionStudentRows || []).map((r) => ({
+                            sessionTitle: r.sessionTitle || "—",
+                            sessionDayLabel: r.sessionDayLabel || "—",
+                            sessionStartedAt: formatArDateTime(r.sessionStartedAt),
+                            sessionEndedAt: formatArDateTime(r.sessionEndedAt),
+                            sessionTasmeeLabel: r.sessionTasmeeLabel || "—",
+                            userName: reportPersonLabel(r.userName, r.userId),
+                            attendanceStatusLabel: reportHalakaStudentSessionStatusLabel(r),
+                            memorizationVolumeLabel: r.memorizationVolumeLabel || "—",
+                            memorizationRange: r.memorizationRange || "—",
+                            entriesSummary: r.entriesSummary || "—",
+                            tasmeeLabel: r.tasmeeLabel || "—",
+                            notes: r.notes || "—",
+                          }))}
+                        />
+                        <SectionTable
                           title="جلسات الحلقة"
                           tabId="sessions"
                           columns={[
@@ -2712,15 +2763,20 @@ export default function ReportViewPage() {
                           tabId="attendance"
                           columns={[
                             { key: "sessionTitle", label: "الجلسة" },
+                            { key: "sessionStartedAt", label: "بداية الجلسة" },
+                            { key: "sessionEndedAt", label: "نهاية الجلسة" },
                             { key: "userName", label: "العضو" },
                             { key: "attendanceStatusLabel", label: "الحضور" },
-                            { key: "pagesCount", label: "الصفحات" },
-                            { key: "fromPage", label: "من" },
-                            { key: "toPage", label: "إلى" },
+                            { key: "memorizationVolumeLabel", label: "المجلد" },
+                            { key: "memorizationRange", label: "الحفظ" },
+                            { key: "entriesSummary", label: "دفعات الحفظ" },
                             { key: "tasmeeLabel", label: "وقت التسميع" },
+                            { key: "notes", label: "الملاحظات" },
                           ]}
                           rows={(reportData.attendanceRows || []).map((a) => ({
                             sessionTitle: a.sessionTitle || "جلسة",
+                            sessionStartedAt: formatArDateTime(a.sessionStartedAt),
+                            sessionEndedAt: formatArDateTime(a.sessionEndedAt),
                             userName: reportPersonLabel(
                               a.userName ||
                                 halakaMemberNameMap.get(
@@ -2731,10 +2787,11 @@ export default function ReportViewPage() {
                             attendanceStatusLabel: reportAttendanceStatusLabel(
                               a.attendanceStatus,
                             ),
-                            pagesCount: a.pagesCount ?? 0,
-                            fromPage: a.fromPage ?? "—",
-                            toPage: a.toPage ?? "—",
+                            memorizationVolumeLabel: a.memorizationVolumeLabel || "—",
+                            memorizationRange: a.memorizationRange || "—",
+                            entriesSummary: a.entriesSummary || "—",
                             tasmeeLabel: a.tasmeeLabel || "—",
+                            notes: a.notes || "—",
                           }))}
                         />
                       </>

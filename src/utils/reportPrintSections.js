@@ -4,6 +4,7 @@ import {
   entityDetailsColumnsForKind,
   formatEntityDetailsForReport,
   reportAttendanceStatusLabel,
+  reportHalakaStudentSessionStatusLabel,
   formatTasmeeDurationOrDash,
   reportMediaTypeLabel,
   reportNotificationTypeLabel,
@@ -588,7 +589,42 @@ export function collectPrintSectionsFromReport(reportData, helpers = {}) {
     })
   }
 
-  if (reportData.kind === 'halaka' && reportData.memberDetails?.length) {
+  if (reportData.kind === 'halaka') {
+    if (reportData.sessionStudentRows?.length) {
+      sections.push({
+        tabId: 'sessions',
+        title: 'تفاصيل الجلسات والطلاب',
+        columns: [
+          { key: 'sessionTitle', label: 'الجلسة' },
+          { key: 'sessionDayLabel', label: 'اليوم' },
+          { key: 'sessionStartedAt', label: 'البداية' },
+          { key: 'sessionEndedAt', label: 'النهاية' },
+          { key: 'sessionTasmeeLabel', label: 'تسميع الجلسة' },
+          { key: 'userName', label: 'الطالب' },
+          { key: 'attendanceStatusLabel', label: 'الحضور' },
+          { key: 'memorizationVolumeLabel', label: 'المجلد' },
+          { key: 'memorizationRange', label: 'الحفظ' },
+          { key: 'entriesSummary', label: 'دفعات الحفظ' },
+          { key: 'tasmeeLabel', label: 'تسميع الطالب' },
+          { key: 'notes', label: 'الملاحظات' },
+        ],
+        rows: reportData.sessionStudentRows.map((r) => ({
+          sessionTitle: r.sessionTitle || '—',
+          sessionDayLabel: r.sessionDayLabel || '—',
+          sessionStartedAt: fmt(r.sessionStartedAt),
+          sessionEndedAt: fmt(r.sessionEndedAt),
+          sessionTasmeeLabel: r.sessionTasmeeLabel || '—',
+          userName: reportPersonLabel(r.userName, r.userId),
+          attendanceStatusLabel: reportHalakaStudentSessionStatusLabel(r),
+          memorizationVolumeLabel: r.memorizationVolumeLabel || '—',
+          memorizationRange: r.memorizationRange || '—',
+          entriesSummary: r.entriesSummary || '—',
+          tasmeeLabel: r.tasmeeLabel || '—',
+          notes: r.notes || '—',
+        })),
+      })
+    }
+    if (reportData.memberDetails?.length) {
     sections.push({
       title: 'تفاصيل أعضاء الحلقة',
       columns: [
@@ -628,28 +664,36 @@ export function collectPrintSectionsFromReport(reportData, helpers = {}) {
       })),
     })
     sections.push({
+      tabId: 'attendance',
       title: 'حضور الحلقة',
       columns: [
-        { key: 'userName', label: 'العضو' },
         { key: 'sessionTitle', label: 'الجلسة' },
+        { key: 'sessionStartedAt', label: 'بداية الجلسة' },
+        { key: 'sessionEndedAt', label: 'نهاية الجلسة' },
+        { key: 'userName', label: 'العضو' },
         { key: 'attendanceStatusLabel', label: 'الحضور' },
-        { key: 'pagesCount', label: 'الصفحات' },
-        { key: 'fromPage', label: 'من' },
-        { key: 'toPage', label: 'إلى' },
+        { key: 'memorizationVolumeLabel', label: 'المجلد' },
+        { key: 'memorizationRange', label: 'الحفظ' },
+        { key: 'entriesSummary', label: 'دفعات الحفظ' },
         { key: 'tasmeeLabel', label: 'وقت التسميع' },
+        { key: 'notes', label: 'الملاحظات' },
         { key: 'updatedAt', label: 'التحديث' },
       ],
       rows: (reportData.attendanceRows || []).map((a) => ({
-        userName: reportPersonLabel(a.userName, a.userId),
         sessionTitle: a.sessionTitle || 'جلسة',
+        sessionStartedAt: fmt(a.sessionStartedAt),
+        sessionEndedAt: fmt(a.sessionEndedAt),
+        userName: reportPersonLabel(a.userName, a.userId),
         attendanceStatusLabel: reportAttendanceStatusLabel(a.attendanceStatus),
-        pagesCount: a.pagesCount ?? 0,
-        fromPage: a.fromPage ?? '—',
-        toPage: a.toPage ?? '—',
+        memorizationVolumeLabel: a.memorizationVolumeLabel || '—',
+        memorizationRange: a.memorizationRange || '—',
+        entriesSummary: a.entriesSummary || '—',
         tasmeeLabel: a.tasmeeLabel || '—',
+        notes: a.notes || '—',
         updatedAt: fmt(a.updatedAt),
       })),
     })
+    }
   }
 
   return sections.filter((s) => s.rows?.length)

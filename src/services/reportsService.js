@@ -3,10 +3,13 @@ import { normalizeRole, isAdmin } from '../config/roles.js'
 import { loadAwrad } from '../utils/awradStorage.js'
 import { loadPlanMembersWithProfiles } from '../utils/plansStorage.js'
 import {
+  HALAKA_MEMBER_ROLES,
   loadHalakaSessions,
   loadHalakatMembersWithProfiles,
   loadSessionAttendance,
+  formatHalakaSessionDayLabel,
   formatTasmeeDuration,
+  normalizeHalakaRole,
 } from '../utils/halakatStorage.js'
 import { loadExamMembersWithProfiles } from '../utils/examsStorage.js'
 import { loadActivityMembersWithProfiles } from '../utils/activitiesStorage.js'
@@ -14,8 +17,11 @@ import { loadDawratMembersWithProfiles } from '../utils/dawratStorage.js'
 import { loadRemoteTasmeeMembersWithProfiles } from '../utils/remoteTasmeeStorage.js'
 import { computePlanProgress } from '../utils/planProgress.js'
 import {
-  formatPlanVolumesForReport,
+  formatHalakaEntryHistoryForReport,
+  formatHalakaMemorizationRange,
+  formatHalakaVolumeLabel,
   formatMemberPlansVolumesForReport,
+  formatPlanVolumesForReport,
 } from '../utils/reportDisplayLabels.js'
 import { REPORT_SCOPE_ALL } from '../config/reportKinds.js'
 import { HALAKA_TASKS_LIMIT, pickRelevantHalakaSession } from '../utils/halakaAttendanceTask.js'
@@ -1157,6 +1163,65 @@ export async function buildTeacherReport(user, range = {}, scope = {}) {
   }
 }
 
+function buildHalakaSessionStudentRows(sessions, members, attendanceBySession, userNameMap) {
+  const students = (members || []).filter(
+    (m) => normalizeHalakaRole(m?.role) === HALAKA_MEMBER_ROLES.STUDENT,
+  )
+  const sessionAttendanceMap = new Map(
+    (attendanceBySession || []).map((entry) => [String(entry.sessionId || ''), entry.rows || []]),
+  )
+  const memberNameMap = new Map(
+    (members || []).map((m) => [String(m.userId || '').trim(), String(m.displayName || '').trim()]),
+  )
+  const rows = []
+  for (const session of sessions || []) {
+    const sessionId = String(session.id || '')
+    const attRows = sessionAttendanceMap.get(sessionId) || []
+    const attByUid = new Map(attRows.map((r) => [String(r.userId || '').trim(), r]))
+    const sessionMeta = {
+      sessionId,
+      sessionTitle: String(session.title || '').trim() || 'جلسة',
+      sessionStartedAt: session.startedAt || '',
+      sessionEndedAt: session.endedAt || '',
+      sessionStatus: session.status || '',
+      sessionTasmeeSeconds: Math.max(0, Number(session.tasmeeTotalSeconds) || 0),
+      sessionTasmeeLabel: formatTasmeeDuration(Math.max(0, Number(session.tasmeeTotalSeconds) || 0)),
+      sessionDayLabel: session.sessionDayYmd ? formatHalakaSessionDayLabel(session.sessionDayYmd) : '—',
+    }
+    const targets = students.length
+      ? students
+      : attRows.map((r) => {
+          const uid = String(r.userId || '').trim()
+          return {
+            userId: uid,
+            displayName: memberNameMap.get(uid) || userNameMap?.get(uid) || uid,
+          }
+        })
+    for (const student of targets) {
+      const uid = String(student.userId || '').trim()
+      const row = attByUid.get(uid)
+      rows.push({
+        ...sessionMeta,
+        userId: uid,
+        userName: memberNameMap.get(uid) || userNameMap?.get(uid) || student.displayName || uid,
+        excludedFromSession: Boolean(row?.excludedFromSession),
+        attendanceStatus: row ? String(row.attendanceStatus || '') : 'not_recorded',
+        pagesCount: Math.max(0, Number(row?.pagesCount) || 0),
+        fromPage: row?.fromPage ?? null,
+        toPage: row?.toPage ?? null,
+        memorizationVolumeLabel: formatHalakaVolumeLabel(row?.memorizationVolumeId),
+        memorizationRange: formatHalakaMemorizationRange(row?.fromPage, row?.toPage, row?.pagesCount),
+        tasmeeSeconds: Math.max(0, Number(row?.tasmeeSeconds) || 0),
+        tasmeeLabel: formatTasmeeDuration(Math.max(0, Number(row?.tasmeeSeconds) || 0)),
+        notes: String(row?.notes || '').trim(),
+        entriesSummary: formatHalakaEntryHistoryForReport(row?.entryHistory),
+        recordedAt: pickFirstDate(row?.updatedAt, row?.recordedAt),
+      })
+    }
+  }
+  return rows
+}
+
 export async function buildGroupReport(kind, entityId, range = {}) {
   const id = String(entityId || '').trim()
   if (!id) return null
@@ -1212,6 +1277,17 @@ export async function buildGroupReport(kind, entityId, range = {}) {
     const sessionTitleMap = new Map(
       sessions.map((s) => [String(s.id), String(s.title || '').trim() || 'جلسة']),
     )
+    const sessionTimeMap = new Map(
+      sessions.map((s) => [
+        String(s.id),
+        {
+          startedAt: s.startedAt || '',
+          endedAt: s.endedAt || '',
+          tasmeeLabel: formatTasmeeDuration(Math.max(0, Number(s.tasmeeTotalSeconds) || 0)),
+          sessionDayLabel: s.sessionDayYmd ? formatHalakaSessionDayLabel(s.sessionDayYmd) : '—',
+        },
+      ]),
+    )
     const memberNameMap = new Map(
       (members || []).map((m) => [String(m.userId || '').trim(), String(m.displayName || '').trim()]),
     )
@@ -1222,14 +1298,30 @@ export async function buildGroupReport(kind, entityId, range = {}) {
     const enrichedAttendanceRows = attendanceRows.map((a) => {
       const uid = String(a.userId || '').trim()
       const tasmeeSeconds = Math.max(0, Number(a.tasmeeSeconds) || 0)
+      const sessionId = String(a.sessionId || '')
+      const sessionTimes = sessionTimeMap.get(sessionId) || {}
       return {
         ...a,
         userName: memberNameMap.get(uid) || userNameMap.get(uid) || 'عضو',
-        sessionTitle: sessionTitleMap.get(String(a.sessionId || '')) || 'جلسة',
+        sessionTitle: sessionTitleMap.get(sessionId) || 'جلسة',
+        sessionStartedAt: sessionTimes.startedAt || '',
+        sessionEndedAt: sessionTimes.endedAt || '',
+        sessionTasmeeLabel: sessionTimes.tasmeeLabel || '—',
+        sessionDayLabel: sessionTimes.sessionDayLabel || '—',
+        memorizationVolumeLabel: formatHalakaVolumeLabel(a.memorizationVolumeId),
+        memorizationRange: formatHalakaMemorizationRange(a.fromPage, a.toPage, a.pagesCount),
+        entriesSummary: formatHalakaEntryHistoryForReport(a.entryHistory),
+        notes: String(a.notes || '').trim(),
         tasmeeSeconds,
         tasmeeLabel: formatTasmeeDuration(tasmeeSeconds),
       }
     })
+    const sessionStudentRows = buildHalakaSessionStudentRows(
+      sessions,
+      members,
+      attendanceBySession,
+      userNameMap,
+    )
     const tasmeeSecondsTotal = enrichedAttendanceRows.reduce(
       (sum, r) => sum + Math.max(0, Number(r.tasmeeSeconds) || 0),
       0,
@@ -1296,8 +1388,10 @@ export async function buildGroupReport(kind, entityId, range = {}) {
         ...s,
         tasmeeTotalSeconds: Math.max(0, Number(s.tasmeeTotalSeconds) || 0),
         tasmeeLabel: formatTasmeeDuration(Math.max(0, Number(s.tasmeeTotalSeconds) || 0)),
+        sessionDayLabel: s.sessionDayYmd ? formatHalakaSessionDayLabel(s.sessionDayYmd) : '—',
       })),
       attendanceRows: enrichedAttendanceRows,
+      sessionStudentRows,
       summary: {
         members: (members || []).length,
         sessions: sessions.length,
