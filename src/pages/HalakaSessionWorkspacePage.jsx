@@ -1,6 +1,6 @@
-import { ArrowRight, Ban, ChevronDown, Clock, Pause, Play, Plus, RotateCcw, Save, UserCheck, UserX, X } from 'lucide-react'
+import { ArrowRight, Ban, BookOpen, ChevronDown, ChevronLeft, ChevronRight, Clock, LayoutList, ListOrdered, Pencil, Pause, Play, Plus, RotateCcw, Save, SkipForward, Trash2, UserCheck, UserX, X } from 'lucide-react'
 import { HapticLink } from '../ui/HapticLink.jsx'
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useParams } from 'react-router-dom'
 import { CrossNav } from '../components/CrossNav.jsx'
 import { useAuth } from '../context/useAuth.js'
@@ -79,6 +79,36 @@ function getNextRecordableStudentUid(currentUid, rows) {
   if (idx < 0 || idx >= eligible.length - 1) return ''
   return eligible[idx + 1].userId
 }
+function getPrevRecordableStudentUid(currentUid, rows) {
+  const eligible = rows.filter(isRecordableStudent)
+  const idx = eligible.findIndex((r) => r.userId === currentUid)
+  if (idx <= 0) return ''
+  return eligible[idx - 1].userId
+}
+function compareStudentRows(a, b) {
+  const aStudent = a.role === HALAKA_MEMBER_ROLES.STUDENT
+  const bStudent = b.role === HALAKA_MEMBER_ROLES.STUDENT
+  if (aStudent !== bStudent) return aStudent ? -1 : 1
+  const aCount = Array.isArray(a.entryHistory) ? a.entryHistory.length : 0
+  const bCount = Array.isArray(b.entryHistory) ? b.entryHistory.length : 0
+  if (aCount !== bCount) return bCount - aCount
+  return (a.displayName || a.userId).localeCompare(b.displayName || b.userId, 'ar')
+}
+function defaultEntriesExpanded(count) {
+  return count <= 3
+}
+function entryPagesCount(h) {
+  const pages = Math.max(0, Number(h.pagesCount) || 0)
+  if (pages > 0) return pages
+  const fp = Number(h.fromPage)
+  const tp = Number(h.toPage)
+  if (Number.isFinite(fp) && Number.isFinite(tp) && tp >= fp) return tp - fp + 1
+  return 0
+}
+function entryPagesLabel(h) {
+  const pages = entryPagesCount(h)
+  return pages > 0 ? `${pages} ص` : ''
+}
 
 export default function HalakaSessionWorkspacePage() {
   const { halakaId, sessionId } = useParams()
@@ -112,6 +142,16 @@ export default function HalakaSessionWorkspacePage() {
     () => typeof window !== 'undefined' && window.matchMedia('(min-width: 900px)').matches,
   )
   const [studentFilterQuery, setStudentFilterQuery] = useState('')
+  const [studentListFilter, setStudentListFilter] = useState('all')
+  const [showSessionFeed, setShowSessionFeed] = useState(false)
+  const [entriesExpandedByUid, setEntriesExpandedByUid] = useState({})
+  const [deletingEntry, setDeletingEntry] = useState(null)
+  const [deleteEntryBusy, setDeleteEntryBusy] = useState(false)
+  const [flashStudentUid, setFlashStudentUid] = useState('')
+  const [compactEmptyCards, setCompactEmptyCards] = useState(true)
+  const [sessionFeedSort, setSessionFeedSort] = useState('time')
+  const [sessionFeedQuery, setSessionFeedQuery] = useState('')
+  const sessionFeedAutoOpened = useRef(false)
 
   useEffect(() => {
     if (!user?.uid || !halakaId || !sessionId) return
@@ -254,9 +294,8 @@ export default function HalakaSessionWorkspacePage() {
     let pages = 0
     for (const r of attendanceRows) {
       if (r.role !== HALAKA_MEMBER_ROLES.STUDENT || r.excludedFromSession) continue
-      const fp = Number(r.fromPage)
-      const tp = Number(r.toPage)
-      if (Number.isFinite(fp) && Number.isFinite(tp) && tp >= fp) pages += tp - fp + 1
+      const history = Array.isArray(r.entryHistory) ? r.entryHistory : []
+      for (const h of history) pages += entryPagesCount(h)
     }
     return {
       studentCount: studentStats.studentCount,
@@ -309,9 +348,133 @@ export default function HalakaSessionWorkspacePage() {
 
   const filteredAttendanceRows = useMemo(() => {
     const q = studentFilterQuery.trim().toLowerCase()
-    if (!q) return attendanceRows
-    return attendanceRows.filter((r) => (r.displayName || r.userId).toLowerCase().includes(q))
-  }, [attendanceRows, studentFilterQuery])
+    const rows = attendanceRows.filter((r) => {
+      if (studentListFilter === 'recorded') {
+        if (r.role !== HALAKA_MEMBER_ROLES.STUDENT || r.excludedFromSession) return false
+        if (!Array.isArray(r.entryHistory) || r.entryHistory.length === 0) return false
+      } else if (studentListFilter === 'empty') {
+        if (r.role !== HALAKA_MEMBER_ROLES.STUDENT || r.excludedFromSession) return false
+        if (Array.isArray(r.entryHistory) && r.entryHistory.length > 0) return false
+      } else if (studentListFilter === 'absent') {
+        if (r.role !== HALAKA_MEMBER_ROLES.STUDENT) return false
+        if (
+          r.attendanceStatus !== HALAKA_ATTENDANCE_STATUSES.ABSENT &&
+          r.attendanceStatus !== HALAKA_ATTENDANCE_STATUSES.EXCUSED
+        ) {
+          return false
+        }
+      }
+      if (!q) return true
+      return (r.displayName || r.userId).toLowerCase().includes(q)
+    })
+    return [...rows].sort(compareStudentRows)
+  }, [attendanceRows, studentFilterQuery, studentListFilter])
+
+  const groupedAttendanceRows = useMemo(() => {
+    const students = []
+    const others = []
+    for (const row of filteredAttendanceRows) {
+      if (row.role === HALAKA_MEMBER_ROLES.STUDENT) students.push(row)
+      else others.push(row)
+    }
+    return { students, others }
+  }, [filteredAttendanceRows])
+
+  const hasActiveStudentFilters = studentListFilter !== 'all' || Boolean(studentFilterQuery.trim())
+
+  const studentListStats = useMemo(() => {
+    let recorded = 0
+    let empty = 0
+    for (const row of attendanceRows) {
+      if (row.role !== HALAKA_MEMBER_ROLES.STUDENT || row.excludedFromSession) continue
+      const count = Array.isArray(row.entryHistory) ? row.entryHistory.length : 0
+      if (count > 0) recorded += 1
+      else empty += 1
+    }
+    return { recorded, empty, total: recorded + empty }
+  }, [attendanceRows])
+
+  const sessionProgress = useMemo(() => {
+    const total = studentListStats.total
+    const recorded = studentListStats.recorded
+    return {
+      recorded,
+      total,
+      percent: total > 0 ? Math.round((recorded / total) * 100) : 0,
+    }
+  }, [studentListStats])
+
+  const volumeStats = useMemo(() => {
+    const map = new Map()
+    let totalPages = 0
+    for (const row of attendanceRows) {
+      if (row.role !== HALAKA_MEMBER_ROLES.STUDENT || row.excludedFromSession) continue
+      const history = Array.isArray(row.entryHistory) ? row.entryHistory : []
+      for (const h of history) {
+        const volId = String(h.memorizationVolumeId || '').trim()
+        if (!volId) continue
+        const pages = entryPagesCount(h)
+        totalPages += pages
+        const cur = map.get(volId) || { pages: 0, entries: 0 }
+        map.set(volId, { pages: cur.pages + pages, entries: cur.entries + 1 })
+      }
+    }
+    return [...map.entries()]
+      .map(([volId, stats]) => ({
+        volId,
+        label: VOLUME_BY_ID[volId]?.label || volId,
+        pages: stats.pages,
+        entries: stats.entries,
+        percent: totalPages > 0 ? Math.round((stats.pages / totalPages) * 100) : 0,
+      }))
+      .sort((a, b) => b.pages - a.pages || a.label.localeCompare(b.label, 'ar'))
+  }, [attendanceRows])
+
+  const sessionEntriesFeed = useMemo(() => {
+    const items = []
+    for (const row of attendanceRows) {
+      if (row.role !== HALAKA_MEMBER_ROLES.STUDENT || row.excludedFromSession) continue
+      const history = Array.isArray(row.entryHistory) ? row.entryHistory : []
+      for (const h of history) {
+        items.push({
+          ...h,
+          userId: row.userId,
+          displayName: row.displayName || row.userId,
+        })
+      }
+    }
+    return items
+  }, [attendanceRows])
+
+  const filteredSessionFeed = useMemo(() => {
+    const q = sessionFeedQuery.trim().toLowerCase()
+    let items = sessionEntriesFeed
+    if (q) {
+      items = items.filter((h) => {
+        const vol = (VOLUME_BY_ID[h.memorizationVolumeId]?.label || h.memorizationVolumeId || '').toLowerCase()
+        return (h.displayName || '').toLowerCase().includes(q) || vol.includes(q)
+      })
+    }
+    const sorted = [...items]
+    if (sessionFeedSort === 'student') {
+      sorted.sort((a, b) => {
+        const byName = (a.displayName || '').localeCompare(b.displayName || '', 'ar')
+        if (byName !== 0) return byName
+        return Date.parse(String(b.recordedAt || '')) - Date.parse(String(a.recordedAt || ''))
+      })
+    } else if (sessionFeedSort === 'volume') {
+      sorted.sort((a, b) => {
+        const volA = VOLUME_BY_ID[a.memorizationVolumeId]?.label || a.memorizationVolumeId || ''
+        const volB = VOLUME_BY_ID[b.memorizationVolumeId]?.label || b.memorizationVolumeId || ''
+        const byVol = volA.localeCompare(volB, 'ar')
+        if (byVol !== 0) return byVol
+        return Date.parse(String(b.recordedAt || '')) - Date.parse(String(a.recordedAt || ''))
+      })
+    } else {
+      sorted.sort((a, b) => Date.parse(String(b.recordedAt || '')) - Date.parse(String(a.recordedAt || '')))
+    }
+    return sorted
+  }, [sessionEntriesFeed, sessionFeedQuery, sessionFeedSort])
 
   const nextRecordableUid = useMemo(() => {
     if (!activeStudentUid) return ''
@@ -322,6 +485,32 @@ export default function HalakaSessionWorkspacePage() {
     if (!nextRecordableUid) return ''
     return attendanceRows.find((r) => r.userId === nextRecordableUid)?.displayName || ''
   }, [attendanceRows, nextRecordableUid])
+
+  const prevRecordableUid = useMemo(() => {
+    if (!activeStudentUid) return ''
+    return getPrevRecordableStudentUid(activeStudentUid, attendanceRows)
+  }, [activeStudentUid, attendanceRows])
+
+  const prevRecordableName = useMemo(() => {
+    if (!prevRecordableUid) return ''
+    return attendanceRows.find((r) => r.userId === prevRecordableUid)?.displayName || ''
+  }, [attendanceRows, prevRecordableUid])
+
+  const activeDraftPageSpan = useMemo(() => {
+    if (!activeRow) return 0
+    const fp = Number(activeRow.fromPage)
+    const tp = Number(activeRow.toPage)
+    if (!activeRow.memorizationVolumeId || !Number.isFinite(fp) || !Number.isFinite(tp) || tp < fp) return 0
+    return tp - fp + 1
+  }, [activeRow])
+
+  useEffect(() => {
+    if (sessionFeedAutoOpened.current || sessionEntriesFeed.length === 0) return
+    if (typeof window !== 'undefined' && window.matchMedia('(min-width: 900px)').matches) {
+      setShowSessionFeed(true)
+      sessionFeedAutoOpened.current = true
+    }
+  }, [sessionEntriesFeed.length])
 
   useEffect(() => {
     if (!activeStudentUid) return undefined
@@ -341,25 +530,6 @@ export default function HalakaSessionWorkspacePage() {
       return next
     })
   }, [activeStudentUid, savingRowId])
-
-  const openStudentModal = useCallback(
-    (uid) => {
-      if (activeStudentUid && activeStudentUid !== uid && dirtyRowIds.has(activeStudentUid)) {
-        toast.info('احفظ أو أغلق سجل الطالب الحالي قبل فتح طالب آخر.', 'سجل الطالب')
-        return
-      }
-      if (activeStudentUid && activeStudentUid !== uid) {
-        setEditingEntryByUser((prev) => {
-          if (!prev[activeStudentUid]) return prev
-          const next = { ...prev }
-          delete next[activeStudentUid]
-          return next
-        })
-      }
-      setActiveStudentUid(uid)
-    },
-    [activeStudentUid, dirtyRowIds, toast],
-  )
 
   const rowPayload = (row) => {
     const fp = row.fromPage === '' ? null : Number(row.fromPage)
@@ -400,6 +570,134 @@ export default function HalakaSessionWorkspacePage() {
   const updateRowDraft = useCallback((uid, patch) => {
     setAttendanceRows((prev) => prev.map((x) => (x.userId === uid ? { ...x, ...patch } : x)))
     setDirtyRowIds((prev) => new Set(prev).add(uid))
+  }, [])
+  const openStudentModal = useCallback(
+    (uid, { entry = null } = {}) => {
+      if (activeStudentUid && activeStudentUid !== uid && dirtyRowIds.has(activeStudentUid)) {
+        toast.info('احفظ أو أغلق سجل الطالب الحالي قبل فتح طالب آخر.', 'سجل الطالب')
+        return
+      }
+      if (activeStudentUid && activeStudentUid !== uid) {
+        setEditingEntryByUser((prev) => {
+          if (!prev[activeStudentUid]) return prev
+          const next = { ...prev }
+          delete next[activeStudentUid]
+          return next
+        })
+      }
+      if (entry?.id) {
+        updateRowDraft(uid, {
+          memorizationVolumeId: entry.memorizationVolumeId || '',
+          fromPage: entry.fromPage ?? '',
+          toPage: entry.toPage ?? '',
+          notes: entry.notes || '',
+        })
+        setEditingEntryByUser((prev) => ({ ...prev, [uid]: entry.id }))
+        setEntriesExpandedByUid((prev) => ({ ...prev, [uid]: true }))
+      } else {
+        setEditingEntryByUser((prev) => {
+          if (!prev[uid]) return prev
+          const next = { ...prev }
+          delete next[uid]
+          return next
+        })
+      }
+      setActiveStudentUid(uid)
+    },
+    [activeStudentUid, dirtyRowIds, toast, updateRowDraft],
+  )
+  const isEntriesExpanded = useCallback(
+    (uid, count) => entriesExpandedByUid[uid] ?? defaultEntriesExpanded(count),
+    [entriesExpandedByUid],
+  )
+  const toggleEntriesExpanded = useCallback((uid, count) => {
+    setEntriesExpandedByUid((prev) => ({
+      ...prev,
+      [uid]: !(prev[uid] ?? defaultEntriesExpanded(count)),
+    }))
+  }, [])
+  const expandAllEntries = useCallback(() => {
+    const next = {}
+    for (const row of attendanceRows) {
+      if (row.role !== HALAKA_MEMBER_ROLES.STUDENT || row.excludedFromSession) continue
+      const count = Array.isArray(row.entryHistory) ? row.entryHistory.length : 0
+      if (count > 0) next[row.userId] = true
+    }
+    setEntriesExpandedByUid(next)
+  }, [attendanceRows])
+  const collapseAllEntries = useCallback(() => {
+    setEntriesExpandedByUid({})
+  }, [])
+  const clearStudentFilters = useCallback(() => {
+    setStudentListFilter('all')
+    setStudentFilterQuery('')
+  }, [])
+  const goToPrevStudent = useCallback(() => {
+    if (!prevRecordableUid) return
+    openStudentModal(prevRecordableUid)
+  }, [openStudentModal, prevRecordableUid])
+  const goToNextStudent = useCallback(() => {
+    if (!nextRecordableUid) return
+    openStudentModal(nextRecordableUid)
+  }, [nextRecordableUid, openStudentModal])
+  const skipToNextStudent = useCallback(() => {
+    if (!activeStudentUid) return
+    if (dirtyRowIds.has(activeStudentUid)) {
+      toast.info('احفظ أو ألغِ التغييرات قبل التخطي.', 'تسجيل الجلسة')
+      return
+    }
+    const nextUid = getNextRecordableStudentUid(activeStudentUid, attendanceRows)
+    if (nextUid) {
+      const nextName = attendanceRows.find((r) => r.userId === nextUid)?.displayName || 'الطالب'
+      setEditingEntryByUser((prev) => {
+        if (!prev[activeStudentUid]) return prev
+        const next = { ...prev }
+        delete next[activeStudentUid]
+        return next
+      })
+      setActiveStudentUid(nextUid)
+      toast.info(`التالي: ${nextName}`, 'تخطي')
+    } else {
+      closeStudentModal()
+      toast.info('انتهت قائمة الطلاب القابلين للتسجيل.', 'تم')
+    }
+  }, [activeStudentUid, attendanceRows, closeStudentModal, dirtyRowIds, toast])
+  const focusStudentCard = useCallback((uid, { expandEntries = true } = {}) => {
+    if (expandEntries) setEntriesExpandedByUid((prev) => ({ ...prev, [uid]: true }))
+    setFlashStudentUid(uid)
+    window.requestAnimationFrame(() => {
+      document.getElementById(`halaka-attendee-${uid}`)?.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
+    })
+    window.setTimeout(() => setFlashStudentUid(''), 1600)
+  }, [])
+  const cancelEntryEdit = useCallback((row) => {
+    const history = Array.isArray(row.entryHistory) ? row.entryHistory : []
+    const last = history.length ? history[history.length - 1] : null
+    const cap = last ? VOLUME_BY_ID[last.memorizationVolumeId]?.pages || 0 : 0
+    const nextRange = last ? nextSuggestedRange(last.fromPage, last.toPage, cap) : { fromPage: '', toPage: '' }
+    setEditingEntryByUser((prev) => {
+      const next = { ...prev }
+      delete next[row.userId]
+      return next
+    })
+    setAttendanceRows((prev) =>
+      prev.map((x) =>
+        x.userId === row.userId
+          ? {
+              ...x,
+              memorizationVolumeId: last?.memorizationVolumeId || '',
+              fromPage: nextRange.fromPage,
+              toPage: nextRange.toPage,
+              notes: '',
+            }
+          : x,
+      ),
+    )
+    setDirtyRowIds((prev) => {
+      const next = new Set(prev)
+      next.delete(row.userId)
+      return next
+    })
   }, [])
   const quickSetAttendance = useCallback(
     async (row, status) => {
@@ -695,12 +993,70 @@ export default function HalakaSessionWorkspacePage() {
               : x,
           ),
         )
+        if (editingEntryByUser[row.userId] === entryId) {
+          setEditingEntryByUser((prev) => {
+            const next = { ...prev }
+            delete next[row.userId]
+            return next
+          })
+        }
+        toast.success('تم حذف التسجيل.', 'تسجيلات الجلسة')
+      } catch {
+        toast.error('تعذر حذف التسجيل.', 'تسجيلات الجلسة')
       } finally {
         setSavingRowId('')
       }
     },
-    [canWrite, halakaId, sessionId, user],
+    [canWrite, editingEntryByUser, halakaId, sessionId, toast, user],
   )
+  const confirmDeleteEntry = useCallback(async () => {
+    if (!deletingEntry?.row || !deletingEntry?.entry?.id) return
+    setDeleteEntryBusy(true)
+    try {
+      await deleteEntry(deletingEntry.row, deletingEntry.entry.id)
+      setDeletingEntry(null)
+    } finally {
+      setDeleteEntryBusy(false)
+    }
+  }, [deleteEntry, deletingEntry])
+
+  useEffect(() => {
+    if (!activeStudentUid || !activeRow) return undefined
+    const onKeyDown = (e) => {
+      if (savingRowId || deletingEntry) return
+      if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+        e.preventDefault()
+        if (canWrite && dirtyRowIds.has(activeRow.userId)) saveRow(activeRow)
+        return
+      }
+      if (editingEntryByUser[activeStudentUid]) return
+      const tag = String(e.target?.tagName || '').toLowerCase()
+      const inField = tag === 'input' || tag === 'textarea' || tag === 'select' || e.target?.isContentEditable
+      if (inField && !e.altKey) return
+      if (e.altKey && e.key === 'ArrowLeft' && nextRecordableUid) {
+        e.preventDefault()
+        goToNextStudent()
+      } else if (e.altKey && e.key === 'ArrowRight' && prevRecordableUid) {
+        e.preventDefault()
+        goToPrevStudent()
+      }
+    }
+    window.addEventListener('keydown', onKeyDown)
+    return () => window.removeEventListener('keydown', onKeyDown)
+  }, [
+    activeRow,
+    activeStudentUid,
+    canWrite,
+    deletingEntry,
+    dirtyRowIds,
+    editingEntryByUser,
+    goToNextStudent,
+    goToPrevStudent,
+    nextRecordableUid,
+    prevRecordableUid,
+    saveRow,
+    savingRowId,
+  ])
 
   if (loading) return <p className="rh-halaka-sessions__state">جاري التحميل…</p>
   if (!halaka || !session) return <p className="rh-halaka-sessions__state">تعذر العثور على الجلسة.</p>
@@ -711,7 +1067,7 @@ export default function HalakaSessionWorkspacePage() {
         <div className="rh-plans__hero-head">
           <div>
             <h1 className="rh-plans__title">صفحة الجلسة: {session.title || 'جلسة حلقة'}</h1>
-            <p className="rh-plans__desc rh-halaka-sessions__lead">سجّل حضور الطلاب من البطاقات، ثم افتح سجل كل طالب على حدة لتسجيل الحفظ والتسميع دون ازدحام الشاشة.</p>
+            <p className="rh-plans__desc rh-halaka-sessions__lead">سجّل حضور الطلاب من البطاقات، واطّلع على تسجيلات كل طالب وتعديلها من البطاقة نفسها، ثم افتح نموذج التسجيل لإضافة دفعة جديدة.</p>
             <CrossNav items={crossItems} className="rh-plans__cross" />
           </div>
           <HapticLink to={`/app/halakat/${halakaId}/sessions`} className="rh-halaka-sessions__hero-back ui-btn ui-btn--secondary">
@@ -753,6 +1109,12 @@ export default function HalakaSessionWorkspacePage() {
             <span>
               ملخص الجلسة — حاضر <strong>{summary.present}</strong> · غائب <strong>{summary.absent}</strong> ·{' '}
               {summary.pages} صفحة
+              {sessionProgress.total > 0 ? (
+                <>
+                  {' · '}
+                  سجّل <strong>{sessionProgress.percent}%</strong>
+                </>
+              ) : null}
             </span>
           </button>
           <div className="rh-halaka-sessions__stats rh-halaka-sessions__stats--collapsible">
@@ -765,6 +1127,55 @@ export default function HalakaSessionWorkspacePage() {
           <div className="rh-halaka-sessions__stat"><span className="rh-halaka-sessions__stat-value">{summary.pages}</span><span className="rh-halaka-sessions__stat-label">صفحات مرصودة</span></div>
           <div className="rh-halaka-sessions__stat"><span className="rh-halaka-sessions__stat-value">{formatTasmeeDuration(sessionTasmeeDisplaySeconds)}</span><span className="rh-halaka-sessions__stat-label">وقت التسميع</span></div>
           </div>
+          {sessionProgress.total > 0 ? (
+            <div className="rh-halaka-sessions__session-progress">
+              <div className="rh-halaka-sessions__session-progress-head">
+                <span>تقدّم التسجيل</span>
+                <strong>
+                  {sessionProgress.recorded}/{sessionProgress.total} طالب ({sessionProgress.percent}%)
+                </strong>
+              </div>
+              <div className="rh-halaka-sessions__session-progress-track" aria-hidden>
+                <span
+                  className="rh-halaka-sessions__session-progress-fill"
+                  style={{ width: `${sessionProgress.percent}%` }}
+                />
+              </div>
+            </div>
+          ) : null}
+          {volumeStats.length > 0 ? (
+            <div className="rh-halaka-sessions__volume-stats">
+              <p className="rh-halaka-sessions__volume-stats-title">توزيع الصفحات حسب المجلد</p>
+              <ul className="rh-halaka-sessions__volume-stats-list">
+                {volumeStats.map((v) => (
+                  <li key={v.volId} className="rh-halaka-sessions__volume-stat">
+                    <button
+                      type="button"
+                      className="rh-halaka-sessions__volume-stat-btn"
+                      onClick={() => {
+                        setShowSessionFeed(true)
+                        setSessionFeedSort('volume')
+                        setSessionFeedQuery(VOLUME_BY_ID[v.volId]?.label || v.label)
+                        window.requestAnimationFrame(() => {
+                          document.querySelector('.rh-halaka-sessions__session-feed-wrap')?.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
+                        })
+                      }}
+                    >
+                      <div className="rh-halaka-sessions__volume-stat-head">
+                        <span className="rh-halaka-sessions__volume-stat-label">{v.label}</span>
+                        <span className="rh-halaka-sessions__volume-stat-meta">
+                          {v.pages} ص · {v.entries} تسجيل
+                        </span>
+                      </div>
+                      <div className="rh-halaka-sessions__volume-stat-track" aria-hidden>
+                        <span className="rh-halaka-sessions__volume-stat-fill" style={{ width: `${v.percent}%` }} />
+                      </div>
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ) : null}
         </div>
         <div className="rh-halaka-sessions__tasmee-bar rh-halaka-sessions__tasmee-bar--compact">
           <div className="rh-halaka-sessions__tasmee-display">
@@ -915,12 +1326,149 @@ export default function HalakaSessionWorkspacePage() {
         </div>
           ) : null}
         </div>
-        <p className="rh-halaka-sessions__callout">اضغط أزرار الحضور للحفظ الفوري، ثم «تسجيل» لفتح سجل الطالب للحفظ والتسميع.</p>
+        <p className="rh-halaka-sessions__callout">اضغط أزرار الحضور للحفظ الفوري. تسجيلات الجلسة في بطاقة كل طالب — أو اطّلع على السجل الكامل أدناه.</p>
+        {sessionEntriesFeed.length > 0 ? (
+          <div
+            className={[
+              'rh-halaka-sessions__session-feed-wrap',
+              showSessionFeed ? 'rh-halaka-sessions__session-feed-wrap--open' : '',
+            ]
+              .filter(Boolean)
+              .join(' ')}
+          >
+            <button
+              type="button"
+              className="rh-halaka-sessions__session-feed-toggle"
+              onClick={() => setShowSessionFeed((v) => !v)}
+              aria-expanded={showSessionFeed}
+            >
+              <RhIcon as={ListOrdered} size={16} strokeWidth={RH_ICON_STROKE} />
+              <span>
+                سجل الجلسة الكامل — <strong>{sessionEntriesFeed.length}</strong> تسجيل ·{' '}
+                <strong>{summary.pages}</strong> صفحة
+              </span>
+              <RhIcon
+                as={ChevronDown}
+                size={16}
+                strokeWidth={RH_ICON_STROKE}
+                className={showSessionFeed ? 'rh-halaka-sessions__panel-toggle--open' : ''}
+              />
+            </button>
+            {showSessionFeed ? (
+              <div className="rh-halaka-sessions__session-feed-panel">
+                <div className="rh-halaka-sessions__session-feed-toolbar">
+                  <SearchField
+                    className="rh-halaka-sessions__session-feed-search"
+                    label="بحث في السجل"
+                    placeholder="طالب أو مجلد…"
+                    value={sessionFeedQuery}
+                    onChange={(e) => setSessionFeedQuery(e.target.value)}
+                  />
+                  <div className="rh-halaka-sessions__session-feed-sort" role="group" aria-label="ترتيب السجل">
+                    {[
+                      { id: 'time', label: 'الأحدث' },
+                      { id: 'student', label: 'حسب الطالب' },
+                      { id: 'volume', label: 'حسب المجلد' },
+                    ].map((opt) => (
+                      <button
+                        key={opt.id}
+                        type="button"
+                        className={[
+                          'rh-halaka-sessions__filter-chip',
+                          sessionFeedSort === opt.id ? 'rh-halaka-sessions__filter-chip--active' : '',
+                        ]
+                          .filter(Boolean)
+                          .join(' ')}
+                        onClick={() => setSessionFeedSort(opt.id)}
+                      >
+                        {opt.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                {filteredSessionFeed.length === 0 ? (
+                  <p className="rh-halaka-sessions__session-feed-empty">لا يوجد تسجيل مطابق للبحث.</p>
+                ) : (
+              <ul className="rh-halaka-sessions__session-feed">
+                {filteredSessionFeed.map((h) => (
+                  <li key={h.id || `${h.userId}_${h.recordedAt}_${h.fromPage}_${h.toPage}`}>
+                    <button
+                      type="button"
+                      className="rh-halaka-sessions__session-feed-item"
+                      onClick={() => focusStudentCard(h.userId)}
+                    >
+                      <span className="rh-halaka-sessions__session-feed-student">{h.displayName}</span>
+                      <span className="rh-halaka-sessions__session-feed-vol">
+                        {VOLUME_BY_ID[h.memorizationVolumeId]?.label || h.memorizationVolumeId}
+                      </span>
+                      <span className="rh-halaka-sessions__session-feed-range">
+                        ص {h.fromPage}–{h.toPage}
+                        {entryPagesLabel(h) ? ` (${entryPagesLabel(h)})` : ''}
+                      </span>
+                      {formatRecordedAt(h.recordedAt) ? (
+                        <span className="rh-halaka-sessions__session-feed-time">{formatRecordedAt(h.recordedAt)}</span>
+                      ) : null}
+                    </button>
+                    {canWrite ? (
+                      <div className="rh-halaka-sessions__session-feed-actions">
+                        <button
+                          type="button"
+                          className="rh-halaka-sessions__session-feed-btn"
+                          title="تعديل"
+                          onClick={() => openStudentModal(h.userId, { entry: h })}
+                        >
+                          <RhIcon as={Pencil} size={14} strokeWidth={RH_ICON_STROKE} />
+                        </button>
+                        <button
+                          type="button"
+                          className="rh-halaka-sessions__session-feed-btn rh-halaka-sessions__session-feed-btn--danger"
+                          title="حذف"
+                          onClick={() => {
+                            const row = attendanceRows.find((r) => r.userId === h.userId)
+                            if (row) setDeletingEntry({ row, entry: h })
+                          }}
+                        >
+                          <RhIcon as={Trash2} size={14} strokeWidth={RH_ICON_STROKE} />
+                        </button>
+                      </div>
+                    ) : null}
+                  </li>
+                ))}
+              </ul>
+                )}
+              </div>
+            ) : null}
+          </div>
+        ) : null}
         <div className="rh-halaka-sessions__students-head">
-          <h2 className="rh-halaka-sessions__students-title">
-            قائمة الأعضاء
-            <span className="rh-halaka-sessions__students-count">{attendanceRows.length}</span>
-          </h2>
+          <div className="rh-halaka-sessions__students-head-main">
+            <h2 className="rh-halaka-sessions__students-title">
+              قائمة الأعضاء
+              <span className="rh-halaka-sessions__students-count">{attendanceRows.length}</span>
+            </h2>
+            <div className="rh-halaka-sessions__students-filters" role="group" aria-label="تصفية الطلاب">
+              {[
+                { id: 'all', label: 'الكل' },
+                { id: 'recorded', label: `مسجّل (${studentListStats.recorded})` },
+                { id: 'empty', label: `بدون تسجيل (${studentListStats.empty})` },
+                { id: 'absent', label: 'غائب/بعذر' },
+              ].map((f) => (
+                <button
+                  key={f.id}
+                  type="button"
+                  className={[
+                    'rh-halaka-sessions__filter-chip',
+                    studentListFilter === f.id ? 'rh-halaka-sessions__filter-chip--active' : '',
+                  ]
+                    .filter(Boolean)
+                    .join(' ')}
+                  onClick={() => setStudentListFilter(f.id)}
+                >
+                  {f.label}
+                </button>
+              ))}
+            </div>
+          </div>
           <SearchField
             className="rh-halaka-sessions__students-search"
             label="بحث عن طالب"
@@ -929,15 +1477,61 @@ export default function HalakaSessionWorkspacePage() {
             onChange={(e) => setStudentFilterQuery(e.target.value)}
           />
         </div>
+        <div className="rh-halaka-sessions__students-tools">
+          <button
+            type="button"
+            className={[
+              'rh-halaka-sessions__filter-chip',
+              compactEmptyCards ? 'rh-halaka-sessions__filter-chip--active' : '',
+            ]
+              .filter(Boolean)
+              .join(' ')}
+            onClick={() => setCompactEmptyCards((v) => !v)}
+          >
+            <RhIcon as={LayoutList} size={14} strokeWidth={RH_ICON_STROKE} />
+            عرض مضغوط للفارغين
+          </button>
+          {studentListStats.recorded > 0 ? (
+            <>
+              <button type="button" className="rh-halaka-sessions__filter-chip" onClick={expandAllEntries}>
+                توسيع كل التسجيلات
+              </button>
+              <button type="button" className="rh-halaka-sessions__filter-chip" onClick={collapseAllEntries}>
+                طيّ كل التسجيلات
+              </button>
+            </>
+          ) : null}
+        </div>
         {filteredAttendanceRows.length === 0 ? (
-          <p className="rh-halaka-sessions__empty">لا يوجد عضو مطابق للبحث.</p>
+          <div className="rh-halaka-sessions__empty rh-halaka-sessions__empty--filters">
+            <p>لا يوجد عضو مطابق للتصفية الحالية.</p>
+            {hasActiveStudentFilters ? (
+              <Button type="button" size="sm" variant="secondary" icon={RotateCcw} onClick={clearStudentFilters}>
+                إعادة ضبط التصفية
+              </Button>
+            ) : null}
+          </div>
         ) : (
-        <ul className="rh-halaka-sessions__attendee-list">
-          {filteredAttendanceRows.map((row) => {
+        <>
+        {[
+          { id: 'students', title: 'الطلاب', rows: groupedAttendanceRows.students },
+          { id: 'others', title: 'المعلمون والمشرفون', rows: groupedAttendanceRows.others },
+        ]
+          .filter((g) => g.rows.length > 0)
+          .map((group) => (
+            <div key={group.id} className="rh-halaka-sessions__member-group">
+              <h3 className="rh-halaka-sessions__member-group-title">
+                {group.title}
+                <span className="rh-halaka-sessions__students-count">{group.rows.length}</span>
+              </h3>
+              <ul className="rh-halaka-sessions__attendee-list">
+                {group.rows.map((row) => {
             const isStudent = row.role === HALAKA_MEMBER_ROLES.STUDENT
             const history = Array.isArray(row.entryHistory) ? row.entryHistory : []
-            const historyPages = history.reduce((sum, h) => sum + Math.max(0, Number(h.pagesCount) || 0), 0)
-            const lastEntry = history.length ? history[history.length - 1] : null
+            const historyPages = history.reduce((sum, h) => sum + entryPagesCount(h), 0)
+            const entriesOpen = isEntriesExpanded(row.userId, history.length)
+            const reversedHistory = [...history].reverse()
+            const isEmptyStudent = isStudent && !row.excludedFromSession && history.length === 0
             return (
               <li
                 key={row.userId}
@@ -946,9 +1540,11 @@ export default function HalakaSessionWorkspacePage() {
                   'rh-halaka-sessions__attendee',
                   'rh-halaka-sessions__attendee--compact',
                   isStudent ? 'rh-halaka-sessions__attendee--student' : '',
+                  isEmptyStudent && compactEmptyCards ? 'rh-halaka-sessions__attendee--empty-compact' : '',
                   row.excludedFromSession ? 'rh-halaka-sessions__attendee--excluded' : '',
                   dirtyRowIds.has(row.userId) ? 'rh-halaka-sessions__attendee--dirty' : '',
                   activeStudentUid === row.userId ? 'rh-halaka-sessions__attendee--active' : '',
+                  flashStudentUid === row.userId ? 'rh-halaka-sessions__attendee--flash' : '',
                 ]
                   .filter(Boolean)
                   .join(' ')}
@@ -972,22 +1568,36 @@ export default function HalakaSessionWorkspacePage() {
                         </span>
                         {row.excludedFromSession ? <span className="rh-plans__saved-badge">مستثنى</span> : null}
                         {dirtyRowIds.has(row.userId) ? <span className="rh-plans__saved-badge">غير محفوظ</span> : null}
+                        {isStudent && history.length > 0 ? (
+                          <button
+                            type="button"
+                            className="rh-halaka-sessions__mini-stat rh-halaka-sessions__mini-stat--btn"
+                            title="عرض تسجيلات الجلسة"
+                            onClick={() => toggleEntriesExpanded(row.userId, history.length)}
+                          >
+                            <RhIcon as={BookOpen} size={12} strokeWidth={RH_ICON_STROKE} />
+                            {history.length} · {historyPages} ص
+                          </button>
+                        ) : null}
+                        {isStudent && row.tasmeeSeconds > 0 ? (
+                          <span className="rh-halaka-sessions__mini-stat">
+                            <RhIcon as={Clock} size={12} strokeWidth={RH_ICON_STROKE} />
+                            {formatTasmeeDuration(row.tasmeeSeconds)}
+                          </span>
+                        ) : null}
                       </div>
-                      {isStudent && !row.excludedFromSession ? (
-                        <p className="rh-halaka-sessions__attendee-stats">
-                          {history.length > 0 ? (
-                            <>
-                              {history.length} تسجيل — {historyPages} صفحة
-                              {lastEntry
-                                ? ` — آخر: ${VOLUME_BY_ID[lastEntry.memorizationVolumeId]?.label || ''} (${lastEntry.fromPage}–${lastEntry.toPage})`
-                                : ''}
-                            </>
-                          ) : (
-                            'لم يُسجَّل حفظ بعد'
-                          )}
-                          {row.tasmeeSeconds > 0 ? ` — تسميع: ${formatTasmeeDuration(row.tasmeeSeconds)}` : ''}
-                        </p>
-                      ) : null}
+                    </div>
+                    <div className="rh-halaka-sessions__attendee-actions">
+                      <Button
+                        type="button"
+                        variant="primary"
+                        size="sm"
+                        icon={Plus}
+                        disabled={!canWrite}
+                        onClick={() => openStudentModal(row.userId)}
+                      >
+                        {isStudent ? 'تسجيل' : 'تحضير'}
+                      </Button>
                     </div>
                   </div>
                   {!row.excludedFromSession ? (
@@ -1011,29 +1621,141 @@ export default function HalakaSessionWorkspacePage() {
                       ))}
                     </div>
                   ) : null}
-                  <div className="rh-halaka-sessions__attendee-actions">
-                    <Button
-                      type="button"
-                      variant="primary"
-                      size="sm"
-                      icon={Plus}
-                      disabled={!canWrite}
-                      onClick={() => openStudentModal(row.userId)}
-                    >
-                      {isStudent ? 'تسجيل' : 'تحضير'}
-                    </Button>
-                  </div>
                 </div>
+                {isStudent && !row.excludedFromSession && history.length > 0 ? (
+                  <div className="rh-halaka-sessions__card-entries">
+                    <button
+                      type="button"
+                      className="rh-halaka-sessions__card-entries-head"
+                      onClick={() => toggleEntriesExpanded(row.userId, history.length)}
+                      aria-expanded={entriesOpen}
+                    >
+                      <RhIcon
+                        as={ChevronDown}
+                        size={14}
+                        strokeWidth={RH_ICON_STROKE}
+                        className={entriesOpen ? 'rh-halaka-sessions__panel-toggle--open' : ''}
+                      />
+                      <span className="rh-halaka-sessions__card-entries-title">تسجيلات الجلسة</span>
+                      <span className="rh-halaka-sessions__card-entries-count">{history.length}</span>
+                      <span className="rh-halaka-sessions__card-entries-pages">{historyPages} صفحة</span>
+                      <span className="rh-halaka-sessions__card-entries-toggle-label">
+                        {entriesOpen ? 'إخفاء' : 'عرض'}
+                      </span>
+                    </button>
+                    {entriesOpen ? (
+                    <ul className="rh-halaka-sessions__card-entries-list">
+                      {reversedHistory.map((h) => {
+                        const isEditingThis = editingEntryByUser[row.userId] === h.id && activeStudentUid === row.userId
+                        return (
+                          <li
+                            key={h.id || `${h.recordedAt}_${h.fromPage}_${h.toPage}`}
+                            className={[
+                              'rh-halaka-sessions__card-entry',
+                              isEditingThis ? 'rh-halaka-sessions__card-entry--editing' : '',
+                            ]
+                              .filter(Boolean)
+                              .join(' ')}
+                          >
+                            <button
+                              type="button"
+                              className="rh-halaka-sessions__card-entry-main"
+                              disabled={!canWrite || savingRowId === row.userId}
+                              onClick={() => canWrite && openStudentModal(row.userId, { entry: h })}
+                            >
+                              <span className="rh-halaka-sessions__card-entry-body">
+                                <span className="rh-halaka-sessions__card-entry-vol">
+                                  {VOLUME_BY_ID[h.memorizationVolumeId]?.label || h.memorizationVolumeId}
+                                </span>
+                                <span className="rh-halaka-sessions__card-entry-range">
+                                  ص {h.fromPage}–{h.toPage}
+                                  {entryPagesLabel(h) ? (
+                                    <span className="rh-halaka-sessions__card-entry-pages"> ({entryPagesLabel(h)})</span>
+                                  ) : null}
+                                </span>
+                              </span>
+                              {h.notes?.trim() ? (
+                                <span className="rh-halaka-sessions__card-entry-notes" title={h.notes}>
+                                  {h.notes}
+                                </span>
+                              ) : null}
+                              {formatRecordedAt(h.recordedAt) ? (
+                                <span className="rh-halaka-sessions__card-entry-time">{formatRecordedAt(h.recordedAt)}</span>
+                              ) : null}
+                              {isEditingThis ? (
+                                <span className="rh-halaka-sessions__card-entry-editing-badge">قيد التعديل</span>
+                              ) : null}
+                            </button>
+                            {canWrite ? (
+                              <div className="rh-halaka-sessions__card-entry-actions">
+                                <button
+                                  type="button"
+                                  className="rh-halaka-sessions__card-entry-btn"
+                                  title="تعديل"
+                                  disabled={savingRowId === row.userId}
+                                  onClick={(e) => {
+                                    e.stopPropagation()
+                                    openStudentModal(row.userId, { entry: h })
+                                  }}
+                                >
+                                  <RhIcon as={Pencil} size={14} strokeWidth={RH_ICON_STROKE} />
+                                  <span>تعديل</span>
+                                </button>
+                                <button
+                                  type="button"
+                                  className="rh-halaka-sessions__card-entry-btn rh-halaka-sessions__card-entry-btn--danger"
+                                  title="حذف"
+                                  disabled={savingRowId === row.userId}
+                                  onClick={(e) => {
+                                    e.stopPropagation()
+                                    setDeletingEntry({ row, entry: h })
+                                  }}
+                                >
+                                  <RhIcon as={Trash2} size={14} strokeWidth={RH_ICON_STROKE} />
+                                  <span>حذف</span>
+                                </button>
+                              </div>
+                            ) : null}
+                          </li>
+                        )
+                      })}
+                    </ul>
+                    ) : (
+                      <p className="rh-halaka-sessions__card-entries-collapsed-hint">
+                        {reversedHistory.length} تسجيل — اضغط «عرض» لرؤية التفاصيل
+                      </p>
+                    )}
+                  </div>
+                ) : isStudent && !row.excludedFromSession ? (
+                  <div className="rh-halaka-sessions__card-entries-empty">
+                    <RhIcon as={BookOpen} size={16} strokeWidth={RH_ICON_STROKE} />
+                    <span>لا توجد تسجيلات بعد</span>
+                    {canWrite ? (
+                      <Button type="button" size="sm" variant="secondary" icon={Plus} onClick={() => openStudentModal(row.userId)}>
+                        أضف أول دفعة
+                      </Button>
+                    ) : null}
+                  </div>
+                ) : null}
               </li>
             )
           })}
-        </ul>
+              </ul>
+            </div>
+          ))}
+        </>
         )}
       </section>
 
       <Modal
         open={Boolean(activeRow)}
-        title={activeRow ? `سجل: ${activeRow.displayName}` : ''}
+        title={
+          activeRow
+            ? editingEntryByUser[activeRow.userId]
+              ? `تعديل دفعة: ${activeRow.displayName}`
+              : `تسجيل جديد: ${activeRow.displayName}`
+            : ''
+        }
         onClose={closeStudentModal}
         size="lg"
         className="rh-halaka-sessions-student-modal"
@@ -1050,7 +1772,6 @@ export default function HalakaSessionWorkspacePage() {
           const agg = volId && ctx ? aggregateVolumeProgress(volId, ctx.plans, ctx.awrad) : null
           const lastW = volId && ctx ? lastWirdOverlappingVolume(volId, ctx.plans, ctx.awrad) : null
           const cap = volId ? VOLUME_BY_ID[volId]?.pages || 0 : 0
-          const history = Array.isArray(row.entryHistory) ? row.entryHistory : []
           return (
             <div className="rh-halaka-sessions__attendee-form rh-halaka-sessions__attendee-form--modal">
               <div className="rh-halaka-sessions__attendee-form-body">
@@ -1131,52 +1852,20 @@ export default function HalakaSessionWorkspacePage() {
                       }
                     />
                   </div>
+                  {activeDraftPageSpan > 0 ? (
+                    <p className="rh-halaka-sessions__draft-preview">
+                      {editingEntryByUser[row.userId] ? 'بعد الحفظ ستُحدَّث الدفعة إلى' : 'ستُسجَّل دفعة من'}{' '}
+                      <strong>{activeDraftPageSpan}</strong> صفحة
+                      {volId ? ` في ${VOLUME_BY_ID[volId]?.label || ''}` : ''}
+                    </p>
+                  ) : null}
                   {lastW ? (
                     <p className="ui-field__hint">
                       آخر ورد: من {lastW.localFrom} إلى {lastW.localTo} — {lastW.planName} — {formatRecordedAt(lastW.recordedAt)}
                     </p>
                   ) : null}
-                  {history.length ? (
-                    <div className="rh-halaka-sessions__history">
-                      <p className="ui-field__label">تسجيلات الجلسة</p>
-                      {history
-                        .slice(-4)
-                        .reverse()
-                        .map((h) => (
-                          <p key={h.id || `${h.recordedAt}_${h.fromPage}_${h.toPage}`} className="rh-halaka-sessions__history-item">
-                            {formatRecordedAt(h.recordedAt)} — {VOLUME_BY_ID[h.memorizationVolumeId]?.label || h.memorizationVolumeId}:
-                            {' '}من {h.fromPage} إلى {h.toPage} ({h.pagesCount} ص)
-                            {canWrite ? (
-                              <>
-                                {' — '}
-                                <button
-                                  type="button"
-                                  className="rh-halaka-sessions__history-btn"
-                                  onClick={() => {
-                                    updateRowDraft(row.userId, {
-                                      memorizationVolumeId: h.memorizationVolumeId || row.memorizationVolumeId,
-                                      fromPage: h.fromPage ?? '',
-                                      toPage: h.toPage ?? '',
-                                      notes: h.notes || '',
-                                    })
-                                    setEditingEntryByUser((prev) => ({ ...prev, [row.userId]: h.id || '' }))
-                                  }}
-                                >
-                                  تعديل
-                                </button>
-                                {' / '}
-                                <button
-                                  type="button"
-                                  className="rh-halaka-sessions__history-btn rh-halaka-sessions__history-btn--danger"
-                                  onClick={() => deleteEntry(row, h.id)}
-                                >
-                                  حذف
-                                </button>
-                              </>
-                            ) : null}
-                          </p>
-                        ))}
-                    </div>
+                  {editingEntryByUser[row.userId] ? (
+                    <p className="rh-halaka-sessions__editing-hint">أنت تعدّل دفعة من تسجيلات الجلسة الظاهرة في البطاقة.</p>
                   ) : null}
                   <div className="rh-halaka-sessions__field-row rh-halaka-sessions__tasmee-row">
                     <TextField
@@ -1246,8 +1935,60 @@ export default function HalakaSessionWorkspacePage() {
               />
               </div>
               <div className="rh-modal-footer rh-halaka-sessions__modal-actions">
+                {isStudent && !editingEntryByUser[row.userId] ? (
+                  <div className="rh-halaka-sessions__modal-nav">
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="ghost"
+                      icon={ChevronRight}
+                      disabled={!prevRecordableUid || savingRowId === row.userId}
+                      onClick={goToPrevStudent}
+                    >
+                      {prevRecordableName ? `السابق: ${prevRecordableName}` : 'السابق'}
+                    </Button>
+                    {nextRecordableUid ? (
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="ghost"
+                        icon={SkipForward}
+                        disabled={savingRowId === row.userId || dirtyRowIds.has(row.userId)}
+                        onClick={skipToNextStudent}
+                      >
+                        تخطي للتالي
+                      </Button>
+                    ) : null}
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="ghost"
+                      icon={ChevronLeft}
+                      disabled={!nextRecordableUid || savingRowId === row.userId}
+                      onClick={goToNextStudent}
+                    >
+                      {nextRecordableName ? `التالي: ${nextRecordableName}` : 'التالي'}
+                    </Button>
+                  </div>
+                ) : null}
+                {isStudent && !editingEntryByUser[row.userId] ? (
+                  <p className="rh-halaka-sessions__modal-shortcuts-hint">
+                    اختصارات: Ctrl+Enter حفظ · Alt+← التالي · Alt+→ السابق
+                  </p>
+                ) : null}
                 {nextRecordableUid && activeRow?.role === HALAKA_MEMBER_ROLES.STUDENT && !editingEntryByUser[row.userId] ? (
                   <p className="rh-halaka-sessions__modal-next-hint">بعد الحفظ: {nextRecordableName || 'الطالب التالي'}</p>
+                ) : null}
+                {editingEntryByUser[row.userId] ? (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    icon={RotateCcw}
+                    disabled={savingRowId === row.userId}
+                    onClick={() => cancelEntryEdit(row)}
+                  >
+                    إلغاء التعديل
+                  </Button>
                 ) : null}
                 <Button
                   type="button"
@@ -1272,6 +2013,36 @@ export default function HalakaSessionWorkspacePage() {
             </div>
           )
         })() : null}
+      </Modal>
+
+      <Modal
+        open={Boolean(deletingEntry)}
+        title="تأكيد حذف التسجيل"
+        onClose={() => !deleteEntryBusy && setDeletingEntry(null)}
+        size="sm"
+        closeOnBackdrop={!deleteEntryBusy}
+        closeOnEsc={!deleteEntryBusy}
+        showClose={!deleteEntryBusy}
+      >
+        {deletingEntry ? (
+          <>
+            <p className="rh-plans__warn rh-plans__warn--confirm">
+              سيتم حذف تسجيل{' '}
+              <strong>{deletingEntry.row.displayName}</strong>
+              {' — '}
+              {VOLUME_BY_ID[deletingEntry.entry.memorizationVolumeId]?.label || ''} (ص{' '}
+              {deletingEntry.entry.fromPage}–{deletingEntry.entry.toPage}) نهائياً. هل أنت متأكد؟
+            </p>
+            <div className="rh-modal-footer rh-halaka-sessions__modal-actions">
+              <Button type="button" variant="danger" icon={Trash2} loading={deleteEntryBusy} onClick={confirmDeleteEntry}>
+                نعم، حذف
+              </Button>
+              <Button type="button" variant="ghost" icon={X} disabled={deleteEntryBusy} onClick={() => setDeletingEntry(null)}>
+                إلغاء
+              </Button>
+            </div>
+          </>
+        ) : null}
       </Modal>
     </div>
   )

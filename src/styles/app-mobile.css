@@ -395,6 +395,87 @@
     justify-content: center;
   }
 
+  .rh-halaka-sessions__card-entry {
+    flex-direction: column;
+  }
+
+  .rh-halaka-sessions__card-entry-actions {
+    flex-direction: row;
+    border-inline-start: none;
+    border-top: 1px solid color-mix(in srgb, var(--rh-border) 75%, transparent);
+  }
+
+  .rh-halaka-sessions__card-entry-btn {
+    flex: 1 1 50%;
+    min-height: var(--rh-mob-touch);
+    font-size: var(--rh-text-xs);
+  }
+
+  .rh-halaka-sessions__card-entry-btn + .rh-halaka-sessions__card-entry-btn {
+    border-top: none;
+    border-inline-start: 1px solid color-mix(in srgb, var(--rh-border) 75%, transparent);
+  }
+
+  .rh-halaka-sessions__session-feed-item {
+    grid-template-columns: 1fr;
+    gap: 0.15rem;
+  }
+
+  .rh-halaka-sessions__session-feed-time {
+    justify-self: start;
+  }
+
+  .rh-halaka-sessions__session-feed-actions {
+    flex-direction: row;
+    border-inline-start: none;
+    border-top: 1px solid color-mix(in srgb, var(--rh-border) 75%, transparent);
+  }
+
+  .rh-halaka-sessions__session-feed-btn {
+    flex: 1 1 50%;
+    min-height: var(--rh-mob-touch);
+  }
+
+  .rh-halaka-sessions__session-feed-btn + .rh-halaka-sessions__session-feed-btn {
+    border-top: none;
+    border-inline-start: 1px solid color-mix(in srgb, var(--rh-border) 75%, transparent);
+  }
+
+  .rh-halaka-sessions__students-filters {
+    width: 100%;
+  }
+
+  .rh-halaka-sessions__filter-chip {
+    flex: 1 1 calc(50% - var(--rh-space-1));
+    min-height: var(--rh-mob-touch);
+    justify-content: center;
+    text-align: center;
+  }
+
+  .rh-halaka-sessions__students-tools {
+    width: 100%;
+  }
+
+  .rh-halaka-sessions__students-tools .rh-halaka-sessions__filter-chip {
+    flex: 1 1 auto;
+    min-height: var(--rh-mob-touch);
+    justify-content: center;
+  }
+
+  .rh-halaka-sessions__modal-shortcuts-hint {
+    display: none;
+  }
+
+  .rh-halaka-sessions__card-entries-empty {
+    flex-direction: column;
+    text-align: center;
+  }
+
+  .rh-halaka-sessions__card-entries-empty .ui-btn {
+    margin-inline-start: 0;
+    width: 100%;
+  }
+
   .rh-halaka-sessions__stats-toggle {
     display: inline-flex;
     width: 100%;
