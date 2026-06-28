@@ -670,6 +670,14 @@
   width: min(1040px, 100%);
 }
 
+.ui-modal__content--xl {
+  width: min(1180px, 100%);
+}
+
+.ui-modal.rh-session-report-modal .ui-modal__content {
+  max-height: min(94vh, 58rem);
+}
+
 /* موبايل: اجعل الـModal أقرب لأسلوب bottom-sheet */
 @media (max-width: 520px) {
   .ui-modal {

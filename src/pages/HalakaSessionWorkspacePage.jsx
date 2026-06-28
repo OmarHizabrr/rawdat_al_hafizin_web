@@ -1,8 +1,9 @@
-import { ArrowRight, Ban, BookOpen, ChevronDown, ChevronLeft, ChevronRight, Clock, LayoutList, ListOrdered, Pencil, Pause, Play, Plus, RotateCcw, Save, SkipForward, Trash2, UserCheck, UserX, X } from 'lucide-react'
+import { ArrowRight, Ban, BookOpen, ChevronDown, ChevronLeft, ChevronRight, Clock, FileText, LayoutList, ListOrdered, Pencil, Pause, Play, Plus, RotateCcw, Save, SkipForward, Trash2, UserCheck, UserX, X } from 'lucide-react'
 import { HapticLink } from '../ui/HapticLink.jsx'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useParams } from 'react-router-dom'
 import { CrossNav } from '../components/CrossNav.jsx'
+import { HalakaSessionReportModal } from '../components/HalakaSessionReportModal.jsx'
 import { useAuth } from '../context/useAuth.js'
 import { usePermissions } from '../context/usePermissions.js'
 import { useSiteContent } from '../context/useSiteContent.js'
@@ -151,6 +152,7 @@ export default function HalakaSessionWorkspacePage() {
   const [compactEmptyCards, setCompactEmptyCards] = useState(true)
   const [sessionFeedSort, setSessionFeedSort] = useState('time')
   const [sessionFeedQuery, setSessionFeedQuery] = useState('')
+  const [showSessionReport, setShowSessionReport] = useState(false)
   const sessionFeedAutoOpened = useRef(false)
 
   useEffect(() => {
@@ -1086,6 +1088,14 @@ export default function HalakaSessionWorkspacePage() {
           {' — '}
           {formatDateTimeMedium12Ar(session.startedAt)}
         </p>
+        <div className="rh-halaka-sessions__session-report-bar">
+          <Button type="button" variant="secondary" size="sm" icon={FileText} onClick={() => setShowSessionReport(true)}>
+            تقرير الجلسة الشامل
+          </Button>
+          <p className="rh-halaka-sessions__session-report-hint">
+            إحصائيات واضحة · ملخص تنفيذي · تفاصيل كل تسجيل · جاهز للطباعة
+          </p>
+        </div>
         <div
           className={[
             'rh-halaka-sessions__stats-wrap',
@@ -2044,6 +2054,14 @@ export default function HalakaSessionWorkspacePage() {
           </>
         ) : null}
       </Modal>
+
+      <HalakaSessionReportModal
+        open={showSessionReport}
+        onClose={() => setShowSessionReport(false)}
+        halaka={halaka}
+        session={session}
+        attendanceRows={attendanceRows}
+      />
     </div>
   )
 }
