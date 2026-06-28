@@ -634,6 +634,34 @@ export default function HalakaSessionWorkspacePage() {
     setStudentListFilter('all')
     setStudentFilterQuery('')
   }, [])
+  const applyQuickStatFilter = useCallback(
+    (action) => {
+      if (action === 'all') {
+        clearStudentFilters()
+      } else if (action === 'recorded') {
+        setStudentListFilter('recorded')
+        setStudentFilterQuery('')
+      } else if (action === 'empty') {
+        setStudentListFilter('empty')
+        setStudentFilterQuery('')
+      } else if (action === 'absent') {
+        setStudentListFilter('absent')
+        setStudentFilterQuery('')
+      } else if (action === 'feed') {
+        if (sessionEntriesFeed.length > 0) {
+          setShowSessionFeed(true)
+          window.requestAnimationFrame(() => {
+            document.querySelector('.rh-halaka-sessions__session-feed-wrap')?.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
+          })
+        }
+        return
+      }
+      window.requestAnimationFrame(() => {
+        document.querySelector('.rh-halaka-sessions__students-head--sticky')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+      })
+    },
+    [clearStudentFilters, sessionEntriesFeed.length],
+  )
   const goToPrevStudent = useCallback(() => {
     if (!prevRecordableUid) return
     openStudentModal(prevRecordableUid)
@@ -1060,7 +1088,33 @@ export default function HalakaSessionWorkspacePage() {
     savingRowId,
   ])
 
-  if (loading) return <p className="rh-halaka-sessions__state">جاري التحميل…</p>
+  if (loading) {
+    return (
+      <div className="rh-plans rh-halaka-sessions" aria-busy="true" aria-live="polite">
+        <header className="rh-plans__hero">
+          <div className="rh-plans__hero-head">
+            <div className="rh-halaka-sessions__skeleton-hero">
+              <span className="rh-halaka-sessions__skeleton-line rh-halaka-sessions__skeleton-line--title" />
+              <span className="rh-halaka-sessions__skeleton-line rh-halaka-sessions__skeleton-line--desc" />
+            </div>
+          </div>
+        </header>
+        <section className="rh-settings-card rh-halaka-sessions__skeleton-card">
+          <div className="rh-halaka-sessions__skeleton-stats">
+            {Array.from({ length: 4 }, (_, i) => (
+              <span key={i} className="rh-halaka-sessions__skeleton-stat" />
+            ))}
+          </div>
+          <ul className="rh-halaka-sessions__skeleton-list">
+            {Array.from({ length: 5 }, (_, i) => (
+              <li key={i} className="rh-halaka-sessions__skeleton-attendee" />
+            ))}
+          </ul>
+        </section>
+        <p className="rh-halaka-sessions__state rh-halaka-sessions__state--loading">جاري تحميل صفحة الجلسة…</p>
+      </div>
+    )
+  }
   if (!halaka || !session) return <p className="rh-halaka-sessions__state">تعذر العثور على الجلسة.</p>
 
   return (
@@ -1089,12 +1143,43 @@ export default function HalakaSessionWorkspacePage() {
           {formatDateTimeMedium12Ar(session.startedAt)}
         </p>
         <div className="rh-halaka-sessions__session-report-bar">
-          <Button type="button" variant="secondary" size="sm" icon={FileText} onClick={() => setShowSessionReport(true)}>
-            تقرير الجلسة الشامل
+          <div className="rh-halaka-sessions__session-report-main">
+            <div className="rh-halaka-sessions__session-report-copy">
+              <h2 className="rh-halaka-sessions__session-report-title">تقرير الجلسة الشامل</h2>
+              <p className="rh-halaka-sessions__session-report-hint">
+                إحصائيات واضحة · ملخص تنفيذي · تفاصيل كل تسجيل · جاهز للطباعة
+              </p>
+            </div>
+            <ul className="rh-halaka-sessions__session-report-pills" aria-label="ملخص سريع للجلسة">
+              <li>
+                <button type="button" className="rh-halaka-sessions__session-report-pill" onClick={() => applyQuickStatFilter('feed')}>
+                  <strong>{sessionEntriesFeed.length}</strong>
+                  <span>تسجيل</span>
+                </button>
+              </li>
+              <li>
+                <button type="button" className="rh-halaka-sessions__session-report-pill" onClick={() => applyQuickStatFilter('feed')}>
+                  <strong>{summary.pages}</strong>
+                  <span>صفحة</span>
+                </button>
+              </li>
+              {sessionProgress.total > 0 ? (
+                <li>
+                  <button
+                    type="button"
+                    className="rh-halaka-sessions__session-report-pill rh-halaka-sessions__session-report-pill--accent"
+                    onClick={() => applyQuickStatFilter('recorded')}
+                  >
+                    <strong>{sessionProgress.percent}%</strong>
+                    <span>تقدّم التسجيل</span>
+                  </button>
+                </li>
+              ) : null}
+            </ul>
+          </div>
+          <Button type="button" variant="primary" size="sm" icon={FileText} onClick={() => setShowSessionReport(true)}>
+            عرض التقرير
           </Button>
-          <p className="rh-halaka-sessions__session-report-hint">
-            إحصائيات واضحة · ملخص تنفيذي · تفاصيل كل تسجيل · جاهز للطباعة
-          </p>
         </div>
         <div
           className={[
@@ -1128,30 +1213,43 @@ export default function HalakaSessionWorkspacePage() {
             </span>
           </button>
           <div className="rh-halaka-sessions__stats rh-halaka-sessions__stats--collapsible">
-          <div className="rh-halaka-sessions__stat"><span className="rh-halaka-sessions__stat-value">{summary.studentCount || studentCount}</span><span className="rh-halaka-sessions__stat-label">طلاب الحلقة</span></div>
+          <button type="button" className="rh-halaka-sessions__stat rh-halaka-sessions__stat--action" onClick={() => applyQuickStatFilter('all')} title="عرض كل الطلاب">
+            <span className="rh-halaka-sessions__stat-value">{summary.studentCount || studentCount}</span><span className="rh-halaka-sessions__stat-label">طلاب الحلقة</span>
+          </button>
           <div className="rh-halaka-sessions__stat"><span className="rh-halaka-sessions__stat-value">{summary.present}</span><span className="rh-halaka-sessions__stat-label">حاضر</span></div>
-          <div className="rh-halaka-sessions__stat"><span className="rh-halaka-sessions__stat-value">{summary.absent}</span><span className="rh-halaka-sessions__stat-label">غائب</span></div>
-          <div className="rh-halaka-sessions__stat"><span className="rh-halaka-sessions__stat-value">{summary.excused}</span><span className="rh-halaka-sessions__stat-label">بعذر</span></div>
+          <button type="button" className="rh-halaka-sessions__stat rh-halaka-sessions__stat--action" onClick={() => applyQuickStatFilter('absent')} title="تصفية الغائبين والمعذورين">
+            <span className="rh-halaka-sessions__stat-value">{summary.absent}</span><span className="rh-halaka-sessions__stat-label">غائب</span>
+          </button>
+          <button type="button" className="rh-halaka-sessions__stat rh-halaka-sessions__stat--action" onClick={() => applyQuickStatFilter('absent')} title="تصفية الغائبين والمعذورين">
+            <span className="rh-halaka-sessions__stat-value">{summary.excused}</span><span className="rh-halaka-sessions__stat-label">بعذر</span>
+          </button>
           <div className="rh-halaka-sessions__stat"><span className="rh-halaka-sessions__stat-value">{summary.late}</span><span className="rh-halaka-sessions__stat-label">متأخر</span></div>
           <div className="rh-halaka-sessions__stat"><span className="rh-halaka-sessions__stat-value">{summary.excluded}</span><span className="rh-halaka-sessions__stat-label">مستثنى</span></div>
-          <div className="rh-halaka-sessions__stat"><span className="rh-halaka-sessions__stat-value">{summary.pages}</span><span className="rh-halaka-sessions__stat-label">صفحات مرصودة</span></div>
+          <button type="button" className="rh-halaka-sessions__stat rh-halaka-sessions__stat--action rh-halaka-sessions__stat--accent" onClick={() => applyQuickStatFilter('feed')} disabled={sessionEntriesFeed.length === 0} title="فتح سجل التسجيلات">
+            <span className="rh-halaka-sessions__stat-value">{summary.pages}</span><span className="rh-halaka-sessions__stat-label">صفحات مرصودة</span>
+          </button>
           <div className="rh-halaka-sessions__stat"><span className="rh-halaka-sessions__stat-value">{formatTasmeeDuration(sessionTasmeeDisplaySeconds)}</span><span className="rh-halaka-sessions__stat-label">وقت التسميع</span></div>
           </div>
           {sessionProgress.total > 0 ? (
-            <div className="rh-halaka-sessions__session-progress">
+            <button
+              type="button"
+              className="rh-halaka-sessions__session-progress rh-halaka-sessions__session-progress--action"
+              onClick={() => applyQuickStatFilter('recorded')}
+              title="عرض الطلاب الذين سجّلوا حفظاً"
+            >
               <div className="rh-halaka-sessions__session-progress-head">
-                <span>تقدّم التسجيل</span>
+                <span>تقدّم التسجيل — اضغط للتصفية</span>
                 <strong>
                   {sessionProgress.recorded}/{sessionProgress.total} طالب ({sessionProgress.percent}%)
                 </strong>
               </div>
               <div className="rh-halaka-sessions__session-progress-track" aria-hidden>
                 <span
-                  className="rh-halaka-sessions__session-progress-fill"
+                  className="rh-halaka-sessions__session-progress-fill rh-halaka-sessions__session-progress-fill--animated"
                   style={{ width: `${sessionProgress.percent}%` }}
                 />
               </div>
-            </div>
+            </button>
           ) : null}
           {volumeStats.length > 0 ? (
             <div className="rh-halaka-sessions__volume-stats">
@@ -1450,11 +1548,14 @@ export default function HalakaSessionWorkspacePage() {
             ) : null}
           </div>
         ) : null}
-        <div className="rh-halaka-sessions__students-head">
+        <div className="rh-halaka-sessions__students-head rh-halaka-sessions__students-head--sticky">
           <div className="rh-halaka-sessions__students-head-main">
             <h2 className="rh-halaka-sessions__students-title">
               قائمة الأعضاء
-              <span className="rh-halaka-sessions__students-count">{attendanceRows.length}</span>
+              <span className="rh-halaka-sessions__students-count">{filteredAttendanceRows.length}</span>
+              {hasActiveStudentFilters ? (
+                <span className="rh-halaka-sessions__students-filtered">من {attendanceRows.length}</span>
+              ) : null}
             </h2>
             <div className="rh-halaka-sessions__students-filters" role="group" aria-label="تصفية الطلاب">
               {[
